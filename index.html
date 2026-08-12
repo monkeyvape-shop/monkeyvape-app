@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monkey Vape Shop</title>
-    <!-- Добавили версию, чтобы Telegram не кэшировал старый файл -->
-    <script src="https://telegram.org/js/telegram-web-app.js?v=2.2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js?v=3.0"></script>
     <style>
         :root {
             --bg-color: #121212;
@@ -24,7 +23,6 @@
             padding: 10px 10px 90px 10px;
         }
 
-        /* Модальное окно проверки возраста — перекрывает всё на свете */
         #ageModal {
             position: fixed;
             top: 0;
@@ -237,7 +235,6 @@
 </head>
 <body>
 
-    <!-- Модальное окно проверки возраста (по умолчанию flex, скрывается через JS только если подтверждено) -->
     <div id="ageModal" style="display: flex;">
         <h2>⚠️ Подтверждение возраста</h2>
         <p>Для доступа к каталогу и заказа необходимо подтвердить, что вам исполнилось 18 лет.</p>
@@ -296,7 +293,6 @@
         tg.ready();
         tg.expand();
 
-        // Проверка возраста немедленно при запуске
         function checkAge() {
             let isVerified = localStorage.getItem('monkey_vape_verified');
             const modal = document.getElementById('ageModal');
@@ -307,7 +303,6 @@
             }
         }
 
-        // Подтверждение возраста пользователем
         function confirmAge() {
             localStorage.setItem('monkey_vape_verified', 'true');
             document.getElementById('ageModal').style.display = 'none';
@@ -316,7 +311,6 @@
             } catch(e) {}
         }
 
-        // Вызываем сразу при загрузке скрипта
         checkAge();
 
         const products = [
@@ -454,7 +448,6 @@
             tg.MainButton.show();
         }
 
-        // Обработчик нажатия главной кнопки Telegram
         Telegram.WebApp.onEvent('mainButtonClicked', function() {
             if (localStorage.getItem('monkey_vape_verified') !== 'true') {
                 alert("❌ Ошибка: подтвердите возраст!");
@@ -479,13 +472,13 @@
                 payment: "Криптовалюта (USDT TRC-20)"
             };
             
-            // Отправляем данные боту
-            tg.sendData(JSON.stringify(orderData));
-
-            // ЖЕСТКАЯ ОЧИСТКА КОРЗИНЫ ПОСЛЕ ЗАКАЗА
+            // Очищаем корзину в памяти и локальном хранилище перед отправкой
             cart = [];
             saveCart();
             updateCartUI();
+
+            // Отправляем данные боту и закрываем мини-приложение для возврата в чат
+            tg.sendData(JSON.stringify(orderData));
         });
 
         document.getElementById('cartCount').innerText = cart.length;
