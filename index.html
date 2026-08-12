@@ -23,6 +23,7 @@
             padding: 10px 10px 90px 10px;
         }
 
+        /* Экран блокировки возраста при старте */
         #ageModal {
             position: fixed;
             top: 0;
@@ -30,7 +31,7 @@
             width: 100%;
             height: 100%;
             background: rgba(18, 18, 18, 0.98);
-            z-index: 1000;
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -235,7 +236,7 @@
 </head>
 <body>
 
-    <!-- Модальное окно проверки возраста прямо в приложении -->
+    <!-- Окно проверки возраста при входе -->
     <div id="ageModal" style="display: none;">
         <h2>⚠️ Подтверждение возраста</h2>
         <p>Для доступа к каталогу и заказа необходимо подтвердить, что вам исполнилось 18 лет.</p>
@@ -290,11 +291,11 @@
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
+        const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
-        // Проверяем возраст при запуске сайта
+        // Проверка возраста при открытии приложения
         function checkAge() {
             let isVerified = localStorage.getItem('monkey_vape_verified') === 'true';
             const modal = document.getElementById('ageModal');
@@ -305,7 +306,7 @@
             }
         }
 
-        // Кнопка подтверждения прямо в приложении
+        // Подтверждение возраста пользователем
         function confirmAge() {
             localStorage.setItem('monkey_vape_verified', 'true');
             document.getElementById('ageModal').style.display = 'none';
@@ -453,7 +454,7 @@
 
         Telegram.WebApp.onEvent('mainButtonClicked', function() {
             if (localStorage.getItem('monkey_vape_verified') !== 'true') {
-                alert("❌ Ошибка оформления заказа!\n\nПодтвердите возраст, нажав кнопку на экране.");
+                alert("❌ Ошибка оформления заказа!\n\nПодтвердите возраст.");
                 return;
             }
 
@@ -470,9 +471,6 @@
             };
             
             tg.sendData(JSON.stringify(orderData));
-
-            cart = [];
-            saveCart();
         });
 
         document.getElementById('cartCount').innerText = cart.length;
