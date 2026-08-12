@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monkey Vape Shop</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Добавили версию, чтобы Telegram не кэшировал старый файл -->
+    <script src="https://telegram.org/js/telegram-web-app.js?v=2.2"></script>
     <style>
         :root {
             --bg-color: #121212;
@@ -23,15 +24,15 @@
             padding: 10px 10px 90px 10px;
         }
 
-        /* Экран блокировки возраста при старте */
+        /* Модальное окно проверки возраста — перекрывает всё на свете */
         #ageModal {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(18, 18, 18, 0.98);
-            z-index: 9999;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(12, 12, 12, 0.99);
+            z-index: 999999;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -236,8 +237,8 @@
 </head>
 <body>
 
-    <!-- Окно проверки возраста при входе -->
-    <div id="ageModal" style="display: none;">
+    <!-- Модальное окно проверки возраста (по умолчанию flex, скрывается через JS только если подтверждено) -->
+    <div id="ageModal" style="display: flex;">
         <h2>⚠️ Подтверждение возраста</h2>
         <p>Для доступа к каталогу и заказа необходимо подтвердить, что вам исполнилось 18 лет.</p>
         <button class="btn" onclick="confirmAge()" style="max-width: 250px;">Мне есть 18 лет</button>
@@ -295,14 +296,14 @@
         tg.ready();
         tg.expand();
 
-        // Проверка возраста при открытии приложения
+        // Проверка возраста немедленно при запуске
         function checkAge() {
-            let isVerified = localStorage.getItem('monkey_vape_verified') === 'true';
+            let isVerified = localStorage.getItem('monkey_vape_verified');
             const modal = document.getElementById('ageModal');
-            if (!isVerified) {
-                modal.style.display = 'flex';
-            } else {
+            if (isVerified === 'true') {
                 modal.style.display = 'none';
+            } else {
+                modal.style.display = 'flex';
             }
         }
 
@@ -315,6 +316,7 @@
             } catch(e) {}
         }
 
+        // Вызываем сразу при загрузке скрипта
         checkAge();
 
         const products = [
@@ -452,9 +454,16 @@
             tg.MainButton.show();
         }
 
+        // Обработчик нажатия главной кнопки Telegram
         Telegram.WebApp.onEvent('mainButtonClicked', function() {
             if (localStorage.getItem('monkey_vape_verified') !== 'true') {
-                alert("❌ Ошибка оформления заказа!\n\nПодтвердите возраст.");
+                alert("❌ Ошибка: подтвердите возраст!");
+                document.getElementById('ageModal').style.display = 'flex';
+                return;
+            }
+
+            if (cart.length === 0) {
+                alert("Корзина пуста!");
                 return;
             }
 
@@ -470,7 +479,13 @@
                 payment: "Криптовалюта (USDT TRC-20)"
             };
             
+            // Отправляем данные боту
             tg.sendData(JSON.stringify(orderData));
+
+            // ЖЕСТКАЯ ОЧИСТКА КОРЗИНЫ ПОСЛЕ ЗАКАЗА
+            cart = [];
+            saveCart();
+            updateCartUI();
         });
 
         document.getElementById('cartCount').innerText = cart.length;
