@@ -23,6 +23,35 @@
             padding: 10px 10px 90px 10px;
         }
 
+        #ageModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(18, 18, 18, 0.98);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        #ageModal h2 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        #ageModal p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
         .nav-tabs {
             display: flex;
             justify-content: space-around;
@@ -117,8 +146,8 @@
             background: var(--accent-color);
             color: #000;
             border: none;
-            padding: 8px;
-            border-radius: 6px;
+            padding: 10px;
+            border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
@@ -206,6 +235,13 @@
 </head>
 <body>
 
+    <!-- Модальное окно проверки возраста прямо в приложении -->
+    <div id="ageModal" style="display: none;">
+        <h2>⚠️ Подтверждение возраста</h2>
+        <p>Для доступа к каталогу и заказа необходимо подтвердить, что вам исполнилось 18 лет.</p>
+        <button class="btn" onclick="confirmAge()" style="max-width: 250px;">Мне есть 18 лет</button>
+    </div>
+
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('catalog')">🛍 Каталог</button>
         <button class="tab-btn" onclick="switchTab('cart')">🛒 Корзина (<span id="cartCount">0</span>)</button>
@@ -258,6 +294,28 @@
         tg.ready();
         tg.expand();
 
+        // Проверяем возраст при запуске сайта
+        function checkAge() {
+            let isVerified = localStorage.getItem('monkey_vape_verified') === 'true';
+            const modal = document.getElementById('ageModal');
+            if (!isVerified) {
+                modal.style.display = 'flex';
+            } else {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Кнопка подтверждения прямо в приложении
+        function confirmAge() {
+            localStorage.setItem('monkey_vape_verified', 'true');
+            document.getElementById('ageModal').style.display = 'none';
+            try {
+                tg.HapticFeedback.notificationOccurred('success');
+            } catch(e) {}
+        }
+
+        checkAge();
+
         const products = [
             { 
                 id: 1, 
@@ -303,7 +361,6 @@
             }
         ];
 
-        // Загружаем сохраненную корзину из localStorage
         let cart = [];
         const savedCart = localStorage.getItem('monkey_vape_cart');
         if (savedCart) {
@@ -317,9 +374,6 @@
         function saveCart() {
             localStorage.setItem('monkey_vape_cart', JSON.stringify(cart));
         }
-
-        // Проверяем, подтверждал ли пользователь возраст ранее в этом браузере
-        let isAgeVerified = localStorage.getItem('monkey_vape_verified') === 'true';
 
         function renderCatalog() {
             const grid = document.getElementById('productGrid');
@@ -398,10 +452,8 @@
         }
 
         Telegram.WebApp.onEvent('mainButtonClicked', function() {
-            // ПРОВЕРКА ВОЗРАСТА НА СТОРОНЕ САЙТА
-            // Если в localStorage нет подтверждения, выбиваем предупреждение
             if (localStorage.getItem('monkey_vape_verified') !== 'true') {
-                alert("❌ Ошибка оформления заказа!\n\nВам необходимо подтвердить возраст (18+). Перейдите в чат с ботом, введите /start и нажмите кнопку подтверждения.");
+                alert("❌ Ошибка оформления заказа!\n\nПодтвердите возраст, нажав кнопку на экране.");
                 return;
             }
 
@@ -419,23 +471,9 @@
             
             tg.sendData(JSON.stringify(orderData));
 
-            // Очищаем корзину после успешной отправки заказа
             cart = [];
             saveCart();
         });
-
-        // Синхронизация статуса верификации: 
-        // Если пользователь нажал кнопку в боте, он может вернуться на сайт. 
-        // Чтобы сайт тоже понял, что возраст подтвержден, мы можем дать пользователю возможность нажать кнопку подтверждения прямо на сайте 
-        // или автоматически ставить флаг, если бот просигнализировал. 
-        // Но проще всего: если пользователь нажал «Мне есть 18 лет» в боте, боту можно прислать web_app_data или пользователь просто вернется.
-        // Давай сделаем автоматическое включение флага при клике на покупку, ИЛИ добавим маленькую хитрость: 
-        // Пусть сайт при первом открытии проверяет, верифицирован ли юзер. 
-        // Поскольку напрямую из Python в браузер не записать, давай сделаем так, чтобы пользователь один раз нажал подтверждение, либо синхронизируем через localStorage.
-        
-        // ЧТОБЫ УБЕДИТЬСЯ ЧТО У ТЕБЯ ТЕСТИРУЕТСЯ ПРАВИЛЬНО:
-        // Если хочешь временно отметить себя как подтвержденного для теста, введи в консоль браузера: 
-        // localStorage.setItem('monkey_vape_verified', 'true');
 
         document.getElementById('cartCount').innerText = cart.length;
         renderCatalog();
