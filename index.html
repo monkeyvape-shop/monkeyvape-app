@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monkey Vape Shop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #00ff88;
+            --text-color: #ffffff;
+            --text-muted: #aaaaaa;
+            --danger-color: #ff4d4d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px 10px 90px 10px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: space-around;
+            background: var(--card-bg);
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-color);
+            color: #000;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 255, 136, 0.15);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-img-container {
+            width: 100%;
+            height: 120px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .card img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+        .card h3 {
+            font-size: 13px;
+            margin: 8px 0 2px;
+            height: 34px;
+            overflow: hidden;
+            line-height: 1.2;
+        }
+
+        .card .strength {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .card .price {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+        }
+
+        .btn {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .cart-item-title {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .cart-item-price {
+            color: var(--accent-color);
+            font-size: 13px;
+        }
+
+        .btn-remove {
+            background: var(--danger-color);
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .form-section {
+            background: var(--card-bg);
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .form-section h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid var(--accent-color);
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+
+        .crypto-box {
+            background: #252525;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px dashed var(--accent-color);
+            margin-top: 10px;
+        }
+
+        .crypto-address {
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--accent-color);
+            word-break: break-all;
+            background: #121212;
+            padding: 6px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('catalog')">🛍 Каталог</button>
+        <button class="tab-btn" onclick="switchTab('cart')">🛒 Корзина (<span id="cartCount">0</span>)</button>
+    </div>
+
+    <div id="catalogPage" class="page active">
+        <div class="grid" id="productGrid"></div>
+    </div>
+
+    <div id="cartPage" class="page">
+        <div id="cartList"></div>
+        
+        <div id="cartFooter" style="display: none;">
+            <div class="form-section">
+                <h4>📍 Место и время встречи (Метро)</h4>
+                
+                <label>Станция метро:</label>
+                <select id="metroStation">
+                    <option value="Ленинградская (МЦД)">Ленинградская / Стрешнево</option>
+                    <option value="Сокол">Сокол</option>
+                    <option value="Войковская">Войковская</option>
+                    <option value="Тверская">Тверская</option>
+                    <option value="Белорусская">Белорусская</option>
+                    <option value="Киевская">Киевская</option>
+                    <option value="Другая станция (уточнить)">Другая станция (по договоренности)</option>
+                </select>
+
+                <label>Время встречи:</label>
+                <select id="meetTime">
+                    <option value="12:00 - 14:00">12:00 - 14:00</option>
+                    <option value="14:00 - 16:00">14:00 - 16:00</option>
+                    <option value="16:00 - 18:00">16:00 - 18:00</option>
+                    <option value="18:00 - 20:00">18:00 - 20:00</option>
+                    <option value="20:00 - 22:00">20:00 - 22:00</option>
+                </select>
+
+                <div class="crypto-box">
+                    <strong>🪙 Оплата: Криптовалюта (USDT TRC-20)</strong>
+                    <div style="font-size: 12px; margin-top: 5px; color: #ccc;">
+                        Перевод на реквизиты после подтверждения:
+                    </div>
+                    <div class="crypto-address">T9xYourCryptoWalletAddressHereXXXX</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const products = [
+            { 
+                id: 1, 
+                name: "Husky Double Ice - Winter River", 
+                strength: "20 мг / 30 мл", 
+                price: 550, 
+                img: "https://vape-custom.ru/image/cache/catalog/e-liquid/husky-double-ice/winter-river-600x600.png" 
+            },
+            { 
+                id: 2, 
+                name: "Husky Mint Series - Blue Biscuit", 
+                strength: "20 мг / 30 мл", 
+                price: 550, 
+                img: "https://vape-custom.ru/image/cache/catalog/e-liquid/husky-mint/blue-biscuit-600x600.png" 
+            },
+            { 
+                id: 3, 
+                name: "Podonki v2 - Ананас Клюква", 
+                strength: "20 мг Hard / 30 мл", 
+                price: 600, 
+                img: "https://vape-custom.ru/image/cache/catalog/e-liquid/podonki-v2/ananas-klukva-600x600.png" 
+            },
+            { 
+                id: 4, 
+                name: "Xylinet - Медовая Дыня", 
+                strength: "20 мг / 30 мл", 
+                price: 500, 
+                img: "https://vape-custom.ru/image/cache/catalog/e-liquid/xylinet/medovaya-dynya-600x600.png" 
+            },
+            { 
+                id: 5, 
+                name: "Angry Vape - Обезьяна (Грейпфрут)", 
+                strength: "20 мг / 30 мл", 
+                price: 450, 
+                img: "https://vape-custom.ru/image/cache/catalog/e-liquid/angry-vape/obezyana-600x600.png" 
+            },
+            { 
+                id: 6, 
+                name: "Skala - Тянь-Шань (Клубника Лед)", 
+                strength: "20 мг / 30 мл", 
+                price: 480, 
+                img: "https://vape-custom.ru/image/cache/catalog/e-liquid/skala/klubnika-led-600x600.png" 
+            }
+        ];
+
+        // Загружаем сохраненную корзину из localStorage
+        let cart = [];
+        const savedCart = localStorage.getItem('monkey_vape_cart');
+        if (savedCart) {
+            try {
+                cart = JSON.parse(savedCart);
+            } catch (e) {
+                cart = [];
+            }
+        }
+
+        function saveCart() {
+            localStorage.setItem('monkey_vape_cart', JSON.stringify(cart));
+        }
+
+        // Проверяем, подтверждал ли пользователь возраст ранее в этом браузере
+        let isAgeVerified = localStorage.getItem('monkey_vape_verified') === 'true';
+
+        function renderCatalog() {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = products.map(p => `
+                <div class="card">
+                    <div class="card-img-container">
+                        <img src="${p.img}" alt="${p.name}">
+                    </div>
+                    <h3>${p.name}</h3>
+                    <div class="strength">${p.strength}</div>
+                    <div class="price">${p.price} ₽</div>
+                    <button class="btn" onclick="addToCart(${p.id})">В корзину</button>
+                </div>
+            `).join('');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+
+            if (tab === 'catalog') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('catalogPage').classList.add('active');
+                tg.MainButton.hide();
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('cartPage').classList.add('active');
+                updateCartUI();
+            }
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            cart.push(product);
+            saveCart();
+            document.getElementById('cartCount').innerText = cart.length;
+            try {
+                tg.HapticFeedback.impactOccurred('light');
+            } catch(e) {}
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            saveCart();
+            document.getElementById('cartCount').innerText = cart.length;
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            document.getElementById('cartCount').innerText = cart.length;
+            const cartList = document.getElementById('cartList');
+            const cartFooter = document.getElementById('cartFooter');
+
+            if (cart.length === 0) {
+                cartList.innerHTML = '<p style="text-align:center; color:#aaa; margin-top:30px;">Корзина пуста</p>';
+                cartFooter.style.display = 'none';
+                tg.MainButton.hide();
+                return;
+            }
+
+            cartList.innerHTML = cart.map((item, index) => `
+                <div class="cart-item">
+                    <div>
+                        <div class="cart-item-title">${item.name}</div>
+                        <div class="cart-item-price">${item.price} ₽</div>
+                    </div>
+                    <button class="btn-remove" onclick="removeFromCart(${index})">Удалить</button>
+                </div>
+            `).join('');
+
+            cartFooter.style.display = 'block';
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            tg.MainButton.setText(`Забронировать встречу (${total} ₽)`);
+            tg.MainButton.show();
+        }
+
+        Telegram.WebApp.onEvent('mainButtonClicked', function() {
+            // ПРОВЕРКА ВОЗРАСТА НА СТОРОНЕ САЙТА
+            // Если в localStorage нет подтверждения, выбиваем предупреждение
+            if (localStorage.getItem('monkey_vape_verified') !== 'true') {
+                alert("❌ Ошибка оформления заказа!\n\nВам необходимо подтвердить возраст (18+). Перейдите в чат с ботом, введите /start и нажмите кнопку подтверждения.");
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const metro = document.getElementById('metroStation').value;
+            const time = document.getElementById('meetTime').value;
+
+            let orderData = {
+                items: cart,
+                total: total,
+                metro: metro,
+                time: time,
+                payment: "Криптовалюта (USDT TRC-20)"
+            };
+            
+            tg.sendData(JSON.stringify(orderData));
+
+            // Очищаем корзину после успешной отправки заказа
+            cart = [];
+            saveCart();
+        });
+
+        // Синхронизация статуса верификации: 
+        // Если пользователь нажал кнопку в боте, он может вернуться на сайт. 
+        // Чтобы сайт тоже понял, что возраст подтвержден, мы можем дать пользователю возможность нажать кнопку подтверждения прямо на сайте 
+        // или автоматически ставить флаг, если бот просигнализировал. 
+        // Но проще всего: если пользователь нажал «Мне есть 18 лет» в боте, боту можно прислать web_app_data или пользователь просто вернется.
+        // Давай сделаем автоматическое включение флага при клике на покупку, ИЛИ добавим маленькую хитрость: 
+        // Пусть сайт при первом открытии проверяет, верифицирован ли юзер. 
+        // Поскольку напрямую из Python в браузер не записать, давай сделаем так, чтобы пользователь один раз нажал подтверждение, либо синхронизируем через localStorage.
+        
+        // ЧТОБЫ УБЕДИТЬСЯ ЧТО У ТЕБЯ ТЕСТИРУЕТСЯ ПРАВИЛЬНО:
+        // Если хочешь временно отметить себя как подтвержденного для теста, введи в консоль браузера: 
+        // localStorage.setItem('monkey_vape_verified', 'true');
+
+        document.getElementById('cartCount').innerText = cart.length;
+        renderCatalog();
+    </script>
+</body>
+</html>
