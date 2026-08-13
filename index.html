@@ -318,15 +318,16 @@
         }
 
         .product-title {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            height: 32px;
-        }
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    line-clamp: 2;          /* <-- стандартное свойство */
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 32px;
+}
 
         .product-footer {
             display: flex;
