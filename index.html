@@ -316,17 +316,21 @@
             padding: 2px 6px;
             border-radius: 4px;
         }
-              .product-title {
-                        font-size: 13px;
-                        font-weight: 600;
-                        margin-bottom: 6px;
-                        display: -webkit-box;
-                        line-clamp: 2;          /* <-- стандартное свойство */
-                        -webkit-line-clamp: 2;
-                        -webkit-box-orient: vertical;
-                         overflow: hidden;
-                        height: 32px;
-                    }
+
+        .product-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            display: box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            box-orient: vertical;
+            overflow: hidden;
+            height: 32px;
+        }
+
         .product-footer {
             display: flex;
             justify-content: space-between;
@@ -1110,6 +1114,14 @@
     }
 
     // Checkout & Stations
+    function openMetroPicker() {
+        if (Object.keys(cart).length === 0) {
+            switchScreen('cart');
+            return;
+        }
+        proceedToCheckout();
+    }
+
     function proceedToCheckout() {
         if (Object.keys(cart).length === 0) return;
         switchScreen('checkout');
@@ -1230,6 +1242,7 @@
 
     // Initialize Catalog
     renderProducts(products);
+    renderStations('green');
 </script>
 </body>
 </html>
