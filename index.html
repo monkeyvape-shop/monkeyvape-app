@@ -7,11 +7,11 @@
     <script src="https://telegram.org/js/telegram-web-app.js?v=3.0"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --accent-color: #00ff88;
+            --bg-color: #0A0A0A;
+            --card-bg: #151515;
+            --accent-color: #39FF14;
             --text-color: #ffffff;
-            --text-muted: #aaaaaa;
+            --text-muted: #888888;
             --danger-color: #ff4d4d;
         }
 
@@ -23,13 +23,74 @@
             padding: 10px 10px 90px 10px;
         }
 
+        /* Splash Screen (Анимация загрузки) */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #0A0A0A;
+            z-index: 9999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .splash-logo {
+            font-size: 50px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 15px var(--accent-color));
+        }
+
+        #splashScreen h1 {
+            color: var(--text-color);
+            font-size: 22px;
+            letter-spacing: 1px;
+            margin: 10px 0 5px 0;
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+        }
+
+        #splashScreen p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-bottom: 30px;
+        }
+
+        .splash-loader {
+            width: 150px;
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .splash-loader-bar {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+            animation: loadAnim 1.2s infinite linear;
+        }
+
+        @keyframes loadAnim {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
         #ageModal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(12, 12, 12, 0.99);
+            background: rgba(10, 10, 10, 0.98);
             z-index: 999999;
             display: flex;
             flex-direction: column;
@@ -43,6 +104,7 @@
         #ageModal h2 {
             color: var(--accent-color);
             margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
         }
 
         #ageModal p {
@@ -62,6 +124,8 @@
             position: sticky;
             top: 10px;
             z-index: 100;
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
         .tab-btn {
@@ -69,15 +133,16 @@
             border: none;
             color: var(--text-muted);
             font-weight: bold;
-            padding: 8px 16px;
+            padding: 8px 12px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .tab-btn.active {
             background: var(--accent-color);
             color: #000;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
         }
 
         .page {
@@ -96,18 +161,19 @@
 
         .card {
             background: var(--card-bg);
-            border: 1px solid rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(57, 255, 20, 0.2);
             border-radius: 12px;
             padding: 10px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
         .card-img-container {
             width: 100%;
             height: 120px;
-            background: #2a2a2a;
+            background: #1f1f1f;
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -151,6 +217,11 @@
             font-weight: bold;
             cursor: pointer;
             width: 100%;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+        }
+
+        .btn:active {
+            opacity: 0.8;
         }
 
         .cart-item {
@@ -161,6 +232,7 @@
             padding: 10px;
             border-radius: 8px;
             margin-bottom: 8px;
+            border: 1px solid rgba(57, 255, 20, 0.1);
         }
 
         .cart-item-title {
@@ -187,6 +259,7 @@
             padding: 12px;
             border-radius: 10px;
             margin-top: 15px;
+            border: 1px solid rgba(57, 255, 20, 0.2);
         }
 
         .form-section h4 {
@@ -206,7 +279,7 @@
             width: 100%;
             padding: 10px;
             border-radius: 6px;
-            background: #2a2a2a;
+            background: #1f1f1f;
             color: #fff;
             border: 1px solid var(--accent-color);
             margin-bottom: 12px;
@@ -214,7 +287,7 @@
         }
 
         .crypto-box {
-            background: #252525;
+            background: #1a1a1a;
             padding: 10px;
             border-radius: 6px;
             border: 1px dashed var(--accent-color);
@@ -226,16 +299,46 @@
             font-size: 11px;
             color: var(--accent-color);
             word-break: break-all;
-            background: #121212;
+            background: #0A0A0A;
             padding: 6px;
             border-radius: 4px;
             margin-top: 4px;
+        }
+
+        /* Кнопка менеджера */
+        .manager-link-btn {
+            display: block;
+            text-align: center;
+            background: transparent;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 15px;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+        }
+        .manager-link-btn:hover {
+            background: var(--accent-color);
+            color: #000;
         }
     </style>
 </head>
 <body>
 
-    <div id="ageModal" style="display: flex;">
+    <!-- Анимация загрузки (Splash Screen) -->
+    <div id="splashScreen">
+        <div class="splash-logo">🐒</div>
+        <h1>MONKEY VAPE SHOP</h1>
+        <p>Ваш неоновый вейп-шоп</p>
+        <div class="splash-loader">
+            <div class="splash-loader-bar"></div>
+        </div>
+    </div>
+
+    <div id="ageModal" style="display: none;">
         <h2>⚠️ Подтверждение возраста</h2>
         <p>Для доступа к каталогу и заказа необходимо подтвердить, что вам исполнилось 18 лет.</p>
         <button class="btn" onclick="confirmAge()" style="max-width: 250px;">Мне есть 18 лет</button>
@@ -248,6 +351,7 @@
 
     <div id="catalogPage" class="page active">
         <div class="grid" id="productGrid"></div>
+        <a href="https://t.me/warat_24" target="_blank" class="manager-link-btn">💬 Связаться с менеджером</a>
     </div>
 
     <div id="cartPage" class="page">
@@ -286,12 +390,22 @@
                 </div>
             </div>
         </div>
+        <a href="https://t.me/warat_24" target="_blank" class="manager-link-btn">💬 Связаться с менеджером</a>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
+
+        // Скрыть Splash Screen через 1.5 секунды
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                splash.style.opacity = '0';
+                setTimeout(() => splash.remove(), 500);
+            }, 1200);
+        });
 
         function checkAge() {
             let isVerified = localStorage.getItem('monkey_vape_verified');
@@ -425,7 +539,7 @@
             const cartFooter = document.getElementById('cartFooter');
 
             if (cart.length === 0) {
-                cartList.innerHTML = '<p style="text-align:center; color:#aaa; margin-top:30px;">Корзина пуста</p>';
+                cartList.innerHTML = '<p style="text-align:center; color:#888; margin-top:30px;">Корзина пуста</p>';
                 cartFooter.style.display = 'none';
                 tg.MainButton.hide();
                 return;
@@ -472,12 +586,10 @@
                 payment: "Криптовалюта (USDT TRC-20)"
             };
             
-            // Очищаем корзину в памяти и локальном хранилище перед отправкой
             cart = [];
             saveCart();
             updateCartUI();
 
-            // Отправляем данные боту и закрываем мини-приложение для возврата в чат
             tg.sendData(JSON.stringify(orderData));
         });
 
