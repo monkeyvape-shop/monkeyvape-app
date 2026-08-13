@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Monkey Vape — Online Shop</title>
-    <!-- Подключаем официальный скрипт Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -810,17 +809,13 @@
                 <div class="promo-badge">-20%</div>
             </div>
 
-            <div class="products-grid" id="products-grid">
-                <!-- Dynamic Products -->
-            </div>
+            <div class="products-grid" id="products-grid"></div>
         </div>
 
         <!-- 2. CART SCREEN -->
         <div id="screen-cart" class="screen">
             <div class="section-title">Корзина</div>
-            <div id="cart-content">
-                <!-- Dynamic Cart Items -->
-            </div>
+            <div id="cart-content"></div>
         </div>
 
         <!-- 3. ORDERS SCREEN -->
@@ -838,9 +833,9 @@
         <div id="screen-profile" class="screen">
             <div class="section-title">Профиль</div>
             <div class="profile-card">
-                <div class="profile-avatar">V</div>
+                <div class="profile-avatar" id="profile-avatar-letter">V</div>
                 <div class="profile-info">
-                    <h3 id="profile-username">@vara_24</h3>
+                    <h3 id="profile-username">@user</h3>
                     <p>Telegram User</p>
                 </div>
             </div>
@@ -851,9 +846,9 @@
             </a>
         </div>
 
-        <!-- SUB-SCREEN: METRO SELECTION & CHECKOUT -->
+        <!-- SUB-SCREEN: CHECKOUT -->
         <div id="screen-checkout" class="screen">
-            <div class="section-title" id="checkout-title">Оформление заказа</div>
+            <div class="section-title">Оформление заказа</div>
             
             <div style="margin-bottom: 16px;">
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Способ получения</p>
@@ -873,9 +868,7 @@
                     <div class="metro-tab" onclick="switchMetroLine('blue', this)">Синяя ветка</div>
                     <div class="metro-tab" onclick="switchMetroLine('red', this)">Красная ветка</div>
                 </div>
-                <div class="stations-list" id="stations-list-container">
-                    <!-- Populated dynamically -->
-                </div>
+                <div class="stations-list" id="stations-list-container"></div>
             </div>
 
             <div style="margin-bottom: 20px;">
@@ -922,7 +915,7 @@
             <div class="modal-icon">✅</div>
             <div class="modal-title">Заказ успешно оформлен!</div>
             <div class="modal-text" id="modal-details-text">
-                Детали заказа отправлены вам в личные сообщения Telegram. Администратор уже получил уведомление. Оплата при встрече!
+                Детали заказа отправлены. Администратор уже получил уведомление. Оплата при встрече!
             </div>
             <button class="primary-btn" onclick="closeModalAndReset()">Отлично</button>
         </div>
@@ -930,19 +923,31 @@
 </div>
 
 <script>
-    // Splash Screen Simulation
+    // Инициализация Telegram WebApp
+    let tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) {
+        tg.expand();
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            const user = tg.initDataUnsafe.user;
+            document.getElementById('profile-username').innerText = user.username ? '@' + user.username : user.first_name;
+            document.getElementById('profile-avatar-letter').innerText = user.first_name.charAt(0).toUpperCase();
+        }
+    }
+
+    // Сплеш-скрин
     window.addEventListener('load', () => {
         setTimeout(() => {
             document.getElementById('progress-fill').style.width = '100%';
         }, 100);
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
-            splash.style.opacity = '0';
-            setTimeout(() => splash.remove(), 500);
-        }, 1500);
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => splash.remove(), 500);
+            }
+        }, 1200);
     });
 
-    // Mock Data Store
     const products = [
         { id: 1, title: 'ANIMAL LOVE Killer 50mg', category: 'liquid', price: 17.00, tag: 'жидкость', icon: '🧪' },
         { id: 2, title: 'OGGO Rush 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
@@ -976,14 +981,19 @@
         ]
     };
 
-    let cart = {};
+    // Загружаем корзину из localStorage, чтобы она НИКУДА не пропадала при переходе
+    let cart = JSON.parse(localStorage.getItem('monkey_cart')) || {};
     let activeCategory = 'all';
     let currentLine = 'green';
     let selectedStation = 'Партизанская';
     let selectedTime = '12:00';
-    let activeOrders = [];
+    let activeOrders = JSON.parse(localStorage.getItem('monkey_orders')) || [];
 
-    // Render Products
+    function saveCart() {
+        localStorage.setItem('monkey_cart', JSON.stringify(cart));
+        updateCartBadge();
+    }
+
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
         grid.innerHTML = '';
@@ -1027,7 +1037,6 @@
         filterProducts();
     }
 
-    // Cart Management
     function addToCart(productId) {
         if (cart[productId]) {
             cart[productId].qty += 1;
@@ -1035,7 +1044,7 @@
             const prod = products.find(p => p.id === productId);
             cart[productId] = { ...prod, qty: 1 };
         }
-        updateCartBadge();
+        saveCart();
         renderCart();
     }
 
@@ -1046,7 +1055,7 @@
                 delete cart[productId];
             }
         }
-        updateCartBadge();
+        saveCart();
         renderCart();
     }
 
@@ -1115,7 +1124,6 @@
         container.innerHTML = itemsHtml;
     }
 
-    // Checkout & Stations
     function openMetroPicker() {
         if (Object.keys(cart).length === 0) {
             switchScreen('cart');
@@ -1132,9 +1140,7 @@
 
     function switchMetroLine(line, el) {
         currentLine = line;
-        document.querySelectorAll('.metro-tab').forEach(t => {
-            t.className = 'metro-tab';
-        });
+        document.querySelectorAll('.metro-tab').forEach(t => t.className = 'metro-tab');
         if (line === 'green') el.className = 'metro-tab active-green';
         if (line === 'blue') el.className = 'metro-tab active-blue';
         if (line === 'red') el.className = 'metro-tab active-red';
@@ -1167,7 +1173,7 @@
         selectedTime = time;
     }
 
-    // САМОЕ ГЛАВНОЕ: Отправка данных боту через Telegram Web App API
+    // Подтверждение заказа и отправка боту
     function confirmOrderFinal() {
         const items = Object.values(cart);
         if (items.length === 0) return;
@@ -1183,7 +1189,7 @@
             time: selectedTime
         };
 
-        // Сохраняем во внутренний список для отображения в разделе «Мои заказы»
+        // Добавляем в историю заказов
         activeOrders.unshift({
             id: orderId,
             items: [...items],
@@ -1191,18 +1197,19 @@
             station: selectedStation,
             time: selectedTime
         });
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
         renderOrders();
 
-        // Очищаем корзину
+        // ТОЛЬКО ТЕПЕРЬ очищаем корзину после оформления
         cart = {};
-        updateCartBadge();
+        saveCart();
+        renderCart();
 
-        // Если запущено внутри Telegram — отправляем данные боту и закрываем WebApp
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            tg.sendData(JSON.stringify(orderData)); // Передает JSON-объект в Python-бот
+        // Отправка данных в телеграм-бот через WebApp API
+        if (tg && tg.sendData) {
+            tg.sendData(JSON.stringify(orderData));
         } else {
-            // Если открыто в браузере для теста
+            // Если тестируете в обычном браузере
             document.getElementById('success-modal').classList.add('show');
         }
     }
@@ -1242,7 +1249,6 @@
         container.innerHTML = html;
     }
 
-    // Navigation Switcher
     function switchScreen(screenName) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1255,9 +1261,12 @@
         if (screenName === 'profile') document.querySelectorAll('.nav-item')[3].classList.add('active');
     }
 
-    // Initialize Catalog
+    // Инициализация интерфейса при открытии
     renderProducts(products);
     renderStations('green');
+    updateCartBadge();
+    renderCart();
+    renderOrders();
 </script>
 </body>
 </html>
