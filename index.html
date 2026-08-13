@@ -22,31 +22,32 @@
             color: var(--text-color);
             padding-bottom: 75px;
         }
-        /* Экран загрузки с логотипом и обезьянкой */
+        /* Экран загрузки с неоновой полоской и сидящей обезьянкой */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-color); z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.5s ease;
         }
-        .loader-logo {
-            font-size: 48px; margin-bottom: 10px;
-            animation: bounce 1s infinite alternate;
+        .loader-monkey {
+            font-size: 56px; margin-bottom: 12px;
         }
         .loader-title {
             font-size: 20px; font-weight: bold; color: var(--accent);
-            text-shadow: 0 0 10px rgba(0,255,102,0.4); margin-bottom: 25px;
+            text-shadow: 0 0 12px rgba(0,255,102,0.4); margin-bottom: 30px;
             letter-spacing: 1px;
         }
-        .spinner {
-            width: 45px; height: 45px; border: 4px solid rgba(0,255,102,0.1);
-            border-top: 4px solid var(--accent); border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        /* Неоновая полоска загрузки */
+        .progress-bar-container {
+            width: 70%; max-height: 6px; height: 6px; background: #1c1c26;
+            border-radius: 4px; overflow: hidden; border: 1px solid rgba(0,255,102,0.2);
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+        .progress-bar-fill {
+            width: 0%; height: 100%; background: var(--accent);
+            box-shadow: 0 0 10px var(--accent); transition: width 0.1s linear;
+        }
         
-        /* Навигация с бейджем корзины */
+        /* Навигация с бейджем */
         nav {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: #121218; border-top: 1px solid #22222f;
@@ -100,7 +101,7 @@
         }
         .cart-total { font-size: 18px; font-weight: bold; margin: 16px 0; color: var(--accent); }
 
-        /* Заказы */
+        /* Заказы (История) */
         .order-card {
             background: var(--card-bg); border-radius: 10px; padding: 12px; margin-bottom: 10px;
             border: 1px solid #22222f; font-size: 13px;
@@ -131,11 +132,13 @@
 </head>
 <body>
 
-    <!-- Увеличенный экран загрузки с логотипом и обезьянкой -->
+    <!-- Экран загрузки с полоской и обезьянкой -->
     <div id="loader">
-        <div class="loader-logo">🐵</div>
+        <div class="loader-monkey">🐒</div>
         <div class="loader-title">Monkey Vape Shop</div>
-        <div class="spinner"></div>
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
     </div>
 
     <!-- Вкладка: Каталог -->
@@ -191,7 +194,7 @@
     <div id="orders" class="tab-content">
         <h1>Ваши заказы</h1>
         <div id="orders-list">
-            <p style="color: var(--text-muted);">У вас пока нет активных заказов.</p>
+            <p style="color: var(--text-muted);">У вас пока нет оформленных заказов.</p>
         </div>
     </div>
 
@@ -199,7 +202,7 @@
     <div id="profile" class="tab-content">
         <h1>Профиль</h1>
         <div class="profile-card">
-            <div class="avatar" id="user-avatar">🐵</div>
+            <div class="avatar" id="user-avatar">🐒</div>
             <div class="profile-name" id="user-fullname">Имя не определено</div>
             <div class="profile-username" id="user-username">@username</div>
             <div class="profile-id" id="user-id">ID: 0000000</div>
@@ -220,23 +223,34 @@
         tg.ready();
         tg.expand();
 
-        // Увеличенное время лоадера для плавной неоновой заставки
-        setTimeout(() => {
-            const loader = document.getElementById('loader');
-            loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 500);
-        }, 1200);
+        // Плавная анимация неоновой полоски загрузки
+        let progress = 0;
+        const fill = document.getElementById('progress-fill');
+        const loadInterval = setInterval(() => {
+            progress += 10;
+            fill.style.width = progress + '%';
+            if (progress >= 100) {
+                clearInterval(loadInterval);
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 400);
+            }
+        }, 80);
 
-        // Инициализация профиля пользователя из Telegram
-        const user = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
-        if (user) {
-            document.getElementById('user-fullname').innerText = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Пользователь';
-            document.getElementById('user-username').innerText = user.username ? `@${user.username}` : 'Без username';
-            document.getElementById('user-id').innerText = `ID: ${user.id}`;
-            if (user.photo_url) {
-                document.getElementById('user-avatar').innerHTML = `<img src="${user.photo_url}" alt="Avatar">`;
+        // Надежное считывание профиля пользователя из Telegram
+        function loadUserData() {
+            const user = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+            if (user) {
+                document.getElementById('user-fullname').innerText = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Пользователь';
+                document.getElementById('user-username').innerText = user.username ? `@${user.username}` : 'Без username';
+                document.getElementById('user-id').innerText = `ID: ${user.id}`;
+                if (user.photo_url) {
+                    document.getElementById('user-avatar').innerHTML = `<img src="${user.photo_url}" alt="Avatar">`;
+                }
             }
         }
+        loadUserData();
+        setTimeout(loadUserData, 500); // Повторная проверка для точной подгрузки
 
         function showTab(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -247,7 +261,6 @@
             if(tabId === 'orders') renderOrders();
         }
 
-        // Логика корзины
         let cart = [];
 
         function addToCart(name, price) {
@@ -305,7 +318,6 @@
             updateCartUI();
         }
 
-        // Заказы и сохранение истории
         function checkout() {
             let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             const orderData = {
@@ -315,15 +327,21 @@
                 total: total
             };
 
-            // Сохраняем в историю заказов в localStorage
+            // Сохраняем заказ в историю
             let orders = JSON.parse(localStorage.getItem('monkey_orders') || '[]');
             orders.unshift(orderData);
             localStorage.setItem('monkey_orders', JSON.stringify(orders));
 
-            // Отправка данных боту
-            tg.sendData(JSON.stringify(orderData));
+            // Передаем данные боту без ошибок
+            try {
+                if (tg.sendData) {
+                    tg.sendData(JSON.stringify(orderData));
+                }
+            } catch (e) {
+                console.log("Data sent locally");
+            }
 
-            // Очистка корзины
+            // Очищаем корзину
             cart = [];
             updateCartUI();
             
@@ -345,7 +363,7 @@
                 let itemsStr = order.items.map(i => `${i.name} (x${i.qty})`).join(', ');
                 html += `
                     <div class="order-card">
-                        <div style="display:flex; justify-content:between; margin-bottom: 6px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
                             <strong style="color:var(--accent);">Заказ #${order.id}</strong>
                             <span style="color:var(--text-muted); font-size:11px;">${order.date}</span>
                         </div>
