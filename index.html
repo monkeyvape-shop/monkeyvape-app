@@ -1174,7 +1174,6 @@
     }
 
     // Подтверждение заказа и отправка боту
-   // Подтверждение заказа и отправка боту
     function confirmOrderFinal() {
         const items = Object.values(cart);
         if (items.length === 0) return;
@@ -1217,32 +1216,7 @@
             document.getElementById('success-modal').classList.add('show');
         }
     }
-
-        // Добавляем в историю заказов
-        activeOrders.unshift({
-            id: orderId,
-            items: [...items],
-            total: total,
-            station: selectedStation,
-            time: selectedTime
-        });
-        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
-        renderOrders();
-
-        // ТОЛЬКО ТЕПЕРЬ очищаем корзину после оформления
-        cart = {};
-        saveCart();
-        renderCart();
-
-        // Отправка данных в телеграм-бот через WebApp API
-        if (tg && tg.sendData) {
-            tg.sendData(JSON.stringify(orderData));
-        } else {
-            // Если тестируете в обычном браузере
-            document.getElementById('success-modal').classList.add('show');
-        }
     
-
     function closeModalAndReset() {
         document.getElementById('success-modal').classList.remove('show');
         switchScreen('orders');
