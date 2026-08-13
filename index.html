@@ -3,28 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vape Delivery App</title>
+    <title>Monkey Vape — Online Shop</title>
     <style>
         :root {
-            --bg-color: #0f1115;
-            --surface-color: #1a1d24;
-            --surface-card: #222631;
-            --primary: #8a5cf5;
-            --primary-hover: #7847eb;
+            --bg-color: #0b0f0c;
+            --card-bg: #131b14;
+            --card-hover: #1b261d;
+            --accent-green: #00ff66;
+            --accent-green-glow: rgba(0, 255, 102, 0.25);
             --text-main: #ffffff;
-            --text-secondary: #94a3b8;
-            --accent-green: #22c55e;
-            --accent-blue: #3b82f6;
-            --accent-red: #ef4444;
-            --border-color: #2e3542;
-            --radius: 16px;
+            --text-secondary: #9ca3af;
+            --border-color: #223525;
+            --danger: #ff3333;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -34,37 +31,38 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             overflow: hidden;
         }
 
-        /* Phone frame simulation */
         .app-container {
             width: 100%;
-            max-width: 420px;
-            height: 100%;
+            max-width: 480px;
+            height: 100vh;
             max-height: 850px;
             background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
             position: relative;
+            box-shadow: 0 0 40px rgba(0, 255, 102, 0.1);
             overflow: hidden;
-            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            border: 1px solid var(--border-color);
         }
 
-        @media (min-width: 421px) {
+        @media (min-width: 481px) {
             .app-container {
-                border-radius: 36px;
-                border: 8px solid #2d3340;
-                height: 90vh;
+                border-radius: 24px;
             }
         }
 
         /* Splash Screen */
-        .splash-screen {
+        #splash-screen {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #13161f 0%, #0a0c10 100%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -74,123 +72,143 @@
         }
 
         .splash-logo {
-            font-size: 64px;
-            margin-bottom: 16px;
-            animation: pulse 1.5s infinite;
-        }
-
-        .splash-title {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent-green);
+            text-shadow: 0 0 20px var(--accent-green-glow);
+            margin-bottom: 24px;
             letter-spacing: 1px;
-            margin-bottom: 8px;
         }
 
-        .splash-subtitle {
-            font-size: 14px;
+        .splash-sub {
             color: var(--text-secondary);
-            margin-bottom: 32px;
+            font-size: 14px;
+            margin-bottom: 30px;
         }
 
         .progress-bar {
-            width: 120px;
-            height: 4px;
-            background-color: var(--surface-color);
-            border-radius: 2px;
+            width: 200px;
+            height: 6px;
+            background-color: var(--card-bg);
+            border-radius: 3px;
             overflow: hidden;
+            border: 1px solid var(--border-color);
         }
 
         .progress-fill {
             width: 0%;
             height: 100%;
-            background-color: var(--primary);
-            transition: width 0.8s ease-in-out;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+            transition: width 1.5s ease-in-out;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-            100% { transform: scale(1); }
-        }
-
-        /* Screens */
-        .screen {
-            display: none;
-            flex-direction: column;
-            flex: 1;
-            overflow-y: auto;
-            padding-bottom: 80px; /* Space for bottom nav */
-        }
-
-        .screen.active {
-            display: flex;
-        }
-
-        /* Header */
-        .header {
-            padding: 16px 20px;
+        /* Top Bar */
+        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 16px 20px;
             background-color: var(--bg-color);
-            position: sticky;
-            top: 0;
-            z-index: 10;
             border-bottom: 1px solid var(--border-color);
+            z-index: 10;
         }
 
-        .header-title {
+        .brand-title {
             font-size: 18px;
             font-weight: 700;
+            color: var(--text-main);
         }
 
-        .user-location {
+        .brand-title span {
+            color: var(--accent-green);
+        }
+
+        .metro-selector-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            background: var(--surface-color);
-            padding: 6px 12px;
-            border-radius: 20px;
             cursor: pointer;
-            border: 1px solid var(--border-color);
+            transition: all 0.2s;
         }
 
-        /* Search Bar */
-        .search-container {
-            padding: 12px 20px;
+        .metro-selector-btn:hover {
+            border-color: var(--accent-green);
         }
 
-        .search-box {
+        .metro-icon {
+            background-color: var(--accent-green);
+            color: #000;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
-            background-color: var(--surface-color);
-            border-radius: 12px;
-            padding: 0 14px;
-            border: 1px solid var(--border-color);
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
         }
 
-        .search-box input {
+        /* Content Area */
+        .content-area {
             flex: 1;
-            background: none;
-            border: none;
-            padding: 12px 10px;
+            overflow-y: auto;
+            padding: 16px 20px;
+            padding-bottom: 90px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Search & Categories */
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
             color: var(--text-main);
             font-size: 14px;
             outline: none;
+            transition: border-color 0.2s;
         }
 
-        .search-box input::placeholder {
+        .search-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
             color: var(--text-secondary);
+            font-size: 16px;
         }
 
-        /* Categories Scroll */
         .categories-scroll {
             display: flex;
             gap: 8px;
             overflow-x: auto;
-            padding: 4px 20px 12px 20px;
+            margin-bottom: 20px;
+            padding-bottom: 4px;
             scrollbar-width: none;
         }
 
@@ -199,162 +217,183 @@
         }
 
         .cat-chip {
-            background-color: var(--surface-color);
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 12px;
             font-size: 13px;
-            font-weight: 500;
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .cat-chip.active {
-            background-color: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        /* Products Grid */
-        .section-title {
-            padding: 8px 20px;
-            font-size: 16px;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border-color: var(--accent-green);
             font-weight: 600;
+            box-shadow: 0 0 15px var(--accent-green-glow);
         }
 
+        /* Banner */
+        .promo-banner {
+            background: linear-gradient(135deg, #132b17 0%, #0d1a10 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .promo-banner h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 4px;
+        }
+
+        .promo-banner p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .promo-badge {
+            background-color: var(--accent-green);
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        /* Product Grid */
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 12px;
-            padding: 0 20px 20px 20px;
         }
 
         .product-card {
-            background-color: var(--surface-card);
-            border-radius: var(--radius);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
             padding: 12px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            border: 1px solid var(--border-color);
-            position: relative;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            border-color: var(--accent-green);
+            transform: translateY(-2px);
         }
 
         .product-img-container {
-            background-color: var(--surface-color);
-            border-radius: 12px;
+            width: 100%;
             height: 110px;
+            background-color: #080d09;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
             margin-bottom: 10px;
+            font-size: 36px;
             position: relative;
         }
 
         .product-tag {
             position: absolute;
-            top: 8px;
-            left: 8px;
-            background: rgba(138, 92, 245, 0.2);
-            color: var(--primary);
+            top: 6px;
+            left: 6px;
+            background-color: rgba(0, 255, 102, 0.15);
+            color: var(--accent-green);
             font-size: 10px;
-            font-weight: 700;
-            padding: 3px 6px;
-            border-radius: 6px;
+            padding: 2px 6px;
+            border-radius: 4px;
         }
-
-       .product-title {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2; /* Добавили стандартное свойство для устранения предупреждения */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    height: 32px;
-}
-
+              .product-title {
+                        font-size: 13px;
+                        font-weight: 600;
+                        margin-bottom: 6px;
+                        display: -webkit-box;
+                        line-clamp: 2;          /* <-- стандартное свойство */
+                        -webkit-line-clamp: 2;
+                        -webkit-box-orient: vertical;
+                         overflow: hidden;
+                        height: 32px;
+                    }
         .product-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: 8px;
         }
 
         .product-price {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
+            color: var(--accent-green);
         }
 
         .add-btn {
-            background-color: var(--primary);
-            color: white;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
             border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 18px;
-            transition: background 0.2s;
+            transition: transform 0.1s;
         }
 
         .add-btn:active {
-            background-color: var(--primary-hover);
+            transform: scale(0.9);
         }
 
         /* Cart Screen */
-        .cart-container {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            flex: 1;
-        }
-
         .cart-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            color: var(--text-secondary);
-            gap: 12px;
             text-align: center;
-            padding: 40px;
+            padding: 60px 20px;
+            color: var(--text-secondary);
         }
 
         .cart-empty-icon {
             font-size: 48px;
-            margin-bottom: 8px;
+            margin-bottom: 16px;
         }
 
         .cart-items-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .cart-item {
-            background-color: var(--surface-card);
-            border-radius: var(--radius);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
             padding: 12px;
             display: flex;
             align-items: center;
             gap: 12px;
-            border: 1px solid var(--border-color);
         }
 
         .cart-item-img {
             width: 50px;
             height: 50px;
-            background-color: var(--surface-color);
-            border-radius: 10px;
+            background-color: #080d09;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -373,14 +412,15 @@
 
         .cart-item-price {
             font-size: 13px;
-            color: var(--text-secondary);
+            color: var(--accent-green);
+            font-weight: 700;
         }
 
         .qty-controls {
             display: flex;
             align-items: center;
             gap: 8px;
-            background-color: var(--surface-color);
+            background-color: var(--bg-color);
             padding: 4px 8px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
@@ -402,188 +442,246 @@
         .qty-val {
             font-size: 13px;
             font-weight: 600;
-            min-width: 14px;
+            min-width: 16px;
             text-align: center;
         }
 
         .cart-summary {
-            background-color: var(--surface-card);
-            border-radius: var(--radius);
-            padding: 16px;
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: auto;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
         }
 
         .summary-row {
             display: flex;
             justify-content: space-between;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
             color: var(--text-secondary);
         }
 
         .summary-row.total {
-            color: var(--text-main);
+            font-size: 15px;
             font-weight: 700;
-            font-size: 16px;
+            color: var(--text-main);
             border-top: 1px solid var(--border-color);
             padding-top: 10px;
-            margin-top: 4px;
+            margin-top: 10px;
+        }
+
+        .summary-row.total span:last-child {
+            color: var(--accent-green);
         }
 
         .primary-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius);
-            padding: 16px;
-            font-size: 15px;
-            font-weight: 600;
             width: 100%;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border: none;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
-            text-align: center;
-            transition: background 0.2s;
+            box-shadow: 0 4px 20px var(--accent-green-glow);
+            transition: opacity 0.2s;
         }
 
         .primary-btn:active {
-            background-color: var(--primary-hover);
+            opacity: 0.85;
         }
 
-        /* Checkout Screen / Metro Picker */
-        .checkout-container {
-            padding: 20px;
+        /* Checkout / Metro Flow */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .method-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent-green);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12px;
             display: flex;
-            flex-direction: column;
-            gap: 16px;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .section-box {
-            background-color: var(--surface-card);
-            border-radius: var(--radius);
-            padding: 16px;
-            border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .section-box-title {
+        .method-info h4 {
             font-size: 14px;
             font-weight: 600;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            margin-bottom: 2px;
         }
 
-        /* Metro line selector */
+        .method-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
         .metro-tabs {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            display: flex;
             gap: 6px;
+            margin-bottom: 16px;
         }
 
         .metro-tab {
-            background-color: var(--surface-color);
+            flex: 1;
+            padding: 8px;
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 10px;
-            padding: 8px 4px;
             font-size: 11px;
             font-weight: 600;
-            text-align: center;
             color: var(--text-secondary);
+            text-align: center;
             cursor: pointer;
         }
 
-        .metro-tab.active-green { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); border-color: var(--accent-green); }
-        .metro-tab.active-blue { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); border-color: var(--accent-blue); }
-        .metro-tab.active-red { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border-color: var(--accent-red); }
+        .metro-tab.active-green { border-color: #00cc44; color: #00cc44; background: rgba(0,204,68,0.1); }
+        .metro-tab.active-blue { border-color: #0088ff; color: #0088ff; background: rgba(0,136,255,0.1); }
+        .metro-tab.active-red { border-color: #ff3333; color: #ff3333; background: rgba(255,51,51,0.1); }
 
         .stations-list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            max-height: 160px;
+            gap: 8px;
+            max-height: 220px;
             overflow-y: auto;
+            margin-bottom: 16px;
         }
 
         .station-item {
-            padding: 10px 12px;
-            background-color: var(--surface-color);
-            border-radius: 8px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 10px;
             font-size: 13px;
-            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid transparent;
+            cursor: pointer;
         }
 
         .station-item.selected {
-            border-color: var(--primary);
-            background: rgba(138, 92, 245, 0.1);
-            font-weight: 600;
+            border-color: var(--accent-green);
+            background-color: rgba(0, 255, 102, 0.05);
         }
 
-        /* Time slots */
-        .time-slots-grid {
+        .time-slots {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 8px;
+            margin-bottom: 20px;
         }
 
         .time-slot {
-            background-color: var(--surface-color);
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px 4px;
-            font-size: 12px;
+            padding: 10px;
+            border-radius: 10px;
             text-align: center;
+            font-size: 12px;
             cursor: pointer;
-            color: var(--text-main);
         }
 
         .time-slot.selected {
-            background-color: var(--primary);
-            border-color: var(--primary);
+            border-color: var(--accent-green);
+            background-color: rgba(0, 255, 102, 0.1);
+            color: var(--accent-green);
             font-weight: 600;
         }
 
-        /* Bottom Navigation Bar */
+        /* Profile Screen */
+        .profile-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .profile-avatar {
+            width: 56px;
+            height: 56px;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 0 0 15px var(--accent-green-glow);
+        }
+
+        .profile-info h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .profile-menu-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .profile-menu-item span {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* Bottom Nav */
         .bottom-nav {
             position: absolute;
-            bottom: 0; left: 0; width: 100%;
+            bottom: 0;
+            left: 0;
+            width: 100%;
             height: 70px;
-            background-color: var(--surface-card);
+            background-color: var(--bg-color);
             border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 20;
-            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 10;
         }
 
         .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            height: 100%;
             background: none;
             border: none;
             color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
             font-size: 11px;
             cursor: pointer;
-            position: relative;
-            gap: 4px;
             transition: color 0.2s;
+            position: relative;
         }
 
         .nav-item.active {
-            color: var(--primary);
+            color: var(--accent-green);
         }
 
         .nav-icon {
@@ -592,12 +690,12 @@
 
         .cart-badge {
             position: absolute;
-            top: 10px;
-            right: calc(50% - 16px);
-            background-color: var(--accent-red);
-            color: white;
+            top: -2px;
+            right: 4px;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: bold;
             width: 16px;
             height: 16px;
             border-radius: 50%;
@@ -606,20 +704,21 @@
             justify-content: center;
         }
 
-        /* Modal Notification */
+        /* Modal Notification Overlay */
         .modal-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(4px);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 100;
+            z-index: 2000;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s ease;
-            padding: 20px;
+            transition: opacity 0.3s;
         }
 
         .modal-overlay.show {
@@ -628,52 +727,33 @@
         }
 
         .modal-card {
-            background-color: var(--surface-card);
-            border-radius: 24px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
             padding: 24px;
-            width: 100%;
-            max-width: 340px;
-            border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            width: 85%;
+            max-width: 360px;
             text-align: center;
-            gap: 14px;
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.show .modal-card {
-            transform: translateY(0);
+            box-shadow: 0 0 30px var(--accent-green-glow);
         }
 
         .modal-icon {
-            font-size: 48px;
-            margin-bottom: 4px;
+            font-size: 40px;
+            margin-bottom: 12px;
         }
 
         .modal-title {
             font-size: 18px;
             font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--accent-green);
         }
 
         .modal-text {
             font-size: 13px;
             color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        /* Profile & Orders screens placeholder style */
-        .placeholder-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            padding: 40px;
-            text-align: center;
-            color: var(--text-secondary);
-            gap: 12px;
+            margin-bottom: 20px;
+            line-height: 1.4;
         }
     </style>
 </head>
@@ -681,289 +761,287 @@
 
 <div class="app-container">
     <!-- SPLASH SCREEN -->
-    <div class="splash-screen" id="splash-screen">
-        <div class="splash-logo">💨</div>
-        <div class="splash-title">VAPE EXPRESS</div>
-        <div class="splash-subtitle">Быстрая доставка у метро</div>
+    <div id="splash-screen">
+        <div class="splash-logo">MONKEY VAPE</div>
+        <div class="splash-sub">Загрузка онлайн-магазина...</div>
         <div class="progress-bar">
             <div class="progress-fill" id="progress-fill"></div>
         </div>
     </div>
 
-    <!-- CATALOG SCREEN -->
-    <div class="screen active" id="screen-catalog">
-        <div class="header">
-            <div class="header-title">Каталог товаров</div>
-            <div class="user-location" onclick="openMetroPicker()">
-                <span>🚇</span>
-                <span id="current-metro-label">Партизанская</span>
-            </div>
-        </div>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="brand-title">MONKEY <span>VAPE</span></div>
+        <button class="metro-selector-btn" onclick="openMetroPicker()">
+            <div class="metro-icon">M</div>
+            <span id="current-metro-label">Партизанская</span>
+        </button>
+    </div>
 
-        <div class="search-container">
+    <!-- CONTENT CONTAINER -->
+    <div class="content-area">
+
+        <!-- 1. CATALOG SCREEN -->
+        <div id="screen-catalog" class="screen active">
             <div class="search-box">
-                <span>🔍</span>
-                <input type="text" id="search-input" placeholder="Поиск жиж, подов, одноразок..." oninput="filterProducts()">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров..." oninput="filterProducts()">
+            </div>
+
+            <div class="categories-scroll">
+                <button class="cat-chip active" onclick="setCategory('all', this)">Все товары</button>
+                <button class="cat-chip" onclick="setCategory('liquid', this)">Жидкости</button>
+                <button class="cat-chip" onclick="setCategory('pod', this)">Поды и Вейпы</button>
+                <button class="cat-chip" onclick="setCategory('disposable', this)">Одноразки</button>
+                <button class="cat-chip" onclick="setCategory('accessory', this)">Расходники</button>
+            </div>
+
+            <div class="promo-banner">
+                <div>
+                    <h3>AKCIJA - 20%</h3>
+                    <p>Топовые жижи и устройства недели</p>
+                </div>
+                <div class="promo-badge">-20%</div>
+            </div>
+
+            <div class="products-grid" id="products-grid">
+                <!-- Dynamic Products -->
             </div>
         </div>
 
-        <div class="categories-scroll">
-            <div class="cat-chip active" onclick="setCategory('all', this)">Все</div>
-            <div class="cat-chip" onclick="setCategory('pod', this)">POD-системы</div>
-            <div class="cat-chip" onclick="setCategory('liquid', this)">Жидкости Salt</div>
-            <div class="cat-chip" onclick="setCategory('disposable', this)">Одноразки</div>
-            <div class="cat-chip" onclick="setCategory('accessory', this)">Комплектующие</div>
+        <!-- 2. CART SCREEN -->
+        <div id="screen-cart" class="screen">
+            <div class="section-title">Корзина</div>
+            <div id="cart-content">
+                <!-- Dynamic Cart Items -->
+            </div>
         </div>
 
-        <div class="section-title">Популярное 🔥</div>
-        <div class="products-grid" id="products-grid">
-            <!-- Rendered by JS -->
-        </div>
-    </div>
-
-    <!-- CART SCREEN -->
-    <div class="screen" id="screen-cart">
-        <div class="header">
-            <div class="header-title">Корзина</div>
-        </div>
-        <div class="cart-container" id="cart-content">
-            <!-- Rendered by JS -->
-        </div>
-    </div>
-
-    <!-- CHECKOUT / ORDER SCREEN -->
-    <div class="screen" id="screen-checkout">
-        <div class="header">
-            <div class="header-title">Оформление заказа</div>
-            <button style="background:none; border:none; color:var(--text-secondary); font-size:14px; cursor:pointer;" onclick="switchScreen('cart', document.querySelectorAll('.nav-item')[1])">Назад</button>
+        <!-- 3. ORDERS SCREEN -->
+        <div id="screen-orders" class="screen">
+            <div class="section-title">Мои заказы</div>
+            <div id="orders-list">
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">📦</div>
+                    <p>Нет активных заказов</p>
+                </div>
+            </div>
         </div>
 
-        <div class="checkout-container">
-            <div class="section-box">
-                <div class="section-box-title">🚇 Выберите станцию метро для встречи</div>
+        <!-- 4. PROFILE SCREEN -->
+        <div id="screen-profile" class="screen">
+            <div class="section-title">Профиль</div>
+            <div class="profile-card">
+                <div class="profile-avatar">V</div>
+                <div class="profile-info">
+                    <h3 id="profile-username">@vara_24</h3>
+                    <p>Telegram User</p>
+                </div>
+            </div>
+
+            <a href="https://t.me/monkey_manager" target="_blank" class="profile-menu-item">
+                <span>Менеджер поддержки</span>
+                <span>@monkey_manager</span>
+            </a>
+        </div>
+
+        <!-- SUB-SCREEN: METRO SELECTION & CHECKOUT -->
+        <div id="screen-checkout" class="screen">
+            <div class="section-title" id="checkout-title">Оформление заказа</div>
+            
+            <div style="margin-bottom: 16px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Способ получения</p>
+                <div class="method-card">
+                    <div class="method-info">
+                        <h4>Самовывоз из метро (Минск)</h4>
+                        <p>Оплата при встрече наличными или переводом</p>
+                    </div>
+                    <div style="color: var(--accent-green); font-size: 18px;">✓</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Выберите ветку и станцию</p>
                 <div class="metro-tabs">
-                    <div class="metro-tab active-green" onclick="switchMetroLine('green', this)">Автозаводская</div>
-                    <div class="metro-tab" onclick="switchMetroLine('blue', this)">Московская</div>
-                    <div class="metro-tab" onclick="switchMetroLine('red', this)">Смоленская</div>
+                    <div class="metro-tab active-green" onclick="switchMetroLine('green', this)">Зеленая ветка</div>
+                    <div class="metro-tab" onclick="switchMetroLine('blue', this)">Синяя ветка</div>
+                    <div class="metro-tab" onclick="switchMetroLine('red', this)">Красная ветка</div>
                 </div>
                 <div class="stations-list" id="stations-list-container">
-                    <!-- Rendered by JS -->
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
-            <div class="section-box">
-                <div class="section-box-title">⏰ Время встречи</div>
-                <div class="time-slots-grid">
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Время получения</p>
+                <div class="time-slots">
                     <div class="time-slot selected" onclick="selectTime(this, '12:00')">12:00</div>
                     <div class="time-slot" onclick="selectTime(this, '14:30')">14:30</div>
-                    <div class="time-slot" onclick="selectTime(this, '17:00')">17:00</div>
-                    <div class="time-slot" onclick="selectTime(this, '19:30')">19:30</div>
+                    <div class="time-slot" onclick="selectTime(this, '16:30')">16:30</div>
+                    <div class="time-slot" onclick="selectTime(this, '18:10')">18:10</div>
+                    <div class="time-slot" onclick="selectTime(this, '21:00')">21:00</div>
                 </div>
             </div>
 
-            <button class="primary-btn" onclick="confirmOrder()">Подтвердить заказ</button>
+            <button class="primary-btn" onclick="confirmOrderFinal()">Подтвердить заказ</button>
+            <button onclick="switchScreen('cart')" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Назад в корзину</button>
         </div>
-    </div>
 
-    <!-- ORDERS SCREEN -->
-    <div class="screen" id="screen-orders">
-        <div class="header">
-            <div class="header-title">Мои заказы</div>
-        </div>
-        <div class="placeholder-screen">
-            <div style="font-size: 40px;">📦</div>
-            <p>У вас пока нет активных заказов</p>
-        </div>
-    </div>
-
-    <!-- PROFILE SCREEN -->
-    <div class="screen" id="screen-profile">
-        <div class="header">
-            <div class="header-title">Профиль</div>
-        </div>
-        <div class="placeholder-screen">
-            <div style="font-size: 40px;">👤</div>
-            <p>Авторизация через Telegram</p>
-            <span style="font-size: 12px; color: var(--primary);">@vape_customer</span>
-        </div>
     </div>
 
     <!-- BOTTOM NAV -->
     <div class="bottom-nav">
-        <button class="nav-item active" onclick="switchScreen('catalog', this)">
+        <button class="nav-item active" onclick="switchScreen('catalog')">
             <span class="nav-icon">🛍️</span>
             <span>Каталог</span>
         </button>
-        <button class="nav-item" onclick="switchScreen('cart', this)">
+        <button class="nav-item" onclick="switchScreen('cart')">
             <span class="nav-icon">🛒</span>
             <span>Корзина</span>
             <div class="cart-badge" id="cart-badge" style="display: none;">0</div>
         </button>
-        <button class="nav-item" onclick="switchScreen('orders', this)">
+        <button class="nav-item" onclick="switchScreen('orders')">
             <span class="nav-icon">📦</span>
             <span>Заказы</span>
         </button>
-        <button class="nav-item" onclick="switchScreen('profile', this)">
+        <button class="nav-item" onclick="switchScreen('profile')">
             <span class="nav-icon">👤</span>
             <span>Профиль</span>
         </button>
     </div>
-</div>
 
-<!-- MODAL NOTIFICATION -->
-<div class="modal-overlay" id="modal-overlay">
-    <div class="modal-card">
-        <div class="modal-icon" id="modal-icon">✅</div>
-        <div class="modal-title" id="modal-title">Успешно</div>
-        <div class="modal-text" id="modal-text">Товар добавлен в корзину</div>
-        <button class="primary-btn" onclick="closeModal()">OK</button>
+    <!-- SUCCESS MODAL -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-card">
+            <div class="modal-icon">✅</div>
+            <div class="modal-title">Заказ успешно оформлен!</div>
+            <div class="modal-text" id="modal-details-text">
+                Детали заказа отправлены вам в личные сообщения Telegram. Администратор уже получил уведомление. Оплата при встрече!
+            </div>
+            <button class="primary-btn" onclick="closeModalAndReset()">Отлично</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // --- MOCK DATA ---
+    // Splash Screen Simulation
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('progress-fill').style.width = '100%';
+        }, 100);
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            splash.style.opacity = '0';
+            setTimeout(() => splash.remove(), 500);
+        }, 1500);
+    });
+
+    // Mock Data Store
     const products = [
-        { id: 1, title: "Husky Tunex Salt 30ml (Ягодный взрыв)", price: 28, category: "liquid", tag: "Хит", img: "🍇" },
-        { id: 2, title: "XROS 4 Mini Pod Kit (Space Grey)", price: 95, category: "pod", tag: "Новинка", img: "⚡" },
-        { id: 3, title: "Lost Mary BM15000 (Арбуз Лёд)", price: 42, category: "disposable", tag: "Топ", img: "🍉" },
-        { id: 4, title: "Brusko Salt 30ml (Клубничный мохито)", price: 25, category: "liquid", tag: "Скидка", img: "🍓" },
-        { id: 5, title: "Voopoo Argus G2 Pod Kit", price: 110, category: "pod", tag: "Хит", img: "🔋" },
-        { id: 6, title: "Elf Bar GH20000 (Черника Малина)", price: 45, category: "disposable", tag: "Топ", img: "🫐" },
-        { id: 7, title: "Испаритель Vaporesso GTX 0.6 Ohm", price: 9, category: "accessory", tag: "Расходник", img: "⚙️" },
-        { id: 8, title: "Waka SoPro Pa10000", price: 40, category: "disposable", tag: "-20%", img: "💨" }
+        { id: 1, title: 'ANIMAL LOVE Killer 50mg', category: 'liquid', price: 17.00, tag: 'жидкость', icon: '🧪' },
+        { id: 2, title: 'OGGO Rush 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
+        { id: 3, title: 'OGGO Cherry 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
+        { id: 4, title: 'BJORN ZLOY 60mg', category: 'liquid', price: 13.00, tag: 'хит', icon: '🧪' },
+        { id: 5, title: 'XROS 3 Mini Pod Kit', category: 'pod', price: 55.00, tag: 'вейп', icon: '⚡' },
+        { id: 6, title: 'Vaporesso XROS Pro', category: 'pod', price: 85.00, tag: 'вейп', icon: '⚡' },
+        { id: 7, title: 'Lost Mary BM5000', category: 'disposable', price: 25.00, tag: 'одноразка', icon: '💨' },
+        { id: 8, title: 'Сменный картридж XROS', category: 'accessory', price: 9.00, tag: 'расходник', icon: '📦' }
     ];
 
     const metroStations = {
         green: [
-            { name: "Партизанская", line: "Автозаводская" },
-            { name: "Тракторный завод", line: "Автозаводская" },
-            { name: "Пролетарская", line: "Автозаводская" },
-            { name: "Первомайская", line: "Автозаводская" },
-            { name: "Купаловская", line: "Московская" },
-            { name: "Немига", line: "Московская" }
+            { name: 'Юбилейная площадь', line: 'Зеленая ветка' },
+            { name: 'Площадь Франтишка Богушевича', line: 'Зеленая ветка' },
+            { name: 'Вокзальная', line: 'Зеленая ветка' },
+            { name: 'Ковальская Слобода', line: 'Зеленая ветка' }
         ],
         blue: [
-            { name: "Площадь Ленина", line: "Московская" },
-            { name: "Октябрьская", line: "Московская" },
-            { name: "Победы", line: "Московская" },
-            { name: "Коласа", line: "Московская" },
-            { name: "Академия наук", line: "Московская" },
-            { name: "Парк Челюскинцев", line: "Московская" }
+            { name: 'Московская', line: 'Синяя ветка' },
+            { name: 'Парк Челюскинцев', line: 'Синяя ветка' },
+            { name: 'Академия наук', line: 'Синяя ветка' },
+            { name: 'Площадь Якуба Коласа', line: 'Синяя ветка' }
         ],
         red: [
-            { name: "Малиновка", line: "Московская" },
-            { name: "Петровщина", line: "Московская" },
-            { name: "Михалово", line: "Московская" },
-            { name: "Грушевка", line: "Московская" },
-            { name: "Институт Культуры", line: "Московская" }
+            { name: 'Малиновка', line: 'Красная ветка' },
+            { name: 'Петровщина', line: 'Красная ветка' },
+            { name: 'Институт культуры', line: 'Красная ветка' },
+            { name: 'Партизанская', line: 'Красная ветка' },
+            { name: 'Автозаводская', line: 'Красная ветка' }
         ]
     };
 
     let cart = {};
-    let currentCategory = 'all';
-    let selectedLine = 'green';
+    let activeCategory = 'all';
+    let currentLine = 'green';
     let selectedStation = 'Партизанская';
-    let selectedTimeSlot = '12:00';
+    let selectedTime = '12:00';
+    let activeOrders = [];
 
-    // --- APP INITIALIZATION ---
-    window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-            const splash = document.getElementById('splash-screen');
-            const fill = document.getElementById('progress-fill');
-            fill.style.width = '100%';
-            setTimeout(() => {
-                splash.style.opacity = '0';
-                setTimeout(() => {
-                    splash.style.display = 'none';
-                }, 500);
-            }, 500);
-        }, 800);
-
-        renderProducts(products);
-        renderStations('green');
-    });
-
-    // --- NAVIGATION LOGIC ---
-    function switchScreen(screenName, btnElement) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-
-        if (screenName === 'catalog') {
-            document.getElementById('screen-catalog').classList.add('active');
-        } else if (screenName === 'cart') {
-            document.getElementById('screen-cart').classList.add('active');
-            renderCart();
-        } else if (screenName === 'orders') {
-            document.getElementById('screen-orders').classList.add('active');
-        } else if (screenName === 'profile') {
-            document.getElementById('screen-profile').classList.add('active');
-        } else if (screenName === 'checkout') {
-            document.getElementById('screen-checkout').classList.add('active');
-        }
-
-        if (btnElement) {
-            btnElement.classList.add('active');
-        }
-    }
-
-    // --- CATALOG & FILTERS ---
-    function renderProducts(list) {
+    // Render Products
+    function renderProducts(items) {
         const grid = document.getElementById('products-grid');
         grid.innerHTML = '';
-
-        if (list.length === 0) {
-            grid.innerHTML = '<div style="grid-column: span 2; text-align: center; color: var(--text-secondary); padding: 30px;">Ничего не найдено</div>';
+        if (items.length === 0) {
+            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 30px;">Товары не найдены</div>';
             return;
         }
 
-        list.forEach(item => {
+        items.forEach(p => {
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
-                <div>
-                    <div class="product-img-container">
-                        <span class="product-tag">${item.tag}</span>
-                        ${item.img}
-                    </div>
-                    <div class="product-title">${item.title}</div>
+                <div class="product-img-container">
+                    ${p.tag ? `<div class="product-tag">${p.tag}</div>` : ''}
+                    <span>${p.icon}</span>
                 </div>
+                <div class="product-title">${p.title}</div>
                 <div class="product-footer">
-                    <div class="product-price">${item.price} BYN</div>
-                    <button class="add-btn" onclick="addToCart(event, ${item.id})">+</button>
+                    <span class="product-price">${p.price.toFixed(2)} р.</span>
+                    <button class="add-btn" onclick="addToCart(${p.id})">+</button>
                 </div>
             `;
             grid.appendChild(card);
         });
     }
 
-    function setCategory(cat, el) {
-        currentCategory = cat;
-        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-        filterProducts();
-    }
-
     function filterProducts() {
         const query = document.getElementById('search-input').value.toLowerCase();
         const filtered = products.filter(p => {
-            const matchesCat = currentCategory === 'all' || p.category === currentCategory;
+            const matchesCat = activeCategory === 'all' || p.category === activeCategory;
             const matchesQuery = p.title.toLowerCase().includes(query);
             return matchesCat && matchesQuery;
         });
         renderProducts(filtered);
     }
 
-    // --- CART LOGIC ---
-    function addToCart(event, id) {
-        event.stopPropagation();
-        if (cart[id]) {
-            cart[id].qty += 1;
+    function setCategory(cat, el) {
+        activeCategory = cat;
+        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        filterProducts();
+    }
+
+    // Cart Management
+    function addToCart(productId) {
+        if (cart[productId]) {
+            cart[productId].qty += 1;
         } else {
-            const product = products.find(p => p.id === id);
-            cart[id] = { ...product, qty: 1 };
+            const prod = products.find(p => p.id === productId);
+            cart[productId] = { ...prod, qty: 1 };
         }
         updateCartBadge();
-        showModal('🛒 В корзину', 'Товар успешно добавлен!', '✅');
+        renderCart();
+    }
+
+    function changeQty(productId, delta) {
+        if (cart[productId]) {
+            cart[productId].qty += delta;
+            if (cart[productId].qty <= 0) {
+                delete cart[productId];
+            }
+        }
+        updateCartBadge();
+        renderCart();
     }
 
     function updateCartBadge() {
@@ -977,25 +1055,16 @@
         }
     }
 
-    function changeQty(id, delta) {
-        if (!cart[id]) return;
-        cart[id].qty += delta;
-        if (cart[id].qty <= 0) {
-            delete cart[id];
-        }
-        updateCartBadge();
-        renderCart();
-    }
-
     function renderCart() {
         const container = document.getElementById('cart-content');
-        const itemIds = Object.keys(cart);
+        const items = Object.values(cart);
 
-        if (itemIds.length === 0) {
+        if (items.length === 0) {
             container.innerHTML = `
                 <div class="cart-empty">
                     <div class="cart-empty-icon">🛒</div>
-                    <p>Ваша корзина пуста</p>
+                    <p>Корзина пуста</p>
+                    <button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">В каталог</button>
                 </div>
             `;
             return;
@@ -1004,137 +1073,163 @@
         let itemsHtml = '<div class="cart-items-list">';
         let subtotal = 0;
 
-        itemIds.forEach(id => {
-            const item = cart[id];
+        items.forEach(item => {
             subtotal += item.price * item.qty;
             itemsHtml += `
                 <div class="cart-item">
-                    <div class="cart-item-img">${item.img}</div>
+                    <div class="cart-item-img">${item.icon}</div>
                     <div class="cart-item-info">
                         <div class="cart-item-title">${item.title}</div>
-                        <div class="cart-item-price">${item.price} BYN</div>
+                        <div class="cart-item-price">${(item.price * item.qty).toFixed(2)} р.</div>
                     </div>
                     <div class="qty-controls">
-                        <button class="qty-btn" onclick="changeQty(${id}, -1)">-</button>
+                        <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
                         <span class="qty-val">${item.qty}</span>
-                        <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
+                        <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
                     </div>
                 </div>
             `;
         });
         itemsHtml += '</div>';
 
-        const discount = 0;
-        const total = subtotal - discount;
-
         itemsHtml += `
             <div class="cart-summary">
                 <div class="summary-row">
-                    <span>Сумма товаров</span>
-                    <span>${subtotal} BYN</span>
-                </div>
-                <div class="summary-row">
-                    <span>Скидка</span>
-                    <span>${discount} BYN</span>
+                    <span>Товары (${items.reduce((s,i)=>s+i.qty,0)})</span>
+                    <span>${subtotal.toFixed(2)} р.</span>
                 </div>
                 <div class="summary-row total">
-                    <span>Итого к оплате</span>
-                    <span>${total} BYN</span>
+                    <span>Итого к оплате:</span>
+                    <span>${subtotal.toFixed(2)} р.</span>
                 </div>
             </div>
-            <button class="primary-btn" onclick="proceedToCheckout()">Перейти к оформлению</button>
+            <button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>
         `;
 
         container.innerHTML = itemsHtml;
     }
 
-    // --- CHECKOUT & METRO PICKER ---
-    function openMetroPicker() {
-        switchScreen('checkout');
-    }
-
+    // Checkout & Stations
     function proceedToCheckout() {
+        if (Object.keys(cart).length === 0) return;
         switchScreen('checkout');
+        renderStations('green');
     }
 
-    function switchMetroLine(lineKey, el) {
-        selectedLine = lineKey;
+    function switchMetroLine(line, el) {
+        currentLine = line;
         document.querySelectorAll('.metro-tab').forEach(t => {
             t.className = 'metro-tab';
         });
-        if (lineKey === 'green') el.className = 'metro-tab active-green';
-        if (lineKey === 'blue') el.className = 'metro-tab active-blue';
-        if (lineKey === 'red') el.className = 'metro-tab active-red';
-
-        renderStations(lineKey);
+        if (line === 'green') el.className = 'metro-tab active-green';
+        if (line === 'blue') el.className = 'metro-tab active-blue';
+        if (line === 'red') el.className = 'metro-tab active-red';
+        renderStations(line);
     }
 
-    function renderStations(lineKey) {
+    function renderStations(line) {
         const container = document.getElementById('stations-list-container');
-        const list = metroStations[lineKey] || [];
         container.innerHTML = '';
-
-        list.forEach(st => {
-            const isSelected = st.name === selectedStation;
+        metroStations[line].forEach(st => {
+            const isSel = st.name === selectedStation;
             const div = document.createElement('div');
-            div.className = `station-item ${isSelected ? 'selected' : ''}`;
+            div.className = `station-item ${isSel ? 'selected' : ''}`;
             div.innerHTML = `
                 <span>${st.name}</span>
-                <span style="font-size: 11px; color: var(--text-secondary);">${st.line}</span>
+                <span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>
             `;
             div.onclick = () => {
                 selectedStation = st.name;
                 document.getElementById('current-metro-label').innerText = st.name;
-                renderStations(selectedLine);
+                renderStations(line);
             };
             container.appendChild(div);
         });
     }
 
-    function selectTime(el, timeStr) {
-        document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+    function selectTime(el, time) {
+        document.querySelectorAll('.time-slot').forEach(t => t.classList.remove('selected'));
         el.classList.add('selected');
-        selectedTimeSlot = timeStr;
+        selectedTime = time;
     }
 
-    function confirmOrder() {
-        if (Object.keys(cart).length === 0) {
-            showModal('⚠️ Ошибка', 'Ваша корзина пуста!', '❌');
-            return;
-        }
-        
-        // Подсчитываем общую сумму для детального вывода
-        let subtotal = Object.values(cart).reduce((sum, item) => sum + (item.price * item.qty), 0);
-        let itemsSummary = Object.values(cart).map(i => `• ${i.title} (${i.qty} шт.)`).join('\n');
+    function confirmOrderFinal() {
+        const orderId = Math.floor(10000 + Math.random() * 90000);
+        const items = Object.values(cart);
+        const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
-        // Формируем подробное сообщение с деталями заказа, станцией метро и временем встречи
-        const messageText = `✅ **Ваш заказ успешно принят!**\n\n` +
-                            `📦 **Состав заказа:**\n${itemsSummary}\n\n` +
-                            `💵 **Сумма:** ${subtotal} BYN\n` +
-                            `🚇 **Метро:** ${selectedStation}\n` +
-                            `⏰ **Время встречи:** ${selectedTimeSlot}\n\n` +
-                            `Менеджер уже обрабатывает заявку и скоро свяжется с вами в Telegram.`;
+        const newOrder = {
+            id: orderId,
+            items: [...items],
+            total: total,
+            station: selectedStation,
+            time: selectedTime,
+            date: 'Сегодня, 18:00'
+        };
 
-        showModal('🎉 Заказ оформлен!', messageText, '🚀');
+        activeOrders.unshift(newOrder);
+        renderOrders();
+
+        // Clear cart
         cart = {};
         updateCartBadge();
+
+        // Show Success Modal
+        document.getElementById('modal-details-text').innerText = 
+            `Заказ #${orderId} оформлен!\nМетро: ${selectedStation}\nВремя: ${selectedTime}\nОплата при встрече. Уведомление отправлено админу и вам в Telegram.`;
+        document.getElementById('success-modal').classList.add('show');
     }
 
-    // --- MODAL DIALOGS ---
-    function showModal(title, text, icon) {
-        document.getElementById('modal-title').innerText = title;
-        // Используем innerHTML, чтобы корректно отображать переносы строк и форматирование (например, списки товаров)
-        document.getElementById('modal-text').innerHTML = text.replace(/\n/g, '<br>');
-        document.getElementById('modal-icon').innerText = icon;
-        document.getElementById('modal-overlay').classList.add('show');
+    function closeModalAndReset() {
+        document.getElementById('success-modal').classList.remove('show');
+        switchScreen('orders');
     }
 
-    function closeModal() {
-        document.getElementById('modal-overlay').classList.remove('show');
-        if(document.getElementById('modal-title').innerText.includes('Заказ оформлен')) {
-            switchScreen('catalog', document.querySelectorAll('.nav-item')[0]);
+    function renderOrders() {
+        const container = document.getElementById('orders-list');
+        if (activeOrders.length === 0) {
+            container.innerHTML = `
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">📦</div>
+                    <p>Нет активных заказов</p>
+                </div>
+            `;
+            return;
         }
+
+        let html = '';
+        activeOrders.forEach(ord => {
+            html += `
+                <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                        <span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>
+                        <span style="color:var(--text-secondary);">${ord.station}, ${ord.time}</span>
+                    </div>
+                    <div style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">
+                        Товаров: ${ord.items.reduce((s,i)=>s+i.qty,0)} шт. на ${ord.total.toFixed(2)} р.
+                    </div>
+                    <div style="font-size:12px; color:var(--accent-green);">Оплата при встрече</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
     }
+
+    // Navigation Switcher
+    function switchScreen(screenName) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+        document.getElementById(`screen-${screenName}`).classList.add('active');
+
+        if (screenName === 'catalog') document.querySelectorAll('.nav-item')[0].classList.add('active');
+        if (screenName === 'cart') document.querySelectorAll('.nav-item')[1].classList.add('active');
+        if (screenName === 'orders') document.querySelectorAll('.nav-item')[2].classList.add('active');
+        if (screenName === 'profile') document.querySelectorAll('.nav-item')[3].classList.add('active');
+    }
+
+    // Initialize Catalog
+    renderProducts(products);
 </script>
 </body>
 </html>
