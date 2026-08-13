@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Monkey Vape — Online Shop</title>
+    <!-- Подключаем официальный скрипт Telegram Web App -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --bg-color: #0b0f0c;
@@ -1165,31 +1167,44 @@
         selectedTime = time;
     }
 
+    // САМОЕ ГЛАВНОЕ: Отправка данных боту через Telegram Web App API
     function confirmOrderFinal() {
-        const orderId = Math.floor(10000 + Math.random() * 90000);
         const items = Object.values(cart);
-        const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        if (items.length === 0) return;
 
-        const newOrder = {
+        const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        const orderId = Math.floor(10000 + Math.random() * 90000);
+
+        const orderData = {
+            id: orderId,
+            items: items,
+            total: total,
+            station: selectedStation,
+            time: selectedTime
+        };
+
+        // Сохраняем во внутренний список для отображения в разделе «Мои заказы»
+        activeOrders.unshift({
             id: orderId,
             items: [...items],
             total: total,
             station: selectedStation,
-            time: selectedTime,
-            date: 'Сегодня, 18:00'
-        };
-
-        activeOrders.unshift(newOrder);
+            time: selectedTime
+        });
         renderOrders();
 
-        // Clear cart
+        // Очищаем корзину
         cart = {};
         updateCartBadge();
 
-        // Show Success Modal
-        document.getElementById('modal-details-text').innerText = 
-            `Заказ #${orderId} оформлен!\nМетро: ${selectedStation}\nВремя: ${selectedTime}\nОплата при встрече. Уведомление отправлено админу и вам в Telegram.`;
-        document.getElementById('success-modal').classList.add('show');
+        // Если запущено внутри Telegram — отправляем данные боту и закрываем WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.sendData(JSON.stringify(orderData)); // Передает JSON-объект в Python-бот
+        } else {
+            // Если открыто в браузере для теста
+            document.getElementById('success-modal').classList.add('show');
+        }
     }
 
     function closeModalAndReset() {
