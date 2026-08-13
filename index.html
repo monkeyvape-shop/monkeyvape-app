@@ -2,493 +2,1235 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BASTER SHOP</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monkey Vape — Online Shop</title>
     <style>
         :root {
-            --bg-color: #0b0b0e;
-            --card-bg: #16161c;
-            --accent: #a855f7;
-            --accent-hover: #9333ea;
-            --text-color: #ffffff;
-            --text-muted: #8c8c9e;
-            --danger: #ef4444;
-            --border-color: #2b2b3d;
+            --bg-color: #0b0f0c;
+            --card-bg: #131b14;
+            --card-hover: #1b261d;
+            --accent-green: #00ff66;
+            --accent-green-glow: rgba(0, 255, 102, 0.25);
+            --text-main: #ffffff;
+            --text-secondary: #9ca3af;
+            --border-color: #223525;
+            --danger: #ff3333;
         }
-        body {
+
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg-color);
-            color: var(--text-color);
-            padding-bottom: 80px;
+            -webkit-tap-highlight-color: transparent;
         }
-        
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 16px; background: var(--bg-color); position: sticky; top: 0; z-index: 50;
-        }
-        .logo { font-size: 18px; font-weight: bold; letter-spacing: 0.5px; }
-        .location-badge {
-            background: var(--card-bg); border: 1px solid var(--border-color);
-            padding: 6px 12px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; color: var(--text-muted);
-        }
-        .location-badge span { color: var(--accent); font-weight: bold; }
 
-        .tab-content { display: none; padding: 16px; }
-        .tab-content.active { display: block; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-        /* Карточки товаров */
-        .products-grid { display: flex; flex-direction: column; gap: 12px; }
-        .product-card {
-            background: var(--card-bg); border-radius: 16px; padding: 12px;
-            display: flex; align-items: center; justify-content: space-between;
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 255, 102, 0.1);
+            overflow: hidden;
             border: 1px solid var(--border-color);
         }
-        .product-left { display: flex; gap: 12px; align-items: center; }
-        .product-card img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; background: #262633; }
-        .product-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
-        .product-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
-        .product-price { font-size: 15px; color: var(--text-color); font-weight: bold; }
-        .product-price span { color: var(--accent); }
 
-        .qty-controls { display: flex; align-items: center; gap: 10px; background: #1c1c26; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border-color); }
-        .qty-btn { background: none; border: none; color: var(--text-color); font-size: 16px; cursor: pointer; }
-
-        .cart-summary-box {
-            background: var(--card-bg); border-radius: 16px; padding: 16px;
-            border: 1px solid var(--border-color); margin-top: 16px;
-        }
-        .promo-btn {
-            background: var(--accent); color: white; border: none; width: 100%;
-            padding: 12px; border-radius: 12px; font-weight: bold; font-size: 14px;
-            cursor: pointer; margin-bottom: 16px;
-        }
-        .summary-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
-        .summary-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: var(--text-color); margin: 12px 0 16px; }
-        .summary-total span { color: var(--accent); }
-
-        /* Шаги оформления */
-        .steps-indicator { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 20px; position: relative; }
-        .step-item { display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 2; }
-        .step-circle {
-            width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg);
-            border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center;
-            font-size: 14px; color: var(--text-muted);
-        }
-        .step-item.active .step-circle { border-color: var(--accent); box-shadow: 0 0 12px var(--accent); color: var(--accent); }
-        .step-item.completed .step-circle { background: var(--accent); border-color: var(--accent); color: white; }
-        .step-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; }
-        .step-item.active .step-label { color: var(--accent); }
-
-        .steps-line { position: absolute; top: 20px; left: 40px; right: 40px; height: 2px; background: var(--border-color); z-index: 1; }
-
-        .option-card {
-            background: var(--card-bg); border: 1px solid var(--border-color);
-            border-radius: 16px; padding: 16px; margin-bottom: 10px; cursor: pointer;
-            display: flex; align-items: center; justify-content: space-between; transition: border-color 0.2s;
-        }
-        .option-card.selected { border-color: var(--accent); box-shadow: 0 0 10px rgba(168, 85, 247, 0.2); }
-        .option-title { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
-        .option-desc { font-size: 12px; color: var(--text-muted); }
-        .radio-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; }
-        .option-card.selected .radio-check { background: var(--accent); border-color: var(--accent); color: white; font-size: 12px; }
-
-        .times-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
-        .time-btn {
-            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px;
-            padding: 12px; text-align: center; color: var(--text-color); font-weight: bold; cursor: pointer;
-        }
-        .time-btn.selected { border-color: var(--accent); background: rgba(168, 85, 247, 0.1); color: var(--accent); }
-
-        .btn-main {
-            background: var(--accent); color: white; border: none; width: 100%;
-            padding: 14px; border-radius: 16px; font-weight: bold; font-size: 15px;
-            cursor: pointer; text-align: center; margin-top: 16px;
-        }
-        .btn-secondary {
-            background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color);
-            width: 100%; padding: 14px; border-radius: 16px; font-weight: bold; font-size: 15px;
-            cursor: pointer; text-align: center; margin-top: 10px;
+        @media (min-width: 481px) {
+            .app-container {
+                border-radius: 24px;
+            }
         }
 
-        /* Заказы */
-        .orders-tabs { display: flex; gap: 8px; background: var(--card-bg); padding: 4px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; }
-        .orders-tab { flex: 1; background: none; border: none; padding: 10px; border-radius: 8px; color: var(--text-muted); font-weight: bold; cursor: pointer; font-size: 13px; }
-        .orders-tab.active { background: var(--bg-color); color: var(--text-color); }
-        
-        .order-box { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .order-id { font-size: 16px; font-weight: bold; color: var(--accent); }
-        .order-status { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.2); color: var(--danger); font-weight: bold; }
-        .order-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-        .action-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 4px; }
-        .action-btn.danger { color: var(--danger); border-color: rgba(239,68,68,0.3); }
-
-        /* Модальное окно отмены */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
-        .modal { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; width: 100%; max-width: 320px; }
-        .modal-input { width: 100%; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; color: white; font-size: 16px; margin: 16px 0; box-sizing: border-box; }
-
-        /* Навигация */
-        nav {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: #121218; border-top: 1px solid var(--border-color);
-            display: flex; justify-content: space-around; padding: 10px 0; z-index: 90;
+        /* Splash Screen */
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
         }
-        nav button {
-            background: none; border: none; color: var(--text-muted);
-            cursor: pointer; font-size: 11px; display: flex; flex-direction: column;
-            align-items: center; gap: 4px; position: relative;
+
+        .splash-logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent-green);
+            text-shadow: 0 0 20px var(--accent-green-glow);
+            margin-bottom: 24px;
+            letter-spacing: 1px;
         }
-        nav button span { font-size: 18px; }
-        nav button.active { color: var(--accent); }
+
+        .splash-sub {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 6px;
+            background-color: var(--card-bg);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+            transition: width 1.5s ease-in-out;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .brand-title span {
+            color: var(--accent-green);
+        }
+
+        .metro-selector-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .metro-selector-btn:hover {
+            border-color: var(--accent-green);
+        }
+
+        .metro-icon {
+            background-color: var(--accent-green);
+            color: #000;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            padding-bottom: 90px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Search & Categories */
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .categories-scroll {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+
+        .categories-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cat-chip {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cat-chip.active {
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border-color: var(--accent-green);
+            font-weight: 600;
+            box-shadow: 0 0 15px var(--accent-green-glow);
+        }
+
+        /* Banner */
+        .promo-banner {
+            background: linear-gradient(135deg, #132b17 0%, #0d1a10 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .promo-banner h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 4px;
+        }
+
+        .promo-banner p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .promo-badge {
+            background-color: var(--accent-green);
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        /* Product Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .product-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            border-color: var(--accent-green);
+            transform: translateY(-2px);
+        }
+
+        .product-img-container {
+            width: 100%;
+            height: 110px;
+            background-color: #080d09;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 36px;
+            position: relative;
+        }
+
+        .product-tag {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background-color: rgba(0, 255, 102, 0.15);
+            color: var(--accent-green);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .product-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 32px;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .product-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .add-btn {
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .add-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* Cart Screen */
+        .cart-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .cart-empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .cart-items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .cart-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cart-item-img {
+            width: 50px;
+            height: 50px;
+            background-color: #080d09;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .cart-item-price {
+            font-size: 13px;
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--bg-color);
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .qty-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 14px;
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-val {
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        .cart-summary {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .summary-row.total {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .summary-row.total span:last-child {
+            color: var(--accent-green);
+        }
+
+        .primary-btn {
+            width: 100%;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border: none;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--accent-green-glow);
+            transition: opacity 0.2s;
+        }
+
+        .primary-btn:active {
+            opacity: 0.85;
+        }
+
+        /* Checkout / Metro Flow */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .method-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent-green);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .method-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .method-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .metro-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .metro-tab {
+            flex: 1;
+            padding: 8px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .metro-tab.active-green { border-color: #00cc44; color: #00cc44; background: rgba(0,204,68,0.1); }
+        .metro-tab.active-blue { border-color: #0088ff; color: #0088ff; background: rgba(0,136,255,0.1); }
+        .metro-tab.active-red { border-color: #ff3333; color: #ff3333; background: rgba(255,51,51,0.1); }
+
+        .stations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+
+        .station-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .station-item.selected {
+            border-color: var(--accent-green);
+            background-color: rgba(0, 255, 102, 0.05);
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .time-slot {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .time-slot.selected {
+            border-color: var(--accent-green);
+            background-color: rgba(0, 255, 102, 0.1);
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* Profile Screen */
+        .profile-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .profile-avatar {
+            width: 56px;
+            height: 56px;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 0 0 15px var(--accent-green-glow);
+        }
+
+        .profile-info h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .profile-menu-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .profile-menu-item span {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background-color: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 0.2s;
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: var(--accent-green);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
         .cart-badge {
-            position: absolute; top: -2px; right: 4px; background: var(--accent);
-            color: white; font-size: 10px; font-weight: bold; padding: 1px 5px;
-            border-radius: 10px; display: none;
+            position: absolute;
+            top: -2px;
+            right: 4px;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            font-size: 10px;
+            font-weight: bold;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Modal Notification Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+            padding: 24px;
+            width: 85%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 0 30px var(--accent-green-glow);
+        }
+
+        .modal-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--accent-green);
+        }
+
+        .modal-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="logo">BASTER SHOP</div>
-        <div class="location-badge">📍 ЗАБРАТЬ <span id="header-loc">Партизанская</span></div>
-    </div>
-
-    <!-- КАТАЛОГ -->
-    <div id="catalog" class="tab-content active">
-        <div class="products-grid">
-            <div class="product-card">
-                <div class="product-left">
-                    <img src="https://images.unsplash.com/photo-1539185441755-769473a23570?w=300" alt="Liquid">
-                    <div>
-                        <div class="product-title">ANNIMA LOVE Killer</div>
-                        <div class="product-desc">Вкус: Ананас апельсин</div>
-                        <div class="product-price"><span>17</span> Б</div>
-                    </div>
-                </div>
-                <div id="item-control-1">
-                    <button class="promo-btn" style="padding: 8px 12px; margin:0; font-size:12px;" onclick="changeQty('ANNIMA LOVE Killer', 17, 1)">В корзину</button>
-                </div>
-            </div>
+<div class="app-container">
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen">
+        <div class="splash-logo">MONKEY VAPE</div>
+        <div class="splash-sub">Загрузка онлайн-магазина...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
         </div>
     </div>
 
-    <!-- КОРЗИНА / ОФОРМЛЕНИЕ -->
-    <div id="cart" class="tab-content">
-        <div id="cart-step-1">
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="brand-title">MONKEY <span>VAPE</span></div>
+        <button class="metro-selector-btn" onclick="openMetroPicker()">
+            <div class="metro-icon">M</div>
+            <span id="current-metro-label">Партизанская</span>
+        </button>
+    </div>
+
+    <!-- CONTENT CONTAINER -->
+    <div class="content-area">
+
+        <!-- 1. CATALOG SCREEN -->
+        <div id="screen-catalog" class="screen active">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров..." oninput="filterProducts()">
+            </div>
+
+            <div class="categories-scroll">
+                <button class="cat-chip active" onclick="setCategory('all', this)">Все товары</button>
+                <button class="cat-chip" onclick="setCategory('liquid', this)">Жидкости</button>
+                <button class="cat-chip" onclick="setCategory('pod', this)">Поды и Вейпы</button>
+                <button class="cat-chip" onclick="setCategory('disposable', this)">Одноразки</button>
+                <button class="cat-chip" onclick="setCategory('accessory', this)">Расходники</button>
+            </div>
+
+            <div class="promo-banner">
+                <div>
+                    <h3>AKCIJA - 20%</h3>
+                    <p>Топовые жижи и устройства недели</p>
+                </div>
+                <div class="promo-badge">-20%</div>
+            </div>
+
+            <div class="products-grid" id="products-grid">
+                <!-- Dynamic Products -->
+            </div>
+        </div>
+
+        <!-- 2. CART SCREEN -->
+        <div id="screen-cart" class="screen">
+            <div class="section-title">Корзина</div>
+            <div id="cart-content">
+                <!-- Dynamic Cart Items -->
+            </div>
+        </div>
+
+        <!-- 3. ORDERS SCREEN -->
+        <div id="screen-orders" class="screen">
+            <div class="section-title">Мои заказы</div>
+            <div id="orders-list">
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">📦</div>
+                    <p>Нет активных заказов</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. PROFILE SCREEN -->
+        <div id="screen-profile" class="screen">
+            <div class="section-title">Профиль</div>
+            <div class="profile-card">
+                <div class="profile-avatar">V</div>
+                <div class="profile-info">
+                    <h3 id="profile-username">@vara_24</h3>
+                    <p>Telegram User</p>
+                </div>
+            </div>
+
+            <a href="https://t.me/monkey_manager" target="_blank" class="profile-menu-item">
+                <span>Менеджер поддержки</span>
+                <span>@monkey_manager</span>
+            </a>
+        </div>
+
+        <!-- SUB-SCREEN: METRO SELECTION & CHECKOUT -->
+        <div id="screen-checkout" class="screen">
+            <div class="section-title" id="checkout-title">Оформление заказа</div>
+            
             <div style="margin-bottom: 16px;">
-                <div class="product-card">
-                    <div class="product-left">
-                        <img src="https://images.unsplash.com/photo-1539185441755-769473a23570?w=300" alt="Liquid">
-                        <div>
-                            <div class="product-title">ANNIMA LOVE Killer</div>
-                            <div class="product-desc">Вкус: Ананас апельсин</div>
-                            <div class="product-price"><span>17</span> Б</div>
-                        </div>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Способ получения</p>
+                <div class="method-card">
+                    <div class="method-info">
+                        <h4>Самовывоз из метро (Минск)</h4>
+                        <p>Оплата при встрече наличными или переводом</p>
+                    </div>
+                    <div style="color: var(--accent-green); font-size: 18px;">✓</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Выберите ветку и станцию</p>
+                <div class="metro-tabs">
+                    <div class="metro-tab active-green" onclick="switchMetroLine('green', this)">Зеленая ветка</div>
+                    <div class="metro-tab" onclick="switchMetroLine('blue', this)">Синяя ветка</div>
+                    <div class="metro-tab" onclick="switchMetroLine('red', this)">Красная ветка</div>
+                </div>
+                <div class="stations-list" id="stations-list-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Время получения</p>
+                <div class="time-slots">
+                    <div class="time-slot selected" onclick="selectTime(this, '12:00')">12:00</div>
+                    <div class="time-slot" onclick="selectTime(this, '14:30')">14:30</div>
+                    <div class="time-slot" onclick="selectTime(this, '16:30')">16:30</div>
+                    <div class="time-slot" onclick="selectTime(this, '18:10')">18:10</div>
+                    <div class="time-slot" onclick="selectTime(this, '21:00')">21:00</div>
+                </div>
+            </div>
+
+            <button class="primary-btn" onclick="confirmOrderFinal()">Подтвердить заказ</button>
+            <button onclick="switchScreen('cart')" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Назад в корзину</button>
+        </div>
+
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchScreen('catalog')">
+            <span class="nav-icon">🛍️</span>
+            <span>Каталог</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('cart')">
+            <span class="nav-icon">🛒</span>
+            <span>Корзина</span>
+            <div class="cart-badge" id="cart-badge" style="display: none;">0</div>
+        </button>
+        <button class="nav-item" onclick="switchScreen('orders')">
+            <span class="nav-icon">📦</span>
+            <span>Заказы</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('profile')">
+            <span class="nav-icon">👤</span>
+            <span>Профиль</span>
+        </button>
+    </div>
+
+    <!-- SUCCESS MODAL -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-card">
+            <div class="modal-icon">✅</div>
+            <div class="modal-title">Заказ успешно оформлен!</div>
+            <div class="modal-text" id="modal-details-text">
+                Детали заказа отправлены вам в личные сообщения Telegram. Администратор уже получил уведомление. Оплата при встрече!
+            </div>
+            <button class="primary-btn" onclick="closeModalAndReset()">Отлично</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Splash Screen Simulation
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('progress-fill').style.width = '100%';
+        }, 100);
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            splash.style.opacity = '0';
+            setTimeout(() => splash.remove(), 500);
+        }, 1500);
+    });
+
+    // Mock Data Store
+    const products = [
+        { id: 1, title: 'ANIMAL LOVE Killer 50mg', category: 'liquid', price: 17.00, tag: 'жидкость', icon: '🧪' },
+        { id: 2, title: 'OGGO Rush 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
+        { id: 3, title: 'OGGO Cherry 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
+        { id: 4, title: 'BJORN ZLOY 60mg', category: 'liquid', price: 13.00, tag: 'хит', icon: '🧪' },
+        { id: 5, title: 'XROS 3 Mini Pod Kit', category: 'pod', price: 55.00, tag: 'вейп', icon: '⚡' },
+        { id: 6, title: 'Vaporesso XROS Pro', category: 'pod', price: 85.00, tag: 'вейп', icon: '⚡' },
+        { id: 7, title: 'Lost Mary BM5000', category: 'disposable', price: 25.00, tag: 'одноразка', icon: '💨' },
+        { id: 8, title: 'Сменный картридж XROS', category: 'accessory', price: 9.00, tag: 'расходник', icon: '📦' }
+    ];
+
+    const metroStations = {
+        green: [
+            { name: 'Юбилейная площадь', line: 'Зеленая ветка' },
+            { name: 'Площадь Франтишка Богушевича', line: 'Зеленая ветка' },
+            { name: 'Вокзальная', line: 'Зеленая ветка' },
+            { name: 'Ковальская Слобода', line: 'Зеленая ветка' }
+        ],
+        blue: [
+            { name: 'Московская', line: 'Синяя ветка' },
+            { name: 'Парк Челюскинцев', line: 'Синяя ветка' },
+            { name: 'Академия наук', line: 'Синяя ветка' },
+            { name: 'Площадь Якуба Коласа', line: 'Синяя ветка' }
+        ],
+        red: [
+            { name: 'Малиновка', line: 'Красная ветка' },
+            { name: 'Петровщина', line: 'Красная ветка' },
+            { name: 'Институт культуры', line: 'Красная ветка' },
+            { name: 'Партизанская', line: 'Красная ветка' },
+            { name: 'Автозаводская', line: 'Красная ветка' }
+        ]
+    };
+
+    let cart = {};
+    let activeCategory = 'all';
+    let currentLine = 'green';
+    let selectedStation = 'Партизанская';
+    let selectedTime = '12:00';
+    let activeOrders = [];
+
+    // Render Products
+    function renderProducts(items) {
+        const grid = document.getElementById('products-grid');
+        grid.innerHTML = '';
+        if (items.length === 0) {
+            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 30px;">Товары не найдены</div>';
+            return;
+        }
+
+        items.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <div class="product-img-container">
+                    ${p.tag ? `<div class="product-tag">${p.tag}</div>` : ''}
+                    <span>${p.icon}</span>
+                </div>
+                <div class="product-title">${p.title}</div>
+                <div class="product-footer">
+                    <span class="product-price">${p.price.toFixed(2)} р.</span>
+                    <button class="add-btn" onclick="addToCart(${p.id})">+</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function filterProducts() {
+        const query = document.getElementById('search-input').value.toLowerCase();
+        const filtered = products.filter(p => {
+            const matchesCat = activeCategory === 'all' || p.category === activeCategory;
+            const matchesQuery = p.title.toLowerCase().includes(query);
+            return matchesCat && matchesQuery;
+        });
+        renderProducts(filtered);
+    }
+
+    function setCategory(cat, el) {
+        activeCategory = cat;
+        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        filterProducts();
+    }
+
+    // Cart Management
+    function addToCart(productId) {
+        if (cart[productId]) {
+            cart[productId].qty += 1;
+        } else {
+            const prod = products.find(p => p.id === productId);
+            cart[productId] = { ...prod, qty: 1 };
+        }
+        updateCartBadge();
+        renderCart();
+    }
+
+    function changeQty(productId, delta) {
+        if (cart[productId]) {
+            cart[productId].qty += delta;
+            if (cart[productId].qty <= 0) {
+                delete cart[productId];
+            }
+        }
+        updateCartBadge();
+        renderCart();
+    }
+
+    function updateCartBadge() {
+        const badge = document.getElementById('cart-badge');
+        const totalCount = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+        if (totalCount > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = totalCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-content');
+        const items = Object.values(cart);
+
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">🛒</div>
+                    <p>Корзина пуста</p>
+                    <button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">В каталог</button>
+                </div>
+            `;
+            return;
+        }
+
+        let itemsHtml = '<div class="cart-items-list">';
+        let subtotal = 0;
+
+        items.forEach(item => {
+            subtotal += item.price * item.qty;
+            itemsHtml += `
+                <div class="cart-item">
+                    <div class="cart-item-img">${item.icon}</div>
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.title}</div>
+                        <div class="cart-item-price">${(item.price * item.qty).toFixed(2)} р.</div>
                     </div>
                     <div class="qty-controls">
-                        <button class="qty-btn" onclick="adjustQty(-1)">-</button>
-                        <span id="cart-item-qty">1</span>
-                        <button class="qty-btn" onclick="adjustQty(1)">+</button>
+                        <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+                        <span class="qty-val">${item.qty}</span>
+                        <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
                     </div>
                 </div>
-            </div>
-            <div class="cart-summary-box">
-                <button class="promo-btn">Ввести промокод</button>
-                <div class="summary-row"><span>Товары (<span id="total-count-label">1</span> шт.)</span><span>17 Б</span></div>
-                <div class="summary-total"><span>Итого</span><span><span id="total-price-label">17</span> Б</span></div>
-                <button class="btn-main" onclick="goToStep(2)">Оформить заказ</button>
-            </div>
-        </div>
+            `;
+        });
+        itemsHtml += '</div>';
 
-        <!-- ШАГ 2: СПОСОБ ПОЛУЧЕНИЯ -->
-        <div id="cart-step-2" style="display:none;">
-            <div class="steps-indicator">
-                <div class="steps-line"></div>
-                <div class="step-item active"><div class="step-circle">🚚</div><div class="step-label">Способ</div></div>
-                <div class="step-item"><div class="step-circle">📦</div><div class="step-label">Детали</div></div>
-                <div class="step-item"><div class="step-circle">💳</div><div class="step-label">Оплата</div></div>
-            </div>
-            <h3 style="margin-bottom:12px;">Способ получения</h3>
-            <div class="option-card selected" onclick="selectMethod('Метро', this)">
-                <div><div class="option-title">Метро</div><div class="option-desc">Получение у станции метро</div></div>
-                <div class="radio-check">✓</div>
-            </div>
-            <div class="option-card" onclick="selectMethod('Белпочта', this)">
-                <div><div class="option-title">Белпочта</div><div class="option-desc">Доставка почтой по адресу</div></div>
-                <div class="radio-check"></div>
-            </div>
-            <div class="option-card" onclick="selectMethod('Европочта', this)">
-                <div><div class="option-title">Европочта</div><div class="option-desc">Пункт выдачи или адрес</div></div>
-                <div class="radio-check"></div>
-            </div>
-            <div class="option-card" onclick="selectMethod('Курьер Яндекс', this)">
-                <div><div class="option-title">Курьер Яндекс</div><div class="option-desc">Доставка курьером до двери</div></div>
-                <div class="radio-check"></div>
-            </div>
-            <button class="btn-secondary" onclick="goToStep(1)">Назад</button>
-            <button class="btn-main" onclick="goToStep(3)">Продолжить →</button>
-        </div>
-
-        <!-- ШАГ 3: ДЕТАЛИ -->
-        <div id="cart-step-3" style="display:none;">
-            <div class="steps-indicator">
-                <div class="steps-line"></div>
-                <div class="step-item completed"><div class="step-circle">✓</div><div class="step-label">Способ</div></div>
-                <div class="step-item active"><div class="step-circle">📦</div><div class="step-label">Детали</div></div>
-                <div class="step-item"><div class="step-circle">💳</div><div class="step-label">Оплата</div></div>
-            </div>
-            <h3 style="margin-bottom:12px;">Станция и время</h3>
-            <div class="option-card" style="display:block; margin-bottom:16px;">
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">СТАНЦИЯ МЕТРО</div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-size:16px; font-weight:bold; color:var(--accent);">🔴 Партизанская</div>
-                    <button style="background:rgba(168,85,247,0.2); border:none; color:var(--accent); padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer;">Изменить</button>
+        itemsHtml += `
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Товары (${items.reduce((s,i)=>s+i.qty,0)})</span>
+                    <span>${subtotal.toFixed(2)} р.</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Итого к оплате:</span>
+                    <span>${subtotal.toFixed(2)} р.</span>
                 </div>
             </div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">ВРЕМЯ ПОЛУЧЕНИЯ</div>
-            <div class="times-grid">
-                <div class="time-btn" onclick="selectTime('12:00', this)">12:00</div>
-                <div class="time-btn selected" onclick="selectTime('14:25', this)">14:25</div>
-                <div class="time-btn" onclick="selectTime('16:55', this)">16:55</div>
-                <div class="time-btn" onclick="selectTime('19:10', this)">19:10</div>
-                <div class="time-btn" onclick="selectTime('21:00', this)">21:00</div>
-            </div>
-            <button class="btn-secondary" onclick="goToStep(2)">Назад</button>
-            <button class="btn-main" onclick="goToStep(4)">Продолжить →</button>
-        </div>
+            <button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>
+        `;
 
-        <!-- ШАГ 4: ПОДТВЕРЖДЕНИЕ -->
-        <div id="cart-step-4" style="display:none;">
-            <div class="steps-indicator">
-                <div class="steps-line"></div>
-                <div class="step-item completed"><div class="step-circle">✓</div><div class="step-label">Способ</div></div>
-                <div class="step-item completed"><div class="step-circle">✓</div><div class="step-label">Детали</div></div>
-                <div class="step-item active"><div class="step-circle">💳</div><div class="step-label">Оплата</div></div>
-            </div>
-            <h3 style="margin-bottom:12px;">Ваш заказ</h3>
-            <div class="product-card" style="margin-bottom:10px;">
-                <div class="product-left">
-                    <img src="https://images.unsplash.com/photo-1539185441755-769473a23570?w=300" alt="Liquid">
-                    <div>
-                        <div class="product-title">ANNIMA LOVE Killer</div>
-                        <div class="product-desc">1 шт. · 17 Б</div>
-                    </div>
-                </div>
-            </div>
-            <div class="option-card" style="margin-bottom:16px;">
-                <div style="font-weight:600;" id="summary-method-text">Метро</div>
-                <div style="color:var(--accent); font-weight:bold;" id="summary-details-text">Партизанская - 14:25</div>
-            </div>
-            <div class="summary-row"><span>Товары (1)</span><span>17 Б</span></div>
-            <div class="summary-total"><span>Итого</span><span>17 Б</span></div>
-            <button class="btn-main" onclick="confirmOrder()">Подтвердить заказ</button>
-        </div>
-    </div>
+        container.innerHTML = itemsHtml;
+    }
 
-    <!-- ЗАКАЗЫ -->
-    <div id="orders" class="tab-content">
-        <div class="orders-tabs">
-            <button class="orders-tab active" onclick="switchOrdersTab('active', this)">Активные <span id="active-count">0</span></button>
-            <button class="orders-tab" onclick="switchOrdersTab('past', this)">Прошедшие</button>
-        </div>
-        <div id="orders-container">
-            <p style="color: var(--text-muted); text-align:center;">У вас пока нет заказов</p>
-        </div>
-    </div>
+    // Checkout & Stations
+    function proceedToCheckout() {
+        if (Object.keys(cart).length === 0) return;
+        switchScreen('checkout');
+        renderStations('green');
+    }
 
-    <!-- ПРОФИЛЬ -->
-    <div id="profile" class="tab-content">
-        <h2>Профиль</h2>
-        <div class="product-card" style="flex-direction:column; text-align:center; padding:24px;">
-            <div style="font-size:48px; margin-bottom:8px;">🐵</div>
-            <div style="font-weight:bold; font-size:16px;" id="profile-name">Пользователь</div>
-            <div style="color:var(--text-muted); font-size:13px; margin-bottom:12px;" id="profile-username">@username</div>
-            <a href="https://t.me/warat_24" target="_blank" class="btn-main" style="text-decoration:none; display:block;">👨‍💻 Связаться с менеджером</a>
-        </div>
-    </div>
+    function switchMetroLine(line, el) {
+        currentLine = line;
+        document.querySelectorAll('.metro-tab').forEach(t => {
+            t.className = 'metro-tab';
+        });
+        if (line === 'green') el.className = 'metro-tab active-green';
+        if (line === 'blue') el.className = 'metro-tab active-blue';
+        if (line === 'red') el.className = 'metro-tab active-red';
+        renderStations(line);
+    }
 
-    <!-- МОДАЛКА ОТМЕНЫ -->
-    <div class="modal-overlay" id="cancel-modal">
-        <div class="modal">
-            <div style="font-weight:bold; font-size:16px;" id="cancel-modal-title">Отменить заказ?</div>
-            <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Чтобы подтвердить, введите номер заказа ниже.</div>
-            <input type="text" class="modal-input" id="cancel-input-code" placeholder="Введите номер">
-            <div style="display:flex; gap:8px;">
-                <button class="btn-secondary" style="margin:0;" onclick="closeCancelModal()">Назад</button>
-                <button class="btn-main" style="margin:0; background:var(--danger);" onclick="executeCancel()">Отменить заказ</button>
-            </div>
-        </div>
-    </div>
-
-    <nav>
-        <button onclick="showTab('catalog', this)" class="active"><span>🎁</span>Ассортимент</button>
-        <button onclick="showTab('cart', this)"><span>🛒</span>Корзина <span id="cart-badge" class="cart-badge">1</span></button>
-        <button onclick="showTab('orders', this)"><span>📦</span>Заказы</button>
-        <button onclick="showTab('profile', this)"><span>👤</span>Профиль</button>
-    </nav>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        let cart = [{ name: 'ANNIMA LOVE Killer', price: 17, qty: 1, desc: 'Вкус: Ананас апельсин' }];
-        let selectedMethod = 'Метро';
-        let selectedTime = '14:25';
-        let currentOrderToCancel = null;
-
-        function showTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            if(btn) btn.classList.add('active');
-            if(tabId === 'orders') renderOrders();
-        }
-
-        function goToStep(step) {
-            for(let i=1; i<=4; i++) {
-                document.getElementById(`cart-step-${i}`).style.display = i === step ? 'block' : 'none';
-            }
-            if(step === 4) {
-                document.getElementById('summary-method-text').innerText = selectedMethod;
-                document.getElementById('summary-details-text').innerText = `Партизанская - ${selectedTime}`;
-            }
-        }
-
-        function selectMethod(method, el) {
-            selectedMethod = method;
-            document.querySelectorAll('#cart-step-2 .option-card').forEach(c => c.classList.remove('selected'));
-            document.querySelectorAll('#cart-step-2 .radio-check').forEach(r => r.innerHTML = '');
-            el.classList.add('selected');
-            el.querySelector('.radio-check').innerHTML = '✓';
-        }
-
-        function selectTime(time, el) {
-            selectedTime = time;
-            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
-            el.classList.add('selected');
-        }
-
-        function adjustQty(delta) {
-            cart[0].qty += delta;
-            if(cart[0].qty < 1) cart[0].qty = 1;
-            document.getElementById('cart-item-qty').innerText = cart[0].qty;
-            document.getElementById('total-count-label').innerText = cart[0].qty;
-            document.getElementById('total-price-label').innerText = cart[0].qty * 17;
-            document.getElementById('cart-badge').innerText = cart[0].qty;
-        }
-
-        function confirmOrder() {
-            const order = {
-                id: Math.floor(10000 + Math.random() * 90000),
-                date: '14 авг., 00:37',
-                method: selectedMethod,
-                details: `Партизанская · ${selectedTime}`,
-                items: [...cart],
-                total: cart[0].qty * 17,
-                status: 'active'
+    function renderStations(line) {
+        const container = document.getElementById('stations-list-container');
+        container.innerHTML = '';
+        metroStations[line].forEach(st => {
+            const isSel = st.name === selectedStation;
+            const div = document.createElement('div');
+            div.className = `station-item ${isSel ? 'selected' : ''}`;
+            div.innerHTML = `
+                <span>${st.name}</span>
+                <span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>
+            `;
+            div.onclick = () => {
+                selectedStation = st.name;
+                document.getElementById('current-metro-label').innerText = st.name;
+                renderStations(line);
             };
+            container.appendChild(div);
+        });
+    }
 
-            let orders = JSON.parse(localStorage.getItem('baster_orders') || '[]');
-            orders.unshift(order);
-            localStorage.setItem('baster_orders', JSON.stringify(orders));
+    function selectTime(el, time) {
+        document.querySelectorAll('.time-slot').forEach(t => t.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedTime = time;
+    }
 
-            if (tg.sendData) {
-                tg.sendData(JSON.stringify(order));
-            } else {
-                tg.close();
-            }
+    function confirmOrderFinal() {
+        const orderId = Math.floor(10000 + Math.random() * 90000);
+        const items = Object.values(cart);
+        const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
-            tg.HapticFeedback.notificationOccurred('success');
-            showTab('orders', document.querySelectorAll('nav button')[2]);
+        const newOrder = {
+            id: orderId,
+            items: [...items],
+            total: total,
+            station: selectedStation,
+            time: selectedTime,
+            date: 'Сегодня, 18:00'
+        };
+
+        activeOrders.unshift(newOrder);
+        renderOrders();
+
+        // Clear cart
+        cart = {};
+        updateCartBadge();
+
+        // Show Success Modal
+        document.getElementById('modal-details-text').innerText = 
+            `Заказ #${orderId} оформлен!\nМетро: ${selectedStation}\nВремя: ${selectedTime}\nОплата при встрече. Уведомление отправлено админу и вам в Telegram.`;
+        document.getElementById('success-modal').classList.add('show');
+    }
+
+    function closeModalAndReset() {
+        document.getElementById('success-modal').classList.remove('show');
+        switchScreen('orders');
+    }
+
+    function renderOrders() {
+        const container = document.getElementById('orders-list');
+        if (activeOrders.length === 0) {
+            container.innerHTML = `
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">📦</div>
+                    <p>Нет активных заказов</p>
+                </div>
+            `;
+            return;
         }
 
-        let currentOrdersFilter = 'active';
-        function switchOrdersTab(tab, btn) {
-            currentOrdersFilter = tab;
-            document.querySelectorAll('.orders-tab').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderOrders();
-        }
-
-        function renderOrders() {
-            let orders = JSON.parse(localStorage.getItem('baster_orders') || '[]');
-            const container = document.getElementById('orders-container');
-            
-            let filtered = orders.filter(o => currentOrdersFilter === 'active' ? o.status === 'active' : o.status !== 'active');
-            document.getElementById('active-count').innerText = orders.filter(o => o.status === 'active').length;
-
-            if(filtered.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted); text-align:center; margin-top:20px;">Нет заказов</p>';
-                return;
-            }
-
-            let html = '';
-            filtered.forEach(order => {
-                let statusBadge = order.status === 'active' ? '' : '<div class="order-status">Отменён</div>';
-                let actions = order.status === 'active' ? `
-                    <div class="order-actions">
-                        <button class="action-btn">✏️ Изменить</button>
-                        <button class="action-btn">🏷 Промо</button>
-                        <button class="action-btn">📍 Изменить место встречи</button>
-                        <button class="action-btn danger" onclick="openCancelModal(${order.id})">✕ Отмена</button>
+        let html = '';
+        activeOrders.forEach(ord => {
+            html += `
+                <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                        <span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>
+                        <span style="color:var(--text-secondary);">${ord.station}, ${ord.time}</span>
                     </div>
-                ` : `<div style="color:var(--text-muted); font-size:12px; margin-top:8px;">Отменён клиентом</div>`;
-
-                html += `
-                    <div class="order-box">
-                        <div class="order-header">
-                            <div class="order-id">#${order.id}</div>
-                            ${statusBadge}
-                        </div>
-                        <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">${order.date} · ${order.method} · ${order.items[0].qty} шт.</div>
-                        <div style="background:var(--bg-color); padding:8px 12px; border-radius:8px; font-size:13px; margin-bottom:8px;">${order.details}</div>
-                        <div style="font-size:13px; font-weight:600;">${order.items[0].name} — ${order.total} Б</div>
-                        ${actions}
+                    <div style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">
+                        Товаров: ${ord.items.reduce((s,i)=>s+i.qty,0)} шт. на ${ord.total.toFixed(2)} р.
                     </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
+                    <div style="font-size:12px; color:var(--accent-green);">Оплата при встрече</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
 
-        function openCancelModal(id) {
-            currentOrderToCancel = id;
-            document.getElementById('cancel-modal-title').innerText = `Отменить заказ #${id}?`;
-            document.getElementById('cancel-input-code').value = '';
-            document.getElementById('cancel-modal').style.display = 'flex';
-        }
+    // Navigation Switcher
+    function switchScreen(screenName) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-        function closeCancelModal() {
-            document.getElementById('cancel-modal').style.display = 'none';
-        }
+        document.getElementById(`screen-${screenName}`).classList.add('active');
 
-        function executeCancel() {
-            let val = document.getElementById('cancel-input-code').value;
-            if(val == currentOrderToCancel) {
-                let orders = JSON.parse(localStorage.getItem('baster_orders') || '[]');
-                orders = orders.map(o => {
-                    if(o.id == currentOrderToCancel) o.status = 'cancelled';
-                    return o;
-                });
-                localStorage.setItem('baster_orders', JSON.stringify(orders));
-                closeCancelModal();
-                renderOrders();
-                tg.HapticFeedback.notificationOccurred('success');
-            } else {
-                alert('Неверный номер заказа!');
-            }
-        }
+        if (screenName === 'catalog') document.querySelectorAll('.nav-item')[0].classList.add('active');
+        if (screenName === 'cart') document.querySelectorAll('.nav-item')[1].classList.add('active');
+        if (screenName === 'orders') document.querySelectorAll('.nav-item')[2].classList.add('active');
+        if (screenName === 'profile') document.querySelectorAll('.nav-item')[3].classList.add('active');
+    }
 
-        // Загрузка данных профиля из Telegram
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            const u = tg.initDataUnsafe.user;
-            document.getElementById('profile-name').innerText = `${u.first_name || ''} ${u.last_name || ''}`.trim();
-            document.getElementById('profile-username').innerText = u.username ? `@${u.username}` : '';
-        }
-    </script>
+    // Initialize Catalog
+    renderProducts(products);
+</script>
 </body>
 </html>
