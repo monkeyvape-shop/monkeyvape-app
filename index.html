@@ -1220,21 +1220,6 @@
     if (successModal) successModal.classList.add('show');
 }
 
-        // Отправка данных боту через Telegram WebApp API (если запущено внутри Telegram)
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
-            try {
-                window.Telegram.WebApp.sendData(JSON.stringify(orderData));
-            } catch (e) {
-                console.error("Telegram sendData error:", e);
-            }
-        }
-    
-
-    function closeModalAndReset() {
-        const successModal = document.getElementById('success-modal');
-        if (successModal) successModal.classList.remove('show');
-        switchScreen('orders');
-    }
 
     function renderOrders() {
         const container = document.getElementById('orders-list');
