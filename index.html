@@ -1210,13 +1210,12 @@
             tg.sendData(JSON.stringify(orderData));
             // Сразу переключаем пользователя на вкладку заказов и закрываем WebApp
             switchScreen('orders');
-            tg.close();
         } else {
             // Если тестируете в обычном браузере
             document.getElementById('success-modal').classList.add('show');
         }
     }
-    
+
     function closeModalAndReset() {
         document.getElementById('success-modal').classList.remove('show');
         switchScreen('orders');
