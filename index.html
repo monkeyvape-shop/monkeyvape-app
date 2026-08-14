@@ -1205,15 +1205,18 @@
         saveCart();
         renderCart();
 
-        // Отправка данных в телеграм-бот через WebApp API
-        if (tg && tg.sendData) {
-            tg.sendData(JSON.stringify(orderData));
-            // Сразу переключаем пользователя на вкладку заказов и закрываем WebApp
+   // Отправка данных в телеграм-бот через WebApp API
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tgApp = window.Telegram.WebApp;
+            tgApp.sendData(JSON.stringify(orderData));
+            // Сразу переключаем пользователя на вкладку заказов
             switchScreen('orders');
         } else {
             // Если тестируете в обычном браузере
             document.getElementById('success-modal').classList.add('show');
         }
+
+
     }
 
     function closeModalAndReset() {
