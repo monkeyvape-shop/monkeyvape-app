@@ -1146,19 +1146,11 @@
         // Очищаем корзину
         cart = {};
         saveCart();
+        renderCart();
 
-        // ГЛАВНОЕ: Отправка данных боту и немедленное закрытие мини-приложения
-        if (window.Telegram && window.Telegram.WebApp) {
-            if (window.Telegram.WebApp.sendData) {
-                window.Telegram.WebApp.sendData(JSON.stringify(orderData));
-            }
-            window.Telegram.WebApp.close();
-        } else {
-            // Если открыто в обычном браузере для отладки
-            alert("Заказ успешно оформлен! (Вне Telegram)");
-            renderOrders();
-            switchScreen('orders');
-        }
+        // Обновляем список заказов и переходим на экран заказов
+        renderOrders();
+        switchScreen('orders');
     }
 
     function renderOrders() {
