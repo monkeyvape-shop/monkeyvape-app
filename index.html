@@ -319,19 +319,16 @@
         }
 
         .product-title {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: -webkit-box;
-            display: box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            box-orient: vertical;
-            overflow: hidden;
-            height: 32px;
-        }
-
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    line-clamp: 2;          /* Стандартное свойство для совместимости */
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 32px;
+}
         .product-footer {
             display: flex;
             justify-content: space-between;
@@ -820,7 +817,10 @@
 
         <!-- 3. ORDERS SCREEN -->
         <div id="screen-orders" class="screen">
-            <div class="section-title">Мои заказы</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div class="section-title" style="margin-bottom: 0;">Мои заказы</div>
+                <button id="clear-orders-btn" onclick="clearOrdersHistory()" style="background: none; border: none; color: var(--danger); font-size: 12px; cursor: pointer; display: none;">Очистить историю</button>
+            </div>
             <div id="orders-list">
                 <div class="cart-empty">
                     <div class="cart-empty-icon">📦</div>
@@ -937,7 +937,8 @@
     // Сплеш-скрин
     window.addEventListener('load', () => {
         setTimeout(() => {
-            document.getElementById('progress-fill').style.width = '100%';
+            const progressFill = document.getElementById('progress-fill');
+            if (progressFill) progressFill.style.width = '100%';
         }, 100);
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
@@ -981,7 +982,6 @@
         ]
     };
 
-    // Загружаем корзину из localStorage, чтобы она НИКУДА не пропадала при переходе
     let cart = JSON.parse(localStorage.getItem('monkey_cart')) || {};
     let activeCategory = 'all';
     let currentLine = 'green';
@@ -996,6 +996,7 @@
 
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
+        if (!grid) return;
         grid.innerHTML = '';
         if (items.length === 0) {
             grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 30px;">Товары не найдены</div>';
@@ -1021,7 +1022,8 @@
     }
 
     function filterProducts() {
-        const query = document.getElementById('search-input').value.toLowerCase();
+        const searchInput = document.getElementById('search-input');
+        const query = searchInput ? searchInput.value.toLowerCase() : '';
         const filtered = products.filter(p => {
             const matchesCat = activeCategory === 'all' || p.category === activeCategory;
             const matchesQuery = p.title.toLowerCase().includes(query);
@@ -1033,7 +1035,7 @@
     function setCategory(cat, el) {
         activeCategory = cat;
         document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
+        if (el) el.classList.add('active');
         filterProducts();
     }
 
@@ -1042,7 +1044,9 @@
             cart[productId].qty += 1;
         } else {
             const prod = products.find(p => p.id === productId);
-            cart[productId] = { ...prod, qty: 1 };
+            if (prod) {
+                cart[productId] = { ...prod, qty: 1 };
+            }
         }
         saveCart();
         renderCart();
@@ -1061,6 +1065,7 @@
 
     function updateCartBadge() {
         const badge = document.getElementById('cart-badge');
+        if (!badge) return;
         const totalCount = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
         if (totalCount > 0) {
             badge.style.display = 'flex';
@@ -1072,6 +1077,7 @@
 
     function renderCart() {
         const container = document.getElementById('cart-content');
+        if (!container) return;
         const items = Object.values(cart);
 
         if (items.length === 0) {
@@ -1133,7 +1139,10 @@
     }
 
     function proceedToCheckout() {
-        if (Object.keys(cart).length === 0) return;
+        if (Object.keys(cart).length === 0) {
+            switchScreen('cart');
+            return;
+        }
         switchScreen('checkout');
         renderStations('green');
     }
@@ -1149,6 +1158,7 @@
 
     function renderStations(line) {
         const container = document.getElementById('stations-list-container');
+        if (!container) return;
         container.innerHTML = '';
         metroStations[line].forEach(st => {
             const isSel = st.name === selectedStation;
@@ -1160,7 +1170,8 @@
             `;
             div.onclick = () => {
                 selectedStation = st.name;
-                document.getElementById('current-metro-label').innerText = st.name;
+                const metroLabel = document.getElementById('current-metro-label');
+                if (metroLabel) metroLabel.innerText = st.name;
                 renderStations(line);
             };
             container.appendChild(div);
@@ -1173,10 +1184,12 @@
         selectedTime = time;
     }
 
-    // Подтверждение заказа и отправка боту
     function confirmOrderFinal() {
         const items = Object.values(cart);
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            switchScreen('cart');
+            return;
+        }
 
         const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
         const orderId = Math.floor(10000 + Math.random() * 90000);
@@ -1189,44 +1202,40 @@
             time: selectedTime
         };
 
-        // Добавляем в историю заказов
-        activeOrders.unshift({
-            id: orderId,
-            items: [...items],
-            total: total,
-            station: selectedStation,
-            time: selectedTime
-        });
+        activeOrders.unshift(orderData);
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
         renderOrders();
 
-        // Очищаем корзину после оформления
         cart = {};
         saveCart();
         renderCart();
 
-   // Отправка данных в телеграм-бот через WebApp API
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tgApp = window.Telegram.WebApp;
-            tgApp.sendData(JSON.stringify(orderData));
-            // Сразу переключаем пользователя на вкладку заказов
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
+            try {
+                window.Telegram.WebApp.sendData(JSON.stringify(orderData));
+            } catch (e) {
+                console.error("Telegram sendData error:", e);
+            }
             switchScreen('orders');
         } else {
-            // Если тестируете в обычном браузере
-            document.getElementById('success-modal').classList.add('show');
+            const successModal = document.getElementById('success-modal');
+            if (successModal) successModal.classList.add('show');
         }
-
-
     }
 
     function closeModalAndReset() {
-        document.getElementById('success-modal').classList.remove('show');
+        const successModal = document.getElementById('success-modal');
+        if (successModal) successModal.classList.remove('show');
         switchScreen('orders');
     }
 
     function renderOrders() {
         const container = document.getElementById('orders-list');
+        const clearBtn = document.getElementById('clear-orders-btn');
+        if (!container) return;
+
         if (activeOrders.length === 0) {
+            if (clearBtn) clearBtn.style.display = 'none';
             container.innerHTML = `
                 <div class="cart-empty">
                     <div class="cart-empty-icon">📦</div>
@@ -1236,6 +1245,7 @@
             return;
         }
 
+        if (clearBtn) clearBtn.style.display = 'block';
         let html = '';
         activeOrders.forEach(ord => {
             html += `
@@ -1254,16 +1264,24 @@
         container.innerHTML = html;
     }
 
+    function clearOrdersHistory() {
+        activeOrders = [];
+        localStorage.removeItem('monkey_orders');
+        renderOrders();
+    }
+
     function switchScreen(screenName) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-        document.getElementById(`screen-${screenName}`).classList.add('active');
+        const targetScreen = document.getElementById(`screen-${screenName}`);
+        if (targetScreen) targetScreen.classList.add('active');
 
-        if (screenName === 'catalog') document.querySelectorAll('.nav-item')[0].classList.add('active');
-        if (screenName === 'cart') document.querySelectorAll('.nav-item')[1].classList.add('active');
-        if (screenName === 'orders') document.querySelectorAll('.nav-item')[2].classList.add('active');
-        if (screenName === 'profile') document.querySelectorAll('.nav-item')[3].classList.add('active');
+        const navItems = document.querySelectorAll('.nav-item');
+        if (screenName === 'catalog' && navItems[0]) navItems[0].classList.add('active');
+        if (screenName === 'cart' && navItems[1]) navItems[1].classList.add('active');
+        if (screenName === 'orders' && navItems[2]) navItems[2].classList.add('active');
+        if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
     }
 
     // Инициализация интерфейса при открытии
