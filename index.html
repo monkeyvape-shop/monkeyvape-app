@@ -1185,27 +1185,28 @@
         selectedTime = time;
     }
 
-    function confirmOrderFinal() {
-        
-        const items = Object.values(cart);
-        if (items.length === 0) {
-            switchScreen('cart');
-            return;
-        }
+   function confirmOrderFinal() {
+    const items = Object.values(cart);
+    if (items.length === 0) {
+        switchScreen('cart');
+        return;
+    }
 
-        const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
-        const orderId = Math.floor(10000 + Math.random() * 90000);
+    const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const orderId = Math.floor(10000 + Math.random() * 90000);
 
-       const orderData = {
+    const orderData = {
         id: orderId,
         items: items,
         total: total,
         station: selectedStation,
         time: selectedTime
-    }; // <- закрыли объект orderData на этой строке
+    };
 
-    // А СЮДА (ПОСЛЕ НЕГО) ВСТАВЛЯЕМ ОТПРАВКУ:
-    Telegram.WebApp.sendData(JSON.stringify(orderData));
+    // Безопасная отправка данных боту (работает только внутри Telegram)
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
+        window.Telegram.WebApp.sendData(JSON.stringify(orderData));
+    }
 
     activeOrders.unshift(orderData);
     localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
@@ -1220,6 +1221,11 @@
     if (successModal) successModal.classList.add('show');
 }
 
+function closeModalAndReset() {
+    const successModal = document.getElementById('success-modal');
+    if (successModal) successModal.classList.remove('show');
+    switchScreen('orders');
+}
 
     function renderOrders() {
         const container = document.getElementById('orders-list');
