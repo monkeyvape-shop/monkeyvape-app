@@ -706,58 +706,6 @@
             align-items: center;
             justify-content: center;
         }
-
-        /* Modal Notification Overlay */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-
-        .modal-overlay.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--accent-green);
-            border-radius: 20px;
-            padding: 24px;
-            width: 85%;
-            max-width: 360px;
-            text-align: center;
-            box-shadow: 0 0 30px var(--accent-green-glow);
-        }
-
-        .modal-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--accent-green);
-        }
-
-        .modal-text {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-            line-height: 1.4;
-        }
     </style>
 </head>
 <body>
@@ -908,18 +856,6 @@
             <span class="nav-icon">👤</span>
             <span>Профиль</span>
         </button>
-    </div>
-
-    <!-- SUCCESS MODAL -->
-    <div class="modal-overlay" id="success-modal">
-        <div class="modal-card">
-            <div class="modal-icon">✅</div>
-            <div class="modal-title">Заказ успешно оформлен!</div>
-            <div class="modal-text" id="modal-details-text">
-                Детали заказа отправлены. Администратор уже получил уведомление. Оплата при встрече!
-            </div>
-            <button class="primary-btn" onclick="closeModalAndReset()">Отлично</button>
-        </div>
     </div>
 </div>
 
@@ -1185,47 +1121,45 @@
         selectedTime = time;
     }
 
-   function confirmOrderFinal() {
-    const items = Object.values(cart);
-    if (items.length === 0) {
-        switchScreen('cart');
-        return;
+    function confirmOrderFinal() {
+        const items = Object.values(cart);
+        if (items.length === 0) {
+            switchScreen('cart');
+            return;
+        }
+
+        const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        const orderId = Math.floor(10000 + Math.random() * 90000);
+
+        const orderData = {
+            id: orderId,
+            items: items,
+            total: total,
+            station: selectedStation,
+            time: selectedTime
+        };
+
+        // Сохраняем заказ локально для вкладки "Заказы"
+        activeOrders.unshift(orderData);
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+
+        // Очищаем корзину
+        cart = {};
+        saveCart();
+
+        // ГЛАВНОЕ: Отправка данных боту и немедленное закрытие мини-приложения
+        if (window.Telegram && window.Telegram.WebApp) {
+            if (window.Telegram.WebApp.sendData) {
+                window.Telegram.WebApp.sendData(JSON.stringify(orderData));
+            }
+            window.Telegram.WebApp.close();
+        } else {
+            // Если открыто в обычном браузере для отладки
+            alert("Заказ успешно оформлен! (Вне Telegram)");
+            renderOrders();
+            switchScreen('orders');
+        }
     }
-
-    const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    const orderId = Math.floor(10000 + Math.random() * 90000);
-
-    const orderData = {
-        id: orderId,
-        items: items,
-        total: total,
-        station: selectedStation,
-        time: selectedTime
-    };
-
-    // Безопасная отправка данных боту (работает только внутри Telegram)
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.sendData) {
-        window.Telegram.WebApp.sendData(JSON.stringify(orderData));
-    }
-
-    activeOrders.unshift(orderData);
-    localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
-    renderOrders();
-
-    cart = {};
-    saveCart();
-    renderCart();
-
-    // Показываем модальное окно успешного оформления
-    const successModal = document.getElementById('success-modal');
-    if (successModal) successModal.classList.add('show');
-}
-
-function closeModalAndReset() {
-    const successModal = document.getElementById('success-modal');
-    if (successModal) successModal.classList.remove('show');
-    switchScreen('orders');
-}
 
     function renderOrders() {
         const container = document.getElementById('orders-list');
