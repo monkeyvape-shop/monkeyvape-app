@@ -56,7 +56,6 @@
             }
         }
 
-        /* Splash Screen */
         #splash-screen {
             position: absolute;
             top: 0;
@@ -104,7 +103,6 @@
             transition: width 1.5s ease-in-out;
         }
 
-        /* Top Bar */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -156,7 +154,6 @@
             font-size: 11px;
         }
 
-        /* Content Area */
         .content-area {
             flex: 1;
             overflow-y: auto;
@@ -172,7 +169,6 @@
             display: block;
         }
 
-        /* Search & Categories */
         .search-box {
             position: relative;
             margin-bottom: 16px;
@@ -237,7 +233,6 @@
             box-shadow: 0 0 15px var(--accent-green-glow);
         }
 
-        /* Banner */
         .promo-banner {
             background: linear-gradient(135deg, #132b17 0%, #0d1a10 100%);
             border: 1px solid var(--border-color);
@@ -270,7 +265,6 @@
             border-radius: 8px;
         }
 
-        /* Product Grid */
         .products-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -363,7 +357,6 @@
             transform: scale(0.9);
         }
 
-        /* Cart Screen */
         .cart-empty {
             text-align: center;
             padding: 60px 20px;
@@ -496,7 +489,6 @@
             opacity: 0.85;
         }
 
-        /* Checkout / Metro Flow */
         .section-title {
             font-size: 16px;
             font-weight: 700;
@@ -598,7 +590,6 @@
             font-weight: 600;
         }
 
-        /* Profile Screen */
         .profile-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -654,7 +645,6 @@
             font-weight: 600;
         }
 
-        /* Bottom Nav */
         .bottom-nav {
             position: absolute;
             bottom: 0;
@@ -711,7 +701,6 @@
 <body>
 
 <div class="app-container">
-    <!-- SPLASH SCREEN -->
     <div id="splash-screen">
         <div class="splash-logo">MONKEY VAPE</div>
         <div class="splash-sub">Загрузка онлайн-магазина...</div>
@@ -720,7 +709,6 @@
         </div>
     </div>
 
-    <!-- TOP BAR -->
     <div class="top-bar">
         <div class="brand-title">MONKEY <span>VAPE</span></div>
         <button class="metro-selector-btn" onclick="openMetroPicker()">
@@ -729,10 +717,7 @@
         </button>
     </div>
 
-    <!-- CONTENT CONTAINER -->
     <div class="content-area">
-
-        <!-- 1. CATALOG SCREEN -->
         <div id="screen-catalog" class="screen active">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
@@ -758,13 +743,11 @@
             <div class="products-grid" id="products-grid"></div>
         </div>
 
-        <!-- 2. CART SCREEN -->
         <div id="screen-cart" class="screen">
             <div class="section-title">Корзина</div>
             <div id="cart-content"></div>
         </div>
 
-        <!-- 3. ORDERS SCREEN (Для клиента) -->
         <div id="screen-orders" class="screen">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div class="section-title" style="margin-bottom: 0;">Мои заказы</div>
@@ -778,7 +761,6 @@
             </div>
         </div>
 
-        <!-- 4. PROFILE SCREEN -->
         <div id="screen-profile" class="screen">
             <div class="section-title">Профиль</div>
             <div class="profile-card">
@@ -795,7 +777,6 @@
             </a>
         </div>
 
-        <!-- 5. COURIER SCREEN (Только для курьеров/владельцев) -->
         <div id="screen-courier" class="screen">
             <div class="section-title">Панель курьера 🛵</div>
             <div id="courier-orders-list">
@@ -806,7 +787,6 @@
             </div>
         </div>
 
-        <!-- SUB-SCREEN: CHECKOUT -->
         <div id="screen-checkout" class="screen">
             <div class="section-title">Оформление заказа</div>
             
@@ -848,7 +828,6 @@
 
     </div>
 
-    <!-- BOTTOM NAV -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="switchScreen('catalog')">
             <span class="nav-icon">🛍️</span>
@@ -867,7 +846,6 @@
             <span class="nav-icon">👤</span>
             <span>Профиль</span>
         </button>
-        <!-- Кнопка курьера (скрыта для обычных пользователей) -->
         <button class="nav-item" id="nav-courier-btn" onclick="switchScreen('courier')" style="display: none;">
             <span class="nav-icon">🛵</span>
             <span>Курьер</span>
@@ -876,10 +854,10 @@
 </div>
 
 <script>
-    const BACKEND_URL = "https://nasty-eel-24.loca.lt"; // Актуальный URL туннеля без пробелов
+    const BACKEND_URL = "https://nasty-eel-24.loca.lt";
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
-    let currentUserId = 7280921605; // Дефолтный ID для тестов
+    let currentUserId = 6658906694; // Дефолтный пользователь для браузера
     let currentUserName = "User";
 
     if (tg) {
@@ -1152,7 +1130,6 @@
         selectedTime = time;
     }
 
-    // Подтверждение заказа без отправки в чат
     async function confirmOrderFinal() {
         const items = Object.values(cart);
         if (items.length === 0) {
@@ -1194,7 +1171,6 @@
         switchScreen('orders');
     }
 
-    // Рендер заказов пользователя с динамическим обновлением статуса
     function renderOrders() {
         const container = document.getElementById('orders-list');
         const clearBtn = document.getElementById('clear-orders-btn');
@@ -1247,7 +1223,6 @@
         renderOrders();
     }
 
-    // Фоновая синхронизация статусов заказов клиента с бэкендом (каждые 4 сек)
     async function syncClientOrdersStatus() {
         if (activeOrders.length === 0) return;
         try {
@@ -1275,7 +1250,6 @@
     }
     setInterval(syncClientOrdersStatus, 4000);
 
-    // Проверка роли для показа панели курьера
     async function checkUserRole() {
         try {
             const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`);
@@ -1286,12 +1260,9 @@
                 if (courierNavBtn) courierNavBtn.style.display = 'flex';
                 loadCourierOrders();
             }
-        } catch (e) {
-            console.log("Ошибка проверки роли:", e);
-        }
+        } catch (e) {}
     }
 
-    // Загрузка заказов в панель курьера
     async function loadCourierOrders() {
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
