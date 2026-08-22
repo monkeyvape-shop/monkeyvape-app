@@ -1151,6 +1151,11 @@
         // Обновляем список заказов и переходим на экран заказов
         renderOrders();
         switchScreen('orders');
+
+        // Отправляем данные в бота Telegram
+        if (tg) {
+            tg.sendData(JSON.stringify(orderData));
+        }
     }
 
     function renderOrders() {
