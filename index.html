@@ -860,14 +860,27 @@
 </div>
 
 <script>
-    // Инициализация Telegram WebApp
+    // Инициализация Telegram WebApp с поддержкой синей кнопки меню
     let tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) {
+        tg.ready(); // Сообщаем Telegram, что WebApp полностью загружен и готов
         tg.expand();
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            const user = tg.initDataUnsafe.user;
-            document.getElementById('profile-username').innerText = user.username ? '@' + user.username : user.first_name;
-            document.getElementById('profile-avatar-letter').innerText = user.first_name.charAt(0).toUpperCase();
+        
+        try {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const user = tg.initDataUnsafe.user;
+                const usernameElem = document.getElementById('profile-username');
+                const avatarElem = document.getElementById('profile-avatar-letter');
+                
+                if (usernameElem) {
+                    usernameElem.innerText = user.username ? '@' + user.username : (user.first_name || 'User');
+                }
+                if (avatarElem && user.first_name) {
+                    avatarElem.innerText = user.first_name.charAt(0).toUpperCase();
+                }
+            }
+        } catch (err) {
+            console.log("Ошибка инициализации профиля:", err);
         }
     }
 
@@ -1139,20 +1152,16 @@
             time: selectedTime
         };
 
-        // Сохраняем заказ локально для вкладки "Заказы"
         activeOrders.unshift(orderData);
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
 
-        // Очищаем корзину
         cart = {};
         saveCart();
         renderCart();
 
-        // Обновляем список заказов и переходим на экран заказов
         renderOrders();
         switchScreen('orders');
 
-        // Отправляем данные в бота Telegram
         if (tg) {
             tg.sendData(JSON.stringify(orderData));
         }
@@ -1213,7 +1222,6 @@
         if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
     }
 
-    // Инициализация интерфейса при открытии
     renderProducts(products);
     renderStations('green');
     updateCartBadge();
