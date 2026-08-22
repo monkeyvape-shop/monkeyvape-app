@@ -319,17 +319,16 @@
         }
 
         .product-title {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: -webkit-box;
-            line-clamp: 2;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            height: 32px;
-        }
-
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2; /* Добавь эту строчку */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 32px;
+}
         .product-footer {
             display: flex;
             justify-content: space-between;
@@ -876,8 +875,7 @@
 </div>
 
 <script>
-    // Ссылка на твой Python-сервер (если тестируешь локально, сюда вставляется ссылка от ngrok)
-    const BACKEND_URL = "https://monkeyvape-shop.loca.lt";
+    const BACKEND_URL = "https://monkeyvape-shop.loca.lt"; // Не забудь подставить актуальный URL туннеля
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) {
@@ -902,7 +900,6 @@
         }
     }
 
-    // Сплеш-скрин
     window.addEventListener('load', () => {
         setTimeout(() => {
             const progressFill = document.getElementById('progress-fill');
@@ -1179,7 +1176,6 @@
             time: selectedTime
         };
 
-        // Отправка заказа на сервер
         try {
             await fetch(`${BACKEND_URL}/api/create_order`, {
                 method: 'POST',
@@ -1200,7 +1196,7 @@
         switchScreen('orders');
 
         if (tg) {
-            tg.sendData(JSON.stringify(orderData));
+            try { tg.sendData(JSON.stringify(orderData)); } catch(e){}
         }
     }
 
@@ -1245,7 +1241,6 @@
         renderOrders();
     }
 
-    // Проверка роли пользователя (клиент / курьер)
     async function checkUserRole() {
         if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) return;
         const userId = tg.initDataUnsafe.user.id;
@@ -1254,7 +1249,7 @@
             const response = await fetch(`${BACKEND_URL}/api/check_role/${userId}`);
             const data = await response.json();
             
-            if (data.role === 'courier') {
+            if (data.role === 'courier' || data.role === 'owner') {
                 const courierNavBtn = document.getElementById('nav-courier-btn');
                 if (courierNavBtn) courierNavBtn.style.display = 'flex';
                 loadCourierOrders();
@@ -1264,7 +1259,6 @@
         }
     }
 
-    // Загрузка заказов для курьера
     async function loadCourierOrders() {
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
@@ -1317,7 +1311,6 @@
         }
     }
 
-    // Изменение статуса заказа курьером
     async function updateOrderStatus(orderId, status) {
         try {
             await fetch(`${BACKEND_URL}/api/update_order_status`, {
@@ -1344,6 +1337,11 @@
         if (screenName === 'orders' && navItems[2]) navItems[2].classList.add('active');
         if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
         if (screenName === 'courier' && navItems[4]) navItems[4].classList.add('active');
+
+        // Если открываем экран курьера, подгружаем актуальные данные
+        if (screenName === 'courier') {
+            loadCourierOrders();
+        }
     }
 
     renderProducts(products);
