@@ -795,6 +795,17 @@
             </a>
         </div>
 
+        <!-- 5. COURIER SCREEN (Только для курьеров) -->
+        <div id="screen-courier" class="screen">
+            <div class="section-title">Панель курьера 🛵</div>
+            <div id="courier-orders-list">
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">⏳</div>
+                    <p>Загрузка заказов...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- SUB-SCREEN: CHECKOUT -->
         <div id="screen-checkout" class="screen">
             <div class="section-title">Оформление заказа</div>
@@ -856,14 +867,21 @@
             <span class="nav-icon">👤</span>
             <span>Профиль</span>
         </button>
+        <!-- Кнопка курьера (скрыта для обычных пользователей) -->
+        <button class="nav-item" id="nav-courier-btn" onclick="switchScreen('courier')" style="display: none;">
+            <span class="nav-icon">🛵</span>
+            <span>Курьер</span>
+        </button>
     </div>
 </div>
 
 <script>
-    // Инициализация Telegram WebApp с поддержкой синей кнопки меню
+    // Ссылка на твой Python-сервер (если тестируешь локально, сюда вставляется ссылка от ngrok)
+    const BACKEND_URL = "https://silent-bugs-fold.loca.lt";
+
     let tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) {
-        tg.ready(); // Сообщаем Telegram, что WebApp полностью загружен и готов
+        tg.ready();
         tg.expand();
         
         try {
@@ -1134,7 +1152,7 @@
         selectedTime = time;
     }
 
-    function confirmOrderFinal() {
+    async function confirmOrderFinal() {
         const items = Object.values(cart);
         if (items.length === 0) {
             switchScreen('cart');
@@ -1142,15 +1160,35 @@
         }
 
         const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
-        const orderId = Math.floor(10000 + Math.random() * 90000);
+        const orderId = String(Math.floor(10000 + Math.random() * 90000));
+
+        let userId = 7280921605;
+        let userName = "User";
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            userId = tg.initDataUnsafe.user.id;
+            userName = tg.initDataUnsafe.user.username ? '@' + tg.initDataUnsafe.user.username : (tg.initDataUnsafe.user.first_name || 'User');
+        }
 
         const orderData = {
             id: orderId,
+            user_id: userId,
+            user_name: userName,
             items: items,
             total: total,
             station: selectedStation,
             time: selectedTime
         };
+
+        // Отправка заказа на сервер
+        try {
+            await fetch(`${BACKEND_URL}/api/create_order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+        } catch (e) {
+            console.error("Ошибка отправки заказа на сервер:", e);
+        }
 
         activeOrders.unshift(orderData);
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
@@ -1158,7 +1196,6 @@
         cart = {};
         saveCart();
         renderCart();
-
         renderOrders();
         switchScreen('orders');
 
@@ -1208,6 +1245,92 @@
         renderOrders();
     }
 
+    // Проверка роли пользователя (клиент / курьер)
+    async function checkUserRole() {
+        if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) return;
+        const userId = tg.initDataUnsafe.user.id;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/check_role/${userId}`);
+            const data = await response.json();
+            
+            if (data.role === 'courier') {
+                const courierNavBtn = document.getElementById('nav-courier-btn');
+                if (courierNavBtn) courierNavBtn.style.display = 'flex';
+                loadCourierOrders();
+            }
+        } catch (e) {
+            console.log("Ошибка проверки роли:", e);
+        }
+    }
+
+    // Загрузка заказов для курьера
+    async function loadCourierOrders() {
+        const container = document.getElementById('courier-orders-list');
+        if (!container) return;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/orders`);
+            const orders = await response.json();
+
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="cart-empty">
+                        <div class="cart-empty-icon">✅</div>
+                        <p>Нет активных заказов для доставки</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            orders.forEach(ord => {
+                let itemsList = '';
+                ord.items.forEach(i => {
+                    itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
+                });
+
+                html += `
+                    <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 12px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
+                            <span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id}</span>
+                            <span style="color:var(--text-secondary);">👤 ${ord.user_name}</span>
+                        </div>
+                        <div style="font-size:13px; margin-bottom:6px;">
+                            🚇 <b>Станция:</b> ${ord.station}<br>
+                            ⏰ <b>Время:</b> ${ord.time}
+                        </div>
+                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; background:var(--bg-color); padding:8px; border-radius:8px;">
+                            ${itemsList}
+                            <b>Итого:</b> ${ord.total.toFixed(2)} р.
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:10px; border-radius:10px; font-weight:700; cursor:pointer;">✅ Выдан</button>
+                            <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:10px; border-radius:10px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = `<p style="text-align:center; color:var(--danger);">Ошибка загрузки заказов</p>`;
+        }
+    }
+
+    // Изменение статуса заказа курьером
+    async function updateOrderStatus(orderId, status) {
+        try {
+            await fetch(`${BACKEND_URL}/api/update_order_status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId, status: status })
+            });
+            loadCourierOrders();
+        } catch (e) {
+            alert("Не удалось обновить статус заказа");
+        }
+    }
+
     function switchScreen(screenName) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1220,6 +1343,7 @@
         if (screenName === 'cart' && navItems[1]) navItems[1].classList.add('active');
         if (screenName === 'orders' && navItems[2]) navItems[2].classList.add('active');
         if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
+        if (screenName === 'courier' && navItems[4]) navItems[4].classList.add('active');
     }
 
     renderProducts(products);
@@ -1227,6 +1351,7 @@
     updateCartBadge();
     renderCart();
     renderOrders();
+    checkUserRole();
 </script>
 </body>
 </html>
