@@ -319,16 +319,17 @@
         }
 
         .product-title {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 6px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2; /* Добавь эту строчку */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    height: 32px;
-}
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 32px;
+        }
+
         .product-footer {
             display: flex;
             justify-content: space-between;
@@ -763,7 +764,7 @@
             <div id="cart-content"></div>
         </div>
 
-        <!-- 3. ORDERS SCREEN -->
+        <!-- 3. ORDERS SCREEN (Для клиента) -->
         <div id="screen-orders" class="screen">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div class="section-title" style="margin-bottom: 0;">Мои заказы</div>
@@ -794,7 +795,7 @@
             </a>
         </div>
 
-        <!-- 5. COURIER SCREEN (Только для курьеров) -->
+        <!-- 5. COURIER SCREEN (Только для курьеров/владельцев) -->
         <div id="screen-courier" class="screen">
             <div class="section-title">Панель курьера 🛵</div>
             <div id="courier-orders-list">
@@ -875,29 +876,31 @@
 </div>
 
 <script>
-    const BACKEND_URL = "https://monkeyvape-shop.loca.lt"; // Не забудь подставить актуальный URL туннеля
+    const BACKEND_URL = "https://monkeyvape-shop.loca.lt"; // Укажи свой актуальный URL туннеля
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
+    let currentUserId = 7280921605; // Дефолтный ID для тестов
+    let currentUserName = "User";
+
     if (tg) {
         tg.ready();
         tg.expand();
-        
         try {
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
+                currentUserId = user.id;
+                currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
+                
                 const usernameElem = document.getElementById('profile-username');
                 const avatarElem = document.getElementById('profile-avatar-letter');
-                
                 if (usernameElem) {
-                    usernameElem.innerText = user.username ? '@' + user.username : (user.first_name || 'User');
+                    usernameElem.innerText = currentUserName;
                 }
                 if (avatarElem && user.first_name) {
                     avatarElem.innerText = user.first_name.charAt(0).toUpperCase();
                 }
             }
-        } catch (err) {
-            console.log("Ошибка инициализации профиля:", err);
-        }
+        } catch (err) {}
     }
 
     window.addEventListener('load', () => {
@@ -1149,6 +1152,7 @@
         selectedTime = time;
     }
 
+    // Подтверждение заказа без закрытия приложения, с перебросом в «Заказы»
     async function confirmOrderFinal() {
         const items = Object.values(cart);
         if (items.length === 0) {
@@ -1159,21 +1163,15 @@
         const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
         const orderId = String(Math.floor(10000 + Math.random() * 90000));
 
-        let userId = 7280921605;
-        let userName = "User";
-        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            userId = tg.initDataUnsafe.user.id;
-            userName = tg.initDataUnsafe.user.username ? '@' + tg.initDataUnsafe.user.username : (tg.initDataUnsafe.user.first_name || 'User');
-        }
-
         const orderData = {
             id: orderId,
-            user_id: userId,
-            user_name: userName,
+            user_id: currentUserId,
+            user_name: currentUserName,
             items: items,
             total: total,
             station: selectedStation,
-            time: selectedTime
+            time: selectedTime,
+            status: 'active'
         };
 
         try {
@@ -1200,6 +1198,7 @@
         }
     }
 
+    // Рендер заказов пользователя с динамическим обновлением статуса
     function renderOrders() {
         const container = document.getElementById('orders-list');
         const clearBtn = document.getElementById('clear-orders-btn');
@@ -1219,10 +1218,21 @@
         if (clearBtn) clearBtn.style.display = 'block';
         let html = '';
         activeOrders.forEach(ord => {
+            let statusText = 'Активен';
+            let statusColor = 'var(--accent-green)';
+            
+            if (ord.status === 'completed') {
+                statusText = 'Заказ выдан ✅';
+                statusColor = '#00cc44';
+            } else if (ord.status === 'cancelled') {
+                statusText = 'Заказ отменён ❌';
+                statusColor = 'var(--danger)';
+            }
+
             html += `
                 <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 12px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-                        <span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>
+                        <span style="color:${statusColor}; font-weight:700;">#${ord.id} • ${statusText}</span>
                         <span style="color:var(--text-secondary);">${ord.station}, ${ord.time}</span>
                     </div>
                     <div style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">
@@ -1241,12 +1251,38 @@
         renderOrders();
     }
 
-    async function checkUserRole() {
-        if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) return;
-        const userId = tg.initDataUnsafe.user.id;
-
+    // Фоновая синхронизация статусов заказов клиента с бэкендом (каждые 4 сек)
+    async function syncClientOrdersStatus() {
+        if (activeOrders.length === 0) return;
         try {
-            const response = await fetch(`${BACKEND_URL}/api/check_role/${userId}`);
+            const response = await fetch(`${BACKEND_URL}/api/user_orders/${currentUserId}`);
+            if (response.ok) {
+                const serverOrders = await response.json();
+                let updated = false;
+
+                activeOrders.forEach(localOrd => {
+                    const found = serverOrders.find(s => s.id === localOrd.id);
+                    if (found && found.status && found.status !== localOrd.status) {
+                        localOrd.status = found.status;
+                        updated = true;
+                    }
+                });
+
+                if (updated) {
+                    localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+                    if (document.getElementById('screen-orders').classList.contains('active')) {
+                        renderOrders();
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+    setInterval(syncClientOrdersStatus, 4000);
+
+    // Проверка роли для показа панели курьера
+    async function checkUserRole() {
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`);
             const data = await response.json();
             
             if (data.role === 'courier' || data.role === 'owner') {
@@ -1259,6 +1295,7 @@
         }
     }
 
+    // Загрузка заказов в панель курьера
     async function loadCourierOrders() {
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
@@ -1338,7 +1375,6 @@
         if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
         if (screenName === 'courier' && navItems[4]) navItems[4].classList.add('active');
 
-        // Если открываем экран курьера, подгружаем актуальные данные
         if (screenName === 'courier') {
             loadCourierOrders();
         }
