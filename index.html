@@ -876,7 +876,7 @@
 </div>
 
 <script>
-    const BACKEND_URL = "https://nasty-eel-24.loca.lt"; // Укажи свой актуальный URL туннеля
+    const BACKEND_URL = "https://nasty-eel-24.loca.lt"; // Актуальный URL туннеля без пробелов
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
     let currentUserId = 7280921605; // Дефолтный ID для тестов
@@ -1152,7 +1152,7 @@
         selectedTime = time;
     }
 
-    // Подтверждение заказа без закрытия приложения, с перебросом в «Заказы»
+    // Подтверждение заказа без отправки в чат
     async function confirmOrderFinal() {
         const items = Object.values(cart);
         if (items.length === 0) {
@@ -1192,10 +1192,6 @@
         renderCart();
         renderOrders();
         switchScreen('orders');
-
-        if (tg) {
-            try { tg.sendData(JSON.stringify(orderData)); } catch(e){}
-        }
     }
 
     // Рендер заказов пользователя с динамическим обновлением статуса
