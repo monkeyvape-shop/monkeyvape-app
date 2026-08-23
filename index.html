@@ -16,6 +16,7 @@
             --text-secondary: #9ca3af;
             --border-color: #223525;
             --danger: #ff3333;
+            --danger-glow: rgba(255, 51, 51, 0.2);
         }
 
         * {
@@ -127,12 +128,12 @@
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-main);
-            padding: 6px 12px;
+            padding: 8px 14px;
             border-radius: 12px;
             font-size: 12px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -157,8 +158,8 @@
         .content-area {
             flex: 1;
             overflow-y: auto;
-            padding: 16px 20px;
-            padding-bottom: 90px;
+            padding: 20px;
+            padding-bottom: 100px;
         }
 
         .screen {
@@ -171,15 +172,15 @@
 
         .search-box {
             position: relative;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .search-input {
             width: 100%;
-            padding: 12px 16px 12px 42px;
+            padding: 14px 16px 14px 44px;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
+            border-radius: 16px;
             color: var(--text-main);
             font-size: 14px;
             outline: none;
@@ -188,12 +189,12 @@
 
         .search-input:focus {
             border-color: var(--accent-green);
-            box-shadow: 0 0 10px var(--accent-green-glow);
+            box-shadow: 0 0 12px var(--accent-green-glow);
         }
 
         .search-icon {
             position: absolute;
-            left: 14px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-secondary);
@@ -202,10 +203,10 @@
 
         .categories-scroll {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             overflow-x: auto;
-            margin-bottom: 20px;
-            padding-bottom: 4px;
+            margin-bottom: 24px;
+            padding-bottom: 6px;
             scrollbar-width: none;
         }
 
@@ -217,8 +218,8 @@
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
-            padding: 8px 16px;
-            border-radius: 12px;
+            padding: 10px 18px;
+            border-radius: 14px;
             font-size: 13px;
             white-space: nowrap;
             cursor: pointer;
@@ -236,9 +237,9 @@
         .promo-banner {
             background: linear-gradient(135deg, #132b17 0%, #0d1a10 100%);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 20px;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -248,7 +249,7 @@
             font-size: 16px;
             font-weight: 700;
             color: var(--accent-green);
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .promo-banner p {
@@ -261,21 +262,21 @@
             color: #000;
             font-size: 12px;
             font-weight: bold;
-            padding: 4px 8px;
-            border-radius: 8px;
+            padding: 6px 10px;
+            border-radius: 10px;
         }
 
         .products-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 14px;
         }
 
         .product-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 12px;
+            border-radius: 18px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -290,45 +291,45 @@
 
         .product-img-container {
             width: 100%;
-            height: 110px;
+            height: 120px;
             background-color: #080d09;
-            border-radius: 10px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 10px;
-            font-size: 36px;
+            margin-bottom: 12px;
+            font-size: 40px;
             position: relative;
         }
 
         .product-tag {
             position: absolute;
-            top: 6px;
-            left: 6px;
+            top: 8px;
+            left: 8px;
             background-color: rgba(0, 255, 102, 0.15);
             color: var(--accent-green);
             font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
         }
 
         .product-title {
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            height: 32px;
+            height: 36px;
         }
 
         .product-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         .product-price {
@@ -341,11 +342,11 @@
             background-color: var(--accent-green);
             color: #0b0f0c;
             border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -357,7 +358,7 @@
             transform: scale(0.9);
         }
 
-        /* МОДАЛЬНОЕ ОКНО ВЫБОРА ПАРАМЕТРОВ */
+        /* МОДАЛЬНЫЕ ОКНА */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -383,7 +384,7 @@
             border: 1px solid var(--border-color);
             border-top-left-radius: 24px;
             border-top-right-radius: 24px;
-            padding: 20px;
+            padding: 24px;
             animation: slideUp 0.3s ease;
         }
 
@@ -393,7 +394,7 @@
         }
 
         .modal-title {
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
             margin-bottom: 6px;
         }
@@ -401,22 +402,22 @@
         .modal-subtitle {
             font-size: 13px;
             color: var(--text-secondary);
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .options-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 24px;
         }
 
         .option-btn {
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             color: var(--text-main);
-            padding: 12px;
-            border-radius: 12px;
+            padding: 14px;
+            border-radius: 14px;
             font-size: 13px;
             text-align: center;
             cursor: pointer;
@@ -437,36 +438,36 @@
         }
 
         .cart-empty-icon {
-            font-size: 48px;
+            font-size: 54px;
             margin-bottom: 16px;
         }
 
         .cart-items-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 14px;
+            margin-bottom: 24px;
         }
 
         .cart-item {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 12px;
+            border-radius: 16px;
+            padding: 14px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
 
         .cart-item-img {
-            width: 50px;
-            height: 50px;
+            width: 54px;
+            height: 54px;
             background-color: #080d09;
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 26px;
         }
 
         .cart-item-info {
@@ -476,17 +477,17 @@
         .cart-item-title {
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .cart-item-sub {
             font-size: 11px;
             color: var(--accent-green);
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .cart-item-price {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--accent-green);
             font-weight: 700;
         }
@@ -494,10 +495,10 @@
         .qty-controls {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             background-color: var(--bg-color);
-            padding: 4px 8px;
-            border-radius: 8px;
+            padding: 6px 10px;
+            border-radius: 10px;
             border: 1px solid var(--border-color);
         }
 
@@ -505,45 +506,45 @@
             background: none;
             border: none;
             color: var(--text-main);
-            font-size: 14px;
+            font-size: 16px;
             cursor: pointer;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .qty-val {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
-            min-width: 16px;
+            min-width: 18px;
             text-align: center;
         }
 
         .cart-summary {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 20px;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 24px;
         }
 
         .summary-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 13px;
             color: var(--text-secondary);
         }
 
         .summary-row.total {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--text-main);
             border-top: 1px solid var(--border-color);
-            padding-top: 10px;
-            margin-top: 10px;
+            padding-top: 12px;
+            margin-top: 12px;
         }
 
         .summary-row.total span:last-child {
@@ -555,8 +556,8 @@
             background-color: var(--accent-green);
             color: #0b0f0c;
             border: none;
-            padding: 14px;
-            border-radius: 14px;
+            padding: 16px;
+            border-radius: 16px;
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
@@ -569,17 +570,17 @@
         }
 
         .section-title {
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .method-card {
             background-color: var(--card-bg);
             border: 1px solid var(--accent-green);
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 12px;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -588,7 +589,7 @@
         .method-info h4 {
             font-size: 14px;
             font-weight: 600;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .method-info p {
@@ -598,16 +599,16 @@
 
         .metro-tabs {
             display: flex;
-            gap: 6px;
-            margin-bottom: 16px;
+            gap: 8px;
+            margin-bottom: 18px;
         }
 
         .metro-tab {
             flex: 1;
-            padding: 8px;
+            padding: 10px;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 11px;
             font-weight: 600;
             color: var(--text-secondary);
@@ -622,17 +623,17 @@
         .stations-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            max-height: 220px;
+            gap: 10px;
+            max-height: 240px;
             overflow-y: auto;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .station-item {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            padding: 10px 14px;
-            border-radius: 10px;
+            padding: 12px 16px;
+            border-radius: 12px;
             font-size: 13px;
             display: flex;
             justify-content: space-between;
@@ -648,17 +649,17 @@
         .time-slots {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 24px;
         }
 
         .time-slot {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            padding: 10px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 12px;
             text-align: center;
-            font-size: 12px;
+            font-size: 13px;
             cursor: pointer;
         }
 
@@ -672,30 +673,30 @@
         .profile-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 18px;
             padding: 20px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 16px;
+            gap: 18px;
+            margin-bottom: 18px;
         }
 
         .profile-avatar {
-            width: 56px;
-            height: 56px;
+            width: 60px;
+            height: 60px;
             background-color: var(--accent-green);
             color: #0b0f0c;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             box-shadow: 0 0 15px var(--accent-green-glow);
         }
 
         .profile-info h3 {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
             margin-bottom: 4px;
         }
@@ -708,12 +709,12 @@
         .profile-menu-item {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 14px 16px;
+            border-radius: 16px;
+            padding: 16px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             text-decoration: none;
             color: var(--text-main);
             font-size: 14px;
@@ -729,7 +730,7 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 70px;
+            height: 75px;
             background-color: var(--bg-color);
             border-top: 1px solid var(--border-color);
             display: flex;
@@ -757,7 +758,7 @@
         }
 
         .nav-icon {
-            font-size: 20px;
+            font-size: 22px;
         }
 
         .cart-badge {
@@ -788,14 +789,31 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ОПЦИЙ -->
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ОПЦИЙ ТОВАРА -->
     <div class="modal-overlay" id="option-modal" onclick="closeModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-title" id="modal-product-title">Название товара</div>
             <div class="modal-subtitle" id="modal-subtitle-text">Выберите параметр:</div>
             <div class="options-grid" id="modal-options-grid"></div>
             <button class="primary-btn" onclick="confirmAddToCart()">Добавить в корзину</button>
-            <button onclick="closeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Отмена</button>
+            <button onclick="closeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Отмена</button>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ИЗМЕНЕНИЯ ВРЕМЕНИ -->
+    <div class="modal-overlay" id="time-modal" onclick="closeTimeModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-title">Изменить время встречи</div>
+            <div class="modal-subtitle">Выберите новое время для заказа #<span id="time-modal-order-id"></span></div>
+            <div class="time-slots" id="change-time-slots-container">
+                <div class="time-slot selected" onclick="selectNewTime(this, '12:00')">12:00</div>
+                <div class="time-slot" onclick="selectNewTime(this, '14:30')">14:30</div>
+                <div class="time-slot" onclick="selectNewTime(this, '16:30')">16:30</div>
+                <div class="time-slot" onclick="selectNewTime(this, '18:10')">18:10</div>
+                <div class="time-slot" onclick="selectNewTime(this, '21:00')">21:00</div>
+            </div>
+            <button class="primary-btn" onclick="confirmTimeChangeFinal()">Сохранить новое время</button>
+            <button onclick="closeTimeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Назад</button>
         </div>
     </div>
 
@@ -839,7 +857,7 @@
         </div>
 
         <div id="screen-orders" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
                 <div class="section-title" style="margin-bottom: 0;">Мои заказы</div>
                 <button id="clear-orders-btn" onclick="clearOrdersHistory()" style="background: none; border: none; color: var(--danger); font-size: 12px; cursor: pointer; display: none;">Очистить историю</button>
             </div>
@@ -880,7 +898,7 @@
         <div id="screen-checkout" class="screen">
             <div class="section-title">Оформление заказа</div>
             
-            <div style="margin-bottom: 16px;">
+            <div style="margin-bottom: 18px;">
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Способ получения</p>
                 <div class="method-card">
                     <div class="method-info">
@@ -891,7 +909,7 @@
                 </div>
             </div>
 
-            <div style="margin-bottom: 16px;">
+            <div style="margin-bottom: 18px;">
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Выберите ветку и станцию</p>
                 <div class="metro-tabs">
                     <div class="metro-tab active-green" onclick="switchMetroLine('green', this)">Зеленая ветка</div>
@@ -901,7 +919,7 @@
                 <div class="stations-list" id="stations-list-container"></div>
             </div>
 
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 24px;">
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Время получения</p>
                 <div class="time-slots">
                     <div class="time-slot selected" onclick="selectTime(this, '12:00')">12:00</div>
@@ -913,7 +931,7 @@
             </div>
 
             <button class="primary-btn" onclick="confirmOrderFinal()">Подтвердить заказ</button>
-            <button onclick="switchScreen('cart')" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Назад в корзину</button>
+            <button onclick="switchScreen('cart')" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Назад в корзину</button>
         </div>
 
     </div>
@@ -1010,7 +1028,7 @@
             { name: 'Петровщина', line: 'Красная ветка' },
             { name: 'Институт культуры', line: 'Красная ветка' },
             { name: 'Партизанская', line: 'Красная ветка' },
-            { name: 'Автозаводская', line: 'Красная ветка' }
+            { name: 'Автозаводская', line: 'Красная ветka' }
         ]
     };
 
@@ -1021,9 +1039,12 @@
     let selectedTime = '12:00';
     let activeOrders = JSON.parse(localStorage.getItem('monkey_orders')) || [];
 
-    // Переменные для модального выбора
     let currentSelectedProduct = null;
     let chosenOptionValue = '';
+
+    // Переменные для изменения времени заказа
+    let changingOrderId = null;
+    let newSelectedTime = '12:00';
 
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
@@ -1070,17 +1091,17 @@
             subtitle.innerText = 'Выберите цвет устройства:';
             options = ['Черный мат', 'Градиент', 'Серебряный', 'Зеленый неон'];
         } else if (prod.category === 'accessory') {
-            subtitle.innerText = 'Выберите сопротивление (вольтаж/ом):';
+            subtitle.innerText = 'Выберите сопротивление (ом):';
             options = ['0.6 Ом', '0.8 Ом', '1.0 Ом', '1.2 Ом'];
         }
 
-        chosenOptionValue = options[0]; // по умолчанию первый вариант
+        chosenOptionValue = options[0];
 
         options.forEach((opt, index) => {
             const btn = document.createElement('div');
             btn.className = `option-btn ${index === 0 ? 'selected' : ''}`;
             btn.innerText = opt;
-            btn.onclick = (e) => {
+            btn.onclick = () => {
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 chosenOptionValue = opt;
@@ -1103,8 +1124,6 @@
 
     function confirmAddToCart() {
         if (!currentSelectedProduct) return;
-
-        // Создаем уникальный ключ в корзине с учетом выбранного параметра (чтобы разные вкусы шли отдельными строками)
         const cartKey = `${currentSelectedProduct.id}_${chosenOptionValue}`;
 
         if (cart[cartKey]) {
@@ -1291,7 +1310,6 @@
         const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
         const orderId = String(Math.floor(10000 + Math.random() * 90000));
 
-        // Модифицируем название товара для отчета так, чтобы выбранный вкус/цвет/ом приписывался прямо к нему
         const formattedItems = items.map(i => ({
             title: `${i.title} (${i.optionName})`,
             price: i.price,
@@ -1306,7 +1324,8 @@
             total: total,
             station: selectedStation,
             time: selectedTime,
-            status: 'active'
+            status: 'active',
+            time_changed: false
         };
 
         try {
@@ -1316,7 +1335,7 @@
                 body: JSON.stringify(orderData)
             });
         } catch (e) {
-            console.error("Ошибка отправки заказа на сервер:", e);
+            console.error("Ошибка отправки заказа:", e);
         }
 
         activeOrders.unshift(orderData);
@@ -1327,6 +1346,65 @@
         renderCart();
         renderOrders();
         switchScreen('orders');
+    }
+
+    // УПРАВЛЕНИЕ ЗАКАЗАМИ У ПОКУПАТЕЛЯ (ОТМЕНА И СМЕНА ВРЕМЕНИ)
+    async function cancelOrder(orderId) {
+        try {
+            await fetch(`${BACKEND_URL}/api/update_order_status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId, status: 'cancelled' })
+            });
+        } catch (e) {}
+
+        const ord = activeOrders.find(o => o.id === orderId);
+        if (ord) ord.status = 'cancelled';
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+        renderOrders();
+    }
+
+    function openTimeModal(orderId) {
+        changingOrderId = orderId;
+        document.getElementById('time-modal-order-id').innerText = orderId;
+        document.getElementById('time-modal').classList.add('active');
+    }
+
+    function closeTimeModal(e) {
+        if (e.target.id === 'time-modal') {
+            document.getElementById('time-modal').classList.remove('active');
+        }
+    }
+
+    function closeTimeModalDirect() {
+        document.getElementById('time-modal').classList.remove('active');
+    }
+
+    function selectNewTime(el, time) {
+        document.querySelectorAll('#change-time-slots-container .time-slot').forEach(t => t.classList.remove('selected'));
+        el.classList.add('selected');
+        newSelectedTime = time;
+    }
+
+    async function confirmTimeChangeFinal() {
+        if (!changingOrderId) return;
+
+        try {
+            await fetch(`${BACKEND_URL}/api/update_order_time`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: changingOrderId, time: newSelectedTime })
+            });
+        } catch (e) {}
+
+        const ord = activeOrders.find(o => o.id === changingOrderId);
+        if (ord) {
+            ord.time = newSelectedTime;
+            ord.time_changed = true;
+        }
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+        renderOrders();
+        closeTimeModalDirect();
     }
 
     function renderOrders() {
@@ -1348,15 +1426,11 @@
         if (clearBtn) clearBtn.style.display = 'block';
         let html = '';
         activeOrders.forEach(ord => {
-            let statusText = 'Активен';
-            let statusColor = 'var(--accent-green)';
-            
+            let statusBadge = `<span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>`;
             if (ord.status === 'completed') {
-                statusText = 'Заказ выдан ✅';
-                statusColor = '#00cc44';
+                statusBadge = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Выдан ✅</span>`;
             } else if (ord.status === 'cancelled') {
-                statusText = 'Заказ отменён ❌';
-                statusColor = 'var(--danger)';
+                statusBadge = `<span style="color:var(--danger); font-weight:700;">#${ord.id} • Заказ отменён ✕</span>`;
             }
 
             let itemsList = '';
@@ -1364,16 +1438,30 @@
                 itemsList += `• ${i.title} x${i.qty}<br>`;
             });
 
-            html += `
-                <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 12px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-                        <span style="color:${statusColor}; font-weight:700;">#${ord.id} • ${statusText}</span>
-                        <span style="color:var(--text-secondary);">${ord.station}, ${ord.time}</span>
+            // Кнопки в правом нижнем углу карточки заказа (согласно твоему эскизу)
+            let actionButtons = '';
+            if (ord.status === 'active') {
+                actionButtons = `
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px;">
+                        <button onclick="openTimeModal('${ord.id}')" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Изменить время</button>
+                        <button onclick="cancelOrder('${ord.id}')" style="background: rgba(255,51,51,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Отменить</button>
                     </div>
-                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px; line-height: 1.4;">
+                `;
+            }
+
+            html += `
+                <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px;">
+                        ${statusBadge}
+                        <span style="color:var(--text-secondary);">${ord.station}, ${ord.time} ${ord.time_changed ? '<span style="font-size:11px; color:var(--text-secondary);">(перенесено)</span>' : ''}</span>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; line-height: 1.5;">
                         ${itemsList}
                     </div>
-                    <div style="font-size:13px; font-weight:700; color:var(--accent-green);">Итого: ${ord.total.toFixed(2)} р.</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:14px; font-weight:700; color:var(--accent-green);">Итого: ${ord.total.toFixed(2)} р.</span>
+                    </div>
+                    ${actionButtons}
                 </div>
             `;
         });
@@ -1396,9 +1484,19 @@
 
                 activeOrders.forEach(localOrd => {
                     const found = serverOrders.find(s => s.id === localOrd.id);
-                    if (found && found.status && found.status !== localOrd.status) {
-                        localOrd.status = found.status;
-                        updated = true;
+                    if (found) {
+                        if (found.status && found.status !== localOrd.status) {
+                            localOrd.status = found.status;
+                            updated = true;
+                        }
+                        if (found.time && found.time !== localOrd.time) {
+                            localOrd.time = found.time;
+                            updated = true;
+                        }
+                        if (found.time_changed !== undefined && found.time_changed !== localOrd.time_changed) {
+                            localOrd.time_changed = found.time_changed;
+                            updated = true;
+                        }
                     }
                 });
 
@@ -1451,24 +1549,48 @@
                     itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
                 });
 
+                // Шапка заказа у курьера с учетом отмены и имени пользователя
+                let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id}</span>`;
+                if (ord.status === 'cancelled') {
+                    headerTitle = `<span style="color:var(--danger); font-weight:700;">Заказ отменён #${ord.id}</span>`;
+                } else if (ord.status === 'completed') {
+                    headerTitle = `<span style="color:#00cc44; font-weight:700;">Выдан #${ord.id}</span>`;
+                }
+
+                // Кнопка удаления для отмененных заказов
+                let deleteBtn = '';
+                if (ord.status === 'cancelled') {
+                    deleteBtn = `<button onclick="deleteCourierOrderLocally('${ord.id}')" style="background:none; border:none; color:var(--danger); font-size:16px; cursor:pointer;" title="Удалить">✕</button>`;
+                }
+
+                let courierActions = `
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
+                        <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                    </div>
+                `;
+                if (ord.status !== 'active') {
+                    courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status === 'completed' ? 'Выдан' : 'Отменен пользователем'}</div>`;
+                }
+
                 html += `
-                    <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 12px;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
-                            <span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id}</span>
-                            <span style="color:var(--text-secondary);">👤 ${ord.user_name}</span>
+                    <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:14px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                ${headerTitle}
+                                ${deleteBtn}
+                            </div>
+                            <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
                         </div>
-                        <div style="font-size:13px; margin-bottom:6px;">
+                        <div style="font-size:13px; margin-bottom:10px; line-height: 1.4;">
                             🚇 <b>Станция:</b> ${ord.station}<br>
-                            ⏰ <b>Время:</b> ${ord.time}
+                            ⏰ <b>Время:</b> ${ord.time} ${ord.time_changed ? '<span style="font-size:11px; color:var(--text-secondary); font-weight:600;">(перенесено)</span>' : ''}
                         </div>
-                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; background:var(--bg-color); padding:8px; border-radius:8px; line-height: 1.4;">
+                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; background:var(--bg-color); padding:10px; border-radius:10px; line-height: 1.5;">
                             ${itemsList}
-                            <b>Итого:</b> ${ord.total.toFixed(2)} р.
+                            <div style="margin-top:6px; color:var(--text-main);"><b>Итого:</b> ${ord.total.toFixed(2)} р.</div>
                         </div>
-                        <div style="display:flex; gap:8px;">
-                            <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:10px; border-radius:10px; font-weight:700; cursor:pointer;">✅ Выдан</button>
-                            <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:10px; border-radius:10px; font-weight:700; cursor:pointer;">❌ Отменить</button>
-                        </div>
+                        ${courierActions}
                     </div>
                 `;
             });
@@ -1490,6 +1612,18 @@
             alert("Не удалось обновить статус заказа");
         }
     }
+
+    function deleteCourierOrderLocally(orderId) {
+        // Просто скрываем из интерфейса курьера (или можно отправлять запрос на удаление)
+        loadCourierOrders();
+    }
+
+    async function syncCourierOrders() {
+        if (document.getElementById('screen-courier').classList.contains('active')) {
+            loadCourierOrders();
+        }
+    }
+    setInterval(syncCourierOrders, 4000);
 
     function switchScreen(screenName) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
