@@ -1,225 +1,1521 @@
-import asyncio
-import json
-import uvicorn
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import aiosqlite
-from aiogram import Bot, Dispatcher, F
-from aiogram.types import (
-    Message, ReplyKeyboardMarkup, KeyboardButton, 
-    WebAppInfo, MenuButtonDefault, InlineKeyboardMarkup, InlineKeyboardButton
-)
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monkey Vape — Online Shop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f0c;
+            --card-bg: #131b14;
+            --card-hover: #1b261d;
+            --accent-green: #00ff66;
+            --accent-green-glow: rgba(0, 255, 102, 0.25);
+            --text-main: #ffffff;
+            --text-secondary: #9ca3af;
+            --border-color: #223525;
+            --danger: #ff3333;
+        }
 
-# -------------------------------------------------------------
-# НАСТРОЙКИ И ТОКЕНЫ
-# -------------------------------------------------------------
-TOKEN = "8979467253:AAF8ym1bWsfsMpefad3Eo8B6G9XistJUDlk"
-WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-# РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
-OWNER_IDS = [7280921605]          # Владелец[cite: 1]
-COURIER_IDS = [1335426710, 7280921605]  # Курьеры (курьер + владелец тоже может смотреть)[cite: 1]
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-DB_FILE = "database.db"
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 255, 102, 0.1);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
 
-# -------------------------------------------------------------
-# ИНИЦИАЛИЗАЦИЯ
-# -------------------------------------------------------------
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
-app = FastAPI()
+        @media (min-width: 481px) {
+            .app-container {
+                border-radius: 24px;
+            }
+        }
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
 
-async def init_db():
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS orders (
-                id TEXT PRIMARY KEY,
-                user_id INTEGER,
-                user_name TEXT,
-                station TEXT,
-                time TEXT,
-                total REAL,
-                items TEXT,
-                status TEXT DEFAULT 'active'
-            )
-        """)
-        await db.commit()
+        .splash-logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent-green);
+            text-shadow: 0 0 20px var(--accent-green-glow);
+            margin-bottom: 24px;
+            letter-spacing: 1px;
+        }
 
-class OrderSchema(BaseModel):
-    id: str
-    user_id: int
-    user_name: str
-    station: str
-    time: str
-    total: float
-    items: list
+        .splash-sub {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
 
-# -------------------------------------------------------------
-# API ЭНДПОИНТЫ
-# -------------------------------------------------------------
+        .progress-bar {
+            width: 200px;
+            height: 6px;
+            background-color: var(--card-bg);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
 
-@app.get("/api/check_role/{user_id}")
-async def check_role(user_id: int):
-    if user_id in OWNER_IDS:
-        return {"role": "owner"}
-    elif user_id in COURIER_IDS:
-        return {"role": "courier"}
-    return {"role": "client"}
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+            transition: width 1.5s ease-in-out;
+        }
 
-@app.post("/api/create_order")
-async def create_order(order: OrderSchema):
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "INSERT OR REPLACE INTO orders (id, user_id, user_name, station, time, total, items, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'active')",
-            (order.id, order.user_id, order.user_name, order.station, order.time, order.total, json.dumps(order.items))
-        )
-        await db.commit()
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+        }
 
-    items_text = "".join([f"- {item['title']} x{item['qty']} — {item['price'] * item['qty']} р.\n" for item in order.items])
-    
-    # 1. Уведомление для владельца и курьеров
-    staff_notification = (
-        f"🚨 **У вас новый заказ!** (#{order.id})\n\n"
-        f"👤 Покупатель: {order.user_name}\n"
-        f"🚇 Станция: {order.station}\n"
-        f"⏰ Время: {order.time}\n\n"
-        f"🛒 **Товары:**\n{items_text}\n"
-        f"💰 **Итого:** {order.total} р.\n\n"
-        f"👇 **Что делать:** зайдите в мини-приложение в раздел курьера, чтобы взять заказ в работу!"
-    )
-    
-    staff_keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="📦 Открыть мини-приложение", web_app=WebAppInfo(url=WEBAPP_URL))]
+        .brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .brand-title span {
+            color: var(--accent-green);
+        }
+
+        .metro-selector-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .metro-selector-btn:hover {
+            border-color: var(--accent-green);
+        }
+
+        .metro-icon {
+            background-color: var(--accent-green);
+            color: #000;
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            padding-bottom: 90px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .categories-scroll {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+
+        .categories-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cat-chip {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cat-chip.active {
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border-color: var(--accent-green);
+            font-weight: 600;
+            box-shadow: 0 0 15px var(--accent-green-glow);
+        }
+
+        .promo-banner {
+            background: linear-gradient(135deg, #132b17 0%, #0d1a10 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .promo-banner h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 4px;
+        }
+
+        .promo-banner p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .promo-badge {
+            background-color: var(--accent-green);
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .product-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            border-color: var(--accent-green);
+            transform: translateY(-2px);
+        }
+
+        .product-img-container {
+            width: 100%;
+            height: 110px;
+            background-color: #080d09;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 36px;
+            position: relative;
+        }
+
+        .product-tag {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background-color: rgba(0, 255, 102, 0.15);
+            color: var(--accent-green);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .product-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 32px;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .product-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .add-btn {
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .add-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* МОДАЛЬНОЕ ОКНО ВЫБОРА ПАРАМЕТРОВ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 2000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 480px;
+            background-color: #131b14;
+            border: 1px solid var(--border-color);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .modal-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn.selected {
+            border-color: var(--accent-green);
+            background-color: rgba(0, 255, 102, 0.1);
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .cart-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .cart-empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .cart-items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .cart-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cart-item-img {
+            width: 50px;
+            height: 50px;
+            background-color: #080d09;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .cart-item-sub {
+            font-size: 11px;
+            color: var(--accent-green);
+            margin-bottom: 4px;
+        }
+
+        .cart-item-price {
+            font-size: 13px;
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--bg-color);
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .qty-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 14px;
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-val {
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        .cart-summary {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .summary-row.total {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .summary-row.total span:last-child {
+            color: var(--accent-green);
+        }
+
+        .primary-btn {
+            width: 100%;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border: none;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--accent-green-glow);
+            transition: opacity 0.2s;
+        }
+
+        .primary-btn:active {
+            opacity: 0.85;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .method-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent-green);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .method-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .method-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .metro-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .metro-tab {
+            flex: 1;
+            padding: 8px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .metro-tab.active-green { border-color: #00cc44; color: #00cc44; background: rgba(0,204,68,0.1); }
+        .metro-tab.active-blue { border-color: #0088ff; color: #0088ff; background: rgba(0,136,255,0.1); }
+        .metro-tab.active-red { border-color: #ff3333; color: #ff3333; background: rgba(255,51,51,0.1); }
+
+        .stations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+
+        .station-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .station-item.selected {
+            border-color: var(--accent-green);
+            background-color: rgba(0, 255, 102, 0.05);
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .time-slot {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .time-slot.selected {
+            border-color: var(--accent-green);
+            background-color: rgba(0, 255, 102, 0.1);
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .profile-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .profile-avatar {
+            width: 56px;
+            height: 56px;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 0 0 15px var(--accent-green-glow);
+        }
+
+        .profile-info h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .profile-menu-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .profile-menu-item span {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background-color: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 0.2s;
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: var(--accent-green);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -2px;
+            right: 4px;
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            font-size: 10px;
+            font-weight: bold;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="splash-screen">
+        <div class="splash-logo">MONKEY VAPE</div>
+        <div class="splash-sub">Загрузка онлайн-магазина...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ОПЦИЙ -->
+    <div class="modal-overlay" id="option-modal" onclick="closeModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-title" id="modal-product-title">Название товара</div>
+            <div class="modal-subtitle" id="modal-subtitle-text">Выберите параметр:</div>
+            <div class="options-grid" id="modal-options-grid"></div>
+            <button class="primary-btn" onclick="confirmAddToCart()">Добавить в корзину</button>
+            <button onclick="closeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Отмена</button>
+        </div>
+    </div>
+
+    <div class="top-bar">
+        <div class="brand-title">MONKEY <span>VAPE</span></div>
+        <button class="metro-selector-btn" onclick="openMetroPicker()">
+            <div class="metro-icon">M</div>
+            <span id="current-metro-label">Партизанская</span>
+        </button>
+    </div>
+
+    <div class="content-area">
+        <div id="screen-catalog" class="screen active">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров..." oninput="filterProducts()">
+            </div>
+
+            <div class="categories-scroll">
+                <button class="cat-chip active" onclick="setCategory('all', this)">Все товары</button>
+                <button class="cat-chip" onclick="setCategory('liquid', this)">Жидкости</button>
+                <button class="cat-chip" onclick="setCategory('pod', this)">Поды и Вейпы</button>
+                <button class="cat-chip" onclick="setCategory('disposable', this)">Одноразки</button>
+                <button class="cat-chip" onclick="setCategory('accessory', this)">Расходники</button>
+            </div>
+
+            <div class="promo-banner">
+                <div>
+                    <h3>AKCIJA - 20%</h3>
+                    <p>Топовые жижи и устройства недели</p>
+                </div>
+                <div class="promo-badge">-20%</div>
+            </div>
+
+            <div class="products-grid" id="products-grid"></div>
+        </div>
+
+        <div id="screen-cart" class="screen">
+            <div class="section-title">Корзина</div>
+            <div id="cart-content"></div>
+        </div>
+
+        <div id="screen-orders" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div class="section-title" style="margin-bottom: 0;">Мои заказы</div>
+                <button id="clear-orders-btn" onclick="clearOrdersHistory()" style="background: none; border: none; color: var(--danger); font-size: 12px; cursor: pointer; display: none;">Очистить историю</button>
+            </div>
+            <div id="orders-list">
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">📦</div>
+                    <p>Нет активных заказов</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-profile" class="screen">
+            <div class="section-title">Профиль</div>
+            <div class="profile-card">
+                <div class="profile-avatar" id="profile-avatar-letter">V</div>
+                <div class="profile-info">
+                    <h3 id="profile-username">@user</h3>
+                    <p>Telegram User</p>
+                </div>
+            </div>
+
+            <a href="https://t.me/warat_24" target="_blank" class="profile-menu-item">
+                <span>Менеджер поддержки</span>
+                <span>@warat_24</span>
+            </a>
+        </div>
+
+        <div id="screen-courier" class="screen">
+            <div class="section-title">Панель курьера 🛵</div>
+            <div id="courier-orders-list">
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">⏳</div>
+                    <p>Загрузка заказов...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-checkout" class="screen">
+            <div class="section-title">Оформление заказа</div>
+            
+            <div style="margin-bottom: 16px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Способ получения</p>
+                <div class="method-card">
+                    <div class="method-info">
+                        <h4>Самовывоз из метро (Минск)</h4>
+                        <p>Оплата при встрече наличными или переводом</p>
+                    </div>
+                    <div style="color: var(--accent-green); font-size: 18px;">✓</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Выберите ветку и станцию</p>
+                <div class="metro-tabs">
+                    <div class="metro-tab active-green" onclick="switchMetroLine('green', this)">Зеленая ветка</div>
+                    <div class="metro-tab" onclick="switchMetroLine('blue', this)">Синяя ветка</div>
+                    <div class="metro-tab" onclick="switchMetroLine('red', this)">Красная ветка</div>
+                </div>
+                <div class="stations-list" id="stations-list-container"></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Время получения</p>
+                <div class="time-slots">
+                    <div class="time-slot selected" onclick="selectTime(this, '12:00')">12:00</div>
+                    <div class="time-slot" onclick="selectTime(this, '14:30')">14:30</div>
+                    <div class="time-slot" onclick="selectTime(this, '16:30')">16:30</div>
+                    <div class="time-slot" onclick="selectTime(this, '18:10')">18:10</div>
+                    <div class="time-slot" onclick="selectTime(this, '21:00')">21:00</div>
+                </div>
+            </div>
+
+            <button class="primary-btn" onclick="confirmOrderFinal()">Подтвердить заказ</button>
+            <button onclick="switchScreen('cart')" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Назад в корзину</button>
+        </div>
+
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchScreen('catalog')">
+            <span class="nav-icon">🛍️</span>
+            <span>Каталог</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('cart')">
+            <span class="nav-icon">🛒</span>
+            <span>Корзина</span>
+            <div class="cart-badge" id="cart-badge" style="display: none;">0</div>
+        </button>
+        <button class="nav-item" onclick="switchScreen('orders')">
+            <span class="nav-icon">📦</span>
+            <span>Заказы</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('profile')">
+            <span class="nav-icon">👤</span>
+            <span>Профиль</span>
+        </button>
+        <button class="nav-item" id="nav-courier-btn" onclick="switchScreen('courier')" style="display: none;">
+            <span class="nav-icon">🛵</span>
+            <span>Курьер</span>
+        </button>
+    </div>
+</div>
+
+<script>
+    const BACKEND_URL = "https://silent-cases-behave.loca.lt"; 
+
+    let tg = window.Telegram ? window.Telegram.WebApp : null;
+    let currentUserId = 6658906694; 
+    let currentUserName = "User";
+
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        try {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const user = tg.initDataUnsafe.user;
+                currentUserId = user.id;
+                currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
+                
+                const usernameElem = document.getElementById('profile-username');
+                const avatarElem = document.getElementById('profile-avatar-letter');
+                if (usernameElem) usernameElem.innerText = currentUserName;
+                if (avatarElem && user.first_name) avatarElem.innerText = user.first_name.charAt(0).toUpperCase();
+            }
+        } catch (err) {}
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const progressFill = document.getElementById('progress-fill');
+            if (progressFill) progressFill.style.width = '100%';
+        }, 100);
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => splash.remove(), 500);
+            }
+        }, 1200);
+    });
+
+    const products = [
+        { id: 1, title: 'ANIMAL LOVE Killer 50mg', category: 'liquid', price: 17.00, tag: 'жидкость', icon: '🧪' },
+        { id: 2, title: 'OGGO Rush 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
+        { id: 3, title: 'OGGO Cherry 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
+        { id: 4, title: 'BJORN ZLOY 60mg', category: 'liquid', price: 13.00, tag: 'хит', icon: '🧪' },
+        { id: 5, title: 'XROS 3 Mini Pod Kit', category: 'pod', price: 55.00, tag: 'вейп', icon: '⚡' },
+        { id: 6, title: 'Vaporesso XROS Pro', category: 'pod', price: 85.00, tag: 'вейп', icon: '⚡' },
+        { id: 7, title: 'Lost Mary BM5000', category: 'disposable', price: 25.00, tag: 'одноразка', icon: '💨' },
+        { id: 8, title: 'Сменный картридж XROS', category: 'accessory', price: 9.00, tag: 'расходник', icon: '📦' }
+    ];
+
+    const metroStations = {
+        green: [
+            { name: 'Юбилейная площадь', line: 'Зеленая ветка' },
+            { name: 'Площадь Франтишка Богушевича', line: 'Зеленая ветка' },
+            { name: 'Вокзальная', line: 'Зеленая ветка' },
+            { name: 'Ковальская Слобода', line: 'Зеленая ветка' }
+        ],
+        blue: [
+            { name: 'Московская', line: 'Синяя ветка' },
+            { name: 'Парк Челюскинцев', line: 'Синяя ветка' },
+            { name: 'Академия наук', line: 'Синяя ветка' },
+            { name: 'Площадь Якуба Коласа', line: 'Синяя ветка' }
+        ],
+        red: [
+            { name: 'Малиновка', line: 'Красная ветка' },
+            { name: 'Петровщина', line: 'Красная ветка' },
+            { name: 'Институт культуры', line: 'Красная ветка' },
+            { name: 'Партизанская', line: 'Красная ветка' },
+            { name: 'Автозаводская', line: 'Красная ветка' }
         ]
-    )
-    
-    target_users = set(OWNER_IDS + COURIER_IDS)
-    for staff_id in target_users:
-        try:
-            await bot.send_message(
-                chat_id=staff_id, 
-                text=staff_notification, 
-                reply_markup=staff_keyboard, 
-                parse_mode="Markdown"
-            )
-        except Exception as e:
-            print(f"Ошибка отправки уведомления сотруднику {staff_id}: {e}")
+    };
 
-    # 2. Уведомление для покупателя в ЛС
-    client_notification = (
-        f"✅ **Ваш заказ успешно оформлен!** (#{order.id})\n\n"
-        f"🚇 **Место встречи (станция):** {order.station}\n"
-        f"⏰ **Время получения:** {order.time}\n\n"
-        f"🛒 **Состав заказа:**\n{items_text}\n"
-        f"💰 **Итого к оплате:** {order.total} р.\n\n"
-        f"🤝 Спасибо, что выбрали Monkey Vape!"
-    )
+    let cart = JSON.parse(localStorage.getItem('monkey_cart')) || {};
+    let activeCategory = 'all';
+    let currentLine = 'green';
+    let selectedStation = 'Партизанская';
+    let selectedTime = '12:00';
+    let activeOrders = JSON.parse(localStorage.getItem('monkey_orders')) || [];
 
-    try:
-        await bot.send_message(
-            chat_id=order.user_id,
-            text=client_notification,
-            parse_mode="Markdown"
-        )
-    except Exception as e:
-        print(f"Не удалось отправить уведомление покупателю {order.user_id}: {e}")
+    // Переменные для модального выбора
+    let currentSelectedProduct = null;
+    let chosenOptionValue = '';
 
-    return {"status": "success"}
+    function renderProducts(items) {
+        const grid = document.getElementById('products-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (items.length === 0) {
+            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 30px;">Товары не найдены</div>';
+            return;
+        }
 
-@app.get("/api/orders")
-async def get_orders():
-    async with aiosqlite.connect(DB_FILE) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM orders WHERE status = 'active' ORDER BY id DESC") as cursor:
-            rows = await cursor.fetchall()
-            orders = []
-            for row in rows:
-                orders.append({
-                    "id": row["id"],
-                    "user_id": row["user_id"],
-                    "user_name": row["user_name"],
-                    "station": row["station"],
-                    "time": row["time"],
-                    "total": row["total"],
-                    "items": json.loads(row["items"]),
-                    "status": row["status"]
-                })
-            return orders
+        items.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <div class="product-img-container">
+                    ${p.tag ? `<div class="product-tag">${p.tag}</div>` : ''}
+                    <span>${p.icon}</span>
+                </div>
+                <div class="product-title">${p.title}</div>
+                <div class="product-footer">
+                    <span class="product-price">${p.price.toFixed(2)} р.</span>
+                    <button class="add-btn" onclick="openProductModal(${p.id})">+</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
 
-@app.get("/api/user_orders/{user_id}")
-async def get_user_orders(user_id: int):
-    async with aiosqlite.connect(DB_FILE) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC", (user_id,)) as cursor:
-            rows = await cursor.fetchall()
-            orders = []
-            for row in rows:
-                orders.append({
-                    "id": row["id"],
-                    "user_id": row["user_id"],
-                    "user_name": row["user_name"],
-                    "station": row["station"],
-                    "time": row["time"],
-                    "total": row["total"],
-                    "items": json.loads(row["items"]),
-                    "status": row["status"]
-                })
-            return orders
+    function openProductModal(productId) {
+        const prod = products.find(p => p.id === productId);
+        if (!prod) return;
+        currentSelectedProduct = prod;
 
-@app.post("/api/update_order_status")
-async def update_order_status(data: dict):
-    order_id = data.get("order_id")
-    new_status = data.get("status")
-    
-    async with aiosqlite.connect(DB_FILE) as db:
-        async with db.execute("SELECT user_id FROM orders WHERE id = ?", (order_id,)) as cursor:
-            row = await cursor.fetchone()
-            if not row:
-                raise HTTPException(status_code=404, detail="Заказ не найден")
-            user_id = row[0]
+        document.getElementById('modal-product-title').innerText = prod.title;
+        const grid = document.getElementById('modal-options-grid');
+        const subtitle = document.getElementById('modal-subtitle-text');
+        grid.innerHTML = '';
 
-        await db.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
-        await db.commit()
+        let options = [];
+        if (prod.category === 'liquid' || prod.category === 'disposable') {
+            subtitle.innerText = 'Выберите вкус:';
+            options = ['Кола', 'Клубника', 'Skittles', 'Малина', 'Манго'];
+        } else if (prod.category === 'pod') {
+            subtitle.innerText = 'Выберите цвет устройства:';
+            options = ['Черный мат', 'Градиент', 'Серебряный', 'Зеленый неон'];
+        } else if (prod.category === 'accessory') {
+            subtitle.innerText = 'Выберите сопротивление (вольтаж/ом):';
+            options = ['0.6 Ом', '0.8 Ом', '1.0 Ом', '1.2 Ом'];
+        }
 
-    try:
-        if new_status == "completed":
-            await bot.send_message(chat_id=user_id, text=f"✅ Ваш заказ #{order_id} успешно выдан! Спасибо, что выбрали Monkey Vape 🤝")
-        elif new_status == "cancelled":
-            await bot.send_message(chat_id=user_id, text=f"❌ К сожалению, ваш заказ #{order_id} был отменен.")
-    except Exception as e:
-        print(f"Не удалось отправить уведомление покупателю {user_id}: {e}")
+        chosenOptionValue = options[0]; // по умолчанию первый вариант
 
-    return {"status": "success"}
+        options.forEach((opt, index) => {
+            const btn = document.createElement('div');
+            btn.className = `option-btn ${index === 0 ? 'selected' : ''}`;
+            btn.innerText = opt;
+            btn.onclick = (e) => {
+                document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                chosenOptionValue = opt;
+            };
+            grid.appendChild(btn);
+        });
 
-@dp.message(F.text == "/start")
-async def cmd_start(message: Message):
-    reply_kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="🛍 Открыть каталог Monkey Vape", web_app=WebAppInfo(url=WEBAPP_URL))]],
-        resize_keyboard=True
-    )
-    await message.answer("🐒 Добро пожаловать в **Monkey Vape**!\n\n🔥 Нажмите кнопку ниже, чтобы открыть каталог.", reply_markup=reply_kb, parse_mode="Markdown")
+        document.getElementById('option-modal').classList.add('active');
+    }
 
-async def main():
-    await init_db()
-    await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
-    
-    config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="info")
-    server = uvicorn.Server(config)
-    
-    await asyncio.gather(
-        server.serve(),
-        dp.start_polling(bot)
-    )
+    function closeModal(e) {
+        if (e.target.id === 'option-modal') {
+            document.getElementById('option-modal').classList.remove('active');
+        }
+    }
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    function closeModalDirect() {
+        document.getElementById('option-modal').classList.remove('active');
+    }
+
+    function confirmAddToCart() {
+        if (!currentSelectedProduct) return;
+
+        // Создаем уникальный ключ в корзине с учетом выбранного параметра (чтобы разные вкусы шли отдельными строками)
+        const cartKey = `${currentSelectedProduct.id}_${chosenOptionValue}`;
+
+        if (cart[cartKey]) {
+            cart[cartKey].qty += 1;
+        } else {
+            cart[cartKey] = {
+                id: currentSelectedProduct.id,
+                title: currentSelectedProduct.title,
+                price: currentSelectedProduct.price,
+                icon: currentSelectedProduct.icon,
+                optionName: chosenOptionValue,
+                qty: 1
+            };
+        }
+
+        saveCart();
+        renderCart();
+        closeModalDirect();
+    }
+
+    function filterProducts() {
+        const searchInput = document.getElementById('search-input');
+        const query = searchInput ? searchInput.value.toLowerCase() : '';
+        const filtered = products.filter(p => {
+            const matchesCat = activeCategory === 'all' || p.category === activeCategory;
+            const matchesQuery = p.title.toLowerCase().includes(query);
+            return matchesCat && matchesQuery;
+        });
+        renderProducts(filtered);
+    }
+
+    function setCategory(cat, el) {
+        activeCategory = cat;
+        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
+        filterProducts();
+    }
+
+    function changeQty(cartKey, delta) {
+        if (cart[cartKey]) {
+            cart[cartKey].qty += delta;
+            if (cart[cartKey].qty <= 0) {
+                delete cart[cartKey];
+            }
+        }
+        saveCart();
+        renderCart();
+    }
+
+    function saveCart() {
+        localStorage.setItem('monkey_cart', JSON.stringify(cart));
+        updateCartBadge();
+    }
+
+    function updateCartBadge() {
+        const badge = document.getElementById('cart-badge');
+        if (!badge) return;
+        const totalCount = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+        if (totalCount > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = totalCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-content');
+        if (!container) return;
+        const items = Object.values(cart);
+
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">🛒</div>
+                    <p>Корзина пуста</p>
+                    <button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">В каталог</button>
+                </div>
+            `;
+            return;
+        }
+
+        let itemsHtml = '<div class="cart-items-list">';
+        let subtotal = 0;
+
+        for (const [key, item] of Object.entries(cart)) {
+            subtotal += item.price * item.qty;
+            itemsHtml += `
+                <div class="cart-item">
+                    <div class="cart-item-img">${item.icon}</div>
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.title}</div>
+                        <div class="cart-item-sub">Параметр: ${item.optionName}</div>
+                        <div class="cart-item-price">${(item.price * item.qty).toFixed(2)} р.</div>
+                    </div>
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="changeQty('${key}', -1)">-</button>
+                        <span class="qty-val">${item.qty}</span>
+                        <button class="qty-btn" onclick="changeQty('${key}', 1)">+</button>
+                    </div>
+                </div>
+            `;
+        }
+        itemsHtml += '</div>';
+
+        itemsHtml += `
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Товары (${items.reduce((s,i)=>s+i.qty,0)})</span>
+                    <span>${subtotal.toFixed(2)} р.</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Итого к оплате:</span>
+                    <span>${subtotal.toFixed(2)} р.</span>
+                </div>
+            </div>
+            <button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>
+        `;
+
+        container.innerHTML = itemsHtml;
+    }
+
+    function openMetroPicker() {
+        if (Object.keys(cart).length === 0) {
+            switchScreen('cart');
+            return;
+        }
+        proceedToCheckout();
+    }
+
+    function proceedToCheckout() {
+        if (Object.keys(cart).length === 0) {
+            switchScreen('cart');
+            return;
+        }
+        switchScreen('checkout');
+        renderStations('green');
+    }
+
+    function switchMetroLine(line, el) {
+        currentLine = line;
+        document.querySelectorAll('.metro-tab').forEach(t => t.className = 'metro-tab');
+        if (line === 'green') el.className = 'metro-tab active-green';
+        if (line === 'blue') el.className = 'metro-tab active-blue';
+        if (line === 'red') el.className = 'metro-tab active-red';
+        renderStations(line);
+    }
+
+    function renderStations(line) {
+        const container = document.getElementById('stations-list-container');
+        if (!container) return;
+        container.innerHTML = '';
+        metroStations[line].forEach(st => {
+            const isSel = st.name === selectedStation;
+            const div = document.createElement('div');
+            div.className = `station-item ${isSel ? 'selected' : ''}`;
+            div.innerHTML = `
+                <span>${st.name}</span>
+                <span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>
+            `;
+            div.onclick = () => {
+                selectedStation = st.name;
+                const metroLabel = document.getElementById('current-metro-label');
+                if (metroLabel) metroLabel.innerText = st.name;
+                renderStations(line);
+            };
+            container.appendChild(div);
+        });
+    }
+
+    function selectTime(el, time) {
+        document.querySelectorAll('.time-slot').forEach(t => t.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedTime = time;
+    }
+
+    async function confirmOrderFinal() {
+        const items = Object.values(cart);
+        if (items.length === 0) {
+            switchScreen('cart');
+            return;
+        }
+
+        const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        const orderId = String(Math.floor(10000 + Math.random() * 90000));
+
+        // Модифицируем название товара для отчета так, чтобы выбранный вкус/цвет/ом приписывался прямо к нему
+        const formattedItems = items.map(i => ({
+            title: `${i.title} (${i.optionName})`,
+            price: i.price,
+            qty: i.qty
+        }));
+
+        const orderData = {
+            id: orderId,
+            user_id: currentUserId,
+            user_name: currentUserName,
+            items: formattedItems,
+            total: total,
+            station: selectedStation,
+            time: selectedTime,
+            status: 'active'
+        };
+
+        try {
+            await fetch(`${BACKEND_URL}/api/create_order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+        } catch (e) {
+            console.error("Ошибка отправки заказа на сервер:", e);
+        }
+
+        activeOrders.unshift(orderData);
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+
+        cart = {};
+        saveCart();
+        renderCart();
+        renderOrders();
+        switchScreen('orders');
+    }
+
+    function renderOrders() {
+        const container = document.getElementById('orders-list');
+        const clearBtn = document.getElementById('clear-orders-btn');
+        if (!container) return;
+
+        if (activeOrders.length === 0) {
+            if (clearBtn) clearBtn.style.display = 'none';
+            container.innerHTML = `
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">📦</div>
+                    <p>Нет активных заказов</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (clearBtn) clearBtn.style.display = 'block';
+        let html = '';
+        activeOrders.forEach(ord => {
+            let statusText = 'Активен';
+            let statusColor = 'var(--accent-green)';
+            
+            if (ord.status === 'completed') {
+                statusText = 'Заказ выдан ✅';
+                statusColor = '#00cc44';
+            } else if (ord.status === 'cancelled') {
+                statusText = 'Заказ отменён ❌';
+                statusColor = 'var(--danger)';
+            }
+
+            let itemsList = '';
+            ord.items.forEach(i => {
+                itemsList += `• ${i.title} x${i.qty}<br>`;
+            });
+
+            html += `
+                <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                        <span style="color:${statusColor}; font-weight:700;">#${ord.id} • ${statusText}</span>
+                        <span style="color:var(--text-secondary);">${ord.station}, ${ord.time}</span>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px; line-height: 1.4;">
+                        ${itemsList}
+                    </div>
+                    <div style="font-size:13px; font-weight:700; color:var(--accent-green);">Итого: ${ord.total.toFixed(2)} р.</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function clearOrdersHistory() {
+        activeOrders = [];
+        localStorage.removeItem('monkey_orders');
+        renderOrders();
+    }
+
+    async function syncClientOrdersStatus() {
+        if (activeOrders.length === 0) return;
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/user_orders/${currentUserId}`);
+            if (response.ok) {
+                const serverOrders = await response.json();
+                let updated = false;
+
+                activeOrders.forEach(localOrd => {
+                    const found = serverOrders.find(s => s.id === localOrd.id);
+                    if (found && found.status && found.status !== localOrd.status) {
+                        localOrd.status = found.status;
+                        updated = true;
+                    }
+                });
+
+                if (updated) {
+                    localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+                    if (document.getElementById('screen-orders').classList.contains('active')) {
+                        renderOrders();
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+    setInterval(syncClientOrdersStatus, 4000);
+
+    async function checkUserRole() {
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`);
+            const data = await response.json();
+            
+            if (data.role === 'courier' || data.role === 'owner') {
+                const courierNavBtn = document.getElementById('nav-courier-btn');
+                if (courierNavBtn) courierNavBtn.style.display = 'flex';
+                loadCourierOrders();
+            }
+        } catch (e) {}
+    }
+
+    async function loadCourierOrders() {
+        const container = document.getElementById('courier-orders-list');
+        if (!container) return;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/orders`);
+            const orders = await response.json();
+
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="cart-empty">
+                        <div class="cart-empty-icon">✅</div>
+                        <p>Нет активных заказов для доставки</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            orders.forEach(ord => {
+                let itemsList = '';
+                ord.items.forEach(i => {
+                    itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
+                });
+
+                html += `
+                    <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px; margin-bottom: 12px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
+                            <span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id}</span>
+                            <span style="color:var(--text-secondary);">👤 ${ord.user_name}</span>
+                        </div>
+                        <div style="font-size:13px; margin-bottom:6px;">
+                            🚇 <b>Станция:</b> ${ord.station}<br>
+                            ⏰ <b>Время:</b> ${ord.time}
+                        </div>
+                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; background:var(--bg-color); padding:8px; border-radius:8px; line-height: 1.4;">
+                            ${itemsList}
+                            <b>Итого:</b> ${ord.total.toFixed(2)} р.
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:10px; border-radius:10px; font-weight:700; cursor:pointer;">✅ Выдан</button>
+                            <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:10px; border-radius:10px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = `<p style="text-align:center; color:var(--danger);">Ошибка загрузки заказов</p>`;
+        }
+    }
+
+    async function updateOrderStatus(orderId, status) {
+        try {
+            await fetch(`${BACKEND_URL}/api/update_order_status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId, status: status })
+            });
+            loadCourierOrders();
+        } catch (e) {
+            alert("Не удалось обновить статус заказа");
+        }
+    }
+
+    function switchScreen(screenName) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+        const targetScreen = document.getElementById(`screen-${screenName}`);
+        if (targetScreen) targetScreen.classList.add('active');
+
+        const navItems = document.querySelectorAll('.nav-item');
+        if (screenName === 'catalog' && navItems[0]) navItems[0].classList.add('active');
+        if (screenName === 'cart' && navItems[1]) navItems[1].classList.add('active');
+        if (screenName === 'orders' && navItems[2]) navItems[2].classList.add('active');
+        if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
+        if (screenName === 'courier' && navItems[4]) navItems[4].classList.add('active');
+
+        if (screenName === 'courier') {
+            loadCourierOrders();
+        }
+    }
+
+    renderProducts(products);
+    renderStations('green');
+    updateCartBadge();
+    renderCart();
+    renderOrders();
+    checkUserRole();
+</script>
+</body>
+</html>
