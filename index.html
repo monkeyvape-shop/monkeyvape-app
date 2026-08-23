@@ -910,8 +910,8 @@
             <span class="nav-icon">👤</span>
             <span>Профиль</span>
         </button>
-        <!-- Вкладка курьера принудительно отображается -->
-        <button class="nav-item" id="nav-courier-btn" onclick="switchScreen('courier')" style="display: flex;">
+        <!-- Вкладка курьера скрыта по умолчанию, появится только у курьера/владельца -->
+        <button class="nav-item" id="nav-courier-btn" onclick="switchScreen('courier')" style="display: none;">
             <span class="nav-icon">🛵</span>
             <span>Курьер</span>
         </button>
@@ -944,12 +944,24 @@
         }
     }
 
-    // Принудительно включаем отображение вкладки курьера
-    function checkUserRole() {
+    // Проверка роли через бэкенд: скрывает или показывает вкладку курьера
+    async function checkUserRole() {
         const courierNavBtn = document.getElementById('nav-courier-btn');
-        if (courierNavBtn) {
-            courierNavBtn.style.display = 'flex';
-            loadCourierOrders();
+        if (!courierNavBtn) return;
+
+        courierNavBtn.style.display = 'none';
+
+        if (!currentUserId) return;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`);
+            const data = await response.json();
+
+            if (data.role === 'owner' || data.role === 'courier') {
+                courierNavBtn.style.display = 'flex';
+            }
+        } catch (e) {
+            console.error("Не удалось проверить роль пользователя:", e);
         }
     }
 
