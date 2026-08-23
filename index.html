@@ -910,7 +910,8 @@
             <span class="nav-icon">👤</span>
             <span>Профиль</span>
         </button>
-        <button class="nav-item" id="nav-courier-btn" onclick="switchScreen('courier')" style="display: none;">
+        <!-- Вкладка курьера принудительно отображается -->
+        <button class="nav-item" id="nav-courier-btn" onclick="switchScreen('courier')" style="display: flex;">
             <span class="nav-icon">🛵</span>
             <span>Курьер</span>
         </button>
@@ -923,10 +924,6 @@
     let tg = window.Telegram ? window.Telegram.WebApp : null;
     let currentUserId = null; 
     let currentUserName = "";
-
-    // СЮДА ВПИСАН ТВОЙ ID И ЮЗЕРНЕЙМ ДЛЯ ДОСТУПА КУРЬЕРА
-    const ALLOWED_COURIERS_IDS = [7280921605]; 
-    const ALLOWED_COURIERS_USERNAMES = ['@warat_24'];
 
     if (tg) {
         tg.ready();
@@ -947,26 +944,12 @@
         }
     }
 
-    // Железная проверка роли с автоотладкой
+    // Принудительно включаем отображение вкладки курьера
     function checkUserRole() {
-        // Автоматически добавляем твой текущий ID в разрешенные, чтобы кнопка 100% появилась у тебя
-        if (currentUserId && !ALLOWED_COURIERS_IDS.includes(currentUserId)) {
-            ALLOWED_COURIERS_IDS.push(currentUserId);
-        }
-
-        const isAuthorized = 
-            ALLOWED_COURIERS_IDS.includes(currentUserId) || 
-            ALLOWED_COURIERS_USERNAMES.includes(currentUserName) ||
-            currentUserId === 7280921605;
-
         const courierNavBtn = document.getElementById('nav-courier-btn');
         if (courierNavBtn) {
-            if (isAuthorized) {
-                courierNavBtn.style.display = 'flex';
-                loadCourierOrders();
-            } else {
-                courierNavBtn.style.display = 'none';
-            }
+            courierNavBtn.style.display = 'flex';
+            loadCourierOrders();
         }
     }
 
