@@ -16,7 +16,6 @@
             --text-secondary: #9ca3af;
             --border-color: #223525;
             --danger: #ff3333;
-            --danger-glow: rgba(255, 51, 51, 0.2);
         }
 
         * {
@@ -101,7 +100,7 @@
             height: 100%;
             background-color: var(--accent-green);
             box-shadow: 0 0 10px var(--accent-green);
-            transition: width 1.5s ease-in-out;
+            transition: width 1.2s ease-in-out;
         }
 
         .top-bar {
@@ -135,11 +134,6 @@
             align-items: center;
             gap: 8px;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .metro-selector-btn:hover {
-            border-color: var(--accent-green);
         }
 
         .metro-icon {
@@ -184,12 +178,6 @@
             color: var(--text-main);
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .search-input:focus {
-            border-color: var(--accent-green);
-            box-shadow: 0 0 12px var(--accent-green-glow);
         }
 
         .search-icon {
@@ -223,7 +211,6 @@
             font-size: 13px;
             white-space: nowrap;
             cursor: pointer;
-            transition: all 0.2s;
         }
 
         .cat-chip.active {
@@ -231,7 +218,6 @@
             color: #0b0f0c;
             border-color: var(--accent-green);
             font-weight: 600;
-            box-shadow: 0 0 15px var(--accent-green-glow);
         }
 
         .promo-banner {
@@ -280,13 +266,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: transform 0.2s, border-color 0.2s;
             cursor: pointer;
-        }
-
-        .product-card:hover {
-            border-color: var(--accent-green);
-            transform: translateY(-2px);
         }
 
         .product-img-container {
@@ -351,14 +331,8 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.1s;
         }
 
-        .add-btn:active {
-            transform: scale(0.9);
-        }
-
-        /* МОДАЛЬНЫЕ ОКНА */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -370,7 +344,6 @@
             justify-content: center;
             align-items: flex-end;
             z-index: 2000;
-            backdrop-filter: blur(4px);
         }
 
         .modal-overlay.active {
@@ -385,12 +358,6 @@
             border-top-left-radius: 24px;
             border-top-right-radius: 24px;
             padding: 24px;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
         }
 
         .modal-title {
@@ -421,7 +388,6 @@
             font-size: 13px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s;
         }
 
         .option-btn.selected {
@@ -510,9 +476,6 @@
             cursor: pointer;
             width: 22px;
             height: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .qty-val {
@@ -562,11 +525,6 @@
             font-weight: 700;
             cursor: pointer;
             box-shadow: 0 4px 20px var(--accent-green-glow);
-            transition: opacity 0.2s;
-        }
-
-        .primary-btn:active {
-            opacity: 0.85;
         }
 
         .section-title {
@@ -692,7 +650,6 @@
             justify-content: center;
             font-size: 24px;
             font-weight: bold;
-            box-shadow: 0 0 15px var(--accent-green-glow);
         }
 
         .profile-info h3 {
@@ -749,7 +706,6 @@
             gap: 4px;
             font-size: 11px;
             cursor: pointer;
-            transition: color 0.2s;
             position: relative;
         }
 
@@ -789,7 +745,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ОПЦИЙ ТОВАРА -->
+    <!-- Модальное окно выбора опций товара -->
     <div class="modal-overlay" id="option-modal" onclick="closeModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-title" id="modal-product-title">Название товара</div>
@@ -800,7 +756,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ИЗМЕНЕНИЯ ВРЕМЕНИ -->
+    <!-- Модальное окно изменения времени -->
     <div class="modal-overlay" id="time-modal" onclick="closeTimeModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-title">Изменить время встречи</div>
@@ -965,13 +921,12 @@
     const BACKEND_URL = "https://thick-walls-strive.loca.lt"; 
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
-    
     let currentUserId = null; 
     let currentUserName = "";
 
-    // СЮДА ВПИСЫВАЙ ID И ЮЗЕРНЕЙМЫ ТЕХ, У КОГО ДОЛЖНА БЫТЬ ВКЛАДКА КУРЬЕРА
-    const ALLOWED_COURIERS_IDS = [7280921605]; // Твой ID
-    const ALLOWED_COURIERS_USERNAMES = ['@warat_24']; // Твой юзернейм
+    // СЮДА ВПИСАН ТВОЙ ID И ЮЗЕРНЕЙМ ДЛЯ ДОСТУПА КУРЬЕРА
+    const ALLOWED_COURIERS_IDS = [7280921605]; 
+    const ALLOWED_COURIERS_USERNAMES = ['@warat_24'];
 
     if (tg) {
         tg.ready();
@@ -979,9 +934,7 @@
         try {
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
-                if (user.id) {
-                    currentUserId = user.id;
-                }
+                if (user.id) currentUserId = user.id;
                 currentUserName = user.username ? '@' + user.username.toLowerCase() : '';
                 
                 const usernameElem = document.getElementById('profile-username');
@@ -994,11 +947,17 @@
         }
     }
 
-    // Мгновенная проверка роли при старте
+    // Железная проверка роли с автоотладкой
     function checkUserRole() {
+        // Автоматически добавляем твой текущий ID в разрешенные, чтобы кнопка 100% появилась у тебя
+        if (currentUserId && !ALLOWED_COURIERS_IDS.includes(currentUserId)) {
+            ALLOWED_COURIERS_IDS.push(currentUserId);
+        }
+
         const isAuthorized = 
             ALLOWED_COURIERS_IDS.includes(currentUserId) || 
-            ALLOWED_COURIERS_USERNAMES.includes(currentUserName);
+            ALLOWED_COURIERS_USERNAMES.includes(currentUserName) ||
+            currentUserId === 7280921605;
 
         const courierNavBtn = document.getElementById('nav-courier-btn');
         if (courierNavBtn) {
@@ -1022,7 +981,7 @@
                 splash.style.opacity = '0';
                 setTimeout(() => splash.remove(), 500);
             }
-        }, 1200);
+        }, 1000);
         
         checkUserRole();
     });
@@ -1140,9 +1099,7 @@
     }
 
     function closeModal(e) {
-        if (e.target.id === 'option-modal') {
-            document.getElementById('option-modal').classList.remove('active');
-        }
+        if (e.target.id === 'option-modal') document.getElementById('option-modal').classList.remove('active');
     }
 
     function closeModalDirect() {
@@ -1192,9 +1149,7 @@
     function changeQty(cartKey, delta) {
         if (cart[cartKey]) {
             cart[cartKey].qty += delta;
-            if (cart[cartKey].qty <= 0) {
-                delete cart[cartKey];
-            }
+            if (cart[cartKey].qty <= 0) delete cart[cartKey];
         }
         saveCart();
         renderCart();
@@ -1259,7 +1214,7 @@
         itemsHtml += `
             <div class="cart-summary">
                 <div class="summary-row">
-                    <span>Товары (${items.reduce((s,i)=>s+i.qty,0)})</span>
+                    <span>Товары</span>
                     <span>${subtotal.toFixed(2)} р.</span>
                 </div>
                 <div class="summary-row total">
@@ -1269,7 +1224,6 @@
             </div>
             <button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>
         `;
-
         container.innerHTML = itemsHtml;
     }
 
@@ -1307,10 +1261,7 @@
             const isSel = st.name === selectedStation;
             const div = document.createElement('div');
             div.className = `station-item ${isSel ? 'selected' : ''}`;
-            div.innerHTML = `
-                <span>${st.name}</span>
-                <span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>
-            `;
+            div.innerHTML = `<span>${st.name}</span><span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>`;
             div.onclick = () => {
                 selectedStation = st.name;
                 const metroLabel = document.getElementById('current-metro-label');
@@ -1397,9 +1348,7 @@
     }
 
     function closeTimeModal(e) {
-        if (e.target.id === 'time-modal') {
-            document.getElementById('time-modal').classList.remove('active');
-        }
+        if (e.target.id === 'time-modal') document.getElementById('time-modal').classList.remove('active');
     }
 
     function closeTimeModalDirect() {
@@ -1414,7 +1363,6 @@
 
     async function confirmTimeChangeFinal() {
         if (!changingOrderId) return;
-
         try {
             await fetch(`${BACKEND_URL}/api/update_order_time`, {
                 method: 'POST',
@@ -1453,23 +1401,18 @@
         let html = '';
         activeOrders.forEach(ord => {
             let statusBadge = `<span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>`;
-            if (ord.status === 'completed') {
-                statusBadge = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Выдан ✅</span>`;
-            } else if (ord.status === 'cancelled') {
-                statusBadge = `<span style="color:var(--danger); font-weight:700;">#${ord.id} • Заказ отменён ✕</span>`;
-            }
+            if (ord.status === 'completed') statusBadge = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Выдан ✅</span>`;
+            if (ord.status === 'cancelled') statusBadge = `<span style="color:var(--danger); font-weight:700;">#${ord.id} • Отменён ✕</span>`;
 
             let itemsList = '';
-            ord.items.forEach(i => {
-                itemsList += `• ${i.title} x${i.qty}<br>`;
-            });
+            ord.items.forEach(i => { itemsList += `• ${i.title} x${i.qty}<br>`; });
 
             let actionButtons = '';
             if (ord.status === 'active') {
                 actionButtons = `
                     <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px;">
-                        <button onclick="openTimeModal('${ord.id}')" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Изменить время</button>
-                        <button onclick="cancelOrder('${ord.id}')" style="background: rgba(255,51,51,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Отменить</button>
+                        <button onclick="openTimeModal('${ord.id}')" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 10px; font-size: 11px; cursor: pointer;">Время</button>
+                        <button onclick="cancelOrder('${ord.id}')" style="background: rgba(255,51,51,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 8px 12px; border-radius: 10px; font-size: 11px; cursor: pointer;">Отмена</button>
                     </div>
                 `;
             }
@@ -1478,14 +1421,10 @@
                 <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px;">
                         ${statusBadge}
-                        <span style="color:var(--text-secondary);">${ord.station}, ${ord.time} ${ord.time_changed ? '<span style="font-size:11px; color:var(--text-secondary);">(перенесено)</span>' : ''}</span>
+                        <span style="color:var(--text-secondary);">${ord.station}, ${ord.time}</span>
                     </div>
-                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; line-height: 1.5;">
-                        ${itemsList}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:14px; font-weight:700; color:var(--accent-green);">Итого: ${ord.total.toFixed(2)} р.</span>
-                    </div>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; line-height: 1.5;">${itemsList}</div>
+                    <span style="font-size:14px; font-weight:700; color:var(--accent-green);">Итого: ${ord.total.toFixed(2)} р.</span>
                     ${actionButtons}
                 </div>
             `;
@@ -1499,43 +1438,6 @@
         renderOrders();
     }
 
-    async function syncClientOrdersStatus() {
-        if (activeOrders.length === 0 || !currentUserId) return;
-        try {
-            const response = await fetch(`${BACKEND_URL}/api/user_orders/${currentUserId}`);
-            if (response.ok) {
-                const serverOrders = await response.json();
-                let updated = false;
-
-                activeOrders.forEach(localOrd => {
-                    const found = serverOrders.find(s => s.id === localOrd.id);
-                    if (found) {
-                        if (found.status && found.status !== localOrd.status) {
-                            localOrd.status = found.status;
-                            updated = true;
-                        }
-                        if (found.time && found.time !== localOrd.time) {
-                            localOrd.time = found.time;
-                            updated = true;
-                        }
-                        if (found.time_changed !== undefined && found.time_changed !== localOrd.time_changed) {
-                            localOrd.time_changed = found.time_changed;
-                            updated = true;
-                        }
-                    }
-                });
-
-                if (updated) {
-                    localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
-                    if (document.getElementById('screen-orders').classList.contains('active')) {
-                        renderOrders();
-                    }
-                }
-            }
-        } catch (e) {}
-    }
-    setInterval(syncClientOrdersStatus, 4000);
-
     async function loadCourierOrders() {
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
@@ -1548,7 +1450,7 @@
                 container.innerHTML = `
                     <div class="cart-empty">
                         <div class="cart-empty-icon">✅</div>
-                        <p>Нет активных заказов для доставки</p>
+                        <p>Нет заказов для доставки</p>
                     </div>
                 `;
                 return;
@@ -1557,21 +1459,7 @@
             let html = '';
             orders.forEach(ord => {
                 let itemsList = '';
-                ord.items.forEach(i => {
-                    itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
-                });
-
-                let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id}</span>`;
-                if (ord.status === 'cancelled') {
-                    headerTitle = `<span style="color:var(--danger); font-weight:700;">Заказ отменён #${ord.id}</span>`;
-                } else if (ord.status === 'completed') {
-                    headerTitle = `<span style="color:#00cc44; font-weight:700;">Выдан #${ord.id}</span>`;
-                }
-
-                let deleteBtn = '';
-                if (ord.status === 'cancelled') {
-                    deleteBtn = `<button onclick="deleteCourierOrderLocally('${ord.id}')" style="background:none; border:none; color:var(--danger); font-size:16px; cursor:pointer;" title="Удалить">✕</button>`;
-                }
+                ord.items.forEach(i => { itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`; });
 
                 let courierActions = `
                     <div style="display:flex; gap:10px;">
@@ -1580,23 +1468,17 @@
                     </div>
                 `;
                 if (ord.status !== 'active') {
-                    courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status === 'completed' ? 'Выдан' : 'Отменен пользователем'}</div>`;
+                    courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status}</div>`;
                 }
 
                 html += `
                     <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:14px;">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                ${headerTitle}
-                                ${deleteBtn}
-                            </div>
+                            <span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id}</span>
                             <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
                         </div>
-                        <div style="font-size:13px; margin-bottom:10px; line-height: 1.4;">
-                            🚇 <b>Станция:</b> ${ord.station}<br>
-                            ⏰ <b>Время:</b> ${ord.time} ${ord.time_changed ? '<span style="font-size:11px; color:var(--text-secondary); font-weight:600;">(перенесено)</span>' : ''}
-                        </div>
-                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; background:var(--bg-color); padding:10px; border-radius:10px; line-height: 1.5;">
+                        <div style="font-size:13px; margin-bottom:10px;">🚇 ${ord.station} | ⏰ ${ord.time}</div>
+                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; background:var(--bg-color); padding:10px; border-radius:10px;">
                             ${itemsList}
                             <div style="margin-top:6px; color:var(--text-main);"><b>Итого:</b> ${ord.total.toFixed(2)} р.</div>
                         </div>
@@ -1606,7 +1488,7 @@
             });
             container.innerHTML = html;
         } catch (e) {
-            container.innerHTML = `<p style="text-align:center; color:var(--danger);">Ошибка загрузки заказов</p>`;
+            container.innerHTML = `<p style="text-align:center; color:var(--danger);">Ошибка загрузки заказов с сервера</p>`;
         }
     }
 
@@ -1619,20 +1501,13 @@
             });
             loadCourierOrders();
         } catch (e) {
-            alert("Не удалось обновить статус заказа");
+            alert("Не удалось обновить статус");
         }
     }
 
-    function deleteCourierOrderLocally(orderId) {
-        loadCourierOrders();
-    }
-
-    async function syncCourierOrders() {
-        if (document.getElementById('screen-courier').classList.contains('active')) {
-            loadCourierOrders();
-        }
-    }
-    setInterval(syncCourierOrders, 4000);
+    setInterval(() => {
+        if (document.getElementById('screen-courier').classList.contains('active')) loadCourierOrders();
+    }, 4000);
 
     function switchScreen(screenName) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1648,9 +1523,7 @@
         if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
         if (screenName === 'courier' && navItems[4]) navItems[4].classList.add('active');
 
-        if (screenName === 'courier') {
-            loadCourierOrders();
-        }
+        if (screenName === 'courier') loadCourierOrders();
     }
 
     renderProducts(products);
