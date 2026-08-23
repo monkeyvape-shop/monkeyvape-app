@@ -966,8 +966,8 @@
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
     
-    // Дефолтный ID для теста на ПК (ваш ID владельца), чтобы вкладка была видна при тестировании в браузере
-    let currentUserId = 7280921605; 
+    // По умолчанию ID пустой, чтобы вкладка курьера не показывалась всем подряд
+    let currentUserId = null; 
     let currentUserName = "User";
 
     if (tg) {
@@ -977,7 +977,6 @@
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
                 if (user.id) {
-                    // Реальный пользователь зашел через Telegram — подставляем его ID
                     currentUserId = user.id;
                 }
                 currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
@@ -1479,7 +1478,7 @@
     }
 
     async function syncClientOrdersStatus() {
-        if (activeOrders.length === 0) return;
+        if (activeOrders.length === 0 || !currentUserId) return;
         try {
             const response = await fetch(`${BACKEND_URL}/api/user_orders/${currentUserId}`);
             if (response.ok) {
@@ -1516,6 +1515,7 @@
     setInterval(syncClientOrdersStatus, 4000);
 
     async function checkUserRole() {
+        if (!currentUserId) return;
         try {
             const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`);
             const data = await response.json();
