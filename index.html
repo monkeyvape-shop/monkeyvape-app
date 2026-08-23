@@ -806,7 +806,8 @@
             <div class="modal-title">Изменить время встречи</div>
             <div class="modal-subtitle">Выберите новое время для заказа #<span id="time-modal-order-id"></span></div>
             <div class="time-slots" id="change-time-slots-container">
-                <div class="time-slot selected" onclick="selectNewTime(this, '12:00')">12:00</div>
+                <div class="time-slot selected" onclick="selectNewTime(this, '09:00')">09:00</div>
+                <div class="time-slot" onclick="selectNewTime(this, '12:00')">12:00</div>
                 <div class="time-slot" onclick="selectNewTime(this, '14:30')">14:30</div>
                 <div class="time-slot" onclick="selectNewTime(this, '16:30')">16:30</div>
                 <div class="time-slot" onclick="selectNewTime(this, '18:10')">18:10</div>
@@ -922,6 +923,7 @@
             <div style="margin-bottom: 24px;">
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Время получения</p>
                 <div class="time-slots">
+                    <div class="time-slot" onclick="selectTime(this, '09:00')">09:00</div>
                     <div class="time-slot selected" onclick="selectTime(this, '12:00')">12:00</div>
                     <div class="time-slot" onclick="selectTime(this, '14:30')">14:30</div>
                     <div class="time-slot" onclick="selectTime(this, '16:30')">16:30</div>
@@ -1028,7 +1030,7 @@
             { name: 'Петровщина', line: 'Красная ветка' },
             { name: 'Институт культуры', line: 'Красная ветка' },
             { name: 'Партизанская', line: 'Красная ветка' },
-            { name: 'Автозаводская', line: 'Красная ветka' }
+            { name: 'Автозаводская', line: 'Красная ветка' }
         ]
     };
 
@@ -1042,9 +1044,8 @@
     let currentSelectedProduct = null;
     let chosenOptionValue = '';
 
-    // Переменные для изменения времени заказа
     let changingOrderId = null;
-    let newSelectedTime = '12:00';
+    let newSelectedTime = '09:00';
 
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
@@ -1295,7 +1296,7 @@
     }
 
     function selectTime(el, time) {
-        document.querySelectorAll('.time-slot').forEach(t => t.classList.remove('selected'));
+        document.querySelectorAll('.checkout-screen .time-slot, #screen-checkout .time-slot').forEach(t => t.classList.remove('selected'));
         el.classList.add('selected');
         selectedTime = time;
     }
@@ -1348,7 +1349,6 @@
         switchScreen('orders');
     }
 
-    // УПРАВЛЕНИЕ ЗАКАЗАМИ У ПОКУПАТЕЛЯ (ОТМЕНА И СМЕНА ВРЕМЕНИ)
     async function cancelOrder(orderId) {
         try {
             await fetch(`${BACKEND_URL}/api/update_order_status`, {
@@ -1438,7 +1438,6 @@
                 itemsList += `• ${i.title} x${i.qty}<br>`;
             });
 
-            // Кнопки в правом нижнем углу карточки заказа (согласно твоему эскизу)
             let actionButtons = '';
             if (ord.status === 'active') {
                 actionButtons = `
@@ -1502,9 +1501,7 @@
 
                 if (updated) {
                     localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
-                    if (document.getElementById('screen-orders').classList.contains('active')) {
-                        renderOrders();
-                    }
+                    renderOrders();
                 }
             }
         } catch (e) {}
@@ -1549,7 +1546,6 @@
                     itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
                 });
 
-                // Шапка заказа у курьера с учетом отмены и имени пользователя
                 let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id}</span>`;
                 if (ord.status === 'cancelled') {
                     headerTitle = `<span style="color:var(--danger); font-weight:700;">Заказ отменён #${ord.id}</span>`;
@@ -1557,7 +1553,6 @@
                     headerTitle = `<span style="color:#00cc44; font-weight:700;">Выдан #${ord.id}</span>`;
                 }
 
-                // Кнопка удаления для отмененных заказов
                 let deleteBtn = '';
                 if (ord.status === 'cancelled') {
                     deleteBtn = `<button onclick="deleteCourierOrderLocally('${ord.id}')" style="background:none; border:none; color:var(--danger); font-size:16px; cursor:pointer;" title="Удалить">✕</button>`;
@@ -1570,7 +1565,7 @@
                     </div>
                 `;
                 if (ord.status !== 'active') {
-                    courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status === 'completed' ? 'Выдан' : 'Отменен пользователем'}</div>`;
+                    courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status === 'completed' ? 'Выдан' : 'Отменен'}</div>`;
                 }
 
                 html += `
@@ -1604,7 +1599,7 @@
         try {
             await fetch(`${BACKEND_URL}/api/update_order_status`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: orderId, status: status })
             });
             loadCourierOrders();
@@ -1614,7 +1609,6 @@
     }
 
     function deleteCourierOrderLocally(orderId) {
-        // Просто скрываем из интерфейса курьера (или можно отправлять запрос на удаление)
         loadCourierOrders();
     }
 
