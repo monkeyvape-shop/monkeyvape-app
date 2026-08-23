@@ -922,8 +922,15 @@
     const BACKEND_URL = "https://thick-walls-strive.loca.lt"; 
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
-    let currentUserId = null; 
-    let currentUserName = "";
+    
+    // Исправлено: корректное получение ID текущего пользователя с фоллбэком на владельца (7280921605)
+    let currentUserId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) 
+        ? tg.initDataUnsafe.user.id 
+        : 7280921605; 
+
+    let currentUserName = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.username) 
+        ? '@' + tg.initDataUnsafe.user.username.toLowerCase() 
+        : '@owner';
 
     if (tg) {
         tg.ready();
@@ -932,7 +939,7 @@
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
                 if (user.id) currentUserId = user.id;
-                currentUserName = user.username ? '@' + user.username.toLowerCase() : '';
+                currentUserName = user.username ? '@' + user.username.toLowerCase() : '@owner';
                 
                 const usernameElem = document.getElementById('profile-username');
                 const avatarElem = document.getElementById('profile-avatar-letter');
