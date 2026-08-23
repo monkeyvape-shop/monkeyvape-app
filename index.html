@@ -965,7 +965,9 @@
     const BACKEND_URL = "https://thick-walls-strive.loca.lt"; 
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
-    let currentUserId = 6658906694; 
+    
+    // ВСТАВЬ СЮДА СВОЙ РЕАЛЬНЫЙ TELEGRAM ID (например: 7280921605):
+    let currentUserId = 7280921605; 
     let currentUserName = "User";
 
     if (tg) {
@@ -974,7 +976,9 @@
         try {
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
-                currentUserId = user.id;
+                if (user.id) {
+                    currentUserId = user.id;
+                }
                 currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
                 
                 const usernameElem = document.getElementById('profile-username');
@@ -1042,7 +1046,6 @@
     let currentSelectedProduct = null;
     let chosenOptionValue = '';
 
-    // Переменные для изменения времени заказа
     let changingOrderId = null;
     let newSelectedTime = '12:00';
 
@@ -1348,7 +1351,6 @@
         switchScreen('orders');
     }
 
-    // УПРАВЛЕНИЕ ЗАКАЗАМИ У ПОКУПАТЕЛЯ (ОТМЕНА И СМЕНА ВРЕМЕНИ)
     async function cancelOrder(orderId) {
         try {
             await fetch(`${BACKEND_URL}/api/update_order_status`, {
@@ -1438,7 +1440,6 @@
                 itemsList += `• ${i.title} x${i.qty}<br>`;
             });
 
-            // Кнопки в правом нижнем углу карточки заказа (согласно твоему эскизу)
             let actionButtons = '';
             if (ord.status === 'active') {
                 actionButtons = `
@@ -1549,7 +1550,6 @@
                     itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
                 });
 
-                // Шапка заказа у курьера с учетом отмены и имени пользователя
                 let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id}</span>`;
                 if (ord.status === 'cancelled') {
                     headerTitle = `<span style="color:var(--danger); font-weight:700;">Заказ отменён #${ord.id}</span>`;
@@ -1557,7 +1557,6 @@
                     headerTitle = `<span style="color:#00cc44; font-weight:700;">Выдан #${ord.id}</span>`;
                 }
 
-                // Кнопка удаления для отмененных заказов
                 let deleteBtn = '';
                 if (ord.status === 'cancelled') {
                     deleteBtn = `<button onclick="deleteCourierOrderLocally('${ord.id}')" style="background:none; border:none; color:var(--danger); font-size:16px; cursor:pointer;" title="Удалить">✕</button>`;
@@ -1614,7 +1613,6 @@
     }
 
     function deleteCourierOrderLocally(orderId) {
-        // Просто скрываем из интерфейса курьера (или можно отправлять запрос на удаление)
         loadCourierOrders();
     }
 
