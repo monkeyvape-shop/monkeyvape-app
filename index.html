@@ -964,28 +964,40 @@
 <script>
     const BACKEND_URL = "https://purple-sloths-smile.loca.lt"; 
 
-    let tg = window.Telegram ? window.Telegram.WebApp : null;
     let currentUserId = 6658906694; 
     let currentUserName = "User";
 
-    if (tg) {
-        tg.ready();
-        tg.expand();
-        try {
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                const user = tg.initDataUnsafe.user;
-                currentUserId = user.id;
-                currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
-                
-                const usernameElem = document.getElementById('profile-username');
-                const avatarElem = document.getElementById('profile-avatar-letter');
-                if (usernameElem) usernameElem.innerText = currentUserName;
-                if (avatarElem && user.first_name) avatarElem.innerText = user.first_name.charAt(0).toUpperCase();
-            }
-        } catch (err) {}
+    // Улучшенная инициализация данных из Telegram, чтобы никнейм загружался гарантированно
+    function initTelegramUser() {
+        if (window.Telegram && window.Telegram.WebApp) {
+            let tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            
+            try {
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    const user = tg.initDataUnsafe.user;
+                    currentUserId = user.id;
+                    currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
+                    
+                    const usernameElem = document.getElementById('profile-username');
+                    const avatarElem = document.getElementById('profile-avatar-letter');
+                    
+                    if (usernameElem) usernameElem.innerText = currentUserName;
+                    if (avatarElem && user.first_name) {
+                        avatarElem.innerText = user.first_name.charAt(0).toUpperCase();
+                    } else if (avatarElem) {
+                        avatarElem.innerText = currentUserName.replace('@', '').charAt(0).toUpperCase();
+                    }
+                }
+            } catch (err) {}
+        }
+        checkUserRole();
     }
 
     window.addEventListener('load', () => {
+        initTelegramUser(); // Вызываем после загрузки DOM
+        
         setTimeout(() => {
             const progressFill = document.getElementById('progress-fill');
             if (progressFill) progressFill.style.width = '100%';
@@ -1368,6 +1380,14 @@
         renderOrders();
     }
 
+    // НОВАЯ ФУНКЦИЯ ДЛЯ ОЧИСТКИ ИСТОРИИ
+    function clearOrdersHistory() {
+        // Оставляем только те заказы, которые сейчас "active"
+        activeOrders = activeOrders.filter(o => o.status === 'active');
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+        renderOrders();
+    }
+
     function openTimeModal(orderId) {
         changingOrderId = orderId;
         document.getElementById('time-modal-order-id').innerText = orderId;
@@ -1430,7 +1450,12 @@
             return;
         }
 
-        if (clearBtn) clearBtn.style.display = 'block';
+        // Если есть заказы со статусом, отличным от active, показываем кнопку "Очистить"
+        const hasInactive = activeOrders.some(o => o.status !== 'active');
+        if (clearBtn) {
+            clearBtn.style.display = hasInactive ? 'block' : 'none';
+        }
+
         let html = '';
         activeOrders.forEach(ord => {
             let statusBadge = `<span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>`;
@@ -1565,8 +1590,8 @@
                 }
 
                 let deleteBtn = '';
-                if (ord.status === 'cancelled') {
-                    deleteBtn = `<button onclick="deleteCourierOrderLocally('${ord.id}')" style="background:none; border:none; color:var(--danger); font-size:16px; cursor:pointer;" title="Удалить">✕</button>`;
+                if (ord.status === 'cancelled' || ord.status === 'completed') {
+                    // Пока оставляем как есть, так как курьер просто обновляет статусы
                 }
 
                 let courierActions = `
@@ -1576,7 +1601,7 @@
                     </div>
                 `;
                 if (ord.status !== 'active') {
-                    courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status === 'completed' ? 'Выдан' : 'Отменен пользователем'}</div>`;
+                    courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status === 'completed' ? 'Выдан' : 'Отменен'}</div>`;
                 }
 
                 let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--text-secondary); font-weight:600;">(перенесено)</span>' : '';
@@ -1624,10 +1649,6 @@
         }
     }
 
-    function deleteCourierOrderLocally(orderId) {
-        loadCourierOrders();
-    }
-
     async function syncCourierOrders() {
         if (document.getElementById('screen-courier').classList.contains('active')) {
             loadCourierOrders();
@@ -1654,12 +1675,12 @@
         }
     }
 
+    // Первоначальные рендеры
     renderProducts(products);
     renderStations('green');
     updateCartBadge();
     renderCart();
     renderOrders();
-    checkUserRole();
 </script>
 </body>
 </html>
