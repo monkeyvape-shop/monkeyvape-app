@@ -1330,7 +1330,10 @@
         try {
             await fetch(`${BACKEND_URL}/api/create_order`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'true'
+                },
                 body: JSON.stringify(orderData)
             });
         } catch (e) {
@@ -1351,7 +1354,10 @@
         try {
             await fetch(`${BACKEND_URL}/api/update_order_status`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'true'
+                },
                 body: JSON.stringify({ order_id: orderId, status: 'cancelled' })
             });
         } catch (e) {}
@@ -1390,7 +1396,10 @@
         try {
             await fetch(`${BACKEND_URL}/api/update_order_time`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'true' 
+                },
                 body: JSON.stringify({ order_id: changingOrderId, time: newSelectedTime })
             });
         } catch (e) {}
@@ -1467,16 +1476,12 @@
         container.innerHTML = html;
     }
 
-    function clearOrdersHistory() {
-        activeOrders = [];
-        localStorage.removeItem('monkey_orders');
-        renderOrders();
-    }
-
     async function syncClientOrdersStatus() {
         if (activeOrders.length === 0) return;
         try {
-            const response = await fetch(`${BACKEND_URL}/api/user_orders/${currentUserId}`);
+            const response = await fetch(`${BACKEND_URL}/api/user_orders/${currentUserId}`, {
+                headers: { 'Bypass-Tunnel-Reminder': 'true' }
+            });
             if (response.ok) {
                 const serverOrders = await response.json();
                 let updated = false;
@@ -1512,7 +1517,9 @@
 
     async function checkUserRole() {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`);
+            const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`, {
+                headers: { 'Bypass-Tunnel-Reminder': 'true' }
+            });
             const data = await response.json();
             
             if (data.role === 'courier' || data.role === 'owner') {
@@ -1528,7 +1535,9 @@
         if (!container) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/orders`);
+            const response = await fetch(`${BACKEND_URL}/api/orders`, {
+                headers: { 'Bypass-Tunnel-Reminder': 'true' }
+            });
             const orders = await response.json();
 
             if (orders.length === 0) {
@@ -1603,7 +1612,10 @@
         try {
             await fetch(`${BACKEND_URL}/api/update_order_status`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'true'
+                },
                 body: JSON.stringify({ order_id: orderId, status: status })
             });
             loadCourierOrders();
