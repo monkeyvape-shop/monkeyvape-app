@@ -966,9 +966,12 @@
 
     let tg = window.Telegram ? window.Telegram.WebApp : null;
     
-    // По умолчанию ID пустой, чтобы вкладка курьера не показывалась всем подряд
     let currentUserId = null; 
-    let currentUserName = "User";
+    let currentUserName = "";
+
+    // СЮДА ВПИСЫВАЙ ID И ЮЗЕРНЕЙМЫ ТЕХ, У КОГО ДОЛЖНА БЫТЬ ВКЛАДКА КУРЬЕРА
+    const ALLOWED_COURIERS_IDS = [7280921605]; // Твой ID
+    const ALLOWED_COURIERS_USERNAMES = ['@warat_24']; // Твой юзернейм
 
     if (tg) {
         tg.ready();
@@ -979,15 +982,32 @@
                 if (user.id) {
                     currentUserId = user.id;
                 }
-                currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
+                currentUserName = user.username ? '@' + user.username.toLowerCase() : '';
                 
                 const usernameElem = document.getElementById('profile-username');
                 const avatarElem = document.getElementById('profile-avatar-letter');
-                if (usernameElem) usernameElem.innerText = currentUserName;
+                if (usernameElem) usernameElem.innerText = user.username ? '@' + user.username : (user.first_name || 'User');
                 if (avatarElem && user.first_name) avatarElem.innerText = user.first_name.charAt(0).toUpperCase();
             }
         } catch (err) {
             console.error("Ошибка инициализации Telegram WebApp:", err);
+        }
+    }
+
+    // Мгновенная проверка роли при старте
+    function checkUserRole() {
+        const isAuthorized = 
+            ALLOWED_COURIERS_IDS.includes(currentUserId) || 
+            ALLOWED_COURIERS_USERNAMES.includes(currentUserName);
+
+        const courierNavBtn = document.getElementById('nav-courier-btn');
+        if (courierNavBtn) {
+            if (isAuthorized) {
+                courierNavBtn.style.display = 'flex';
+                loadCourierOrders();
+            } else {
+                courierNavBtn.style.display = 'none';
+            }
         }
     }
 
@@ -1003,6 +1023,8 @@
                 setTimeout(() => splash.remove(), 500);
             }
         }, 1200);
+        
+        checkUserRole();
     });
 
     const products = [
@@ -1324,7 +1346,7 @@
         const orderData = {
             id: orderId,
             user_id: currentUserId,
-            user_name: currentUserName,
+            user_name: currentUserName || '@user',
             items: formattedItems,
             total: total,
             station: selectedStation,
@@ -1514,20 +1536,6 @@
     }
     setInterval(syncClientOrdersStatus, 4000);
 
-    async function checkUserRole() {
-        if (!currentUserId) return;
-        try {
-            const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`);
-            const data = await response.json();
-            
-            if (data.role === 'courier' || data.role === 'owner') {
-                const courierNavBtn = document.getElementById('nav-courier-btn');
-                if (courierNavBtn) courierNavBtn.style.display = 'flex';
-                loadCourierOrders();
-            }
-        } catch (e) {}
-    }
-
     async function loadCourierOrders() {
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
@@ -1650,7 +1658,6 @@
     updateCartBadge();
     renderCart();
     renderOrders();
-    checkUserRole();
 </script>
 </body>
 </html>
