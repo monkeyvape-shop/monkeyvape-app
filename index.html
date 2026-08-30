@@ -859,7 +859,6 @@
         <div id="screen-orders" class="screen">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
                 <div class="section-title" style="margin-bottom: 0;">Мои заказы</div>
-                <button id="clear-orders-btn" onclick="clearOrdersHistory()" style="background: none; border: none; color: var(--danger); font-size: 12px; cursor: pointer; display: none;">Очистить историю</button>
             </div>
             <div id="orders-list">
                 <div class="cart-empty">
@@ -964,7 +963,7 @@
 <script>
     const BACKEND_URL = "https://solid-days-sin.loca.lt"; 
 
-    let currentUserId = 6658906694; 
+    let currentUserId = 0; 
     let currentUserName = "User";
 
     // Улучшенная инициализация данных из Telegram, чтобы никнейм загружался гарантированно
@@ -1380,14 +1379,6 @@
         renderOrders();
     }
 
-    // НОВАЯ ФУНКЦИЯ ДЛЯ ОЧИСТКИ ИСТОРИИ
-    function clearOrdersHistory() {
-        // Оставляем только те заказы, которые сейчас "active"
-        activeOrders = activeOrders.filter(o => o.status === 'active');
-        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
-        renderOrders();
-    }
-
     function openTimeModal(orderId) {
         changingOrderId = orderId;
         document.getElementById('time-modal-order-id').innerText = orderId;
@@ -1436,11 +1427,9 @@
 
     function renderOrders() {
         const container = document.getElementById('orders-list');
-        const clearBtn = document.getElementById('clear-orders-btn');
         if (!container) return;
 
         if (activeOrders.length === 0) {
-            if (clearBtn) clearBtn.style.display = 'none';
             container.innerHTML = `
                 <div class="cart-empty">
                     <div class="cart-empty-icon">📦</div>
@@ -1448,12 +1437,6 @@
                 </div>
             `;
             return;
-        }
-
-        // Если есть заказы со статусом, отличным от active, показываем кнопку "Очистить"
-        const hasInactive = activeOrders.some(o => o.status !== 'active');
-        if (clearBtn) {
-            clearBtn.style.display = hasInactive ? 'block' : 'none';
         }
 
         let html = '';
