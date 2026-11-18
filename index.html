@@ -358,7 +358,6 @@
             transform: scale(0.9);
         }
 
-        /* МОДАЛЬНЫЕ ОКНА И ШТОРКИ С ПОЛЗУНКОМ */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -814,7 +813,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СТАНЦИИ МЕТРО (ПОЛЗУНОК ИЗ ВЕРХНЕГО УГЛА) -->
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СТАНЦИИ МЕТРО (ШТОРКА С ПОЛЗУНКОМ) -->
     <div class="modal-overlay" id="metro-modal" onclick="closeMetroModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
@@ -918,7 +917,7 @@
                 <div class="profile-avatar" id="profile-avatar-letter">V</div>
                 <div class="profile-info">
                     <h3 id="profile-username">@user</h3>
-                    <p>Telegram User</p>
+                    <p id="profile-userid-text">Telegram ID: определение...</p>
                 </div>
             </div>
 
@@ -929,7 +928,10 @@
         </div>
 
         <div id="screen-courier" class="screen">
-            <div class="section-title">Курьеры — Заказы 🛵</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                <div class="section-title" style="margin-bottom:0;">Курьеры — Заказы 🛵</div>
+                <button onclick="loadCourierOrders()" style="background:var(--card-bg); border:1px solid var(--border-color); color:var(--accent-green); padding:6px 12px; border-radius:10px; font-size:12px; cursor:pointer;">🔄 Обновить</button>
+            </div>
             <div id="courier-orders-list">
                 <div class="cart-empty">
                     <div class="cart-empty-icon">⏳</div>
@@ -1007,13 +1009,28 @@
 <script>
     const BACKEND_URL = "https://solid-days-sin.loca.lt"; 
 
-    // Список особых ID для гарантированного отображения 5-й вкладки "Курьер"
+    // Особые Telegram ID (Админ и Курьеры), для которых открывается 5-я вкладка
     const SPECIAL_COURIER_IDS = [7280921605, 6658906694, 1335426710];
 
     let currentUserId = 0; 
     let currentUserName = "User";
 
     function initTelegramUser() {
+        // 1. Проверяем параметры из ссылки (?uid=...&uname=...), которые передает бот
+        const urlParams = new URLSearchParams(window.location.search);
+        const uidFromUrl = urlParams.get('uid');
+        const unameFromUrl = urlParams.get('uname');
+
+        if (uidFromUrl) {
+            currentUserId = Number(uidFromUrl);
+            localStorage.setItem('monkey_saved_uid', String(currentUserId));
+        }
+        if (unameFromUrl) {
+            currentUserName = unameFromUrl;
+            localStorage.setItem('monkey_saved_uname', currentUserName);
+        }
+
+        // 2. Проверяем Telegram WebApp API
         if (window.Telegram && window.Telegram.WebApp) {
             let tg = window.Telegram.WebApp;
             tg.ready();
@@ -1022,21 +1039,34 @@
             try {
                 if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                     const user = tg.initDataUnsafe.user;
-                    currentUserId = user.id;
+                    currentUserId = Number(user.id);
                     currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
-                    
-                    const usernameElem = document.getElementById('profile-username');
-                    const avatarElem = document.getElementById('profile-avatar-letter');
-                    
-                    if (usernameElem) usernameElem.innerText = currentUserName;
-                    if (avatarElem && user.first_name) {
-                        avatarElem.innerText = user.first_name.charAt(0).toUpperCase();
-                    } else if (avatarElem) {
-                        avatarElem.innerText = currentUserName.replace('@', '').charAt(0).toUpperCase();
-                    }
+                    localStorage.setItem('monkey_saved_uid', String(currentUserId));
+                    localStorage.setItem('monkey_saved_uname', currentUserName);
                 }
             } catch (err) {}
         }
+
+        // 3. Если открыли повторно без параметров, берем сохраненный ID
+        if (!currentUserId && localStorage.getItem('monkey_saved_uid')) {
+            currentUserId = Number(localStorage.getItem('monkey_saved_uid'));
+        }
+        if (currentUserName === "User" && localStorage.getItem('monkey_saved_uname')) {
+            currentUserName = localStorage.getItem('monkey_saved_uname');
+        }
+
+        const usernameElem = document.getElementById('profile-username');
+        const avatarElem = document.getElementById('profile-avatar-letter');
+        const useridElem = document.getElementById('profile-userid-text');
+        
+        if (usernameElem) usernameElem.innerText = currentUserName;
+        if (avatarElem) {
+            avatarElem.innerText = currentUserName.replace('@', '').charAt(0).toUpperCase() || 'V';
+        }
+        if (useridElem) {
+            useridElem.innerText = currentUserId ? `Telegram ID: ${currentUserId}` : 'Telegram ID: не определен (откройте через кнопку в боте)';
+        }
+
         checkUserRole();
     }
 
@@ -1335,7 +1365,6 @@
         container.innerHTML = itemsHtml;
     }
 
-    // ФУНКЦИИ ШТОРКИ ВЫБОРА МЕТРО В ВЕРХНЕМ ПРАВОМ УГЛУ
     function openMetroPicker() {
         document.getElementById('metro-modal').classList.add('active');
         renderModalStations(modalCurrentLine);
@@ -1673,6 +1702,72 @@
         } catch (e) {}
     }
 
+    function renderCourierCards(orders) {
+        const container = document.getElementById('courier-orders-list');
+        if (!container) return;
+
+        if (!orders || orders.length === 0) {
+            container.innerHTML = `
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">✅</div>
+                    <p>В истории пока нет заказов</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        orders.forEach(ord => {
+            let itemsList = '';
+            ord.items.forEach(i => {
+                itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
+            });
+
+            let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>`;
+            if (ord.status === 'cancelled') {
+                headerTitle = `<span style="color:var(--danger); font-weight:700;">#${ord.id} • Заказ отменён ✕</span>`;
+            } else if (ord.status === 'completed') {
+                headerTitle = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Заказ сделан ✅</span>`;
+            }
+
+            let courierActions = `
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Сделан (Выдан)</button>
+                        <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                    </div>
+                    <button onclick="openTimeModal('${ord.id}')" style="width:100%; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main); padding:10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer;">⏰ Изменить время</button>
+                </div>
+            `;
+            if (ord.status !== 'active') {
+                courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:8px; border-top:1px solid var(--border-color);">Сохранено в истории: ${ord.status === 'completed' ? 'Заказ сделан ✅' : 'Заказ отменён ✕'}</div>`;
+            }
+
+            let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(время изменено!)</span>' : '';
+
+            html += `
+                <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:14px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${headerTitle}
+                        </div>
+                        <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
+                    </div>
+                    <div style="font-size:13px; margin-bottom:10px; line-height: 1.4;">
+                        🚇 <b>Станция:</b> м. ${ord.station}<br>
+                        ⏰ <b>Время:</b> ${ord.time} ${timeNoteCourier}
+                    </div>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; background:var(--bg-color); padding:10px; border-radius:10px; line-height: 1.5;">
+                        ${itemsList}
+                        <div style="margin-top:6px; color:var(--text-main);"><b>Итого:</b> ${ord.total.toFixed(2)} р.</div>
+                    </div>
+                    ${courierActions}
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
     async function loadCourierOrders() {
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
@@ -1681,74 +1776,22 @@
             const response = await fetch(`${BACKEND_URL}/api/orders`, {
                 headers: { 'Bypass-Tunnel-Reminder': 'true' }
             });
+            if (!response.ok) throw new Error("Backend offline");
             const orders = await response.json();
-
-            if (orders.length === 0) {
-                container.innerHTML = `
-                    <div class="cart-empty">
-                        <div class="cart-empty-icon">✅</div>
-                        <p>В истории пока нет заказов</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            orders.forEach(ord => {
-                let itemsList = '';
-                ord.items.forEach(i => {
-                    itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
-                });
-
-                let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>`;
-                if (ord.status === 'cancelled') {
-                    headerTitle = `<span style="color:var(--danger); font-weight:700;">#${ord.id} • Заказ отменён ✕</span>`;
-                } else if (ord.status === 'completed') {
-                    headerTitle = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Заказ сделан ✅</span>`;
-                }
-
-                let courierActions = `
-                    <div style="display:flex; flex-direction:column; gap:8px;">
-                        <div style="display:flex; gap:10px;">
-                            <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Сделан (Выдан)</button>
-                            <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
-                        </div>
-                        <button onclick="openTimeModal('${ord.id}')" style="width:100%; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main); padding:10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer;">⏰ Изменить время</button>
-                    </div>
-                `;
-                if (ord.status !== 'active') {
-                    courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:8px; border-top:1px solid var(--border-color);">Сохранено в истории: ${ord.status === 'completed' ? 'Заказ сделан ✅' : 'Заказ отменён ✕'}</div>`;
-                }
-
-                let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(время изменено!)</span>' : '';
-
-                html += `
-                    <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:14px;">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                ${headerTitle}
-                            </div>
-                            <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
-                        </div>
-                        <div style="font-size:13px; margin-bottom:10px; line-height: 1.4;">
-                            🚇 <b>Станция:</b> м. ${ord.station}<br>
-                            ⏰ <b>Время:</b> ${ord.time} ${timeNoteCourier}
-                        </div>
-                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; background:var(--bg-color); padding:10px; border-radius:10px; line-height: 1.5;">
-                            ${itemsList}
-                            <div style="margin-top:6px; color:var(--text-main);"><b>Итого:</b> ${ord.total.toFixed(2)} р.</div>
-                        </div>
-                        ${courierActions}
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
+            renderCourierCards(orders);
         } catch (e) {
-            container.innerHTML = `<p style="text-align:center; color:var(--danger);">Ошибка загрузки заказов с сервера</p>`;
+            // Если туннель (BACKEND_URL) еще не запущен, показываем локальные заказы, чтобы панель всё равно работала
+            renderCourierCards(activeOrders);
         }
     }
 
     async function updateOrderStatus(orderId, status) {
+        const localOrd = activeOrders.find(o => o.id === orderId);
+        if (localOrd) {
+            localOrd.status = status;
+            localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+            renderOrders();
+        }
         try {
             await fetch(`${BACKEND_URL}/api/update_order_status`, {
                 method: 'POST',
@@ -1758,16 +1801,8 @@
                 },
                 body: JSON.stringify({ order_id: orderId, status: status })
             });
-            const localOrd = activeOrders.find(o => o.id === orderId);
-            if (localOrd) {
-                localOrd.status = status;
-                localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
-                renderOrders();
-            }
-            loadCourierOrders();
-        } catch (e) {
-            alert("Не удалось обновить статус заказа");
-        }
+        } catch (e) {}
+        loadCourierOrders();
     }
 
     async function syncCourierOrders() {
@@ -1796,7 +1831,6 @@
         }
     }
 
-    // Первоначальные рендеры
     updateTopMetroLabel();
     renderProducts(products);
     renderStations('green');
