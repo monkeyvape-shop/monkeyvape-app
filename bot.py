@@ -13,7 +13,7 @@ from aiogram.types import (
 )
 
 # ----- НАСТРОЙКИ И ТОКЕНЫ -----
-TOKEN = "8979467253:AAF8ym1bWsfsMpefad3Eo8B6G9XistJUDlk"
+TOKEN = "8939868585:AAHCaci6_2Uw5s5JKeGXqKsjnfBIuD5-wPw"
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 
 # РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
