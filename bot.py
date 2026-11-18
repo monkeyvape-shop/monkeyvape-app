@@ -1,5 +1,6 @@
 import asyncio
 import json
+from urllib.parse import quote
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +18,7 @@ WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 
 # РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
 OWNER_IDS = [7280921605] # Владелец (Админ)
-COURIER_IDS = [6658906694, 7280921605, 1335426710] # Курьеры и Владелец
+COURIER_IDS = [6658906694, 7280921605] # Курьеры и Владелец
 
 DB_FILE = "database.db"
 
@@ -223,9 +224,13 @@ async def check_role(user_id: int):
 
 @dp.message(F.text == "/start")
 async def cmd_start(message: Message):
+    uid = message.from_user.id
+    uname = f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "User")
+    personal_url = f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}"
+
     kb = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🛒 Открыть Monkey Vape", web_app=WebAppInfo(url=WEBAPP_URL))]
+            [KeyboardButton(text="🛒 Открыть Monkey Vape", web_app=WebAppInfo(url=personal_url))]
         ],
         resize_keyboard=True
     )
