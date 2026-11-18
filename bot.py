@@ -1,249 +1,246 @@
 import asyncio
 import json
-import logging
-import os
-from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher, F, types
-from aiogram.enums import ParseMode
-from aiogram.filters import Command
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import aiosqlite
+from aiogram import Bot, Dispatcher, F
 from aiogram.types import (
-    FSInputFile,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
-    WebAppInfo,
+    Message, ReplyKeyboardMarkup, KeyboardButton, 
+    WebAppInfo, MenuButtonDefault, InlineKeyboardMarkup, InlineKeyboardButton
 )
 
-load_dotenv()
-API_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
-
+# ----- НАСТРОЙКИ И ТОКЕНЫ -----
+TOKEN = "8979467253:AAF8ym1bWsfsMpefad3Eo8B6G9XistJUDlk"
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
-ADMIN_ID = 7280921605
 
-IMAGE_PATH = "welcome.png"
+# РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
+OWNER_IDS = [7280921605] # Владелец (Админ)
+COURIER_IDS = [6658906694, 7280921605, 1335426710] # Курьеры и Владелец
 
-user_ids = set()
-verified_users = set()  # Множество для проверки подтверждения возраста 18+
-total_orders_count = 0
+DB_FILE = "database.db"
 
-logging.basicConfig(level=logging.INFO)
-
-bot = Bot(token=API_TOKEN)
+# ----- ИНИЦИАЛИЗАЦИЯ -----
+bot = Bot(token=TOKEN)
 dp = Dispatcher()
+app = FastAPI()
 
-# --- КЛАВИАТУРЫ ---
-
-age_keyboard = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Мне есть 18 лет", callback_data="age_ok")],
-        [InlineKeyboardButton(text="❌ Мне нет 18 лет", callback_data="age_fail")],
-    ]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Постоянное меню внизу экрана
-main_menu_keyboard = ReplyKeyboardMarkup(
-    keyboard=[
-        [
-            KeyboardButton(
-                text="🛍 Открыть каталог (Mini App)",
-                web_app=WebAppInfo(url=WEBAPP_URL),
+async def init_db():
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS orders (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER,
+                user_name TEXT,
+                station TEXT,
+                time TEXT,
+                total REAL,
+                items TEXT,
+                status TEXT DEFAULT 'active',
+                time_changed INTEGER DEFAULT 0
             )
-        ],
-        [
-            KeyboardButton(text="🔥 Актуальные спецпредложения"),
-        ],
-        [
-            KeyboardButton(text="👨‍💻 Связаться с менеджером"),
-        ],
-    ],
-    resize_keyboard=True,
-    is_persistent=True  # Кнопки закрепляются внизу и не пропадают
-)
+        """)
+        await db.commit()
 
+class OrderSchema(BaseModel):
+    id: str
+    user_id: int
+    user_name: str
+    items: list
+    total: float
+    station: str
+    time: str
+    status: str = "active"
 
-# --- ОБРАБОТЧИКИ ---
+class StatusUpdateSchema(BaseModel):
+    order_id: str
+    status: str
 
-@dp.message(Command("start"))
-async def start_handler(message: types.Message):
-    user_ids.add(message.from_user.id)
+class TimeUpdateSchema(BaseModel):
+    order_id: str
+    time: str
 
-    caption_text = (
-        "💨 **Добро пожаловать в Monkey Vape Shop!**\n\n"
-        "Для доступа к каталогу и оформлению заказов, пожалуйста, подтвердите ваш возраст:"
+@app.on_event("startup")
+async def startup_event():
+    await init_db()
+
+@app.post("/api/create_order")
+async def create_order(order: OrderSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute(
+            """INSERT OR REPLACE INTO orders (id, user_id, user_name, station, time, total, items, status, time_changed)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+            (order.id, order.user_id, order.user_name, order.station, order.time, order.total, json.dumps(order.items), order.status)
+        )
+        await db.commit()
+
+    items_str = "\n".join([f"• {i['title']} x{i['qty']} — {(i['price'] * i['qty']):.2f} р." for i in order.items])
+    
+    courier_text = (
+        f"🚨 **НОВЫЙ ЗАКАЗ #{order.id}**\n\n"
+        f"👤 **Покупатель:** {order.user_name} (ID: `{order.user_id}`)\n"
+        f"🚇 **Станция:** м. {order.station}\n"
+        f"⏰ **Время:** {order.time}\n\n"
+        f"📦 **Состав заказа:**\n{items_str}\n\n"
+        f"💰 **Итого:** {order.total:.2f} р."
     )
 
-    if os.path.exists(IMAGE_PATH):
+    for cid in set(COURIER_IDS + OWNER_IDS):
         try:
-            photo = FSInputFile(IMAGE_PATH)
-            await message.answer_photo(
-                photo=photo,
-                caption=caption_text,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=age_keyboard,
-            )
-            return
-        except Exception as e:
-            logging.error(f"Ошибка при отправке фото: {e}")
+            await bot.send_message(cid, courier_text, parse_mode="Markdown")
+        except Exception:
+            pass
 
-    await message.answer(
-        text=caption_text,
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=age_keyboard,
+    user_text = (
+        f"✅ **Ваш заказ #{order.id} успешно оформлен!**\n\n"
+        f"🚇 **Место встречи:** м. {order.station}\n"
+        f"⏰ **Время:** {order.time}\n\n"
+        f"📦 **Ваш заказ:**\n{items_str}\n\n"
+        f"💰 **К оплате (при встрече):** {order.total:.2f} р.\n\n"
+        f"Спасибо, что выбрали Monkey Vape! Ожидайте курьера."
     )
-
-
-@dp.callback_query(F.data.in_({"age_ok", "age_fail"}))
-async def process_age_check(callback: types.CallbackQuery):
-    if callback.data == "age_ok":
-        user_ids.add(callback.from_user.id)
-        verified_users.add(callback.from_user.id)  # Запоминаем, что пользователь подтвердил возраст
-
-        try:
-            await callback.message.delete()
-        except Exception as e:
-            logging.error(f"Не удалось удалить сообщение: {e}")
-
-        # Отправляем сообщение с постоянной нижней клавиатурой
-        await callback.message.answer(
-            "Спасибо! Доступ разрешен. Выберите нужный пункт в меню ниже 👇",
-            reply_markup=main_menu_keyboard,
-        )
-    else:
-        await callback.answer(
-            "Извините, доступ к магазину разрешён только лицам старше 18 лет.",
-            show_alert=True
-        )
-        return
-
-    await callback.answer()
-
-
-@dp.message(Command("stats"))
-async def stats_handler(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("У вас нет прав для просмотра статистики.")
-        return
-
-    stats_text = (
-        f"📊 **Статистика бота MonkeyVape:**\n\n"
-        f"👥 Всего пользователей: `{len(user_ids)}`\n"
-        f"🔞 Подтвердили 18+: `{len(verified_users)}`\n"
-        f"🛍 Всего оформлено заказов: `{total_orders_count}`\n"
-        f"🟢 Статус: Бот работает"
-    )
-    await message.answer(stats_text, parse_mode=ParseMode.MARKDOWN)
-
-
-@dp.message(Command("broadcast"))
-async def broadcast_handler(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("У вас нет прав для выполнения этой команды.")
-        return
-
-    command_args = message.text.split(maxsplit=1)
-    if len(command_args) < 2:
-        await message.answer("Укажите текст рассылки.\nПример: `/broadcast Всем привет!`", parse_mode=ParseMode.MARKDOWN)
-        return
-
-    text_to_send = command_args[1]
-    count = 0
-
-    for uid in list(user_ids):
-        try:
-            await bot.send_message(chat_id=uid, text=text_to_send, parse_mode=ParseMode.MARKDOWN)
-            count += 1
-            await asyncio.sleep(0.05)
-        except Exception as e:
-            logging.warning(f"Не удалось отправить сообщение пользователю {uid}: {e}")
-
-    await message.answer(f"✅ Рассылка завершена!\nСообщение получили: **{count}** пользователей.", parse_mode=ParseMode.MARKDOWN)
-
-
-# Обработка данных из Mini App (с проверкой возраста)
-@dp.message(F.web_app_data)
-async def web_app_data_handler(message: types.Message):
-    user_id = message.from_user.id
-
-    # ПРОВЕРКА: Если пользователь не подтверждал возраст, выводим предупреждение
-    if user_id not in verified_users:
-        await message.answer(
-            "❌ **Ошибка оформления заказа!**\n\n"
-            "Вам необходимо подтвердить возраст (18+). Введите команду /start и нажмите кнопку подтверждения.",
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=age_keyboard
-        )
-        return
-
-    global total_orders_count
-    total_orders_count += 1
-
+    
     try:
-        data = json.loads(message.web_app_data.data)
-    except json.JSONDecodeError:
-        await message.answer("Произошла ошибка при обработке данных заказа.")
-        return
+        await bot.send_message(order.user_id, user_text, parse_mode="Markdown")
+    except Exception:
+        pass
 
-    user = message.from_user
-    username_str = f"@{user.username}" if user.username else "Юзернейм не установлен"
-    user_name = user.full_name
+    return {"success": True}
 
-    items_list = "\n".join(
-        [f"• {item['name']} — {item['price']}₽" for item in data.get("items", [])]
+@app.get("/api/orders")
+async def get_orders():
+    async with aiosqlite.connect(DB_FILE) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM orders ORDER BY rowid DESC") as cursor:
+            rows = await cursor.fetchall()
+            result = []
+            for row in rows:
+                result.append({
+                    "id": row["id"],
+                    "user_id": row["user_id"],
+                    "user_name": row["user_name"],
+                    "station": row["station"],
+                    "time": row["time"],
+                    "total": row["total"],
+                    "items": json.loads(row["items"]),
+                    "status": row["status"],
+                    "time_changed": bool(row["time_changed"])
+                })
+            return result
+
+@app.get("/api/user_orders/{user_id}")
+async def get_user_orders(user_id: int):
+    async with aiosqlite.connect(DB_FILE) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY rowid DESC", (user_id,)) as cursor:
+            rows = await cursor.fetchall()
+            result = []
+            for row in rows:
+                result.append({
+                    "id": row["id"],
+                    "user_id": row["user_id"],
+                    "user_name": row["user_name"],
+                    "station": row["station"],
+                    "time": row["time"],
+                    "total": row["total"],
+                    "items": json.loads(row["items"]),
+                    "status": row["status"],
+                    "time_changed": bool(row["time_changed"])
+                })
+            return result
+
+@app.post("/api/update_order_status")
+async def update_order_status(data: StatusUpdateSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute("UPDATE orders SET status = ? WHERE id = ?", (data.status, data.order_id))
+        await db.commit()
+
+        async with db.execute("SELECT user_id, user_name, station, time FROM orders WHERE id = ?", (data.order_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                user_id, user_name, station, time = row[0], row[1], row[2], row[3]
+                if data.status == 'cancelled':
+                    try:
+                        await bot.send_message(user_id, f"❌ Ваш заказ #{data.order_id} был отменён (сохранён в истории заказов).")
+                    except Exception:
+                        pass
+                    for cid in set(COURIER_IDS + OWNER_IDS):
+                        try:
+                            await bot.send_message(cid, f"❌ Заказ #{data.order_id} ({user_name}, м. {station}) был **отменён**.", parse_mode="Markdown")
+                        except Exception:
+                            pass
+                elif data.status == 'completed':
+                    try:
+                        await bot.send_message(user_id, f"✅ Ваш заказ #{data.order_id} успешно выполнен! Спасибо за покупку.")
+                    except Exception:
+                        pass
+                    for cid in set(COURIER_IDS + OWNER_IDS):
+                        try:
+                            await bot.send_message(cid, f"✅ Заказ #{data.order_id} ({user_name}, м. {station}) отмечен как **сделан (выдан)**.", parse_mode="Markdown")
+                        except Exception:
+                            pass
+
+    return {"success": True}
+
+@app.post("/api/update_order_time")
+async def update_order_time(data: TimeUpdateSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute("UPDATE orders SET time = ?, time_changed = 1 WHERE id = ?", (data.time, data.order_id))
+        await db.commit()
+
+        async with db.execute("SELECT user_id, user_name, station FROM orders WHERE id = ?", (data.order_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                user_id, user_name, station = row[0], row[1], row[2]
+                try:
+                    await bot.send_message(user_id, f"⏰ Время встречи для заказа #{data.order_id} (м. {station}) изменено на **{data.time}**.", parse_mode="Markdown")
+                except Exception:
+                    pass
+                for cid in set(COURIER_IDS + OWNER_IDS):
+                    try:
+                        await bot.send_message(cid, f"⏰ **Изменено время заказа #{data.order_id}**\n👤 Покупатель: {user_name}\n🚇 Станция: м. {station}\n🕒 Новое время: **{data.time}**", parse_mode="Markdown")
+                    except Exception:
+                        pass
+
+    return {"success": True}
+
+@app.get("/api/check_role/{user_id}")
+async def check_role(user_id: int):
+    if user_id in OWNER_IDS:
+        return {"role": "owner"}
+    elif user_id in COURIER_IDS:
+        return {"role": "courier"}
+    return {"role": "client"}
+
+@dp.message(F.text == "/start")
+async def cmd_start(message: Message):
+    kb = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🛒 Открыть Monkey Vape", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ],
+        resize_keyboard=True
     )
-    total_price = data.get("total", 0)
-    metro = data.get("metro", "Не указано")
-    time = data.get("time", "Не указано")
-    payment = data.get("payment", "Не указано")
-
-    admin_order_text = (
-        f"🚨 НОВЫЙ ЗАКАЗ #{total_orders_count}!\n\n"
-        f"👤 Покупатель: {user_name}\n"
-        f"💬 Юзернейм: {username_str}\n"
-        f"🆔 ID: {user.id}\n\n"
-        f"📦 Состав заказа:\n{items_list}\n\n"
-        f"📍 Метро: {metro}\n"
-        f"⏰ Время: {time}\n"
-        f"💳 Оплата: {payment}\n\n"
-        f"💰 Сумма: {total_price} ₽"
-    )
-
-    try:
-        await bot.send_message(
-            chat_id=ADMIN_ID, text=admin_order_text
-        )
-    except Exception as e:
-        logging.error(f"Не удалось отправить уведомление админу: {e}")
-
-    client_text = (
-        f"✅ Ваш заказ успешно принят!\n\n"
-        f"Состав заказа:\n{items_list}\n\n"
-        f"📍 Метро: {metro} ({time})\n"
-        f"Итого: {total_price} ₽\n\n"
-        f"Наш менеджер свяжется с вами для подтверждения брони."
-    )
-
-    await message.answer(client_text)
-
-
-@dp.message(F.text == "🔥 Актуальные спецпредложения")
-async def show_promos(message: types.Message):
     await message.answer(
-        "🔥 **Актуальные спецпредложения:**\n\n1. 3+1 на жидкости!\n2. Скидка 15% на картриджи!",
-        parse_mode=ParseMode.MARKDOWN,
+        "👋 Добро пожаловать в **Monkey Vape**!\n\nНажми кнопку ниже, чтобы открыть каталог и сделать заказ.",
+        reply_markup=kb,
+        parse_mode="Markdown"
     )
-
-
-@dp.message(F.text == "👨‍💻 Связаться с менеджером")
-async def contact_manager(message: types.Message):
-    await message.answer(
-        "По всем вопросам и для заказа пишите нашему менеджеру: https://t.me/warat_24"
-    )
-
 
 async def main():
-    await dp.start_polling(bot)
-
+    await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+    asyncio.create_task(dp.start_polling(bot))
+    config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 if __name__ == "__main__":
     asyncio.run(main())
