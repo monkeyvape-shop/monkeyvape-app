@@ -749,6 +749,26 @@
             font-weight: 600;
         }
 
+        .delete-order-x {
+            background: rgba(255, 51, 51, 0.12);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .delete-order-x:active {
+            transform: scale(0.9);
+        }
+
         .bottom-nav {
             position: absolute;
             bottom: 0;
@@ -841,7 +861,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ИЗМЕНЕНИЯ ВРЕМЕНИ -->
+    <!-- МОДАЛЬНОЕ ОКНО ИЗМЕНЕНИЯ ВРЕМЕНИ (ТОЛЬКО ДЛЯ ПОКУПАТЕЛЯ) -->
     <div class="modal-overlay" id="time-modal" onclick="closeTimeModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
@@ -901,7 +921,7 @@
 
         <div id="screen-orders" class="screen">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
-                <div class="section-title" style="margin-bottom: 0;">Мои заказы (История)</div>
+                <div class="section-title" style="margin-bottom: 0;">Мои заказы</div>
             </div>
             <div id="orders-list">
                 <div class="cart-empty">
@@ -917,7 +937,7 @@
                 <div class="profile-avatar" id="profile-avatar-letter">V</div>
                 <div class="profile-info">
                     <h3 id="profile-username">@user</h3>
-                    <p id="profile-userid-text">Telegram ID: определение...</p>
+                    <p id="profile-userid-text">Telegram User</p>
                 </div>
             </div>
 
@@ -928,10 +948,7 @@
         </div>
 
         <div id="screen-courier" class="screen">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-                <div class="section-title" style="margin-bottom:0;">Курьеры — Заказы 🛵</div>
-                <button onclick="loadCourierOrders()" style="background:var(--card-bg); border:1px solid var(--border-color); color:var(--accent-green); padding:6px 12px; border-radius:10px; font-size:12px; cursor:pointer;">🔄 Обновить</button>
-            </div>
+            <div class="section-title">Панель курьера 🛵</div>
             <div id="courier-orders-list">
                 <div class="cart-empty">
                     <div class="cart-empty-icon">⏳</div>
@@ -1007,52 +1024,85 @@
 </div>
 
 <script>
-    const BACKEND_URL = "https://solid-days-sin.loca.lt"; 
+    // Автоматическое определение адреса сервера (берётся из ссылки ?api=..., либо localhost, либо туннель)
+    const urlParamsGlobal = new URLSearchParams(window.location.search);
+    const apiFromUrl = urlParamsGlobal.get('api');
+    if (apiFromUrl) {
+        localStorage.setItem('monkey_backend_url', apiFromUrl);
+    }
+    let BACKEND_URL = apiFromUrl || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
 
-    // Особые Telegram ID (Админ и Курьеры), для которых открывается 5-я вкладка
+    // Список всех возможных адресов сервера для автоматического подключения между аккаунтами
+    const CANDIDATE_BACKENDS = [
+        BACKEND_URL,
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+        "https://solid-days-sin.loca.lt"
+    ];
+
+    async function apiFetch(path, options = {}) {
+        options.headers = Object.assign({ 'Bypass-Tunnel-Reminder': 'true' }, options.headers || {});
+        for (const base of CANDIDATE_BACKENDS) {
+            if (!base) continue;
+            try {
+                const res = await fetch(`${base}${path}`, options);
+                if (res.ok) {
+                    BACKEND_URL = base;
+                    return res;
+                }
+            } catch (e) {}
+        }
+        throw new Error("Server unreachable");
+    }
+
+    // ID Владельца и Курьеров (оба видят 5-ю вкладку "Курьер")
     const SPECIAL_COURIER_IDS = [7280921605, 6658906694, 1335426710];
 
     let currentUserId = 0; 
     let currentUserName = "User";
 
+    function showCourierTabIfAllowed() {
+        const courierNavBtn = document.getElementById('nav-courier-btn');
+        if (!courierNavBtn) return;
+        const uidNum = Number(currentUserId);
+        if (SPECIAL_COURIER_IDS.includes(uidNum)) {
+            courierNavBtn.style.display = 'flex';
+        }
+    }
+
     function initTelegramUser() {
-        // 1. Проверяем параметры из ссылки (?uid=...&uname=...), которые передает бот
         const urlParams = new URLSearchParams(window.location.search);
         const uidFromUrl = urlParams.get('uid');
         const unameFromUrl = urlParams.get('uname');
+        const roleFromUrl = urlParams.get('role');
 
-        if (uidFromUrl) {
-            currentUserId = Number(uidFromUrl);
-            localStorage.setItem('monkey_saved_uid', String(currentUserId));
-        }
-        if (unameFromUrl) {
-            currentUserName = unameFromUrl;
-            localStorage.setItem('monkey_saved_uname', currentUserName);
-        }
-
-        // 2. Проверяем Telegram WebApp API
+        // 1. Сначала пробуем получить точный ID из Telegram WebApp
         if (window.Telegram && window.Telegram.WebApp) {
             let tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
             
             try {
-                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
                     const user = tg.initDataUnsafe.user;
                     currentUserId = Number(user.id);
                     currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
-                    localStorage.setItem('monkey_saved_uid', String(currentUserId));
-                    localStorage.setItem('monkey_saved_uname', currentUserName);
                 }
             } catch (err) {}
         }
 
-        // 3. Если открыли повторно без параметров, берем сохраненный ID
-        if (!currentUserId && localStorage.getItem('monkey_saved_uid')) {
-            currentUserId = Number(localStorage.getItem('monkey_saved_uid'));
+        // 2. Если Telegram WebApp не отдал ID (например, открыто через обычную кнопку), берем из URL от бота
+        if (!currentUserId && uidFromUrl) {
+            currentUserId = Number(uidFromUrl);
         }
-        if (currentUserName === "User" && localStorage.getItem('monkey_saved_uname')) {
-            currentUserName = localStorage.getItem('monkey_saved_uname');
+        if (currentUserName === "User" && unameFromUrl) {
+            currentUserName = unameFromUrl;
+        }
+
+        // 3. Если бот явно передал role=owner или role=courier в ссылке, сразу включаем вкладку
+        if (roleFromUrl === 'owner' || roleFromUrl === 'courier') {
+            const courierNavBtn = document.getElementById('nav-courier-btn');
+            if (courierNavBtn) courierNavBtn.style.display = 'flex';
         }
 
         const usernameElem = document.getElementById('profile-username');
@@ -1064,14 +1114,21 @@
             avatarElem.innerText = currentUserName.replace('@', '').charAt(0).toUpperCase() || 'V';
         }
         if (useridElem) {
-            useridElem.innerText = currentUserId ? `Telegram ID: ${currentUserId}` : 'Telegram ID: не определен (откройте через кнопку в боте)';
+            const isCourierOrOwner = SPECIAL_COURIER_IDS.includes(Number(currentUserId));
+            useridElem.innerText = currentUserId 
+                ? `ID: ${currentUserId} ${isCourierOrOwner ? '• Курьер / Владелец' : '• Покупатель'}`
+                : 'Telegram User';
         }
 
+        showCourierTabIfAllowed();
         checkUserRole();
+        syncClientOrdersStatus();
     }
 
     window.addEventListener('load', () => {
         initTelegramUser();
+        // Дополнительная повторная проверка через 500мс на случай поздней инициализации Telegram WebApp
+        setTimeout(initTelegramUser, 500);
         
         setTimeout(() => {
             const progressFill = document.getElementById('progress-fill');
@@ -1149,6 +1206,8 @@
     let selectedStation = localStorage.getItem('monkey_selected_station') || 'Партизанская';
     let selectedTime = '12:00';
     let activeOrders = JSON.parse(localStorage.getItem('monkey_orders')) || [];
+    // Список скрытых курьером выполненных заказов
+    let hiddenCourierOrderIds = JSON.parse(localStorage.getItem('monkey_hidden_courier_orders')) || [];
 
     let currentSelectedProduct = null;
     let chosenOptionValue = '';
@@ -1489,12 +1548,9 @@
         };
 
         try {
-            await fetch(`${BACKEND_URL}/api/create_order`, {
+            await apiFetch(`/api/create_order`, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'true'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)
             });
         } catch (e) {
@@ -1512,24 +1568,40 @@
     }
 
     async function cancelOrder(orderId) {
-        try {
-            await fetch(`${BACKEND_URL}/api/update_order_status`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'true'
-                },
-                body: JSON.stringify({ order_id: orderId, status: 'cancelled' })
-            });
-        } catch (e) {}
-
         const ord = activeOrders.find(o => o.id === orderId);
         if (ord) ord.status = 'cancelled';
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
         renderOrders();
+
+        try {
+            await apiFetch(`/api/update_order_status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId, status: 'cancelled' })
+            });
+        } catch (e) {}
+
         if (document.getElementById('screen-courier').classList.contains('active')) {
             loadCourierOrders();
         }
+    }
+
+    // Удаление (скрытие) заказа у курьера по нажатию на крестик (только для выполненных заказов)
+    async function deleteCompletedOrderCourier(orderId) {
+        if (!hiddenCourierOrderIds.includes(orderId)) {
+            hiddenCourierOrderIds.push(orderId);
+            localStorage.setItem('monkey_hidden_courier_orders', JSON.stringify(hiddenCourierOrderIds));
+        }
+
+        try {
+            await apiFetch(`/api/delete_completed_order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId })
+            });
+        } catch (e) {}
+
+        loadCourierOrders();
     }
 
     function openTimeModal(orderId) {
@@ -1557,17 +1629,6 @@
     async function confirmTimeChangeFinal() {
         if (!changingOrderId) return;
 
-        try {
-            await fetch(`${BACKEND_URL}/api/update_order_time`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'true' 
-                },
-                body: JSON.stringify({ order_id: changingOrderId, time: newSelectedTime })
-            });
-        } catch (e) {}
-
         const ord = activeOrders.find(o => o.id === changingOrderId);
         if (ord) {
             ord.time = newSelectedTime;
@@ -1575,10 +1636,19 @@
         }
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
         renderOrders();
+        closeTimeModalDirect();
+
+        try {
+            await apiFetch(`/api/update_order_time`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: changingOrderId, time: newSelectedTime })
+            });
+        } catch (e) {}
+
         if (document.getElementById('screen-courier').classList.contains('active')) {
             loadCourierOrders();
         }
-        closeTimeModalDirect();
     }
 
     function renderOrders() {
@@ -1599,7 +1669,7 @@
         activeOrders.forEach(ord => {
             let statusBadge = `<span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>`;
             if (ord.status === 'completed') {
-                statusBadge = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Сделан (Выдан) ✅</span>`;
+                statusBadge = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Выдан ✅</span>`;
             } else if (ord.status === 'cancelled') {
                 statusBadge = `<span style="color:var(--danger); font-weight:700;">#${ord.id} • Заказ отменён ✕</span>`;
             }
@@ -1614,12 +1684,12 @@
                 actionButtons = `
                     <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px;">
                         <button onclick="openTimeModal('${ord.id}')" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Изменить время</button>
-                        <button onclick="cancelOrder('${ord.id}')" style="background: rgba(255,51,51,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Отменить заказ</button>
+                        <button onclick="cancelOrder('${ord.id}')" style="background: rgba(255,51,51,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Отменить</button>
                     </div>
                 `;
             }
 
-            let timeNote = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(время изменено)</span>' : '';
+            let timeNote = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
 
             html += `
                 <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
@@ -1641,11 +1711,8 @@
     }
 
     async function syncClientOrdersStatus() {
-        if (!currentUserId && activeOrders.length === 0) return;
         try {
-            const response = await fetch(`${BACKEND_URL}/api/user_orders/${currentUserId}`, {
-                headers: { 'Bypass-Tunnel-Reminder': 'true' }
-            });
+            const response = await apiFetch(`/api/user_orders/${currentUserId}`);
             if (response.ok) {
                 const serverOrders = await response.json();
                 let updated = false;
@@ -1653,7 +1720,7 @@
                 serverOrders.forEach(srvOrd => {
                     const localOrd = activeOrders.find(l => l.id === srvOrd.id);
                     if (!localOrd) {
-                        activeOrders.push(srvOrd);
+                        activeOrders.unshift(srvOrd);
                         updated = true;
                     } else {
                         if (srvOrd.status && srvOrd.status !== localOrd.status) {
@@ -1680,22 +1747,17 @@
             }
         } catch (e) {}
     }
-    setInterval(syncClientOrdersStatus, 4000);
+    setInterval(syncClientOrdersStatus, 3500);
 
     async function checkUserRole() {
-        const courierNavBtn = document.getElementById('nav-courier-btn');
-        if (SPECIAL_COURIER_IDS.includes(Number(currentUserId))) {
-            if (courierNavBtn) courierNavBtn.style.display = 'flex';
-            loadCourierOrders();
-        }
+        showCourierTabIfAllowed();
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/check_role/${currentUserId}`, {
-                headers: { 'Bypass-Tunnel-Reminder': 'true' }
-            });
+            const response = await apiFetch(`/api/check_role/${currentUserId}`);
             const data = await response.json();
             
             if (data.role === 'courier' || data.role === 'owner') {
+                const courierNavBtn = document.getElementById('nav-courier-btn');
                 if (courierNavBtn) courierNavBtn.style.display = 'flex';
                 loadCourierOrders();
             }
@@ -1706,44 +1768,51 @@
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
 
-        if (!orders || orders.length === 0) {
+        // Фильтруем заказы, которые курьер уже удалил крестиком после выполнения
+        const visibleOrders = (orders || []).filter(o => !hiddenCourierOrderIds.includes(o.id) && !o.hidden_by_courier);
+
+        if (visibleOrders.length === 0) {
             container.innerHTML = `
                 <div class="cart-empty">
                     <div class="cart-empty-icon">✅</div>
-                    <p>В истории пока нет заказов</p>
+                    <p>Нет активных заказов для доставки</p>
                 </div>
             `;
             return;
         }
 
         let html = '';
-        orders.forEach(ord => {
+        visibleOrders.forEach(ord => {
             let itemsList = '';
             ord.items.forEach(i => {
                 itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
             });
 
-            let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>`;
+            let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id} • Активен</span>`;
             if (ord.status === 'cancelled') {
-                headerTitle = `<span style="color:var(--danger); font-weight:700;">#${ord.id} • Заказ отменён ✕</span>`;
+                headerTitle = `<span style="color:var(--danger); font-weight:700;">Заказ #${ord.id} • Отменён ✕</span>`;
             } else if (ord.status === 'completed') {
-                headerTitle = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Заказ сделан ✅</span>`;
+                headerTitle = `<span style="color:#00cc44; font-weight:700;">Заказ #${ord.id} • Выдан ✅</span>`;
             }
 
+            // Крестик удаления заказа доступен ТОЛЬКО если заказ уже выполнен (completed)
+            let deleteBtn = '';
+            if (ord.status === 'completed') {
+                deleteBtn = `<button class="delete-order-x" title="Удалить выполненный заказ" onclick="deleteCompletedOrderCourier('${ord.id}')">✕</button>`;
+            }
+
+            // У курьера только две кнопки: Выдан и Отменить (без изменения времени)
             let courierActions = `
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <div style="display:flex; gap:10px;">
-                        <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Сделан (Выдан)</button>
-                        <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
-                    </div>
-                    <button onclick="openTimeModal('${ord.id}')" style="width:100%; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main); padding:10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer;">⏰ Изменить время</button>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
+                    <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
                 </div>
             `;
             if (ord.status !== 'active') {
-                courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:8px; border-top:1px solid var(--border-color);">Сохранено в истории: ${ord.status === 'completed' ? 'Заказ сделан ✅' : 'Заказ отменён ✕'}</div>`;
+                courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status === 'completed' ? 'Выдан ✅' : 'Отменен ✕'}</div>`;
             }
 
-            let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(время изменено!)</span>' : '';
+            let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
 
             html += `
                 <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
@@ -1751,7 +1820,10 @@
                         <div style="display:flex; align-items:center; gap:8px;">
                             ${headerTitle}
                         </div>
-                        <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
+                            ${deleteBtn}
+                        </div>
                     </div>
                     <div style="font-size:13px; margin-bottom:10px; line-height: 1.4;">
                         🚇 <b>Станция:</b> м. ${ord.station}<br>
@@ -1773,14 +1845,10 @@
         if (!container) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/orders`, {
-                headers: { 'Bypass-Tunnel-Reminder': 'true' }
-            });
-            if (!response.ok) throw new Error("Backend offline");
+            const response = await apiFetch(`/api/orders`);
             const orders = await response.json();
             renderCourierCards(orders);
         } catch (e) {
-            // Если туннель (BACKEND_URL) еще не запущен, показываем локальные заказы, чтобы панель всё равно работала
             renderCourierCards(activeOrders);
         }
     }
@@ -1793,12 +1861,9 @@
             renderOrders();
         }
         try {
-            await fetch(`${BACKEND_URL}/api/update_order_status`, {
+            await apiFetch(`/api/update_order_status`, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'true'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: orderId, status: status })
             });
         } catch (e) {}
@@ -1810,7 +1875,7 @@
             loadCourierOrders();
         }
     }
-    setInterval(syncCourierOrders, 4000);
+    setInterval(syncCourierOrders, 3500);
 
     function switchScreen(screenName) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
