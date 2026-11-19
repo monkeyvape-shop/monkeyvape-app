@@ -1453,7 +1453,7 @@
     if (apiFromUrl) {
         localStorage.setItem('monkey_backend_url', apiFromUrl);
     }
-    let BACKEND_URL = apiFromUrl || localStorage.getItem('monkey_backend_url') || "https://brwwx-46-53-173-187.run.pinggy-free.link";
+    let BACKEND_URL = apiFromUrl || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
     let isServerConnected = false;
 
     const CANDIDATE_BACKENDS = [
