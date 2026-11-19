@@ -545,7 +545,6 @@
             text-align: center;
         }
 
-        /* БЛОК ПРОМОКОДА В КОРЗИНЕ */
         .promo-box {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -656,7 +655,6 @@
             margin-bottom: 16px;
         }
 
-        /* ВКЛАДКИ ВНУТРИ "МОИ ЗАКАЗЫ" (АКТИВНЫЕ / ПРОШЕДШИЕ) */
         .orders-tabs {
             display: flex;
             gap: 8px;
@@ -698,7 +696,6 @@
             font-size: 11px;
         }
 
-        /* КАРТОЧКА ЗАКАЗА С РОВНЫМИ ОТСТУПАМИ */
         .order-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -1059,10 +1056,31 @@
             font-size: 15px;
             font-weight: 700;
             color: var(--accent-green);
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 6px;
+        }
+
+        .server-status-bar {
+            font-size: 11px;
+            padding: 7px 10px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .server-status-bar.ok {
+            background: rgba(0, 255, 102, 0.1);
+            border: 1px solid rgba(0, 255, 102, 0.35);
+            color: var(--accent-green);
+        }
+
+        .server-status-bar.err {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid rgba(255, 51, 51, 0.4);
+            color: #ff6666;
         }
 
         .admin-sub-tabs {
@@ -1320,7 +1338,11 @@
 
             <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ВЛАДЕЛЬЦА (ТОЛЬКО ДЛЯ OWNER_IDS) -->
             <div id="owner-admin-panel" class="admin-section" style="display: none;">
-                <div class="admin-title">👑 Управление магазином (Владелец)</div>
+                <div class="admin-title">
+                    <span>👑 Управление магазином (Владелец)</span>
+                </div>
+                <div id="admin-server-status" class="server-status-bar err">⏳ Проверка связи с сервером...</div>
+
                 <div class="admin-sub-tabs">
                     <div class="admin-sub-tab active" onclick="switchAdminTab('promos', this)">🎟 Промокоды</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Станции</div>
@@ -1330,7 +1352,7 @@
                 <!-- Вкладка 1: Промокоды -->
                 <div id="admin-tab-promos">
                     <div style="display:flex; gap:8px; margin-bottom:12px;">
-                        <input type="text" id="admin-promo-code" class="promo-input" placeholder="Код (напр. VAPE5)" style="width:55%;">
+                        <input type="text" id="admin-promo-code" class="promo-input" placeholder="Код (напр. LOL123)" style="width:55%;">
                         <input type="number" id="admin-promo-discount" class="promo-input" placeholder="Скидка р." step="0.5" style="width:45%; text-transform:none;">
                     </div>
                     <button class="primary-btn" style="padding:10px; font-size:13px; margin-bottom:14px;" onclick="adminSavePromo()">Сохранить промокод</button>
@@ -1432,13 +1454,26 @@
         localStorage.setItem('monkey_backend_url', apiFromUrl);
     }
     let BACKEND_URL = apiFromUrl || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
+    let isServerConnected = false;
 
     const CANDIDATE_BACKENDS = [
         BACKEND_URL,
         "http://127.0.0.1:8000",
-        "http://localhost:8000",
-        "https://solid-days-sin.loca.lt"
+        "http://localhost:8000"
     ];
+
+    function updateServerStatusBadge(connected, activeUrl = "") {
+        isServerConnected = connected;
+        const bar = document.getElementById('admin-server-status');
+        if (!bar) return;
+        if (connected) {
+            bar.className = "server-status-bar ok";
+            bar.innerText = `🟢 Сервер подключен (${activeUrl}) — настройки видны всем пользователям`;
+        } else {
+            bar.className = "server-status-bar err";
+            bar.innerText = "🔴 Нет связи с сервером! Чтобы другие видели промокоды и закрытое метро, запусти ngrok и впиши ссылку в PUBLIC_TUNNEL_URL в bot.py";
+        }
+    }
 
     async function apiFetch(path, options = {}) {
         options.headers = Object.assign({ 'Bypass-Tunnel-Reminder': 'true' }, options.headers || {});
@@ -1448,10 +1483,12 @@
                 const res = await fetch(`${base}${path}`, options);
                 if (res.ok) {
                     BACKEND_URL = base;
+                    updateServerStatusBadge(true, base);
                     return res;
                 }
             } catch (e) {}
         }
+        updateServerStatusBadge(false);
         throw new Error("Server unreachable");
     }
 
@@ -1472,7 +1509,7 @@
     let promoError = false;
     let promoInputDraft = "";
     let adminMetroLine = 'green';
-    let currentOrdersSubTab = 'active'; // 'active' или 'past'
+    let currentOrdersSubTab = 'active';
 
     function getFormattedNowDateTime() {
         const now = new Date();
@@ -1492,7 +1529,6 @@
         if (currentUserPhotoUrl) {
             avatarBox.innerHTML = `<img src="${currentUserPhotoUrl}" alt="Avatar" onerror="this.parentElement.innerHTML='<span>${fallbackLetter}</span>'">`;
         } else if (currentUserId) {
-            // Пробуем загрузить аватарку через наш бэкенд-бот
             const botAvatarEndpoint = `${BACKEND_URL}/api/user_avatar/${currentUserId}`;
             avatarBox.innerHTML = `<img src="${botAvatarEndpoint}" alt="Avatar" onerror="this.parentElement.innerHTML='<span>${fallbackLetter}</span>'">`;
         } else {
@@ -1727,7 +1763,6 @@
                 renderCheckoutTimeSlots();
                 renderChangeTimeSlots();
 
-                // Не перерисовываем корзину, если пользователь прямо сейчас печатает промокод
                 const activeEl = document.activeElement;
                 if (!activeEl || activeEl.id !== 'promo-input') {
                     renderCart();
@@ -1741,7 +1776,7 @@
             }
         } catch (e) {}
     }
-    setInterval(syncShopConfig, 5000);
+    setInterval(syncShopConfig, 4000);
 
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
@@ -1891,7 +1926,7 @@
         promoInputDraft = val;
     }
 
-    function applyPromoCode() {
+    async function applyPromoCode() {
         const input = document.getElementById('promo-input');
         const rawVal = input ? input.value : promoInputDraft;
         const code = (rawVal || '').trim().toUpperCase();
@@ -1901,6 +1936,16 @@
             renderCart();
             return;
         }
+
+        // Перед проверкой подтягиваем свежие промокоды с сервера, если есть связь
+        try {
+            const res = await apiFetch(`/api/shop_config`);
+            if (res.ok) {
+                const cfg = await res.json();
+                promoCodes = cfg.promocodes || promoCodes;
+                localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
+            }
+        } catch (e) {}
 
         if (promoCodes[code] !== undefined && Number(promoCodes[code]) > 0) {
             appliedPromoCode = code;
@@ -2230,7 +2275,6 @@
         switchScreen('orders');
     }
 
-    // Отмена заказа клиентом
     async function cancelOrderByClient(orderId) {
         const ord = activeOrders.find(o => o.id === orderId);
         if (ord) {
@@ -2253,7 +2297,8 @@
         }
     }
 
-    async function deleteCompletedOrderCourier(orderId) {
+    // Удаление (скрытие) заказа из панели курьера крестиком (для выданных и отменённых заказов)
+    async function deleteFinishedOrderCourier(orderId) {
         if (!hiddenCourierOrderIds.includes(orderId)) {
             hiddenCourierOrderIds.push(orderId);
             localStorage.setItem('monkey_hidden_courier_orders', JSON.stringify(hiddenCourierOrderIds));
@@ -2536,7 +2581,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), code: code, discount: discount })
             });
-        } catch (e) {}
+        } catch (e) {
+            alert("Промокод сохранён только локально! Чтобы его увидели другие пользователи, подключите туннель (PUBLIC_TUNNEL_URL в bot.py).");
+        }
     }
 
     async function adminDeletePromo(code) {
@@ -2598,7 +2645,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), station: stationName })
             });
-        } catch (e) {}
+        } catch (e) {
+            alert("Изменение применено только локально! Чтобы станция отключилась у других пользователей, подключите туннель (PUBLIC_TUNNEL_URL в bot.py).");
+        }
     }
 
     function renderAdminTimes() {
@@ -2635,7 +2684,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), time: timeStr })
             });
-        } catch (e) {}
+        } catch (e) {
+            alert("Изменение времени применено только локально! Чтобы оно применилось у других пользователей, подключите туннель (PUBLIC_TUNNEL_URL в bot.py).");
+        }
     }
 
     function renderCourierCards(orders) {
@@ -2672,9 +2723,10 @@
                 statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
             }
 
+            // Крестик удаления доступен для ВЫДАННЫХ и ОТМЕНЁННЫХ заказов
             let deleteBtn = '';
-            if (ord.status === 'completed') {
-                deleteBtn = `<button class="delete-order-x" title="Удалить выполненный заказ" onclick="deleteCompletedOrderCourier('${ord.id}')">✕</button>`;
+            if (ord.status === 'completed' || ord.status === 'cancelled') {
+                deleteBtn = `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${ord.id}')">✕</button>`;
             }
 
             let courierActions = `
