@@ -699,20 +699,20 @@
         .order-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 18px;
-            padding: 16px;
-            margin-bottom: 14px;
+            border-radius: 16px;
+            padding: 13px 14px;
+            margin-bottom: 12px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 9px;
         }
 
         .order-card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            gap: 10px;
-            padding-bottom: 10px;
+            gap: 8px;
+            padding-bottom: 8px;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -726,10 +726,14 @@
         .order-status-pill {
             font-size: 11px;
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 4px 9px;
             border-radius: 8px;
-            text-align: right;
-            line-height: 1.3;
+            white-space: nowrap;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            line-height: 1.2;
         }
 
         .order-status-pill.active {
@@ -753,10 +757,10 @@
         .order-meta-grid {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            font-size: 12.5px;
+            gap: 4px;
+            font-size: 12px;
             color: var(--text-secondary);
-            line-height: 1.45;
+            line-height: 1.35;
         }
 
         .order-meta-row {
@@ -775,10 +779,10 @@
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 12px;
-            font-size: 12.5px;
+            padding: 9px 11px;
+            font-size: 12px;
             color: #d1d5db;
-            line-height: 1.6;
+            line-height: 1.45;
         }
 
         .order-card-footer {
@@ -786,7 +790,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 10px;
-            padding-top: 4px;
+            padding-top: 2px;
         }
 
         .order-total-price {
@@ -1226,7 +1230,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СТАНЦИИ МЕТРО (ШТОРКА С ПОЛЗУНКОМ) -->
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СТАНЦИИ МЕТРО -->
     <div class="modal-overlay" id="metro-modal" onclick="closeMetroModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
@@ -1453,7 +1457,8 @@
     if (apiFromUrl) {
         localStorage.setItem('monkey_backend_url', apiFromUrl);
     }
-    // ВПИШИ СЮДА ССЫЛКУ ТВОЕГО ТУННЕЛЯ (Pinggy / VPS):
+
+    // Актуальная ссылка туннеля (чистая, без скобок):
     const DEFAULT_TUNNEL_URL = "https://shark-highlight-change-frontier.trycloudflare.com";
     let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
     let isServerConnected = false;
@@ -1475,15 +1480,15 @@
             bar.innerText = `🟢 Сервер подключен (${activeUrl}) — настройки видны всем пользователям`;
         } else {
             bar.className = "server-status-bar err";
-            bar.innerText = "🔴 Нет связи с сервером! Проверь, запущен ли ssh туннель и python bot.py.";
+            bar.innerText = "🔴 Нет связи с сервером! Проверь, запущен ли туннель и python bot.py.";
         }
     }
 
     async function apiFetch(path, options = {}, expectJson = true) {
-        // Заголовки для обхода стартовых экранов-заглушек Pinggy и LocalTunnel
         options.headers = Object.assign({
             'Bypass-Tunnel-Reminder': 'true',
-            'X-Pinggy-No-Screen': 'true'
+            'X-Pinggy-No-Screen': 'true',
+            'ngrok-skip-browser-warning': 'true'
         }, options.headers || {});
 
         for (const base of CANDIDATE_BACKENDS) {
@@ -2283,18 +2288,22 @@
             cancelled_by: ''
         };
 
-       try {
-            await apiFetch(`/api/create_order`, {
+        try {
+            const res = await apiFetch(`/api/create_order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)
             });
+            const resData = await res.json();
+            if (resData && resData.order_id) {
+                orderData.id = String(resData.order_id);
+            }
         } catch (e) {
             alert("⚠️ Нет связи с сервером! Заказ не отправлен. Нажмите /start в боте и попробуйте снова.");
             return;
         }
 
-        activeOrders.unshift(orderData);
+        activeOrders = deduplicateOrdersList([orderData, ...activeOrders]);
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
 
         cart = {};
@@ -2310,11 +2319,12 @@
     }
 
     async function cancelOrderByClient(orderId) {
-        const ord = activeOrders.find(o => o.id === orderId);
-        if (ord) {
-            ord.status = 'cancelled';
-            ord.cancelled_by = 'client';
-        }
+        const key = String(orderId).trim();
+        activeOrders = activeOrders.map(o =>
+            String(o.id).trim() === key
+                ? { ...o, id: key, status: 'cancelled', cancelled_by: 'client' }
+                : o
+        );
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
         renderOrders();
 
@@ -2322,7 +2332,7 @@
             await apiFetch(`/api/update_order_status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: 'cancelled', cancelled_by: 'client' })
+                body: JSON.stringify({ order_id: key, status: 'cancelled', cancelled_by: 'client' })
             });
         } catch (e) {}
 
@@ -2332,8 +2342,9 @@
     }
 
     async function deleteFinishedOrderCourier(orderId) {
-        if (!hiddenCourierOrderIds.includes(orderId)) {
-            hiddenCourierOrderIds.push(orderId);
+        const key = String(orderId).trim();
+        if (!hiddenCourierOrderIds.includes(key)) {
+            hiddenCourierOrderIds.push(key);
             localStorage.setItem('monkey_hidden_courier_orders', JSON.stringify(hiddenCourierOrderIds));
         }
 
@@ -2341,7 +2352,7 @@
             await apiFetch(`/api/delete_completed_order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId })
+                body: JSON.stringify({ order_id: key })
             });
         } catch (e) {}
 
@@ -2349,10 +2360,10 @@
     }
 
     function openTimeModal(orderId) {
-        changingOrderId = orderId;
+        changingOrderId = String(orderId).trim();
         const firstAvail = ALL_TIME_SLOTS.find(t => !disabledTimes.includes(t));
         newSelectedTime = firstAvail || '';
-        document.getElementById('time-modal-order-id').innerText = orderId;
+        document.getElementById('time-modal-order-id').innerText = changingOrderId;
         renderChangeTimeSlots();
         document.getElementById('time-modal').classList.add('active');
     }
@@ -2374,11 +2385,11 @@
             return;
         }
 
-        const ord = activeOrders.find(o => o.id === changingOrderId);
-        if (ord) {
-            ord.time = newSelectedTime;
-            ord.time_changed = true;
-        }
+        activeOrders = activeOrders.map(o =>
+            String(o.id).trim() === changingOrderId
+                ? { ...o, time: newSelectedTime, time_changed: true }
+                : o
+        );
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
         renderOrders();
         closeTimeModalDirect();
@@ -2411,12 +2422,24 @@
         return 'Заказ отменён ✕';
     }
 
+    function deduplicateOrdersList(list) {
+        const map = new Map();
+        (list || []).forEach(item => {
+            if (!item || !item.id) return;
+            const key = String(item.id).trim();
+            map.set(key, { ...item, id: key });
+        });
+        return Array.from(map.values());
+    }
+
     function renderOrders() {
         const container = document.getElementById('orders-list');
         if (!container) return;
 
+        activeOrders = deduplicateOrdersList(activeOrders);
+
         const activeList = activeOrders.filter(o => o.status === 'active');
-        const pastList = activeOrders.filter(o => o.status !== 'active');
+        const pastList = activeOrders.filter(o => o.status === 'completed' || o.status === 'cancelled');
 
         const activeCountEl = document.getElementById('active-orders-count');
         const pastCountEl = document.getElementById('past-orders-count');
@@ -2450,7 +2473,7 @@
             });
 
             let promoNote = ord.promo_code
-                ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:6px;">🎟 Промокод ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>`
+                ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>`
                 : '';
 
             let actionButtons = '';
@@ -2481,7 +2504,7 @@
                     <div class="order-meta-grid">
                         ${createdAtHtml}
                         <div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${ord.station}</b></div>
-                        <div class="order-meta-row"><span>⏰ Время встречи:</span> <b>${ord.time}</b> ${timeNote}</div>
+                        <div class="order-meta-row"><span>⏰ Время:</span> <b>${ord.time}</b> ${timeNote}</div>
                     </div>
 
                     <div class="order-items-box">
@@ -2502,46 +2525,35 @@
     }
 
     async function syncClientOrdersStatus() {
+        if (!currentUserId) return;
         try {
             const response = await apiFetch(`/api/user_orders/${currentUserId}`);
             if (response.ok) {
                 const serverOrders = await response.json();
-                let updated = false;
+                const map = new Map();
 
-                serverOrders.forEach(srvOrd => {
-                    const localOrd = activeOrders.find(l => l.id === srvOrd.id);
-                    if (!localOrd) {
-                        activeOrders.unshift(srvOrd);
-                        updated = true;
-                    } else {
-                        if (srvOrd.status && srvOrd.status !== localOrd.status) {
-                            localOrd.status = srvOrd.status;
-                            updated = true;
-                        }
-                        if (srvOrd.cancelled_by !== undefined && srvOrd.cancelled_by !== localOrd.cancelled_by) {
-                            localOrd.cancelled_by = srvOrd.cancelled_by;
-                            updated = true;
-                        }
-                        if (srvOrd.created_at && srvOrd.created_at !== localOrd.created_at) {
-                            localOrd.created_at = srvOrd.created_at;
-                            updated = true;
-                        }
-                        if (srvOrd.time && srvOrd.time !== localOrd.time) {
-                            localOrd.time = srvOrd.time;
-                            updated = true;
-                        }
-                        if (srvOrd.time_changed !== undefined && srvOrd.time_changed !== localOrd.time_changed) {
-                            localOrd.time_changed = srvOrd.time_changed;
-                            updated = true;
-                        }
+                activeOrders.forEach(o => {
+                    if (o && o.id) {
+                        const k = String(o.id).trim();
+                        map.set(k, { ...o, id: k });
                     }
                 });
 
-                if (updated) {
+                serverOrders.forEach(srvOrd => {
+                    const key = String(srvOrd.id).trim();
+                    const existing = map.get(key) || {};
+                    map.set(key, {
+                        ...existing,
+                        ...srvOrd,
+                        id: key
+                    });
+                });
+
+                const merged = Array.from(map.values());
+                if (JSON.stringify(merged) !== JSON.stringify(activeOrders)) {
+                    activeOrders = merged;
                     localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
-                    if (document.getElementById('screen-orders').classList.contains('active')) {
-                        renderOrders();
-                    }
+                    renderOrders();
                 }
             }
         } catch (e) {}
@@ -2726,7 +2738,9 @@
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
 
-        const visibleOrders = (orders || []).filter(o => !hiddenCourierOrderIds.includes(o.id) && !o.hidden_by_courier);
+        const visibleOrders = (orders || []).filter(
+            o => !hiddenCourierOrderIds.includes(String(o.id).trim()) && !o.hidden_by_courier
+        );
 
         if (visibleOrders.length === 0) {
             container.innerHTML = `
@@ -2740,13 +2754,14 @@
 
         let html = '';
         visibleOrders.forEach(ord => {
+            const oid = String(ord.id).trim();
             let itemsList = '';
             ord.items.forEach(i => {
                 itemsList += `<div>• ${i.title} × ${i.qty} (${(i.price * i.qty).toFixed(2)} р.)</div>`;
             });
 
             let promoBadgeCourier = ord.promo_code
-                ? `<div style="color:var(--accent-green); margin-top:6px;">🎟 Промокод: ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>`
+                ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>`
                 : '';
 
             let statusHtml = `<span class="order-status-pill active">Активен</span>`;
@@ -2758,17 +2773,17 @@
 
             let deleteBtn = '';
             if (ord.status === 'completed' || ord.status === 'cancelled') {
-                deleteBtn = `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${ord.id}')">✕</button>`;
+                deleteBtn = `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${oid}')">✕</button>`;
             }
 
             let courierActions = `
                 <div class="order-actions-row">
-                    <button onclick="updateOrderStatusByCourier('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
-                    <button onclick="updateOrderStatusByCourier('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                    <button onclick="updateOrderStatusByCourier('${oid}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
+                    <button onclick="updateOrderStatusByCourier('${oid}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
                 </div>
             `;
             if (ord.status !== 'active') {
-                courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding-top:4px;">Статус: ${ord.status === 'completed' ? 'Выдан ✅' : getCancelledLabel(ord)}</div>`;
+                courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding-top:2px;">Статус: ${ord.status === 'completed' ? 'Выдан ✅' : getCancelledLabel(ord)}</div>`;
             }
 
             let timeNoteCourier = ord.time_changed
@@ -2782,11 +2797,12 @@
             html += `
                 <div class="order-card">
                     <div class="order-card-header">
-                        <div style="display:flex; flex-direction:column; gap:3px;">
-                            <span class="order-id-label">Заказ #${ord.id}</span>
-                            <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'} • <b style="color:var(--accent-green); user-select:all;">ID: ${ord.user_id || '0'}</b></span>
+                        <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
+                            <span class="order-id-label">Заказ #${oid}</span>
+                            <span style="color:var(--text-secondary); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">👤 ${ord.user_name || 'User'}</span>
+                            <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(0,255,102,0.1); border:1px solid rgba(0,255,102,0.3); color:var(--accent-green); font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; width:fit-content; white-space:nowrap; user-select:all;">🆔 ${ord.user_id || '0'}</span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
                             ${statusHtml}
                             ${deleteBtn}
                         </div>
@@ -2795,7 +2811,7 @@
                     <div class="order-meta-grid">
                         ${createdAtHtml}
                         <div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${ord.station}</b></div>
-                        <div class="order-meta-row"><span>⏰ Время встречи:</span> <b>${ord.time}</b> ${timeNoteCourier}</div>
+                        <div class="order-meta-row"><span>⏰ Время:</span> <b>${ord.time}</b> ${timeNoteCourier}</div>
                     </div>
 
                     <div class="order-items-box">
@@ -2829,19 +2845,21 @@
     }
 
     async function updateOrderStatusByCourier(orderId, status) {
+        const key = String(orderId).trim();
         const cancelledBy = status === 'cancelled' ? 'courier' : '';
-        const localOrd = activeOrders.find(o => o.id === orderId);
-        if (localOrd) {
-            localOrd.status = status;
-            if (cancelledBy) localOrd.cancelled_by = cancelledBy;
-            localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
-            renderOrders();
-        }
+        activeOrders = activeOrders.map(o =>
+            String(o.id).trim() === key
+                ? { ...o, id: key, status: status, cancelled_by: cancelledBy || o.cancelled_by || '' }
+                : o
+        );
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+        renderOrders();
+
         try {
             await apiFetch(`/api/update_order_status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: status, cancelled_by: cancelledBy })
+                body: JSON.stringify({ order_id: key, status: status, cancelled_by: cancelledBy })
             });
         } catch (e) {}
         loadCourierOrders();
@@ -2871,6 +2889,7 @@
         syncShopConfig();
 
         if (screenName === 'orders') {
+            syncClientOrdersStatus();
             renderOrders();
         }
         if (screenName === 'profile') {
