@@ -1,10 +1,12 @@
 import asyncio
 import json
 import os
+from datetime import datetime
 from contextlib import asynccontextmanager
 from urllib.parse import quote
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import aiosqlite
@@ -57,13 +59,17 @@ async def init_db():
                 time_changed INTEGER DEFAULT 0,
                 hidden_by_courier INTEGER DEFAULT 0,
                 promo_code TEXT DEFAULT '',
-                discount REAL DEFAULT 0
+                discount REAL DEFAULT 0,
+                created_at TEXT DEFAULT '',
+                cancelled_by TEXT DEFAULT ''
             )
         """)
         for col_sql in [
             "ALTER TABLE orders ADD COLUMN hidden_by_courier INTEGER DEFAULT 0",
             "ALTER TABLE orders ADD COLUMN promo_code TEXT DEFAULT ''",
-            "ALTER TABLE orders ADD COLUMN discount REAL DEFAULT 0"
+            "ALTER TABLE orders ADD COLUMN discount REAL DEFAULT 0",
+            "ALTER TABLE orders ADD COLUMN created_at TEXT DEFAULT ''",
+            "ALTER TABLE orders ADD COLUMN cancelled_by TEXT DEFAULT ''"
         ]:
             try:
                 await db.execute(col_sql)
@@ -82,7 +88,6 @@ async def init_db():
                 discount REAL
             )
         """)
-        # Стартовый промокод MONKEY3 на -3 рубля (если таблица пустая)
         async with db.execute("SELECT COUNT(*) FROM promocodes") as cur:
             row = await cur.fetchone()
             if row and row[0] == 0:
@@ -118,10 +123,13 @@ class OrderSchema(BaseModel):
     status: str = "active"
     promo_code: str = ""
     discount: float = 0.0
+    created_at: str = ""
+    cancelled_by: str = ""
 
 class StatusUpdateSchema(BaseModel):
     order_id: str
     status: str
+    cancelled_by: str = ""
 
 class TimeUpdateSchema(BaseModel):
     order_id: str
@@ -162,6 +170,21 @@ async def set_setting_list(db, key: str, values: list):
         "INSERT OR REPLACE INTO shop_settings (key, value) VALUES (?, ?)",
         (key, json.dumps(values))
     )
+
+@app.get("/api/user_avatar/{user_id}")
+async def get_user_avatar(user_id: int):
+    if not user_id:
+        raise HTTPException(status_code=404, detail="No user id")
+    try:
+        photos = await bot.get_user_profile_photos(user_id=user_id, limit=1)
+        if photos.total_count > 0 and photos.photos:
+            file_id = photos.photos[0][-1].file_id
+            tg_file = await bot.get_file(file_id)
+            file_bytes_io = await bot.download_file(tg_file.file_path)
+            return Response(content=file_bytes_io.read(), media_type="image/jpeg")
+    except Exception:
+        pass
+    raise HTTPException(status_code=404, detail="Avatar not found")
 
 @app.get("/api/shop_config")
 async def get_shop_config():
@@ -232,14 +255,15 @@ async def admin_delete_promo(data: AdminPromoDeleteSchema):
 
 @app.post("/api/create_order")
 async def create_order(order: OrderSchema):
+    created_at = order.created_at or datetime.now().strftime("%d.%m.%Y, %H:%M")
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute(
             """INSERT OR REPLACE INTO orders 
-               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)""",
+               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, created_at, cancelled_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, '')""",
             (
                 order.id, order.user_id, order.user_name, order.station, order.time,
-                order.total, json.dumps(order.items), order.status, order.promo_code, order.discount
+                order.total, json.dumps(order.items), order.status, order.promo_code, order.discount, created_at
             )
         )
         await db.commit()
@@ -248,10 +272,11 @@ async def create_order(order: OrderSchema):
     promo_line = f"\n🎟 **Промокод:** {order.promo_code} (-{order.discount:.2f} р.)" if order.promo_code else ""
     
     courier_text = (
-        f"🚨 **НОВЫЙ ЗАКАЗ #{order.id}**\n\n"
+        f"🚨 **НОВЫЙ ЗАКАЗ #{order.id}**\n"
+        f"📅 **Оформлен:** {created_at}\n\n"
         f"👤 **Покупатель:** {order.user_name} (ID: `{order.user_id}`)\n"
         f"🚇 **Станция:** м. {order.station}\n"
-        f"⏰ **Время:** {order.time}\n\n"
+        f"⏰ **Время встречи:** {order.time}\n\n"
         f"📦 **Состав заказа:**\n{items_str}{promo_line}\n\n"
         f"💰 **Итого:** {order.total:.2f} р."
     )
@@ -263,9 +288,10 @@ async def create_order(order: OrderSchema):
             pass
 
     user_text = (
-        f"✅ **Ваш заказ #{order.id} успешно оформлен!**\n\n"
+        f"✅ **Ваш заказ #{order.id} успешно оформлен!**\n"
+        f"📅 **Дата и время заказа:** {created_at}\n\n"
         f"🚇 **Место встречи:** м. {order.station}\n"
-        f"⏰ **Время:** {order.time}\n\n"
+        f"⏰ **Время встречи:** {order.time}\n\n"
         f"📦 **Ваш заказ:**\n{items_str}{promo_line}\n\n"
         f"💰 **К оплате (при встрече):** {order.total:.2f} р.\n\n"
         f"Спасибо, что выбрали Monkey Vape! Ожидайте курьера."
@@ -299,7 +325,9 @@ async def get_orders():
                     "time_changed": bool(row["time_changed"]),
                     "hidden_by_courier": bool(row["hidden_by_courier"]),
                     "promo_code": row["promo_code"] or "",
-                    "discount": row["discount"] or 0.0
+                    "discount": row["discount"] or 0.0,
+                    "created_at": row["created_at"] or "",
+                    "cancelled_by": row["cancelled_by"] or ""
                 })
             return result
 
@@ -322,14 +350,20 @@ async def get_user_orders(user_id: int):
                     "status": row["status"],
                     "time_changed": bool(row["time_changed"]),
                     "promo_code": row["promo_code"] or "",
-                    "discount": row["discount"] or 0.0
+                    "discount": row["discount"] or 0.0,
+                    "created_at": row["created_at"] or "",
+                    "cancelled_by": row["cancelled_by"] or ""
                 })
             return result
 
 @app.post("/api/update_order_status")
 async def update_order_status(data: StatusUpdateSchema):
+    cancelled_by = data.cancelled_by if data.status == 'cancelled' else ''
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("UPDATE orders SET status = ? WHERE id = ?", (data.status, data.order_id))
+        await db.execute(
+            "UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?",
+            (data.status, cancelled_by, data.order_id)
+        )
         await db.commit()
 
         async with db.execute("SELECT user_id, user_name, station, time FROM orders WHERE id = ?", (data.order_id,)) as cursor:
@@ -337,14 +371,17 @@ async def update_order_status(data: StatusUpdateSchema):
             if row:
                 user_id, user_name, station, time = row[0], row[1], row[2], row[3]
                 if data.status == 'cancelled':
+                    who_text = "Отменено клиентом" if cancelled_by == 'client' else (
+                        "Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён"
+                    )
                     if user_id:
                         try:
-                            await bot.send_message(user_id, f"❌ Ваш заказ #{data.order_id} был отменён.")
+                            await bot.send_message(user_id, f"❌ Заказ #{data.order_id} ({who_text}).")
                         except Exception:
                             pass
                     for cid in set(COURIER_IDS + OWNER_IDS):
                         try:
-                            await bot.send_message(cid, f"❌ Заказ #{data.order_id} ({user_name}, м. {station}) был **отменён**.", parse_mode="Markdown")
+                            await bot.send_message(cid, f"❌ Заказ #{data.order_id} ({user_name}, м. {station}) — **{who_text}**.", parse_mode="Markdown")
                         except Exception:
                             pass
                 elif data.status == 'completed':
