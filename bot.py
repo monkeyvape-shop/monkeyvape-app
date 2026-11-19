@@ -5,7 +5,7 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from urllib.parse import quote
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -35,7 +35,7 @@ FALLBACK_TOKEN = "ВСТАВЬ_СЮДА_НОВЫЙ_ТОКЕН_ЕСЛИ_ЕГО_Н
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 
-# Если используешь туннель (ngrok / localtunnel) для заказов с телефона, укажи его тут:
+# Если используешь туннель (ngrok / localtunnel) для синхронизации с телефонами других пользователей, укажи его тут:
 PUBLIC_TUNNEL_URL = ""  # Например: "https://xxxx.ngrok-free.app"
 
 # РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
@@ -111,6 +111,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_private_network_header(request: Request, call_next):
+    if request.method == "OPTIONS":
+        response = Response(status_code=200)
+    else:
+        response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
 
 class OrderSchema(BaseModel):
     id: str
@@ -396,8 +408,9 @@ async def update_order_status(data: StatusUpdateSchema):
 @app.post("/api/delete_completed_order")
 async def delete_completed_order(data: DeleteOrderSchema):
     async with aiosqlite.connect(DB_FILE) as db:
+        # Удалять крестиком из панели курьера можно и выданные (completed), и отменённые (cancelled) заказы
         await db.execute(
-            "UPDATE orders SET hidden_by_courier = 1 WHERE id = ? AND status = 'completed'",
+            "UPDATE orders SET hidden_by_courier = 1 WHERE id = ? AND status IN ('completed', 'cancelled')",
             (data.order_id,)
         )
         await db.commit()
