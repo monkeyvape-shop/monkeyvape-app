@@ -1454,7 +1454,7 @@
         localStorage.setItem('monkey_backend_url', apiFromUrl);
     }
     // ВПИШИ СЮДА ССЫЛКУ ТВОЕГО ТУННЕЛЯ (Pinggy / VPS):
-    const DEFAULT_TUNNEL_URL = "[https://shark-highlight-change-frontier.trycloudflare.com](https://shark-highlight-change-frontier.trycloudflare.com)";
+    const DEFAULT_TUNNEL_URL = "https://shark-highlight-change-frontier.trycloudflare.com";
     let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
     let isServerConnected = false;
 
@@ -2283,14 +2283,15 @@
             cancelled_by: ''
         };
 
-        try {
+       try {
             await apiFetch(`/api/create_order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)
             });
         } catch (e) {
-            console.error("Ошибка отправки заказа:", e);
+            alert("⚠️ Нет связи с сервером! Заказ не отправлен. Нажмите /start в боте и попробуйте снова.");
+            return;
         }
 
         activeOrders.unshift(orderData);
@@ -2783,7 +2784,7 @@
                     <div class="order-card-header">
                         <div style="display:flex; flex-direction:column; gap:3px;">
                             <span class="order-id-label">Заказ #${ord.id}</span>
-                            <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
+                            <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'} • <b style="color:var(--accent-green); user-select:all;">ID: ${ord.user_id || '0'}</b></span>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             ${statusHtml}
