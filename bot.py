@@ -36,7 +36,7 @@ TOKEN = load_token_from_env() or FALLBACK_TOKEN
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 
 # Если используешь туннель (ngrok / localtunnel) для синхронизации с телефонами других пользователей, укажи его тут:
-PUBLIC_TUNNEL_URL = "https://brwwx-46-53-173-187.run.pinggy-free.link](https://brwwx-46-53-173-187.run.pinggy-free.link"
+PUBLIC_TUNNEL_URL = "https://71d4e6cca1af10.app.lhr.life"
 
 # РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
 OWNER_IDS = [7280921605] # Владелец (Админ)
