@@ -35,8 +35,7 @@ FALLBACK_TOKEN = "ВСТАВЬ_СЮДА_НОВЫЙ_ТОКЕН_ЕСЛИ_ЕГО_Н
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 
-# Если используешь туннель (ngrok / localtunnel) для синхронизации с телефонами других пользователей, укажи его тут:
-PUBLIC_TUNNEL_URL = "[https://shark-highlight-change-frontier.trycloudflare.com](https://shark-highlight-change-frontier.trycloudflare.com)"
+PUBLIC_TUNNEL_URL = "https://shark-highlight-change-frontier.trycloudflare.com"
 
 # РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
 OWNER_IDS = [7280921605] # Владелец (Админ)
