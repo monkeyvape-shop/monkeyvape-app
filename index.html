@@ -185,6 +185,8 @@
             font-size: 14px;
             outline: none;
             transition: border-color 0.2s;
+            user-select: text;
+            -webkit-user-select: text;
         }
 
         .search-input:focus {
@@ -199,9 +201,9 @@
             transform: translateY(-50%);
             color: var(--text-secondary);
             font-size: 16px;
+            pointer-events: none;
         }
 
-        /* МАЛЕНЬКИЙ ПОЛЗУНОК ДЛЯ КАТЕГОРИЙ НА ПК И ТЕЛЕФОНЕ */
         .categories-scroll {
             display: flex;
             gap: 10px;
@@ -454,13 +456,13 @@
 
         .cart-empty {
             text-align: center;
-            padding: 60px 20px;
+            padding: 50px 20px;
             color: var(--text-secondary);
         }
 
         .cart-empty-icon {
-            font-size: 54px;
-            margin-bottom: 16px;
+            font-size: 48px;
+            margin-bottom: 14px;
         }
 
         .cart-items-list {
@@ -550,27 +552,37 @@
             border-radius: 16px;
             padding: 14px;
             margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
         }
 
         .promo-input-row {
             display: flex;
             gap: 8px;
+            align-items: center;
         }
 
         .promo-input {
             flex: 1;
+            min-width: 0;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 10px 14px;
+            padding: 11px 14px;
             color: var(--text-main);
             font-size: 13px;
             outline: none;
             text-transform: uppercase;
+            user-select: text;
+            -webkit-user-select: text;
+            pointer-events: auto;
+            position: relative;
+            z-index: 3;
         }
 
         .promo-input:focus {
             border-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green-glow);
         }
 
         .promo-apply-btn {
@@ -578,10 +590,17 @@
             color: #0b0f0c;
             border: none;
             border-radius: 12px;
-            padding: 10px 16px;
+            padding: 11px 16px;
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 3;
+        }
+
+        .promo-apply-btn:active {
+            opacity: 0.85;
         }
 
         .cart-summary {
@@ -634,7 +653,181 @@
         .section-title {
             font-size: 17px;
             font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        /* ВКЛАДКИ ВНУТРИ "МОИ ЗАКАЗЫ" (АКТИВНЫЕ / ПРОШЕДШИЕ) */
+        .orders-tabs {
+            display: flex;
+            gap: 8px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 5px;
+            border-radius: 14px;
             margin-bottom: 18px;
+        }
+
+        .orders-tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .orders-tab-btn.active {
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            font-weight: 700;
+            box-shadow: 0 0 12px var(--accent-green-glow);
+        }
+
+        .tab-count-badge {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1px 7px;
+            border-radius: 8px;
+            font-size: 11px;
+        }
+
+        /* КАРТОЧКА ЗАКАЗА С РОВНЫМИ ОТСТУПАМИ */
+        .order-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .order-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .order-id-label {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-main);
+            white-space: nowrap;
+        }
+
+        .order-status-pill {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: right;
+            line-height: 1.3;
+        }
+
+        .order-status-pill.active {
+            background: rgba(0, 255, 102, 0.12);
+            color: var(--accent-green);
+            border: 1px solid rgba(0, 255, 102, 0.35);
+        }
+
+        .order-status-pill.completed {
+            background: rgba(0, 204, 68, 0.14);
+            color: #00e65c;
+            border: 1px solid rgba(0, 204, 68, 0.4);
+        }
+
+        .order-status-pill.cancelled {
+            background: rgba(255, 51, 51, 0.12);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 51, 0.35);
+        }
+
+        .order-meta-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        .order-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .order-meta-row b {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .order-items-box {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 12.5px;
+            color: #d1d5db;
+            line-height: 1.6;
+        }
+
+        .order-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding-top: 4px;
+        }
+
+        .order-total-price {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .order-actions-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 2px;
+        }
+
+        .order-btn-secondary {
+            flex: 1;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 11px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .order-btn-danger {
+            flex: 1;
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 10px 12px;
+            border-radius: 11px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
         }
 
         .method-card {
@@ -727,7 +920,6 @@
             font-weight: 600;
         }
 
-        /* СЕРАЯ ПЛЁНКА И МЕТКА "НЕДОСТУПНО" ДЛЯ ОТКЛЮЧЁННЫХ СТАНЦИЙ И ВРЕМЕНИ */
         .station-item.disabled-item,
         .time-slot.disabled-item {
             position: relative;
@@ -801,8 +993,9 @@
         }
 
         .profile-avatar {
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
+            min-width: 64px;
             background-color: var(--accent-green);
             color: #0b0f0c;
             border-radius: 50%;
@@ -812,12 +1005,22 @@
             font-size: 24px;
             font-weight: bold;
             box-shadow: 0 0 15px var(--accent-green-glow);
+            overflow: hidden;
+            position: relative;
+            border: 2px solid var(--accent-green);
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         .profile-info h3 {
             font-size: 16px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
 
         .profile-info p {
@@ -844,7 +1047,6 @@
             font-weight: 600;
         }
 
-        /* АДМИН-ПАНЕЛЬ ВЛАДЕЛЬЦА В ПРОФИЛЕ */
         .admin-section {
             background-color: var(--card-bg);
             border: 1px solid var(--accent-green);
@@ -935,6 +1137,7 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.15s;
+            flex-shrink: 0;
         }
 
         .delete-order-x:active {
@@ -1086,21 +1289,24 @@
         </div>
 
         <div id="screen-orders" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
-                <div class="section-title" style="margin-bottom: 0;">Мои заказы</div>
+            <div class="section-title">Мои заказы</div>
+            <div class="orders-tabs">
+                <button class="orders-tab-btn active" id="orders-tab-active" onclick="switchOrdersSubTab('active')">
+                    Активные <span class="tab-count-badge" id="active-orders-count">0</span>
+                </button>
+                <button class="orders-tab-btn" id="orders-tab-past" onclick="switchOrdersSubTab('past')">
+                    Прошедшие <span class="tab-count-badge" id="past-orders-count">0</span>
+                </button>
             </div>
-            <div id="orders-list">
-                <div class="cart-empty">
-                    <div class="cart-empty-icon">📦</div>
-                    <p>Нет активных заказов</p>
-                </div>
-            </div>
+            <div id="orders-list"></div>
         </div>
 
         <div id="screen-profile" class="screen">
             <div class="section-title">Профиль</div>
             <div class="profile-card">
-                <div class="profile-avatar" id="profile-avatar-letter">V</div>
+                <div class="profile-avatar" id="profile-avatar-box">
+                    <span id="profile-avatar-letter">V</span>
+                </div>
                 <div class="profile-info">
                     <h3 id="profile-username">@user</h3>
                     <p id="profile-userid-text">Telegram User</p>
@@ -1254,8 +1460,8 @@
 
     let currentUserId = 0; 
     let currentUserName = "User";
+    let currentUserPhotoUrl = "";
 
-    // Глобальные настройки магазина (управляются владельцем)
     const ALL_TIME_SLOTS = ['12:00', '14:30', '16:30', '18:10', '21:00'];
     let disabledStations = JSON.parse(localStorage.getItem('monkey_disabled_stations')) || [];
     let disabledTimes = JSON.parse(localStorage.getItem('monkey_disabled_times')) || [];
@@ -1264,7 +1470,35 @@
     let appliedPromoDiscount = 0;
     let promoMessage = "";
     let promoError = false;
+    let promoInputDraft = "";
     let adminMetroLine = 'green';
+    let currentOrdersSubTab = 'active'; // 'active' или 'past'
+
+    function getFormattedNowDateTime() {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        return `${dd}.${mm}.${yyyy}, ${hh}:${min}`;
+    }
+
+    function updateProfileAvatarUI() {
+        const avatarBox = document.getElementById('profile-avatar-box');
+        if (!avatarBox) return;
+        const fallbackLetter = currentUserName.replace('@', '').charAt(0).toUpperCase() || 'V';
+
+        if (currentUserPhotoUrl) {
+            avatarBox.innerHTML = `<img src="${currentUserPhotoUrl}" alt="Avatar" onerror="this.parentElement.innerHTML='<span>${fallbackLetter}</span>'">`;
+        } else if (currentUserId) {
+            // Пробуем загрузить аватарку через наш бэкенд-бот
+            const botAvatarEndpoint = `${BACKEND_URL}/api/user_avatar/${currentUserId}`;
+            avatarBox.innerHTML = `<img src="${botAvatarEndpoint}" alt="Avatar" onerror="this.parentElement.innerHTML='<span>${fallbackLetter}</span>'">`;
+        } else {
+            avatarBox.innerHTML = `<span>${fallbackLetter}</span>`;
+        }
+    }
 
     function showRoleTabsIfAllowed() {
         const uidNum = Number(currentUserId);
@@ -1298,6 +1532,9 @@
                     const user = tg.initDataUnsafe.user;
                     currentUserId = Number(user.id);
                     currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
+                    if (user.photo_url) {
+                        currentUserPhotoUrl = user.photo_url;
+                    }
                 }
             } catch (err) {}
         }
@@ -1319,13 +1556,11 @@
         }
 
         const usernameElem = document.getElementById('profile-username');
-        const avatarElem = document.getElementById('profile-avatar-letter');
         const useridElem = document.getElementById('profile-userid-text');
         
         if (usernameElem) usernameElem.innerText = currentUserName;
-        if (avatarElem) {
-            avatarElem.innerText = currentUserName.replace('@', '').charAt(0).toUpperCase() || 'V';
-        }
+        updateProfileAvatarUI();
+
         if (useridElem) {
             const isOwner = OWNER_IDS.includes(Number(currentUserId));
             const isCourier = SPECIAL_COURIER_IDS.includes(Number(currentUserId));
@@ -1341,7 +1576,6 @@
         syncClientOrdersStatus();
     }
 
-    // Прокрутка категорий колёсиком мыши на ПК
     document.addEventListener('DOMContentLoaded', () => {
         const catScroll = document.getElementById('categories-scroll');
         if (catScroll) {
@@ -1463,7 +1697,6 @@
         }
     }
 
-    // Синхронизация настроек магазина (отключённые станции, время, промокоды)
     async function syncShopConfig() {
         try {
             const res = await apiFetch(`/api/shop_config`);
@@ -1477,7 +1710,6 @@
                 localStorage.setItem('monkey_disabled_times', JSON.stringify(disabledTimes));
                 localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
 
-                // Перепроверяем применённый промокод
                 if (appliedPromoCode) {
                     if (promoCodes[appliedPromoCode] !== undefined) {
                         appliedPromoDiscount = Number(promoCodes[appliedPromoCode]);
@@ -1494,7 +1726,12 @@
                 renderStations(currentLine);
                 renderCheckoutTimeSlots();
                 renderChangeTimeSlots();
-                renderCart();
+
+                // Не перерисовываем корзину, если пользователь прямо сейчас печатает промокод
+                const activeEl = document.activeElement;
+                if (!activeEl || activeEl.id !== 'promo-input') {
+                    renderCart();
+                }
 
                 if (OWNER_IDS.includes(Number(currentUserId))) {
                     renderAdminPromos();
@@ -1650,11 +1887,14 @@
         }
     }
 
-    // ПРИМЕНЕНИЕ ПРОМОКОДА В КОРЗИНЕ
+    function handlePromoInput(val) {
+        promoInputDraft = val;
+    }
+
     function applyPromoCode() {
         const input = document.getElementById('promo-input');
-        if (!input) return;
-        const code = input.value.trim().toUpperCase();
+        const rawVal = input ? input.value : promoInputDraft;
+        const code = (rawVal || '').trim().toUpperCase();
         if (!code) {
             promoMessage = "Введите промокод";
             promoError = true;
@@ -1667,6 +1907,7 @@
             appliedPromoDiscount = Number(promoCodes[code]);
             promoMessage = `Промокод ${code} применён! Скидка -${appliedPromoDiscount.toFixed(2)} р.`;
             promoError = false;
+            promoInputDraft = "";
         } else {
             appliedPromoCode = "";
             appliedPromoDiscount = 0;
@@ -1681,6 +1922,7 @@
         appliedPromoDiscount = 0;
         promoMessage = "";
         promoError = false;
+        promoInputDraft = "";
         renderCart();
     }
 
@@ -1736,8 +1978,8 @@
                     </div>
                 ` : `
                     <div class="promo-input-row">
-                        <input type="text" id="promo-input" class="promo-input" placeholder="Введите промокод...">
-                        <button class="promo-apply-btn" onclick="applyPromoCode()">Применить</button>
+                        <input type="text" id="promo-input" class="promo-input" value="${promoInputDraft}" placeholder="Введите промокод..." oninput="handlePromoInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); applyPromoCode();}">
+                        <button type="button" class="promo-apply-btn" onclick="applyPromoCode()">Применить</button>
                     </div>
                 `}
                 ${promoMessage ? `<div style="font-size:11px; margin-top:8px; color:${promoError ? 'var(--danger)' : 'var(--accent-green)'};">${promoMessage}</div>` : ''}
@@ -1939,6 +2181,7 @@
         const actualDiscount = appliedPromoCode ? Math.min(subtotal, appliedPromoDiscount) : 0;
         const total = Math.max(0, subtotal - actualDiscount);
         const orderId = String(Math.floor(10000 + Math.random() * 90000));
+        const createdAt = getFormattedNowDateTime();
 
         const formattedItems = items.map(i => ({
             title: `${i.title} (${i.optionName})`,
@@ -1957,7 +2200,9 @@
             status: 'active',
             time_changed: false,
             promo_code: appliedPromoCode,
-            discount: actualDiscount
+            discount: actualDiscount,
+            created_at: createdAt,
+            cancelled_by: ''
         };
 
         try {
@@ -1977,15 +2222,21 @@
         appliedPromoCode = "";
         appliedPromoDiscount = 0;
         promoMessage = "";
+        promoInputDraft = "";
         saveCart();
         renderCart();
+        currentOrdersSubTab = 'active';
         renderOrders();
         switchScreen('orders');
     }
 
-    async function cancelOrder(orderId) {
+    // Отмена заказа клиентом
+    async function cancelOrderByClient(orderId) {
         const ord = activeOrders.find(o => o.id === orderId);
-        if (ord) ord.status = 'cancelled';
+        if (ord) {
+            ord.status = 'cancelled';
+            ord.cancelled_by = 'client';
+        }
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
         renderOrders();
 
@@ -1993,7 +2244,7 @@
             await apiFetch(`/api/update_order_status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: 'cancelled' })
+                body: JSON.stringify({ order_id: orderId, status: 'cancelled', cancelled_by: 'client' })
             });
         } catch (e) {}
 
@@ -2067,61 +2318,104 @@
         }
     }
 
+    function switchOrdersSubTab(tab) {
+        currentOrdersSubTab = tab;
+        const activeBtn = document.getElementById('orders-tab-active');
+        const pastBtn = document.getElementById('orders-tab-past');
+        if (activeBtn) activeBtn.classList.toggle('active', tab === 'active');
+        if (pastBtn) pastBtn.classList.toggle('active', tab === 'past');
+        renderOrders();
+    }
+
+    function getCancelledLabel(ord) {
+        if (ord.cancelled_by === 'client') return 'Отменено клиентом ✕';
+        if (ord.cancelled_by === 'courier') return 'Отменено курьером ✕';
+        return 'Заказ отменён ✕';
+    }
+
     function renderOrders() {
         const container = document.getElementById('orders-list');
         if (!container) return;
 
-        if (activeOrders.length === 0) {
+        const activeList = activeOrders.filter(o => o.status === 'active');
+        const pastList = activeOrders.filter(o => o.status !== 'active');
+
+        const activeCountEl = document.getElementById('active-orders-count');
+        const pastCountEl = document.getElementById('past-orders-count');
+        if (activeCountEl) activeCountEl.innerText = activeList.length;
+        if (pastCountEl) pastCountEl.innerText = pastList.length;
+
+        const listToRender = currentOrdersSubTab === 'active' ? activeList : pastList;
+
+        if (listToRender.length === 0) {
             container.innerHTML = `
                 <div class="cart-empty">
-                    <div class="cart-empty-icon">📦</div>
-                    <p>История заказов пуста</p>
+                    <div class="cart-empty-icon">${currentOrdersSubTab === 'active' ? '📦' : '🗂️'}</div>
+                    <p>${currentOrdersSubTab === 'active' ? 'Нет активных заказов' : 'Прошедших заказов пока нет'}</p>
                 </div>
             `;
             return;
         }
 
         let html = '';
-        activeOrders.forEach(ord => {
-            let statusBadge = `<span style="color:var(--accent-green); font-weight:700;">#${ord.id} • Активен</span>`;
+        listToRender.forEach(ord => {
+            let statusHtml = `<span class="order-status-pill active">Активен</span>`;
             if (ord.status === 'completed') {
-                statusBadge = `<span style="color:#00cc44; font-weight:700;">#${ord.id} • Выдан ✅</span>`;
+                statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
             } else if (ord.status === 'cancelled') {
-                statusBadge = `<span style="color:var(--danger); font-weight:700;">#${ord.id} • Заказ отменён ✕</span>`;
+                statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
             }
 
             let itemsList = '';
             ord.items.forEach(i => {
-                itemsList += `• ${i.title} x${i.qty}<br>`;
+                itemsList += `<div>• ${i.title} × ${i.qty}</div>`;
             });
 
-            let promoNote = ord.promo_code ? `<div style="font-size:11px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+            let promoNote = ord.promo_code
+                ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:6px;">🎟 Промокод ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>`
+                : '';
 
             let actionButtons = '';
             if (ord.status === 'active') {
                 actionButtons = `
-                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px;">
-                        <button onclick="openTimeModal('${ord.id}')" style="background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Изменить время</button>
-                        <button onclick="cancelOrder('${ord.id}')" style="background: rgba(255,51,51,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">Отменить</button>
+                    <div class="order-actions-row">
+                        <button class="order-btn-secondary" onclick="openTimeModal('${ord.id}')">⏰ Изменить время</button>
+                        <button class="order-btn-danger" onclick="cancelOrderByClient('${ord.id}')">✕ Отменить</button>
                     </div>
                 `;
             }
 
-            let timeNote = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
+            let timeNote = ord.time_changed
+                ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>'
+                : '';
+
+            let createdAtHtml = ord.created_at
+                ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${ord.created_at}</b></div>`
+                : '';
 
             html += `
-                <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px;">
-                        ${statusBadge}
-                        <span style="color:var(--text-secondary);">м. ${ord.station}, ${ord.time} ${timeNote}</span>
+                <div class="order-card">
+                    <div class="order-card-header">
+                        <span class="order-id-label">Заказ #${ord.id}</span>
+                        ${statusHtml}
                     </div>
-                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; line-height: 1.5;">
+
+                    <div class="order-meta-grid">
+                        ${createdAtHtml}
+                        <div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${ord.station}</b></div>
+                        <div class="order-meta-row"><span>⏰ Время встречи:</span> <b>${ord.time}</b> ${timeNote}</div>
+                    </div>
+
+                    <div class="order-items-box">
                         ${itemsList}
                         ${promoNote}
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:14px; font-weight:700; color:var(--accent-green);">Итого: ${ord.total.toFixed(2)} р.</span>
+
+                    <div class="order-card-footer">
+                        <span style="font-size:12px; color:var(--text-secondary);">К оплате:</span>
+                        <span class="order-total-price">${ord.total.toFixed(2)} р.</span>
                     </div>
+
                     ${actionButtons}
                 </div>
             `;
@@ -2144,6 +2438,14 @@
                     } else {
                         if (srvOrd.status && srvOrd.status !== localOrd.status) {
                             localOrd.status = srvOrd.status;
+                            updated = true;
+                        }
+                        if (srvOrd.cancelled_by !== undefined && srvOrd.cancelled_by !== localOrd.cancelled_by) {
+                            localOrd.cancelled_by = srvOrd.cancelled_by;
+                            updated = true;
+                        }
+                        if (srvOrd.created_at && srvOrd.created_at !== localOrd.created_at) {
+                            localOrd.created_at = srvOrd.created_at;
                             updated = true;
                         }
                         if (srvOrd.time && srvOrd.time !== localOrd.time) {
@@ -2187,7 +2489,6 @@
         } catch (e) {}
     }
 
-    // ФУНКЦИИ ПАНЕЛИ ВЛАДЕЛЬЦА (ПРОМОКОДЫ, МЕТРО, ВРЕМЯ)
     function switchAdminTab(tab, el) {
         document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
@@ -2357,16 +2658,18 @@
         visibleOrders.forEach(ord => {
             let itemsList = '';
             ord.items.forEach(i => {
-                itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
+                itemsList += `<div>• ${i.title} × ${i.qty} (${(i.price * i.qty).toFixed(2)} р.)</div>`;
             });
 
-            let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+            let promoBadgeCourier = ord.promo_code
+                ? `<div style="color:var(--accent-green); margin-top:6px;">🎟 Промокод: ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>`
+                : '';
 
-            let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id} • Активен</span>`;
+            let statusHtml = `<span class="order-status-pill active">Активен</span>`;
             if (ord.status === 'cancelled') {
-                headerTitle = `<span style="color:var(--danger); font-weight:700;">Заказ #${ord.id} • Отменён ✕</span>`;
+                statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
             } else if (ord.status === 'completed') {
-                headerTitle = `<span style="color:#00cc44; font-weight:700;">Заказ #${ord.id} • Выдан ✅</span>`;
+                statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
             }
 
             let deleteBtn = '';
@@ -2375,37 +2678,52 @@
             }
 
             let courierActions = `
-                <div style="display:flex; gap:10px;">
-                    <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
-                    <button onclick="updateOrderStatus('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                <div class="order-actions-row">
+                    <button onclick="updateOrderStatusByCourier('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
+                    <button onclick="updateOrderStatusByCourier('${ord.id}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
                 </div>
             `;
             if (ord.status !== 'active') {
-                courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:6px;">Статус: ${ord.status === 'completed' ? 'Выдан ✅' : 'Отменен ✕'}</div>`;
+                courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding-top:4px;">Статус: ${ord.status === 'completed' ? 'Выдан ✅' : getCancelledLabel(ord)}</div>`;
             }
 
-            let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
+            let timeNoteCourier = ord.time_changed
+                ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>'
+                : '';
+
+            let createdAtHtml = ord.created_at
+                ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${ord.created_at}</b></div>`
+                : '';
 
             html += `
-                <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 16px; margin-bottom: 14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:14px;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            ${headerTitle}
-                        </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
+                <div class="order-card">
+                    <div class="order-card-header">
+                        <div style="display:flex; flex-direction:column; gap:3px;">
+                            <span class="order-id-label">Заказ #${ord.id}</span>
                             <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${statusHtml}
                             ${deleteBtn}
                         </div>
                     </div>
-                    <div style="font-size:13px; margin-bottom:10px; line-height: 1.4;">
-                        🚇 <b>Станция:</b> м. ${ord.station}<br>
-                        ⏰ <b>Время:</b> ${ord.time} ${timeNoteCourier}
+
+                    <div class="order-meta-grid">
+                        ${createdAtHtml}
+                        <div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${ord.station}</b></div>
+                        <div class="order-meta-row"><span>⏰ Время встречи:</span> <b>${ord.time}</b> ${timeNoteCourier}</div>
                     </div>
-                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; background:var(--bg-color); padding:10px; border-radius:10px; line-height: 1.5;">
+
+                    <div class="order-items-box">
                         ${itemsList}
                         ${promoBadgeCourier}
-                        <div style="margin-top:6px; color:var(--text-main);"><b>Итого:</b> ${ord.total.toFixed(2)} р.</div>
                     </div>
+
+                    <div class="order-card-footer">
+                        <span style="font-size:12px; color:var(--text-secondary);">Итого к оплате:</span>
+                        <span class="order-total-price">${ord.total.toFixed(2)} р.</span>
+                    </div>
+
                     ${courierActions}
                 </div>
             `;
@@ -2426,10 +2744,12 @@
         }
     }
 
-    async function updateOrderStatus(orderId, status) {
+    async function updateOrderStatusByCourier(orderId, status) {
+        const cancelledBy = status === 'cancelled' ? 'courier' : '';
         const localOrd = activeOrders.find(o => o.id === orderId);
         if (localOrd) {
             localOrd.status = status;
+            if (cancelledBy) localOrd.cancelled_by = cancelledBy;
             localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
             renderOrders();
         }
@@ -2437,7 +2757,7 @@
             await apiFetch(`/api/update_order_status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: status })
+                body: JSON.stringify({ order_id: orderId, status: status, cancelled_by: cancelledBy })
             });
         } catch (e) {}
         loadCourierOrders();
@@ -2464,6 +2784,9 @@
         if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
         if (screenName === 'courier' && navItems[4]) navItems[4].classList.add('active');
 
+        if (screenName === 'orders') {
+            renderOrders();
+        }
         if (screenName === 'courier') {
             loadCourierOrders();
         }
