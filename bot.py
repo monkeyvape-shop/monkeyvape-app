@@ -4,7 +4,7 @@ import os
 from contextlib import asynccontextmanager
 from urllib.parse import quote
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import aiosqlite
@@ -55,13 +55,39 @@ async def init_db():
                 items TEXT,
                 status TEXT DEFAULT 'active',
                 time_changed INTEGER DEFAULT 0,
-                hidden_by_courier INTEGER DEFAULT 0
+                hidden_by_courier INTEGER DEFAULT 0,
+                promo_code TEXT DEFAULT '',
+                discount REAL DEFAULT 0
             )
         """)
-        try:
-            await db.execute("ALTER TABLE orders ADD COLUMN hidden_by_courier INTEGER DEFAULT 0")
-        except Exception:
-            pass
+        for col_sql in [
+            "ALTER TABLE orders ADD COLUMN hidden_by_courier INTEGER DEFAULT 0",
+            "ALTER TABLE orders ADD COLUMN promo_code TEXT DEFAULT ''",
+            "ALTER TABLE orders ADD COLUMN discount REAL DEFAULT 0"
+        ]:
+            try:
+                await db.execute(col_sql)
+            except Exception:
+                pass
+
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS shop_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS promocodes (
+                code TEXT PRIMARY KEY,
+                discount REAL
+            )
+        """)
+        # Стартовый промокод MONKEY3 на -3 рубля (если таблица пустая)
+        async with db.execute("SELECT COUNT(*) FROM promocodes") as cur:
+            row = await cur.fetchone()
+            if row and row[0] == 0:
+                await db.execute("INSERT INTO promocodes (code, discount) VALUES (?, ?)", ("MONKEY3", 3.0))
+
         await db.commit()
 
 @asynccontextmanager
@@ -90,6 +116,8 @@ class OrderSchema(BaseModel):
     station: str
     time: str
     status: str = "active"
+    promo_code: str = ""
+    discount: float = 0.0
 
 class StatusUpdateSchema(BaseModel):
     order_id: str
@@ -102,24 +130,129 @@ class TimeUpdateSchema(BaseModel):
 class DeleteOrderSchema(BaseModel):
     order_id: str
 
+class AdminStationToggleSchema(BaseModel):
+    user_id: int
+    station: str
+
+class AdminTimeToggleSchema(BaseModel):
+    user_id: int
+    time: str
+
+class AdminPromoSaveSchema(BaseModel):
+    user_id: int
+    code: str
+    discount: float
+
+class AdminPromoDeleteSchema(BaseModel):
+    user_id: int
+    code: str
+
+async def get_setting_list(db, key: str) -> list:
+    async with db.execute("SELECT value FROM shop_settings WHERE key = ?", (key,)) as cursor:
+        row = await cursor.fetchone()
+        if row and row[0]:
+            try:
+                return json.loads(row[0])
+            except Exception:
+                return []
+    return []
+
+async def set_setting_list(db, key: str, values: list):
+    await db.execute(
+        "INSERT OR REPLACE INTO shop_settings (key, value) VALUES (?, ?)",
+        (key, json.dumps(values))
+    )
+
+@app.get("/api/shop_config")
+async def get_shop_config():
+    async with aiosqlite.connect(DB_FILE) as db:
+        disabled_stations = await get_setting_list(db, "disabled_stations")
+        disabled_times = await get_setting_list(db, "disabled_times")
+        promos = {}
+        async with db.execute("SELECT code, discount FROM promocodes") as cursor:
+            rows = await cursor.fetchall()
+            for r in rows:
+                promos[r[0]] = r[1]
+        return {
+            "disabled_stations": disabled_stations,
+            "disabled_times": disabled_times,
+            "promocodes": promos
+        }
+
+@app.post("/api/admin/toggle_station")
+async def admin_toggle_station(data: AdminStationToggleSchema):
+    if data.user_id not in OWNER_IDS:
+        raise HTTPException(status_code=403, detail="Only owner can change stations")
+    async with aiosqlite.connect(DB_FILE) as db:
+        stations = await get_setting_list(db, "disabled_stations")
+        if data.station in stations:
+            stations.remove(data.station)
+        else:
+            stations.append(data.station)
+        await set_setting_list(db, "disabled_stations", stations)
+        await db.commit()
+    return {"success": True, "disabled_stations": stations}
+
+@app.post("/api/admin/toggle_time")
+async def admin_toggle_time(data: AdminTimeToggleSchema):
+    if data.user_id not in OWNER_IDS:
+        raise HTTPException(status_code=403, detail="Only owner can change times")
+    async with aiosqlite.connect(DB_FILE) as db:
+        times = await get_setting_list(db, "disabled_times")
+        if data.time in times:
+            times.remove(data.time)
+        else:
+            times.append(data.time)
+        await set_setting_list(db, "disabled_times", times)
+        await db.commit()
+    return {"success": True, "disabled_times": times}
+
+@app.post("/api/admin/save_promo")
+async def admin_save_promo(data: AdminPromoSaveSchema):
+    if data.user_id not in OWNER_IDS:
+        raise HTTPException(status_code=403, detail="Only owner can manage promos")
+    code = data.code.strip().upper()
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO promocodes (code, discount) VALUES (?, ?)",
+            (code, float(data.discount))
+        )
+        await db.commit()
+    return {"success": True}
+
+@app.post("/api/admin/delete_promo")
+async def admin_delete_promo(data: AdminPromoDeleteSchema):
+    if data.user_id not in OWNER_IDS:
+        raise HTTPException(status_code=403, detail="Only owner can manage promos")
+    code = data.code.strip().upper()
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute("DELETE FROM promocodes WHERE code = ?", (code,))
+        await db.commit()
+    return {"success": True}
+
 @app.post("/api/create_order")
 async def create_order(order: OrderSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute(
-            """INSERT OR REPLACE INTO orders (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)""",
-            (order.id, order.user_id, order.user_name, order.station, order.time, order.total, json.dumps(order.items), order.status)
+            """INSERT OR REPLACE INTO orders 
+               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)""",
+            (
+                order.id, order.user_id, order.user_name, order.station, order.time,
+                order.total, json.dumps(order.items), order.status, order.promo_code, order.discount
+            )
         )
         await db.commit()
 
     items_str = "\n".join([f"• {i['title']} x{i['qty']} — {(i['price'] * i['qty']):.2f} р." for i in order.items])
+    promo_line = f"\n🎟 **Промокод:** {order.promo_code} (-{order.discount:.2f} р.)" if order.promo_code else ""
     
     courier_text = (
         f"🚨 **НОВЫЙ ЗАКАЗ #{order.id}**\n\n"
         f"👤 **Покупатель:** {order.user_name} (ID: `{order.user_id}`)\n"
         f"🚇 **Станция:** м. {order.station}\n"
         f"⏰ **Время:** {order.time}\n\n"
-        f"📦 **Состав заказа:**\n{items_str}\n\n"
+        f"📦 **Состав заказа:**\n{items_str}{promo_line}\n\n"
         f"💰 **Итого:** {order.total:.2f} р."
     )
 
@@ -133,7 +266,7 @@ async def create_order(order: OrderSchema):
         f"✅ **Ваш заказ #{order.id} успешно оформлен!**\n\n"
         f"🚇 **Место встречи:** м. {order.station}\n"
         f"⏰ **Время:** {order.time}\n\n"
-        f"📦 **Ваш заказ:**\n{items_str}\n\n"
+        f"📦 **Ваш заказ:**\n{items_str}{promo_line}\n\n"
         f"💰 **К оплате (при встрече):** {order.total:.2f} р.\n\n"
         f"Спасибо, что выбрали Monkey Vape! Ожидайте курьера."
     )
@@ -164,7 +297,9 @@ async def get_orders():
                     "items": json.loads(row["items"]),
                     "status": row["status"],
                     "time_changed": bool(row["time_changed"]),
-                    "hidden_by_courier": bool(row["hidden_by_courier"])
+                    "hidden_by_courier": bool(row["hidden_by_courier"]),
+                    "promo_code": row["promo_code"] or "",
+                    "discount": row["discount"] or 0.0
                 })
             return result
 
@@ -185,7 +320,9 @@ async def get_user_orders(user_id: int):
                     "total": row["total"],
                     "items": json.loads(row["items"]),
                     "status": row["status"],
-                    "time_changed": bool(row["time_changed"])
+                    "time_changed": bool(row["time_changed"]),
+                    "promo_code": row["promo_code"] or "",
+                    "discount": row["discount"] or 0.0
                 })
             return result
 
@@ -222,7 +359,6 @@ async def update_order_status(data: StatusUpdateSchema):
 @app.post("/api/delete_completed_order")
 async def delete_completed_order(data: DeleteOrderSchema):
     async with aiosqlite.connect(DB_FILE) as db:
-        # Удалять (скрывать у курьера) можно ТОЛЬКО выполненные заказы (status = 'completed')
         await db.execute(
             "UPDATE orders SET hidden_by_courier = 1 WHERE id = ? AND status = 'completed'",
             (data.order_id,)
@@ -278,7 +414,6 @@ async def cmd_start(message: Message):
     if PUBLIC_TUNNEL_URL:
         personal_url += f"&api={quote(PUBLIC_TUNNEL_URL)}"
 
-    # Обновляем и нижнюю кнопку клавиатуры, и синюю кнопку меню чата для этого пользователя
     try:
         await bot.set_chat_menu_button(
             chat_id=uid,
