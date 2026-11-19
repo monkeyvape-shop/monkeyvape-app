@@ -201,17 +201,30 @@
             font-size: 16px;
         }
 
+        /* МАЛЕНЬКИЙ ПОЛЗУНОК ДЛЯ КАТЕГОРИЙ НА ПК И ТЕЛЕФОНЕ */
         .categories-scroll {
             display: flex;
             gap: 10px;
             overflow-x: auto;
-            margin-bottom: 24px;
-            padding-bottom: 6px;
-            scrollbar-width: none;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-green) var(--card-bg);
         }
 
         .categories-scroll::-webkit-scrollbar {
-            display: none;
+            height: 4px;
+            display: block;
+        }
+
+        .categories-scroll::-webkit-scrollbar-track {
+            background: var(--card-bg);
+            border-radius: 4px;
+        }
+
+        .categories-scroll::-webkit-scrollbar-thumb {
+            background: var(--accent-green);
+            border-radius: 4px;
         }
 
         .cat-chip {
@@ -224,6 +237,7 @@
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .cat-chip.active {
@@ -453,7 +467,7 @@
             display: flex;
             flex-direction: column;
             gap: 14px;
-            margin-bottom: 24px;
+            margin-bottom: 18px;
         }
 
         .cart-item {
@@ -527,6 +541,47 @@
             font-weight: 600;
             min-width: 18px;
             text-align: center;
+        }
+
+        /* БЛОК ПРОМОКОДА В КОРЗИНЕ */
+        .promo-box {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+
+        .promo-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .promo-input {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+            text-transform: uppercase;
+        }
+
+        .promo-input:focus {
+            border-color: var(--accent-green);
+        }
+
+        .promo-apply-btn {
+            background-color: var(--accent-green);
+            color: #0b0f0c;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
         }
 
         .cart-summary {
@@ -652,6 +707,8 @@
         }
 
         .station-item {
+            position: relative;
+            overflow: hidden;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             padding: 12px 16px;
@@ -670,6 +727,39 @@
             font-weight: 600;
         }
 
+        /* СЕРАЯ ПЛЁНКА И МЕТКА "НЕДОСТУПНО" ДЛЯ ОТКЛЮЧЁННЫХ СТАНЦИЙ И ВРЕМЕНИ */
+        .station-item.disabled-item,
+        .time-slot.disabled-item {
+            position: relative;
+            overflow: hidden;
+            cursor: not-allowed;
+            border-color: #3a423d !important;
+            color: #7d8580 !important;
+            background-color: #161b18 !important;
+        }
+
+        .station-item.disabled-item::after,
+        .time-slot.disabled-item::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(130, 138, 134, 0.22);
+            backdrop-filter: blur(0.6px);
+            pointer-events: none;
+        }
+
+        .unavail-pill {
+            position: relative;
+            z-index: 2;
+            background: rgba(156, 163, 175, 0.2);
+            border: 1px solid rgba(156, 163, 175, 0.4);
+            color: #d1d5db;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+        }
+
         .time-slots {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -680,11 +770,16 @@
         .time-slot {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            padding: 12px;
+            padding: 12px 8px;
             border-radius: 12px;
             text-align: center;
             font-size: 13px;
             cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
 
         .time-slot.selected {
@@ -747,6 +842,83 @@
         .profile-menu-item span {
             color: var(--accent-green);
             font-weight: 600;
+        }
+
+        /* АДМИН-ПАНЕЛЬ ВЛАДЕЛЬЦА В ПРОФИЛЕ */
+        .admin-section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent-green);
+            border-radius: 18px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .admin-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .admin-sub-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .admin-sub-tab {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .admin-sub-tab.active {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            background: rgba(0, 255, 102, 0.1);
+        }
+
+        .admin-toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .toggle-pill {
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+        }
+
+        .toggle-pill.on {
+            background: rgba(0, 255, 102, 0.15);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+        }
+
+        .toggle-pill.off {
+            background: rgba(255, 51, 51, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
         }
 
         .delete-order-x {
@@ -867,13 +1039,7 @@
             <div class="sheet-handle"></div>
             <div class="modal-title">Изменить время встречи</div>
             <div class="modal-subtitle">Выберите новое время для заказа #<span id="time-modal-order-id"></span></div>
-            <div class="time-slots" id="change-time-slots-container">
-                <div class="time-slot selected" onclick="selectNewTime(this, '12:00')">12:00</div>
-                <div class="time-slot" onclick="selectNewTime(this, '14:30')">14:30</div>
-                <div class="time-slot" onclick="selectNewTime(this, '16:30')">16:30</div>
-                <div class="time-slot" onclick="selectNewTime(this, '18:10')">18:10</div>
-                <div class="time-slot" onclick="selectNewTime(this, '21:00')">21:00</div>
-            </div>
+            <div class="time-slots" id="change-time-slots-container"></div>
             <button class="primary-btn" onclick="confirmTimeChangeFinal()">Сохранить новое время</button>
             <button onclick="closeTimeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Назад</button>
         </div>
@@ -895,7 +1061,7 @@
                 <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров..." oninput="filterProducts()">
             </div>
 
-            <div class="categories-scroll">
+            <div class="categories-scroll" id="categories-scroll">
                 <button class="cat-chip active" onclick="setCategory('all', this)">Все товары</button>
                 <button class="cat-chip" onclick="setCategory('liquid', this)">Жидкости</button>
                 <button class="cat-chip" onclick="setCategory('pod', this)">Поды и Вейпы</button>
@@ -945,6 +1111,42 @@
                 <span>Менеджер поддержки</span>
                 <span>@warat_24</span>
             </a>
+
+            <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ВЛАДЕЛЬЦА (ТОЛЬКО ДЛЯ OWNER_IDS) -->
+            <div id="owner-admin-panel" class="admin-section" style="display: none;">
+                <div class="admin-title">👑 Управление магазином (Владелец)</div>
+                <div class="admin-sub-tabs">
+                    <div class="admin-sub-tab active" onclick="switchAdminTab('promos', this)">🎟 Промокоды</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Станции</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
+                </div>
+
+                <!-- Вкладка 1: Промокоды -->
+                <div id="admin-tab-promos">
+                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                        <input type="text" id="admin-promo-code" class="promo-input" placeholder="Код (напр. VAPE5)" style="width:55%;">
+                        <input type="number" id="admin-promo-discount" class="promo-input" placeholder="Скидка р." step="0.5" style="width:45%; text-transform:none;">
+                    </div>
+                    <button class="primary-btn" style="padding:10px; font-size:13px; margin-bottom:14px;" onclick="adminSavePromo()">Сохранить промокод</button>
+                    <div id="admin-promos-list"></div>
+                </div>
+
+                <!-- Вкладка 2: Отключение станций метро -->
+                <div id="admin-tab-metro" style="display: none;">
+                    <div class="metro-tabs" style="margin-bottom:10px;">
+                        <div class="metro-tab active-green" onclick="switchAdminMetroLine('green', this)">Зелёная</div>
+                        <div class="metro-tab" onclick="switchAdminMetroLine('blue', this)">Синяя</div>
+                        <div class="metro-tab" onclick="switchAdminMetroLine('red', this)">Красная</div>
+                    </div>
+                    <div id="admin-metro-list" style="max-height:240px; overflow-y:auto;"></div>
+                </div>
+
+                <!-- Вкладка 3: Отключение времени -->
+                <div id="admin-tab-time" style="display: none;">
+                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">Отключённое время станет недоступным для выбора при заказе:</p>
+                    <div id="admin-time-list"></div>
+                </div>
+            </div>
         </div>
 
         <div id="screen-courier" class="screen">
@@ -983,13 +1185,7 @@
 
             <div style="margin-bottom: 24px;">
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Время получения</p>
-                <div class="time-slots">
-                    <div class="time-slot selected" onclick="selectTime(this, '12:00')">12:00</div>
-                    <div class="time-slot" onclick="selectTime(this, '14:30')">14:30</div>
-                    <div class="time-slot" onclick="selectTime(this, '16:30')">16:30</div>
-                    <div class="time-slot" onclick="selectTime(this, '18:10')">18:10</div>
-                    <div class="time-slot" onclick="selectTime(this, '21:00')">21:00</div>
-                </div>
+                <div class="time-slots" id="checkout-time-slots-container"></div>
             </div>
 
             <button class="primary-btn" onclick="confirmOrderFinal()">Подтвердить заказ</button>
@@ -1024,7 +1220,6 @@
 </div>
 
 <script>
-    // Автоматическое определение адреса сервера (берётся из ссылки ?api=..., либо localhost, либо туннель)
     const urlParamsGlobal = new URLSearchParams(window.location.search);
     const apiFromUrl = urlParamsGlobal.get('api');
     if (apiFromUrl) {
@@ -1032,7 +1227,6 @@
     }
     let BACKEND_URL = apiFromUrl || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
 
-    // Список всех возможных адресов сервера для автоматического подключения между аккаунтами
     const CANDIDATE_BACKENDS = [
         BACKEND_URL,
         "http://127.0.0.1:8000",
@@ -1055,18 +1249,36 @@
         throw new Error("Server unreachable");
     }
 
-    // ID Владельца и Курьеров (оба видят 5-ю вкладку "Курьер")
+    const OWNER_IDS = [7280921605];
     const SPECIAL_COURIER_IDS = [7280921605, 6658906694, 1335426710];
 
     let currentUserId = 0; 
     let currentUserName = "User";
 
-    function showCourierTabIfAllowed() {
-        const courierNavBtn = document.getElementById('nav-courier-btn');
-        if (!courierNavBtn) return;
+    // Глобальные настройки магазина (управляются владельцем)
+    const ALL_TIME_SLOTS = ['12:00', '14:30', '16:30', '18:10', '21:00'];
+    let disabledStations = JSON.parse(localStorage.getItem('monkey_disabled_stations')) || [];
+    let disabledTimes = JSON.parse(localStorage.getItem('monkey_disabled_times')) || [];
+    let promoCodes = JSON.parse(localStorage.getItem('monkey_promocodes')) || { "MONKEY3": 3.0 };
+    let appliedPromoCode = "";
+    let appliedPromoDiscount = 0;
+    let promoMessage = "";
+    let promoError = false;
+    let adminMetroLine = 'green';
+
+    function showRoleTabsIfAllowed() {
         const uidNum = Number(currentUserId);
-        if (SPECIAL_COURIER_IDS.includes(uidNum)) {
+        const courierNavBtn = document.getElementById('nav-courier-btn');
+        const ownerAdminPanel = document.getElementById('owner-admin-panel');
+
+        if (courierNavBtn && SPECIAL_COURIER_IDS.includes(uidNum)) {
             courierNavBtn.style.display = 'flex';
+        }
+        if (ownerAdminPanel && OWNER_IDS.includes(uidNum)) {
+            ownerAdminPanel.style.display = 'block';
+            renderAdminPromos();
+            renderAdminMetro();
+            renderAdminTimes();
         }
     }
 
@@ -1076,7 +1288,6 @@
         const unameFromUrl = urlParams.get('uname');
         const roleFromUrl = urlParams.get('role');
 
-        // 1. Сначала пробуем получить точный ID из Telegram WebApp
         if (window.Telegram && window.Telegram.WebApp) {
             let tg = window.Telegram.WebApp;
             tg.ready();
@@ -1091,7 +1302,6 @@
             } catch (err) {}
         }
 
-        // 2. Если Telegram WebApp не отдал ID (например, открыто через обычную кнопку), берем из URL от бота
         if (!currentUserId && uidFromUrl) {
             currentUserId = Number(uidFromUrl);
         }
@@ -1099,10 +1309,13 @@
             currentUserName = unameFromUrl;
         }
 
-        // 3. Если бот явно передал role=owner или role=courier в ссылке, сразу включаем вкладку
         if (roleFromUrl === 'owner' || roleFromUrl === 'courier') {
             const courierNavBtn = document.getElementById('nav-courier-btn');
             if (courierNavBtn) courierNavBtn.style.display = 'flex';
+        }
+        if (roleFromUrl === 'owner') {
+            const ownerAdminPanel = document.getElementById('owner-admin-panel');
+            if (ownerAdminPanel) ownerAdminPanel.style.display = 'block';
         }
 
         const usernameElem = document.getElementById('profile-username');
@@ -1114,20 +1327,35 @@
             avatarElem.innerText = currentUserName.replace('@', '').charAt(0).toUpperCase() || 'V';
         }
         if (useridElem) {
-            const isCourierOrOwner = SPECIAL_COURIER_IDS.includes(Number(currentUserId));
-            useridElem.innerText = currentUserId 
-                ? `ID: ${currentUserId} ${isCourierOrOwner ? '• Курьер / Владелец' : '• Покупатель'}`
-                : 'Telegram User';
+            const isOwner = OWNER_IDS.includes(Number(currentUserId));
+            const isCourier = SPECIAL_COURIER_IDS.includes(Number(currentUserId));
+            let roleText = 'Покупатель';
+            if (isOwner) roleText = 'Владелец (Админ)';
+            else if (isCourier) roleText = 'Курьер';
+            useridElem.innerText = currentUserId ? `ID: ${currentUserId} • ${roleText}` : 'Telegram User';
         }
 
-        showCourierTabIfAllowed();
+        showRoleTabsIfAllowed();
         checkUserRole();
+        syncShopConfig();
         syncClientOrdersStatus();
     }
 
+    // Прокрутка категорий колёсиком мыши на ПК
+    document.addEventListener('DOMContentLoaded', () => {
+        const catScroll = document.getElementById('categories-scroll');
+        if (catScroll) {
+            catScroll.addEventListener('wheel', (e) => {
+                if (e.deltaY !== 0) {
+                    e.preventDefault();
+                    catScroll.scrollLeft += e.deltaY;
+                }
+            }, { passive: false });
+        }
+    });
+
     window.addEventListener('load', () => {
         initTelegramUser();
-        // Дополнительная повторная проверка через 500мс на случай поздней инициализации Telegram WebApp
         setTimeout(initTelegramUser, 500);
         
         setTimeout(() => {
@@ -1206,7 +1434,6 @@
     let selectedStation = localStorage.getItem('monkey_selected_station') || 'Партизанская';
     let selectedTime = '12:00';
     let activeOrders = JSON.parse(localStorage.getItem('monkey_orders')) || [];
-    // Список скрытых курьером выполненных заказов
     let hiddenCourierOrderIds = JSON.parse(localStorage.getItem('monkey_hidden_courier_orders')) || [];
 
     let currentSelectedProduct = null;
@@ -1215,10 +1442,69 @@
     let changingOrderId = null;
     let newSelectedTime = '12:00';
 
+    function ensureValidSelectedStationAndTime() {
+        if (disabledStations.includes(selectedStation)) {
+            const allSt = [...metroStations.green, ...metroStations.blue, ...metroStations.red];
+            const firstAvail = allSt.find(s => !disabledStations.includes(s.name));
+            selectedStation = firstAvail ? firstAvail.name : '';
+            localStorage.setItem('monkey_selected_station', selectedStation);
+        }
+        if (disabledTimes.includes(selectedTime)) {
+            const firstTime = ALL_TIME_SLOTS.find(t => !disabledTimes.includes(t));
+            selectedTime = firstTime || '';
+        }
+        updateTopMetroLabel();
+    }
+
     function updateTopMetroLabel() {
         const metroLabel = document.getElementById('current-metro-label');
-        if (metroLabel) metroLabel.innerText = selectedStation;
+        if (metroLabel) {
+            metroLabel.innerText = selectedStation || 'Не выбрана';
+        }
     }
+
+    // Синхронизация настроек магазина (отключённые станции, время, промокоды)
+    async function syncShopConfig() {
+        try {
+            const res = await apiFetch(`/api/shop_config`);
+            if (res.ok) {
+                const cfg = await res.json();
+                disabledStations = cfg.disabled_stations || [];
+                disabledTimes = cfg.disabled_times || [];
+                promoCodes = cfg.promocodes || {};
+
+                localStorage.setItem('monkey_disabled_stations', JSON.stringify(disabledStations));
+                localStorage.setItem('monkey_disabled_times', JSON.stringify(disabledTimes));
+                localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
+
+                // Перепроверяем применённый промокод
+                if (appliedPromoCode) {
+                    if (promoCodes[appliedPromoCode] !== undefined) {
+                        appliedPromoDiscount = Number(promoCodes[appliedPromoCode]);
+                    } else {
+                        appliedPromoCode = "";
+                        appliedPromoDiscount = 0;
+                        promoMessage = "Промокод больше недействителен";
+                        promoError = true;
+                    }
+                }
+
+                ensureValidSelectedStationAndTime();
+                renderModalStations(modalCurrentLine);
+                renderStations(currentLine);
+                renderCheckoutTimeSlots();
+                renderChangeTimeSlots();
+                renderCart();
+
+                if (OWNER_IDS.includes(Number(currentUserId))) {
+                    renderAdminPromos();
+                    renderAdminMetro();
+                    renderAdminTimes();
+                }
+            }
+        } catch (e) {}
+    }
+    setInterval(syncShopConfig, 5000);
 
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
@@ -1364,6 +1650,40 @@
         }
     }
 
+    // ПРИМЕНЕНИЕ ПРОМОКОДА В КОРЗИНЕ
+    function applyPromoCode() {
+        const input = document.getElementById('promo-input');
+        if (!input) return;
+        const code = input.value.trim().toUpperCase();
+        if (!code) {
+            promoMessage = "Введите промокод";
+            promoError = true;
+            renderCart();
+            return;
+        }
+
+        if (promoCodes[code] !== undefined && Number(promoCodes[code]) > 0) {
+            appliedPromoCode = code;
+            appliedPromoDiscount = Number(promoCodes[code]);
+            promoMessage = `Промокод ${code} применён! Скидка -${appliedPromoDiscount.toFixed(2)} р.`;
+            promoError = false;
+        } else {
+            appliedPromoCode = "";
+            appliedPromoDiscount = 0;
+            promoMessage = "Неверный или неактивный промокод";
+            promoError = true;
+        }
+        renderCart();
+    }
+
+    function removeAppliedPromo() {
+        appliedPromoCode = "";
+        appliedPromoDiscount = 0;
+        promoMessage = "";
+        promoError = false;
+        renderCart();
+    }
+
     function renderCart() {
         const container = document.getElementById('cart-content');
         if (!container) return;
@@ -1403,19 +1723,48 @@
         }
         itemsHtml += '</div>';
 
-        itemsHtml += `
+        const actualDiscount = appliedPromoCode ? Math.min(subtotal, appliedPromoDiscount) : 0;
+        const finalTotal = Math.max(0, subtotal - actualDiscount);
+
+        let promoBlockHtml = `
+            <div class="promo-box">
+                <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">🎟 Промокод на скидку</div>
+                ${appliedPromoCode ? `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,255,102,0.1); border:1px solid var(--accent-green); padding:10px 12px; border-radius:12px;">
+                        <span style="font-size:13px; color:var(--accent-green); font-weight:700;">${appliedPromoCode} (-${actualDiscount.toFixed(2)} р.)</span>
+                        <button onclick="removeAppliedPromo()" style="background:none; border:none; color:var(--danger); font-weight:700; font-size:14px; cursor:pointer;">✕</button>
+                    </div>
+                ` : `
+                    <div class="promo-input-row">
+                        <input type="text" id="promo-input" class="promo-input" placeholder="Введите промокод...">
+                        <button class="promo-apply-btn" onclick="applyPromoCode()">Применить</button>
+                    </div>
+                `}
+                ${promoMessage ? `<div style="font-size:11px; margin-top:8px; color:${promoError ? 'var(--danger)' : 'var(--accent-green)'};">${promoMessage}</div>` : ''}
+            </div>
+        `;
+
+        let discountRowHtml = actualDiscount > 0 ? `
+            <div class="summary-row">
+                <span style="color:var(--accent-green);">Скидка (${appliedPromoCode}):</span>
+                <span style="color:var(--accent-green); font-weight:700;">-${actualDiscount.toFixed(2)} р.</span>
+            </div>
+        ` : '';
+
+        itemsHtml += promoBlockHtml + `
             <div class="cart-summary">
                 <div class="summary-row">
                     <span>Станция доставки:</span>
-                    <span style="color:var(--accent-green); font-weight:600;">м. ${selectedStation}</span>
+                    <span style="color:var(--accent-green); font-weight:600;">${selectedStation ? 'м. ' + selectedStation : 'Не выбрана'}</span>
                 </div>
                 <div class="summary-row">
                     <span>Товары (${items.reduce((s,i)=>s+i.qty,0)})</span>
                     <span>${subtotal.toFixed(2)} р.</span>
                 </div>
+                ${discountRowHtml}
                 <div class="summary-row total">
                     <span>Итого к оплате:</span>
-                    <span>${subtotal.toFixed(2)} р.</span>
+                    <span>${finalTotal.toFixed(2)} р.</span>
                 </div>
             </div>
             <button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>
@@ -1453,21 +1802,27 @@
         if (!container) return;
         container.innerHTML = '';
         metroStations[line].forEach(st => {
-            const isSel = st.name === selectedStation;
+            const isDisabled = disabledStations.includes(st.name);
+            const isSel = !isDisabled && st.name === selectedStation;
             const div = document.createElement('div');
-            div.className = `station-item ${isSel ? 'selected' : ''}`;
+            div.className = `station-item ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
             div.innerHTML = `
                 <span>${st.name}</span>
-                <span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>
+                ${isDisabled 
+                    ? `<span class="unavail-pill">Недоступно</span>` 
+                    : `<span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>`
+                }
             `;
-            div.onclick = () => {
-                selectedStation = st.name;
-                localStorage.setItem('monkey_selected_station', selectedStation);
-                updateTopMetroLabel();
-                renderModalStations(line);
-                renderStations(currentLine);
-                renderCart();
-            };
+            if (!isDisabled) {
+                div.onclick = () => {
+                    selectedStation = st.name;
+                    localStorage.setItem('monkey_selected_station', selectedStation);
+                    updateTopMetroLabel();
+                    renderModalStations(line);
+                    renderStations(currentLine);
+                    renderCart();
+                };
+            }
             container.appendChild(div);
         });
     }
@@ -1477,8 +1832,10 @@
             switchScreen('cart');
             return;
         }
+        ensureValidSelectedStationAndTime();
         switchScreen('checkout');
         renderStations(currentLine);
+        renderCheckoutTimeSlots();
     }
 
     function switchMetroLine(line, el) {
@@ -1495,28 +1852,72 @@
         if (!container) return;
         container.innerHTML = '';
         metroStations[line].forEach(st => {
-            const isSel = st.name === selectedStation;
+            const isDisabled = disabledStations.includes(st.name);
+            const isSel = !isDisabled && st.name === selectedStation;
             const div = document.createElement('div');
-            div.className = `station-item ${isSel ? 'selected' : ''}`;
+            div.className = `station-item ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
             div.innerHTML = `
                 <span>${st.name}</span>
-                <span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>
+                ${isDisabled 
+                    ? `<span class="unavail-pill">Недоступно</span>` 
+                    : `<span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>`
+                }
             `;
-            div.onclick = () => {
-                selectedStation = st.name;
-                localStorage.setItem('monkey_selected_station', selectedStation);
-                updateTopMetroLabel();
-                renderStations(line);
-                renderCart();
-            };
+            if (!isDisabled) {
+                div.onclick = () => {
+                    selectedStation = st.name;
+                    localStorage.setItem('monkey_selected_station', selectedStation);
+                    updateTopMetroLabel();
+                    renderStations(line);
+                    renderCart();
+                };
+            }
             container.appendChild(div);
         });
     }
 
-    function selectTime(el, time) {
-        document.querySelectorAll('#screen-checkout .time-slot').forEach(t => t.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedTime = time;
+    function renderCheckoutTimeSlots() {
+        const container = document.getElementById('checkout-time-slots-container');
+        if (!container) return;
+        container.innerHTML = '';
+        ALL_TIME_SLOTS.forEach(t => {
+            const isDisabled = disabledTimes.includes(t);
+            const isSel = !isDisabled && selectedTime === t;
+            const div = document.createElement('div');
+            div.className = `time-slot ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
+            div.innerHTML = isDisabled
+                ? `<span>${t}</span><span class="unavail-pill" style="font-size:9px; padding:1px 5px;">Недоступно</span>`
+                : `<span>${t}</span>`;
+            if (!isDisabled) {
+                div.onclick = () => {
+                    selectedTime = t;
+                    renderCheckoutTimeSlots();
+                };
+            }
+            container.appendChild(div);
+        });
+    }
+
+    function renderChangeTimeSlots() {
+        const container = document.getElementById('change-time-slots-container');
+        if (!container) return;
+        container.innerHTML = '';
+        ALL_TIME_SLOTS.forEach(t => {
+            const isDisabled = disabledTimes.includes(t);
+            const isSel = !isDisabled && newSelectedTime === t;
+            const div = document.createElement('div');
+            div.className = `time-slot ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
+            div.innerHTML = isDisabled
+                ? `<span>${t}</span><span class="unavail-pill" style="font-size:9px; padding:1px 5px;">Недоступно</span>`
+                : `<span>${t}</span>`;
+            if (!isDisabled) {
+                div.onclick = () => {
+                    newSelectedTime = t;
+                    renderChangeTimeSlots();
+                };
+            }
+            container.appendChild(div);
+        });
     }
 
     async function confirmOrderFinal() {
@@ -1525,8 +1926,18 @@
             switchScreen('cart');
             return;
         }
+        if (!selectedStation || disabledStations.includes(selectedStation)) {
+            alert("Выбранная станция метро сейчас недоступна. Пожалуйста, выберите другую станцию.");
+            return;
+        }
+        if (!selectedTime || disabledTimes.includes(selectedTime)) {
+            alert("Выбранное время сейчас недоступно. Пожалуйста, выберите другое время.");
+            return;
+        }
 
-        const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        const actualDiscount = appliedPromoCode ? Math.min(subtotal, appliedPromoDiscount) : 0;
+        const total = Math.max(0, subtotal - actualDiscount);
         const orderId = String(Math.floor(10000 + Math.random() * 90000));
 
         const formattedItems = items.map(i => ({
@@ -1544,7 +1955,9 @@
             station: selectedStation,
             time: selectedTime,
             status: 'active',
-            time_changed: false
+            time_changed: false,
+            promo_code: appliedPromoCode,
+            discount: actualDiscount
         };
 
         try {
@@ -1561,6 +1974,9 @@
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
 
         cart = {};
+        appliedPromoCode = "";
+        appliedPromoDiscount = 0;
+        promoMessage = "";
         saveCart();
         renderCart();
         renderOrders();
@@ -1586,7 +2002,6 @@
         }
     }
 
-    // Удаление (скрытие) заказа у курьера по нажатию на крестик (только для выполненных заказов)
     async function deleteCompletedOrderCourier(orderId) {
         if (!hiddenCourierOrderIds.includes(orderId)) {
             hiddenCourierOrderIds.push(orderId);
@@ -1606,7 +2021,10 @@
 
     function openTimeModal(orderId) {
         changingOrderId = orderId;
+        const firstAvail = ALL_TIME_SLOTS.find(t => !disabledTimes.includes(t));
+        newSelectedTime = firstAvail || '';
         document.getElementById('time-modal-order-id').innerText = orderId;
+        renderChangeTimeSlots();
         document.getElementById('time-modal').classList.add('active');
     }
 
@@ -1620,14 +2038,12 @@
         document.getElementById('time-modal').classList.remove('active');
     }
 
-    function selectNewTime(el, time) {
-        document.querySelectorAll('#change-time-slots-container .time-slot').forEach(t => t.classList.remove('selected'));
-        el.classList.add('selected');
-        newSelectedTime = time;
-    }
-
     async function confirmTimeChangeFinal() {
         if (!changingOrderId) return;
+        if (!newSelectedTime || disabledTimes.includes(newSelectedTime)) {
+            alert("Это время недоступно. Выберите другое.");
+            return;
+        }
 
         const ord = activeOrders.find(o => o.id === changingOrderId);
         if (ord) {
@@ -1679,6 +2095,8 @@
                 itemsList += `• ${i.title} x${i.qty}<br>`;
             });
 
+            let promoNote = ord.promo_code ? `<div style="font-size:11px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+
             let actionButtons = '';
             if (ord.status === 'active') {
                 actionButtons = `
@@ -1699,6 +2117,7 @@
                     </div>
                     <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; line-height: 1.5;">
                         ${itemsList}
+                        ${promoNote}
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:14px; font-weight:700; color:var(--accent-green);">Итого: ${ord.total.toFixed(2)} р.</span>
@@ -1750,7 +2169,7 @@
     setInterval(syncClientOrdersStatus, 3500);
 
     async function checkUserRole() {
-        showCourierTabIfAllowed();
+        showRoleTabsIfAllowed();
 
         try {
             const response = await apiFetch(`/api/check_role/${currentUserId}`);
@@ -1761,6 +2180,160 @@
                 if (courierNavBtn) courierNavBtn.style.display = 'flex';
                 loadCourierOrders();
             }
+            if (data.role === 'owner') {
+                const ownerAdminPanel = document.getElementById('owner-admin-panel');
+                if (ownerAdminPanel) ownerAdminPanel.style.display = 'block';
+            }
+        } catch (e) {}
+    }
+
+    // ФУНКЦИИ ПАНЕЛИ ВЛАДЕЛЬЦА (ПРОМОКОДЫ, МЕТРО, ВРЕМЯ)
+    function switchAdminTab(tab, el) {
+        document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('admin-tab-promos').style.display = tab === 'promos' ? 'block' : 'none';
+        document.getElementById('admin-tab-metro').style.display = tab === 'metro' ? 'block' : 'none';
+        document.getElementById('admin-tab-time').style.display = tab === 'time' ? 'block' : 'none';
+    }
+
+    function renderAdminPromos() {
+        const container = document.getElementById('admin-promos-list');
+        if (!container) return;
+        const entries = Object.entries(promoCodes);
+        if (entries.length === 0) {
+            container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Активных промокодов нет</div>';
+            return;
+        }
+        container.innerHTML = entries.map(([code, disc]) => `
+            <div class="admin-toggle-row">
+                <span><b style="color:var(--accent-green);">${code}</b> — скидка ${Number(disc).toFixed(2)} р.</span>
+                <button class="toggle-pill off" onclick="adminDeletePromo('${code}')">Удалить</button>
+            </div>
+        `).join('');
+    }
+
+    async function adminSavePromo() {
+        const codeInput = document.getElementById('admin-promo-code');
+        const discInput = document.getElementById('admin-promo-discount');
+        const code = codeInput.value.trim().toUpperCase();
+        const discount = parseFloat(discInput.value);
+
+        if (!code || isNaN(discount) || discount <= 0) {
+            alert("Укажите корректный код и сумму скидки (больше 0)");
+            return;
+        }
+
+        promoCodes[code] = discount;
+        localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
+        codeInput.value = '';
+        discInput.value = '';
+        renderAdminPromos();
+
+        try {
+            await apiFetch(`/api/admin/save_promo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), code: code, discount: discount })
+            });
+        } catch (e) {}
+    }
+
+    async function adminDeletePromo(code) {
+        delete promoCodes[code];
+        localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
+        renderAdminPromos();
+
+        try {
+            await apiFetch(`/api/admin/delete_promo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), code: code })
+            });
+        } catch (e) {}
+    }
+
+    function switchAdminMetroLine(line, el) {
+        adminMetroLine = line;
+        const parent = el.parentElement;
+        parent.querySelectorAll('.metro-tab').forEach(t => t.className = 'metro-tab');
+        if (line === 'green') el.className = 'metro-tab active-green';
+        if (line === 'blue') el.className = 'metro-tab active-blue';
+        if (line === 'red') el.className = 'metro-tab active-red';
+        renderAdminMetro();
+    }
+
+    function renderAdminMetro() {
+        const container = document.getElementById('admin-metro-list');
+        if (!container) return;
+        container.innerHTML = metroStations[adminMetroLine].map(st => {
+            const isDisabled = disabledStations.includes(st.name);
+            return `
+                <div class="admin-toggle-row">
+                    <span style="${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">${st.name}</span>
+                    <button class="toggle-pill ${isDisabled ? 'off' : 'on'}" onclick="adminToggleStation('${st.name}')">
+                        ${isDisabled ? 'Отключена' : 'Работает'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function adminToggleStation(stationName) {
+        if (disabledStations.includes(stationName)) {
+            disabledStations = disabledStations.filter(s => s !== stationName);
+        } else {
+            disabledStations.push(stationName);
+        }
+        localStorage.setItem('monkey_disabled_stations', JSON.stringify(disabledStations));
+        ensureValidSelectedStationAndTime();
+        renderAdminMetro();
+        renderModalStations(modalCurrentLine);
+        renderStations(currentLine);
+        renderCart();
+
+        try {
+            await apiFetch(`/api/admin/toggle_station`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), station: stationName })
+            });
+        } catch (e) {}
+    }
+
+    function renderAdminTimes() {
+        const container = document.getElementById('admin-time-list');
+        if (!container) return;
+        container.innerHTML = ALL_TIME_SLOTS.map(t => {
+            const isDisabled = disabledTimes.includes(t);
+            return `
+                <div class="admin-toggle-row">
+                    <span style="${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">⏰ ${t}</span>
+                    <button class="toggle-pill ${isDisabled ? 'off' : 'on'}" onclick="adminToggleTime('${t}')">
+                        ${isDisabled ? 'Отключено' : 'Доступно'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function adminToggleTime(timeStr) {
+        if (disabledTimes.includes(timeStr)) {
+            disabledTimes = disabledTimes.filter(t => t !== timeStr);
+        } else {
+            disabledTimes.push(timeStr);
+        }
+        localStorage.setItem('monkey_disabled_times', JSON.stringify(disabledTimes));
+        ensureValidSelectedStationAndTime();
+        renderAdminTimes();
+        renderCheckoutTimeSlots();
+        renderChangeTimeSlots();
+
+        try {
+            await apiFetch(`/api/admin/toggle_time`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), time: timeStr })
+            });
         } catch (e) {}
     }
 
@@ -1768,7 +2341,6 @@
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
 
-        // Фильтруем заказы, которые курьер уже удалил крестиком после выполнения
         const visibleOrders = (orders || []).filter(o => !hiddenCourierOrderIds.includes(o.id) && !o.hidden_by_courier);
 
         if (visibleOrders.length === 0) {
@@ -1788,6 +2360,8 @@
                 itemsList += `• ${i.title} x${i.qty} (${(i.price * i.qty).toFixed(2)} р.)<br>`;
             });
 
+            let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+
             let headerTitle = `<span style="color:var(--accent-green); font-weight:700;">Заказ #${ord.id} • Активен</span>`;
             if (ord.status === 'cancelled') {
                 headerTitle = `<span style="color:var(--danger); font-weight:700;">Заказ #${ord.id} • Отменён ✕</span>`;
@@ -1795,13 +2369,11 @@
                 headerTitle = `<span style="color:#00cc44; font-weight:700;">Заказ #${ord.id} • Выдан ✅</span>`;
             }
 
-            // Крестик удаления заказа доступен ТОЛЬКО если заказ уже выполнен (completed)
             let deleteBtn = '';
             if (ord.status === 'completed') {
                 deleteBtn = `<button class="delete-order-x" title="Удалить выполненный заказ" onclick="deleteCompletedOrderCourier('${ord.id}')">✕</button>`;
             }
 
-            // У курьера только две кнопки: Выдан и Отменить (без изменения времени)
             let courierActions = `
                 <div style="display:flex; gap:10px;">
                     <button onclick="updateOrderStatus('${ord.id}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
@@ -1831,6 +2403,7 @@
                     </div>
                     <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; background:var(--bg-color); padding:10px; border-radius:10px; line-height: 1.5;">
                         ${itemsList}
+                        ${promoBadgeCourier}
                         <div style="margin-top:6px; color:var(--text-main);"><b>Итого:</b> ${ord.total.toFixed(2)} р.</div>
                     </div>
                     ${courierActions}
@@ -1896,9 +2469,10 @@
         }
     }
 
-    updateTopMetroLabel();
+    ensureValidSelectedStationAndTime();
     renderProducts(products);
     renderStations('green');
+    renderCheckoutTimeSlots();
     updateCartBadge();
     renderCart();
     renderOrders();
