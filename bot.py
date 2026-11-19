@@ -1,4 +1,5 @@
 import asyncio
+import html
 import json
 import os
 from datetime import datetime
@@ -12,7 +13,8 @@ from pydantic import BaseModel
 import aiosqlite
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import (
-    Message, ReplyKeyboardMarkup, KeyboardButton, 
+    Message, ReplyKeyboardMarkup, KeyboardButton,
+    InlineKeyboardMarkup, InlineKeyboardButton,
     WebAppInfo, MenuButtonWebApp
 )
 
@@ -31,17 +33,29 @@ def load_token_from_env():
     return None
 
 # ----- НАСТРОЙКИ И ТОКЕНЫ -----
-FALLBACK_TOKEN = "ВСТАВЬ_СЮДА_НОВЫЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
+FALLBACK_TOKEN = "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 
+# Актуальная ссылка туннеля (без скобок!)
 PUBLIC_TUNNEL_URL = "https://shark-highlight-change-frontier.trycloudflare.com"
 
 # РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
-OWNER_IDS = [7280921605] # Владелец (Админ)
-COURIER_IDS = [6658906694, 7280921605, 1335426710] # Курьеры и Владелец
+OWNER_IDS = [7280921605]  # Владелец (Админ)
+COURIER_IDS = [6658906694, 7280921605, 1335426710]  # Курьеры и Владелец
 
 DB_FILE = "database.db"
+
+def build_personal_url(uid: int, uname: str = "User") -> str:
+    role = "client"
+    if uid in OWNER_IDS:
+        role = "owner"
+    elif uid in COURIER_IDS:
+        role = "courier"
+    url = f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}"
+    if PUBLIC_TUNNEL_URL:
+        url += f"&api={quote(PUBLIC_TUNNEL_URL.strip())}"
+    return url
 
 async def init_db():
     async with aiosqlite.connect(DB_FILE) as db:
@@ -266,6 +280,7 @@ async def admin_delete_promo(data: AdminPromoDeleteSchema):
 
 @app.post("/api/create_order")
 async def create_order(order: OrderSchema):
+    order_id = str(order.id).strip()
     created_at = order.created_at or datetime.now().strftime("%d.%m.%Y, %H:%M")
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute(
@@ -273,48 +288,61 @@ async def create_order(order: OrderSchema):
                (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, created_at, cancelled_by)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, '')""",
             (
-                order.id, order.user_id, order.user_name, order.station, order.time,
+                order_id, order.user_id, order.user_name, order.station, order.time,
                 order.total, json.dumps(order.items), order.status, order.promo_code, order.discount, created_at
             )
         )
         await db.commit()
 
-    items_str = "\n".join([f"• {i['title']} x{i['qty']} — {(i['price'] * i['qty']):.2f} р." for i in order.items])
-    promo_line = f"\n🎟 **Промокод:** {order.promo_code} (-{order.discount:.2f} р.)" if order.promo_code else ""
-    
+    safe_user = html.escape(order.user_name or "User")
+    safe_station = html.escape(order.station or "")
+    safe_time = html.escape(order.time or "")
+    items_str = "\n".join(
+        [f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} р." for i in order.items]
+    )
+    promo_line = (
+        f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{order.discount:.2f} р.)"
+        if order.promo_code else ""
+    )
+
     courier_text = (
-        f"🚨 **НОВЫЙ ЗАКАЗ #{order.id}**\n"
-        f"📅 **Оформлен:** {created_at}\n\n"
-        f"👤 **Покупатель:** {order.user_name} (ID: `{order.user_id}`)\n"
-        f"🚇 **Станция:** м. {order.station}\n"
-        f"⏰ **Время встречи:** {order.time}\n\n"
-        f"📦 **Состав заказа:**\n{items_str}{promo_line}\n\n"
-        f"💰 **Итого:** {order.total:.2f} р."
+        f"🛵 <b>Новый заказ #{html.escape(order_id)}!</b>\n\n"
+        f"👤 <b>Покупатель:</b> {safe_user}\n"
+        f"🆔 <b>ID покупателя:</b> <code>{order.user_id}</code>\n"
+        f"🚇 <b>Станция:</b> м. {safe_station}\n"
+        f"⏰ <b>Время встречи:</b> {safe_time}\n"
+        f"💰 <b>Итого:</b> {order.total:.2f} р.\n\n"
+        f"📦 <b>Состав:</b>\n{items_str}{promo_line}\n\n"
+        f"Зайдите в мини-приложение во вкладку <b>«Курьер»</b> для управления заказом."
     )
 
     for cid in set(COURIER_IDS + OWNER_IDS):
         try:
-            await bot.send_message(cid, courier_text, parse_mode="Markdown")
-        except Exception:
-            pass
+            courier_url = build_personal_url(cid, "Courier")
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🛵 Открыть панель курьера", web_app=WebAppInfo(url=courier_url))]
+            ])
+            await bot.send_message(cid, courier_text, parse_mode="HTML", reply_markup=kb)
+        except Exception as e:
+            print(f"[ERR] Не удалось отправить уведомление курьеру {cid}: {e}")
 
     user_text = (
-        f"✅ **Ваш заказ #{order.id} успешно оформлен!**\n"
-        f"📅 **Дата и время заказа:** {created_at}\n\n"
-        f"🚇 **Место встречи:** м. {order.station}\n"
-        f"⏰ **Время встречи:** {order.time}\n\n"
-        f"📦 **Ваш заказ:**\n{items_str}{promo_line}\n\n"
-        f"💰 **К оплате (при встрече):** {order.total:.2f} р.\n\n"
-        f"Спасибо, что выбрали Monkey Vape! Ожидайте курьера."
+        f"✅ <b>Спасибо за заказ #{html.escape(order_id)}!</b>\n"
+        f"📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n"
+        f"🚇 <b>Станция метро:</b> м. {safe_station}\n"
+        f"⏰ <b>Время встречи:</b> {safe_time}\n\n"
+        f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}\n\n"
+        f"💰 <b>Итого к оплате:</b> {order.total:.2f} р.\n\n"
+        f"Ожидайте курьера. Статус заказа можно отслеживать во вкладке <b>«Заказы»</b>."
     )
-    
+
     if order.user_id:
         try:
-            await bot.send_message(order.user_id, user_text, parse_mode="Markdown")
-        except Exception:
-            pass
+            await bot.send_message(order.user_id, user_text, parse_mode="HTML")
+        except Exception as e:
+            print(f"[ERR] Не удалось отправить чек покупателю {order.user_id}: {e}")
 
-    return {"success": True}
+    return {"success": True, "order_id": order_id}
 
 @app.get("/api/orders")
 async def get_orders():
@@ -325,7 +353,7 @@ async def get_orders():
             result = []
             for row in rows:
                 result.append({
-                    "id": row["id"],
+                    "id": str(row["id"]),
                     "user_id": row["user_id"],
                     "user_name": row["user_name"],
                     "station": row["station"],
@@ -351,7 +379,7 @@ async def get_user_orders(user_id: int):
             result = []
             for row in rows:
                 result.append({
-                    "id": row["id"],
+                    "id": str(row["id"]),
                     "user_id": row["user_id"],
                     "user_name": row["user_name"],
                     "station": row["station"],
@@ -373,32 +401,38 @@ async def update_order_status(data: StatusUpdateSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute(
             "UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?",
-            (data.status, cancelled_by, data.order_id)
+            (data.status, cancelled_by, str(data.order_id))
         )
         await db.commit()
 
-        async with db.execute("SELECT user_id, user_name, station, time FROM orders WHERE id = ?", (data.order_id,)) as cursor:
+        async with db.execute("SELECT user_id, user_name, station, time FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
             row = await cursor.fetchone()
             if row:
                 user_id, user_name, station, time = row[0], row[1], row[2], row[3]
+                safe_user = html.escape(user_name or "User")
+                safe_station = html.escape(station or "")
                 if data.status == 'cancelled':
                     who_text = "Отменено клиентом" if cancelled_by == 'client' else (
                         "Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён"
                     )
                     if user_id:
                         try:
-                            await bot.send_message(user_id, f"❌ Заказ #{data.order_id} ({who_text}).")
+                            await bot.send_message(user_id, f"❌ Заказ #{html.escape(str(data.order_id))} ({who_text}).")
                         except Exception:
                             pass
                     for cid in set(COURIER_IDS + OWNER_IDS):
                         try:
-                            await bot.send_message(cid, f"❌ Заказ #{data.order_id} ({user_name}, м. {station}) — **{who_text}**.", parse_mode="Markdown")
+                            await bot.send_message(
+                                cid,
+                                f"❌ Заказ #{html.escape(str(data.order_id))} ({safe_user}, м. {safe_station}) — <b>{who_text}</b>.",
+                                parse_mode="HTML"
+                            )
                         except Exception:
                             pass
                 elif data.status == 'completed':
                     if user_id:
                         try:
-                            await bot.send_message(user_id, f"✅ Ваш заказ #{data.order_id} выдан! Спасибо за покупку.")
+                            await bot.send_message(user_id, f"✅ Ваш заказ #{html.escape(str(data.order_id))} выдан! Спасибо за покупку.")
                         except Exception:
                             pass
 
@@ -407,10 +441,9 @@ async def update_order_status(data: StatusUpdateSchema):
 @app.post("/api/delete_completed_order")
 async def delete_completed_order(data: DeleteOrderSchema):
     async with aiosqlite.connect(DB_FILE) as db:
-        # Удалять крестиком из панели курьера можно и выданные (completed), и отменённые (cancelled) заказы
         await db.execute(
             "UPDATE orders SET hidden_by_courier = 1 WHERE id = ? AND status IN ('completed', 'cancelled')",
-            (data.order_id,)
+            (str(data.order_id),)
         )
         await db.commit()
     return {"success": True}
@@ -418,22 +451,24 @@ async def delete_completed_order(data: DeleteOrderSchema):
 @app.post("/api/update_order_time")
 async def update_order_time(data: TimeUpdateSchema):
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("UPDATE orders SET time = ?, time_changed = 1 WHERE id = ?", (data.time, data.order_id))
+        await db.execute("UPDATE orders SET time = ?, time_changed = 1 WHERE id = ?", (data.time, str(data.order_id)))
         await db.commit()
 
-        async with db.execute("SELECT user_id, user_name, station FROM orders WHERE id = ?", (data.order_id,)) as cursor:
+        async with db.execute("SELECT user_id, user_name, station FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
             row = await cursor.fetchone()
             if row:
                 user_id, user_name, station = row[0], row[1], row[2]
+                safe_user = html.escape(user_name or "User")
+                safe_station = html.escape(station or "")
                 for cid in set(COURIER_IDS + OWNER_IDS):
                     try:
                         await bot.send_message(
                             cid,
-                            f"⏰ **Покупатель изменил время заказа #{data.order_id}**\n"
-                            f"👤 Покупатель: {user_name}\n"
-                            f"🚇 Станция: м. {station}\n"
-                            f"🕒 Новое время: **{data.time}**",
-                            parse_mode="Markdown"
+                            f"⏰ <b>Покупатель изменил время заказа #{html.escape(str(data.order_id))}</b>\n"
+                            f"👤 Покупатель: {safe_user} (ID: <code>{user_id}</code>)\n"
+                            f"🚇 Станция: м. {safe_station}\n"
+                            f"🕒 Новое время: <b>{html.escape(data.time)}</b>",
+                            parse_mode="HTML"
                         )
                     except Exception:
                         pass
@@ -452,16 +487,7 @@ async def check_role(user_id: int):
 async def cmd_start(message: Message):
     uid = message.from_user.id
     uname = f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "User")
-    
-    role = "client"
-    if uid in OWNER_IDS:
-        role = "owner"
-    elif uid in COURIER_IDS:
-        role = "courier"
-
-    personal_url = f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}"
-    if PUBLIC_TUNNEL_URL:
-        personal_url += f"&api={quote(PUBLIC_TUNNEL_URL)}"
+    personal_url = build_personal_url(uid, uname)
 
     try:
         await bot.set_chat_menu_button(
@@ -478,9 +504,9 @@ async def cmd_start(message: Message):
         resize_keyboard=True
     )
     await message.answer(
-        "👋 Добро пожаловать в **Monkey Vape**!\n\nНажми кнопку ниже, чтобы открыть каталог и сделать заказ.",
+        "👋 Добро пожаловать в <b>Monkey Vape</b>!\n\nНажми кнопку ниже, чтобы открыть каталог и сделать заказ.",
         reply_markup=kb,
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 
 async def main():
