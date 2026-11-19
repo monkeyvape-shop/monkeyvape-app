@@ -1453,14 +1453,18 @@
     if (apiFromUrl) {
         localStorage.setItem('monkey_backend_url', apiFromUrl);
     }
-    let BACKEND_URL = apiFromUrl || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
+    // ВПИШИ СЮДА ССЫЛКУ ТВОЕГО ТУННЕЛЯ (Pinggy / VPS):
+    const DEFAULT_TUNNEL_URL = "https://brwwx-46-53-173-187.run.pinggy-free.link";
+    let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
     let isServerConnected = false;
 
-    const CANDIDATE_BACKENDS = [
-        BACKEND_URL,
+    const CANDIDATE_BACKENDS = Array.from(new Set([
+        apiFromUrl,
+        DEFAULT_TUNNEL_URL,
+        localStorage.getItem('monkey_backend_url'),
         "http://127.0.0.1:8000",
         "http://localhost:8000"
-    ];
+    ])).filter(Boolean);
 
     function updateServerStatusBadge(connected, activeUrl = "") {
         isServerConnected = connected;
@@ -1471,17 +1475,28 @@
             bar.innerText = `🟢 Сервер подключен (${activeUrl}) — настройки видны всем пользователям`;
         } else {
             bar.className = "server-status-bar err";
-            bar.innerText = "🔴 Нет связи с сервером! Чтобы другие видели промокоды и закрытое метро, запусти ngrok и впиши ссылку в PUBLIC_TUNNEL_URL в bot.py";
+            bar.innerText = "🔴 Нет связи с сервером! Проверь, запущен ли ssh туннель и python bot.py.";
         }
     }
 
-    async function apiFetch(path, options = {}) {
-        options.headers = Object.assign({ 'Bypass-Tunnel-Reminder': 'true' }, options.headers || {});
+    async function apiFetch(path, options = {}, expectJson = true) {
+        // Заголовки для обхода стартовых экранов-заглушек Pinggy и LocalTunnel
+        options.headers = Object.assign({
+            'Bypass-Tunnel-Reminder': 'true',
+            'X-Pinggy-No-Screen': 'true'
+        }, options.headers || {});
+
         for (const base of CANDIDATE_BACKENDS) {
             if (!base) continue;
             try {
                 const res = await fetch(`${base}${path}`, options);
                 if (res.ok) {
+                    if (expectJson) {
+                        const contentType = res.headers.get("content-type") || "";
+                        if (!contentType.includes("application/json")) {
+                            continue;
+                        }
+                    }
                     BACKEND_URL = base;
                     updateServerStatusBadge(true, base);
                     return res;
@@ -1498,6 +1513,7 @@
     let currentUserId = 0; 
     let currentUserName = "User";
     let currentUserPhotoUrl = "";
+    let avatarLoadedForId = 0;
 
     const ALL_TIME_SLOTS = ['12:00', '14:30', '16:30', '18:10', '21:00'];
     let disabledStations = JSON.parse(localStorage.getItem('monkey_disabled_stations')) || [];
@@ -1521,17 +1537,31 @@
         return `${dd}.${mm}.${yyyy}, ${hh}:${min}`;
     }
 
-    function updateProfileAvatarUI() {
+    async function updateProfileAvatarUI() {
         const avatarBox = document.getElementById('profile-avatar-box');
         if (!avatarBox) return;
         const fallbackLetter = currentUserName.replace('@', '').charAt(0).toUpperCase() || 'V';
 
         if (currentUserPhotoUrl) {
             avatarBox.innerHTML = `<img src="${currentUserPhotoUrl}" alt="Avatar" onerror="this.parentElement.innerHTML='<span>${fallbackLetter}</span>'">`;
-        } else if (currentUserId) {
-            const botAvatarEndpoint = `${BACKEND_URL}/api/user_avatar/${currentUserId}`;
-            avatarBox.innerHTML = `<img src="${botAvatarEndpoint}" alt="Avatar" onerror="this.parentElement.innerHTML='<span>${fallbackLetter}</span>'">`;
-        } else {
+            return;
+        }
+
+        if (currentUserId && avatarLoadedForId !== currentUserId) {
+            try {
+                const res = await apiFetch(`/api/user_avatar/${currentUserId}`, {}, false);
+                const contentType = res.headers.get("content-type") || "";
+                if (res.ok && contentType.startsWith("image/")) {
+                    const blob = await res.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    avatarLoadedForId = currentUserId;
+                    avatarBox.innerHTML = `<img src="${blobUrl}" alt="Avatar">`;
+                    return;
+                }
+            } catch (e) {}
+        }
+
+        if (!avatarLoadedForId) {
             avatarBox.innerHTML = `<span>${fallbackLetter}</span>`;
         }
     }
@@ -1773,10 +1803,12 @@
                     renderAdminMetro();
                     renderAdminTimes();
                 }
+
+                updateProfileAvatarUI();
             }
         } catch (e) {}
     }
-    setInterval(syncShopConfig, 4000);
+    setInterval(syncShopConfig, 3500);
 
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
@@ -1937,7 +1969,6 @@
             return;
         }
 
-        // Перед проверкой подтягиваем свежие промокоды с сервера, если есть связь
         try {
             const res = await apiFetch(`/api/shop_config`);
             if (res.ok) {
@@ -2061,6 +2092,7 @@
     }
 
     function openMetroPicker() {
+        syncShopConfig();
         document.getElementById('metro-modal').classList.add('active');
         renderModalStations(modalCurrentLine);
     }
@@ -2119,6 +2151,7 @@
             switchScreen('cart');
             return;
         }
+        syncShopConfig();
         ensureValidSelectedStationAndTime();
         switchScreen('checkout');
         renderStations(currentLine);
@@ -2297,7 +2330,6 @@
         }
     }
 
-    // Удаление (скрытие) заказа из панели курьера крестиком (для выданных и отменённых заказов)
     async function deleteFinishedOrderCourier(orderId) {
         if (!hiddenCourierOrderIds.includes(orderId)) {
             hiddenCourierOrderIds.push(orderId);
@@ -2582,7 +2614,7 @@
                 body: JSON.stringify({ user_id: Number(currentUserId), code: code, discount: discount })
             });
         } catch (e) {
-            alert("Промокод сохранён только локально! Чтобы его увидели другие пользователи, подключите туннель (PUBLIC_TUNNEL_URL в bot.py).");
+            alert("Промокод сохранён только локально! Нет связи с сервером.");
         }
     }
 
@@ -2646,7 +2678,7 @@
                 body: JSON.stringify({ user_id: Number(currentUserId), station: stationName })
             });
         } catch (e) {
-            alert("Изменение применено только локально! Чтобы станция отключилась у других пользователей, подключите туннель (PUBLIC_TUNNEL_URL в bot.py).");
+            alert("Изменение применено только локально! Нет связи с сервером.");
         }
     }
 
@@ -2685,7 +2717,7 @@
                 body: JSON.stringify({ user_id: Number(currentUserId), time: timeStr })
             });
         } catch (e) {
-            alert("Изменение времени применено только локально! Чтобы оно применилось у других пользователей, подключите туннель (PUBLIC_TUNNEL_URL в bot.py).");
+            alert("Изменение времени применено только локально! Нет связи с сервером.");
         }
     }
 
@@ -2723,7 +2755,6 @@
                 statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
             }
 
-            // Крестик удаления доступен для ВЫДАННЫХ и ОТМЕНЁННЫХ заказов
             let deleteBtn = '';
             if (ord.status === 'completed' || ord.status === 'cancelled') {
                 deleteBtn = `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${ord.id}')">✕</button>`;
@@ -2836,8 +2867,13 @@
         if (screenName === 'profile' && navItems[3]) navItems[3].classList.add('active');
         if (screenName === 'courier' && navItems[4]) navItems[4].classList.add('active');
 
+        syncShopConfig();
+
         if (screenName === 'orders') {
             renderOrders();
+        }
+        if (screenName === 'profile') {
+            updateProfileAvatarUI();
         }
         if (screenName === 'courier') {
             loadCourierOrders();
