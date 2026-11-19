@@ -1226,7 +1226,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СТАНЦИИ МЕТРО (ШТОРКА С ПОЛЗУНКОМ) -->
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СТАНЦИИ МЕТРО -->
     <div class="modal-overlay" id="metro-modal" onclick="closeMetroModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
@@ -1453,7 +1453,8 @@
     if (apiFromUrl) {
         localStorage.setItem('monkey_backend_url', apiFromUrl);
     }
-    // ВПИШИ СЮДА ССЫЛКУ ТВОЕГО ТУННЕЛЯ (Pinggy / VPS):
+
+    // АКТУАЛЬНАЯ ССЫЛКА ТУННЕЛЯ:
     const DEFAULT_TUNNEL_URL = "https://71d4e6cca1af10.app.lhr.life";
     let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
     let isServerConnected = false;
@@ -1480,10 +1481,10 @@
     }
 
     async function apiFetch(path, options = {}, expectJson = true) {
-        // Заголовки для обхода стартовых экранов-заглушек Pinggy и LocalTunnel
         options.headers = Object.assign({
             'Bypass-Tunnel-Reminder': 'true',
-            'X-Pinggy-No-Screen': 'true'
+            'X-Pinggy-No-Screen': 'true',
+            'ngrok-skip-browser-warning': 'true'
         }, options.headers || {});
 
         for (const base of CANDIDATE_BACKENDS) {
@@ -2280,19 +2281,26 @@
             promo_code: appliedPromoCode,
             discount: actualDiscount,
             created_at: createdAt,
-            cancelled_by: ''
+            cancelled_by: '',
+            synced: false
         };
 
         try {
-            await apiFetch(`/api/create_order`, {
+            const res = await apiFetch(`/api/create_order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)
             });
+            const resData = await res.json();
+            if (resData && resData.order_id) {
+                orderData.id = String(resData.order_id);
+            }
+            orderData.synced = true;
         } catch (e) {
             console.error("Ошибка отправки заказа:", e);
         }
 
+        activeOrders = activeOrders.filter(o => o.id !== orderData.id);
         activeOrders.unshift(orderData);
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
 
@@ -2505,38 +2513,20 @@
             const response = await apiFetch(`/api/user_orders/${currentUserId}`);
             if (response.ok) {
                 const serverOrders = await response.json();
-                let updated = false;
+                const normalizedServer = serverOrders.map(srvOrd => ({
+                    ...srvOrd,
+                    id: String(srvOrd.id),
+                    synced: true
+                }));
 
-                serverOrders.forEach(srvOrd => {
-                    const localOrd = activeOrders.find(l => l.id === srvOrd.id);
-                    if (!localOrd) {
-                        activeOrders.unshift(srvOrd);
-                        updated = true;
-                    } else {
-                        if (srvOrd.status && srvOrd.status !== localOrd.status) {
-                            localOrd.status = srvOrd.status;
-                            updated = true;
-                        }
-                        if (srvOrd.cancelled_by !== undefined && srvOrd.cancelled_by !== localOrd.cancelled_by) {
-                            localOrd.cancelled_by = srvOrd.cancelled_by;
-                            updated = true;
-                        }
-                        if (srvOrd.created_at && srvOrd.created_at !== localOrd.created_at) {
-                            localOrd.created_at = srvOrd.created_at;
-                            updated = true;
-                        }
-                        if (srvOrd.time && srvOrd.time !== localOrd.time) {
-                            localOrd.time = srvOrd.time;
-                            updated = true;
-                        }
-                        if (srvOrd.time_changed !== undefined && srvOrd.time_changed !== localOrd.time_changed) {
-                            localOrd.time_changed = srvOrd.time_changed;
-                            updated = true;
-                        }
-                    }
-                });
+                // Оставляем только неотправленные локальные заказы, а остальные берём напрямую с сервера без дублей
+                const unsentLocal = activeOrders.filter(
+                    l => l.synced === false && !normalizedServer.some(s => s.id === String(l.id))
+                );
 
-                if (updated) {
+                const mergedOrders = [...unsentLocal, ...normalizedServer];
+                if (JSON.stringify(mergedOrders) !== JSON.stringify(activeOrders)) {
+                    activeOrders = mergedOrders;
                     localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
                     if (document.getElementById('screen-orders').classList.contains('active')) {
                         renderOrders();
@@ -2783,7 +2773,9 @@
                     <div class="order-card-header">
                         <div style="display:flex; flex-direction:column; gap:3px;">
                             <span class="order-id-label">Заказ #${ord.id}</span>
-                            <span style="color:var(--text-secondary); font-size:12px;">👤 ${ord.user_name || 'User'}</span>
+                            <span style="color:var(--text-secondary); font-size:12px;">
+                                👤 ${ord.user_name || 'User'} • <b style="color:var(--accent-green); user-select:all;">ID: ${ord.user_id || '0'}</b>
+                            </span>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             ${statusHtml}
@@ -2870,6 +2862,7 @@
         syncShopConfig();
 
         if (screenName === 'orders') {
+            syncClientOrdersStatus();
             renderOrders();
         }
         if (screenName === 'profile') {
