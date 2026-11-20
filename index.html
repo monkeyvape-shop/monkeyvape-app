@@ -170,6 +170,17 @@
             display: block;
         }
 
+        .closed-shop-banner {
+            background: rgba(255, 51, 51, 0.12);
+            border: 1px solid var(--danger);
+            color: #ff8888;
+            padding: 12px 14px;
+            border-radius: 14px;
+            font-size: 12.5px;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
         .search-box {
             position: relative;
             margin-bottom: 20px;
@@ -298,11 +309,22 @@
             justify-content: space-between;
             transition: transform 0.2s, border-color 0.2s;
             cursor: pointer;
+            position: relative;
         }
 
         .product-card:hover {
             border-color: var(--accent-green);
             transform: translateY(-2px);
+        }
+
+        .product-card.out-of-stock {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .product-card.out-of-stock:hover {
+            border-color: var(--border-color);
+            transform: none;
         }
 
         .product-img-container {
@@ -327,6 +349,11 @@
             font-size: 10px;
             padding: 3px 8px;
             border-radius: 6px;
+        }
+
+        .product-tag.soldout {
+            background-color: rgba(255, 51, 51, 0.2);
+            color: #ff6666;
         }
 
         .product-title {
@@ -372,6 +399,12 @@
 
         .add-btn:active {
             transform: scale(0.9);
+        }
+
+        .add-btn:disabled {
+            background-color: #3a423d;
+            color: #888;
+            cursor: not-allowed;
         }
 
         .modal-overlay {
@@ -567,7 +600,7 @@
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 11px 14px;
+            padding: 10px 12px;
             color: var(--text-main);
             font-size: 13px;
             outline: none;
@@ -582,6 +615,16 @@
         .promo-input:focus {
             border-color: var(--accent-green);
             box-shadow: 0 0 10px var(--accent-green-glow);
+        }
+
+        .admin-select {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 10px;
+            color: var(--text-main);
+            font-size: 12.5px;
+            outline: none;
         }
 
         .promo-apply-btn {
@@ -1071,7 +1114,7 @@
             font-size: 11px;
             padding: 7px 10px;
             border-radius: 10px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             line-height: 1.4;
         }
 
@@ -1087,20 +1130,28 @@
             color: #ff6666;
         }
 
+        .shop-master-box {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
         .admin-sub-tabs {
-            display: flex;
-            gap: 5px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
             margin-bottom: 14px;
         }
 
         .admin-sub-tab {
-            flex: 1;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
             padding: 8px 4px;
             border-radius: 10px;
-            font-size: 10.5px;
+            font-size: 11px;
             font-weight: 600;
             text-align: center;
             cursor: pointer;
@@ -1117,21 +1168,54 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 8px;
             background: var(--bg-color);
             border: 1px solid var(--border-color);
-            padding: 10px 12px;
+            padding: 9px 11px;
             border-radius: 10px;
             margin-bottom: 8px;
-            font-size: 13px;
+            font-size: 12.5px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .stat-card-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-card-val {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--accent-green);
+        }
+
+        .stat-card-sub {
+            font-size: 10.5px;
+            color: var(--text-secondary);
+            margin-top: 2px;
         }
 
         .broadcast-textarea {
             width: 100%;
-            min-height: 92px;
+            min-height: 82px;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 11px 12px;
+            padding: 10px 12px;
             color: var(--text-main);
             font-size: 13px;
             outline: none;
@@ -1147,12 +1231,13 @@
         }
 
         .toggle-pill {
-            padding: 5px 10px;
+            padding: 5px 9px;
             border-radius: 8px;
             font-size: 11px;
             font-weight: 700;
             border: none;
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .toggle-pill.on {
@@ -1303,6 +1388,8 @@
 
     <div class="content-area">
         <div id="screen-catalog" class="screen active">
+            <div id="catalog-closed-banner" class="closed-shop-banner" style="display: none;"></div>
+
             <div class="search-box">
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров..." oninput="filterProducts()">
@@ -1365,28 +1452,75 @@
             <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ВЛАДЕЛЬЦА (ТОЛЬКО ДЛЯ OWNER_IDS) -->
             <div id="owner-admin-panel" class="admin-section" style="display: none;">
                 <div class="admin-title">
-                    <span>👑 Управление магазином (Владелец)</span>
+                    <span>👑 Управление магазином</span>
                 </div>
                 <div id="admin-server-status" class="server-status-bar err">⏳ Проверка связи с сервером...</div>
 
-                <div class="admin-sub-tabs">
-                    <div class="admin-sub-tab active" onclick="switchAdminTab('promos', this)">🎟 Промо</div>
-                    <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
-                    <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
-                    <div class="admin-sub-tab" onclick="switchAdminTab('broadcast', this)">📢 Пост</div>
+                <!-- Глобальный рубильник Открыт / Закрыт -->
+                <div class="shop-master-box">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:13px; font-weight:700;">Статус приёма заказов:</span>
+                        <button id="admin-shop-toggle-btn" class="toggle-pill on" onclick="adminToggleShopOpen()">🟢 Открыт</button>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <input type="text" id="admin-closed-msg-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Текст при закрытии (напр. Откроемся в 16:00)">
+                        <button type="button" class="promo-apply-btn" style="padding:8px 12px; font-size:12px;" onclick="adminSaveClosedMsg()">Ок</button>
+                    </div>
                 </div>
 
-                <!-- Вкладка 1: Промокоды -->
-                <div id="admin-tab-promos">
-                    <div style="display:flex; gap:8px; margin-bottom:12px;">
-                        <input type="text" id="admin-promo-code" class="promo-input" placeholder="Код (напр. LOL123)" style="width:55%;">
-                        <input type="number" id="admin-promo-discount" class="promo-input" placeholder="Скидка р." step="0.5" style="width:45%; text-transform:none;">
+                <div class="admin-sub-tabs">
+                    <div class="admin-sub-tab active" onclick="switchAdminTab('stats', this)">📊 Стата</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('products', this)">🛍️ Товары</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('promos', this)">🎟 Промо</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('roles', this)">👥 Доступ</div>
+                    <div class="admin-sub-tab" style="grid-column: span 3;" onclick="switchAdminTab('broadcast', this)">📢 Массовая рассылка и отчёты</div>
+                </div>
+
+                <!-- Вкладка 1: Статистика выручки -->
+                <div id="admin-tab-stats">
+                    <div id="admin-stats-content" style="font-size:12px; color:var(--text-secondary);">Загрузка статистики...</div>
+                </div>
+
+                <!-- Вкладка 2: Управление товарами -->
+                <div id="admin-tab-products" style="display: none;">
+                    <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:12px;">
+                        <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">➕ Добавить новый товар</div>
+                        <input type="text" id="admin-prod-title" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Название (напр. Brusko 20mg)">
+                        <div style="display:flex; gap:6px; margin-bottom:6px;">
+                            <select id="admin-prod-cat" class="admin-select" style="flex:1;">
+                                <option value="liquid">Жидкость</option>
+                                <option value="pod">Под / Вейп</option>
+                                <option value="disposable">Одноразка</option>
+                                <option value="accessory">Расходник</option>
+                            </select>
+                            <input type="number" id="admin-prod-price" class="promo-input" style="text-transform:none; width:85px;" placeholder="Цена р." step="0.5">
+                            <input type="text" id="admin-prod-icon" class="promo-input" style="text-transform:none; width:46px; text-align:center;" value="🧪">
+                        </div>
+                        <button class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminAddProduct()">Добавить в каталог</button>
                     </div>
-                    <button class="primary-btn" style="padding:10px; font-size:13px; margin-bottom:14px;" onclick="adminSavePromo()">Сохранить промокод</button>
+                    <div id="admin-products-list" style="max-height:280px; overflow-y:auto;"></div>
+                </div>
+
+                <!-- Вкладка 3: Продвинутые промокоды -->
+                <div id="admin-tab-promos" style="display: none;">
+                    <div style="display:flex; gap:6px; margin-bottom:8px;">
+                        <input type="text" id="admin-promo-code" class="promo-input" placeholder="Код (LOL123)" style="flex:1;">
+                        <input type="number" id="admin-promo-discount" class="promo-input" placeholder="Скидка" step="0.5" style="width:78px; text-transform:none;">
+                        <select id="admin-promo-type" class="admin-select">
+                            <option value="rub">р.</option>
+                            <option value="percent">%</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-bottom:10px; align-items:center;">
+                        <input type="number" id="admin-promo-limit" class="promo-input" placeholder="Лимит активаций (0 = безлимит)" style="text-transform:none; font-size:12px;">
+                    </div>
+                    <button class="primary-btn" style="padding:10px; font-size:13px; margin-bottom:12px;" onclick="adminSavePromo()">Сохранить промокод</button>
                     <div id="admin-promos-list"></div>
                 </div>
 
-                <!-- Вкладка 2: Отключение станций метро -->
+                <!-- Вкладка 4: Отключение станций метро -->
                 <div id="admin-tab-metro" style="display: none;">
                     <div class="metro-tabs" style="margin-bottom:10px;">
                         <div class="metro-tab active-green" onclick="switchAdminMetroLine('green', this)">Зелёная</div>
@@ -1396,18 +1530,45 @@
                     <div id="admin-metro-list" style="max-height:240px; overflow-y:auto;"></div>
                 </div>
 
-                <!-- Вкладка 3: Отключение времени -->
+                <!-- Вкладка 5: Отключение времени -->
                 <div id="admin-tab-time" style="display: none;">
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">Отключённое время станет недоступным для выбора при заказе:</p>
+                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">Отключённое время станет недоступным при заказе:</p>
                     <div id="admin-time-list"></div>
                 </div>
 
-                <!-- Вкладка 4: Массовая рассылка -->
+                <!-- Вкладка 6: Курьеры и бан-лист -->
+                <div id="admin-tab-roles" style="display: none;">
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">🛵 Курьеры (Telegram ID)</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="number" id="admin-courier-id-input" class="promo-input" style="text-transform:none;" placeholder="ID нового курьера">
+                            <button type="button" class="promo-apply-btn" onclick="adminManageRole('add_courier')">+</button>
+                        </div>
+                        <div id="admin-couriers-list"></div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:12px; font-weight:700; color:#ff6666; margin-bottom:6px;">🚫 Чёрный список покупателей (ID)</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="number" id="admin-ban-id-input" class="promo-input" style="text-transform:none;" placeholder="ID нарушителя">
+                            <button type="button" class="promo-apply-btn" style="background:var(--danger); color:#fff;" onclick="adminManageRole('ban_user')">Бан</button>
+                        </div>
+                        <div id="admin-banned-list"></div>
+                    </div>
+                </div>
+
+                <!-- Вкладка 7: Массовая рассылка и отчёты -->
                 <div id="admin-tab-broadcast" style="display: none;">
-                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">Сообщение придёт в личку всем пользователям, запускавшим бота:</p>
-                    <textarea id="admin-broadcast-text" class="broadcast-textarea" placeholder="Например: Сегодня магазин работает до 19:00 или новая поставка жидкостей..."></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:12px;">
+                        <span style="color:var(--text-secondary);">База подписчиков бота:</span>
+                        <b id="admin-subscribers-count" style="color:var(--accent-green);">0 чел.</b>
+                    </div>
+                    <textarea id="admin-broadcast-text" class="broadcast-textarea" placeholder="Текст рассылки (для фото/кружочков используй /post ответом на пост в чате с ботом)..."></textarea>
                     <button class="primary-btn" id="admin-broadcast-btn" style="padding:11px; font-size:13px;" onclick="adminSendBroadcast()">📢 Отправить всем</button>
                     <div id="admin-broadcast-result" style="font-size:11.5px; margin-top:8px; color:var(--accent-green);"></div>
+
+                    <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:14px 0 8px 0;">📋 История и отчёты рассылок:</div>
+                    <div id="admin-broadcast-history" style="max-height:220px; overflow-y:auto;"></div>
                 </div>
             </div>
         </div>
@@ -1515,10 +1676,10 @@
         if (!bar) return;
         if (connected) {
             bar.className = "server-status-bar ok";
-            bar.innerText = `🟢 Сервер подключен (${activeUrl}) — настройки видны всем пользователям`;
+            bar.innerText = `🟢 Сервер подключен (${activeUrl})`;
         } else {
             bar.className = "server-status-bar err";
-            bar.innerText = "🔴 Нет связи с сервером! Проверь, запущен ли туннель и python bot.py.";
+            bar.innerText = "🔴 Нет связи с сервером! Проверь туннель и python bot.py.";
         }
     }
 
@@ -1551,7 +1712,10 @@
     }
 
     const OWNER_IDS = [7280921605];
-    const SPECIAL_COURIER_IDS = [7280921605, 6658906694, 1335426710];
+    let DYNAMIC_COURIER_IDS = [7280921605, 6658906694, 1335426710];
+    let BANNED_USER_IDS = [];
+    let isShopOpen = true;
+    let shopClosedMessage = "Магазин временно закрыт. Попробуйте оформить заказ позже.";
 
     let currentUserId = 0; 
     let currentUserName = "User";
@@ -1561,9 +1725,12 @@
     const ALL_TIME_SLOTS = ['12:00', '14:30', '16:30', '18:10', '21:00'];
     let disabledStations = JSON.parse(localStorage.getItem('monkey_disabled_stations')) || [];
     let disabledTimes = JSON.parse(localStorage.getItem('monkey_disabled_times')) || [];
-    let promoCodes = JSON.parse(localStorage.getItem('monkey_promocodes')) || { "MONKEY3": 3.0 };
+    let promoCodes = JSON.parse(localStorage.getItem('monkey_promocodes')) || {
+        "MONKEY3": { discount: 3.0, type: "rub", max_uses: 0, used_count: 0 }
+    };
     let appliedPromoCode = "";
-    let appliedPromoDiscount = 0;
+    let appliedPromoValue = 0;
+    let appliedPromoType = "rub";
     let promoMessage = "";
     let promoError = false;
     let promoInputDraft = "";
@@ -1571,6 +1738,38 @@
     let currentOrdersSubTab = 'active';
     let currentCourierSubTab = 'active';
     let cachedCourierOrders = [];
+
+    let products = [
+        { id: 1, title: 'ANIMAL LOVE Killer 50mg', category: 'liquid', price: 17.00, tag: 'жидкость', icon: '🧪', available: true },
+        { id: 2, title: 'OGGO Rush 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪', available: true },
+        { id: 3, title: 'OGGO Cherry 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪', available: true },
+        { id: 4, title: 'BJORN ZLOY 60mg', category: 'liquid', price: 13.00, tag: 'хит', icon: '🧪', available: true },
+        { id: 5, title: 'XROS 3 Mini Pod Kit', category: 'pod', price: 55.00, tag: 'вейп', icon: '⚡', available: true },
+        { id: 6, title: 'Vaporesso XROS Pro', category: 'pod', price: 85.00, tag: 'вейп', icon: '⚡', available: true },
+        { id: 7, title: 'Lost Mary BM5000', category: 'disposable', price: 25.00, tag: 'одноразка', icon: '💨', available: true },
+        { id: 8, title: 'Сменный картридж XROS', category: 'accessory', price: 9.00, tag: 'расходник', icon: '📦', available: true }
+    ];
+
+    function normalizePromoObj(raw) {
+        if (typeof raw === 'number') {
+            return { discount: raw, type: 'rub', max_uses: 0, used_count: 0 };
+        }
+        return {
+            discount: Number(raw.discount || 0),
+            type: raw.type || 'rub',
+            max_uses: Number(raw.max_uses || 0),
+            used_count: Number(raw.used_count || 0)
+        };
+    }
+
+    function calcPromoDiscount(subtotal, pObj) {
+        if (!pObj) return 0;
+        if (pObj.type === 'percent') {
+            const raw = subtotal * (pObj.discount / 100);
+            return Math.min(subtotal, Math.round(raw * 100) / 100);
+        }
+        return Math.min(subtotal, pObj.discount);
+    }
 
     function getFormattedNowDateTime() {
         const now = new Date();
@@ -1616,14 +1815,17 @@
         const courierNavBtn = document.getElementById('nav-courier-btn');
         const ownerAdminPanel = document.getElementById('owner-admin-panel');
 
-        if (courierNavBtn && SPECIAL_COURIER_IDS.includes(uidNum)) {
-            courierNavBtn.style.display = 'flex';
+        if (courierNavBtn) {
+            courierNavBtn.style.display = DYNAMIC_COURIER_IDS.includes(uidNum) ? 'flex' : 'none';
         }
         if (ownerAdminPanel && OWNER_IDS.includes(uidNum)) {
             ownerAdminPanel.style.display = 'block';
+            renderAdminShopMaster();
             renderAdminPromos();
             renderAdminMetro();
             renderAdminTimes();
+            renderAdminProducts();
+            renderAdminRoles();
         }
     }
 
@@ -1674,7 +1876,7 @@
 
         if (useridElem) {
             const isOwner = OWNER_IDS.includes(Number(currentUserId));
-            const isCourier = SPECIAL_COURIER_IDS.includes(Number(currentUserId));
+            const isCourier = DYNAMIC_COURIER_IDS.includes(Number(currentUserId));
             let roleText = 'Покупатель';
             if (isOwner) roleText = 'Владелец (Админ)';
             else if (isCourier) roleText = 'Курьер';
@@ -1716,17 +1918,6 @@
             }
         }, 1200);
     });
-
-    const products = [
-        { id: 1, title: 'ANIMAL LOVE Killer 50mg', category: 'liquid', price: 17.00, tag: 'жидкость', icon: '🧪' },
-        { id: 2, title: 'OGGO Rush 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
-        { id: 3, title: 'OGGO Cherry 20mg', category: 'liquid', price: 13.00, tag: 'жидкость', icon: '🧪' },
-        { id: 4, title: 'BJORN ZLOY 60mg', category: 'liquid', price: 13.00, tag: 'хит', icon: '🧪' },
-        { id: 5, title: 'XROS 3 Mini Pod Kit', category: 'pod', price: 55.00, tag: 'вейп', icon: '⚡' },
-        { id: 6, title: 'Vaporesso XROS Pro', category: 'pod', price: 85.00, tag: 'вейп', icon: '⚡' },
-        { id: 7, title: 'Lost Mary BM5000', category: 'disposable', price: 25.00, tag: 'одноразка', icon: '💨' },
-        { id: 8, title: 'Сменный картридж XROS', category: 'accessory', price: 9.00, tag: 'расходник', icon: '📦' }
-    ];
 
     const metroStations = {
         green: [
@@ -1809,14 +2000,37 @@
         }
     }
 
+    function updateShopClosedUI() {
+        const banner = document.getElementById('catalog-closed-banner');
+        if (banner) {
+            if (!isShopOpen) {
+                banner.style.display = 'block';
+                banner.innerText = `🔴 ${shopClosedMessage}`;
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+    }
+
     async function syncShopConfig() {
         try {
             const res = await apiFetch(`/api/shop_config`);
             if (res.ok) {
                 const cfg = await res.json();
+                isShopOpen = cfg.shop_open !== undefined ? Boolean(cfg.shop_open) : true;
+                shopClosedMessage = cfg.closed_message || shopClosedMessage;
                 disabledStations = cfg.disabled_stations || [];
                 disabledTimes = cfg.disabled_times || [];
                 promoCodes = cfg.promocodes || {};
+                if (Array.isArray(cfg.products) && cfg.products.length > 0) {
+                    products = cfg.products;
+                }
+                if (Array.isArray(cfg.banned_users)) {
+                    BANNED_USER_IDS = cfg.banned_users.map(Number);
+                }
+                if (Array.isArray(cfg.courier_ids)) {
+                    DYNAMIC_COURIER_IDS = cfg.courier_ids.map(Number);
+                }
 
                 localStorage.setItem('monkey_disabled_stations', JSON.stringify(disabledStations));
                 localStorage.setItem('monkey_disabled_times', JSON.stringify(disabledTimes));
@@ -1824,37 +2038,36 @@
 
                 if (appliedPromoCode) {
                     if (promoCodes[appliedPromoCode] !== undefined) {
-                        appliedPromoDiscount = Number(promoCodes[appliedPromoCode]);
+                        const pObj = normalizePromoObj(promoCodes[appliedPromoCode]);
+                        appliedPromoValue = pObj.discount;
+                        appliedPromoType = pObj.type;
                     } else {
                         appliedPromoCode = "";
-                        appliedPromoDiscount = 0;
+                        appliedPromoValue = 0;
                         promoMessage = "Промокод больше недействителен";
                         promoError = true;
                     }
                 }
 
+                updateShopClosedUI();
                 ensureValidSelectedStationAndTime();
+                filterProducts();
                 renderModalStations(modalCurrentLine);
                 renderStations(currentLine);
                 renderCheckoutTimeSlots();
                 renderChangeTimeSlots();
 
                 const activeEl = document.activeElement;
-                if (!activeEl || activeEl.id !== 'promo-input') {
+                if (!activeEl || (activeEl.id !== 'promo-input' && activeEl.id !== 'admin-closed-msg-input')) {
                     renderCart();
                 }
 
-                if (OWNER_IDS.includes(Number(currentUserId))) {
-                    renderAdminPromos();
-                    renderAdminMetro();
-                    renderAdminTimes();
-                }
-
+                showRoleTabsIfAllowed();
                 updateProfileAvatarUI();
             }
         } catch (e) {}
     }
-    setInterval(syncShopConfig, 3500);
+    setInterval(syncShopConfig, 4000);
 
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
@@ -1866,17 +2079,22 @@
         }
 
         items.forEach(p => {
+            const isAvail = p.available !== false;
             const card = document.createElement('div');
-            card.className = 'product-card';
+            card.className = `product-card ${!isAvail ? 'out-of-stock' : ''}`;
+            const tagHtml = !isAvail
+                ? `<div class="product-tag soldout">нет в наличии</div>`
+                : (p.tag ? `<div class="product-tag">${p.tag}</div>` : '');
+
             card.innerHTML = `
                 <div class="product-img-container">
-                    ${p.tag ? `<div class="product-tag">${p.tag}</div>` : ''}
+                    ${tagHtml}
                     <span>${p.icon}</span>
                 </div>
                 <div class="product-title">${p.title}</div>
                 <div class="product-footer">
-                    <span class="product-price">${p.price.toFixed(2)} р.</span>
-                    <button class="add-btn" onclick="openProductModal(${p.id})">+</button>
+                    <span class="product-price">${Number(p.price).toFixed(2)} р.</span>
+                    <button class="add-btn" ${!isAvail ? 'disabled' : ''} onclick="${isAvail ? `openProductModal(${p.id})` : ''}">+</button>
                 </div>
             `;
             grid.appendChild(card);
@@ -1885,7 +2103,7 @@
 
     function openProductModal(productId) {
         const prod = products.find(p => p.id === productId);
-        if (!prod) return;
+        if (!prod || prod.available === false) return;
         currentSelectedProduct = prod;
 
         document.getElementById('modal-product-title').innerText = prod.title;
@@ -1942,7 +2160,7 @@
             cart[cartKey] = {
                 id: currentSelectedProduct.id,
                 title: currentSelectedProduct.title,
-                price: currentSelectedProduct.price,
+                price: Number(currentSelectedProduct.price),
                 icon: currentSelectedProduct.icon,
                 optionName: chosenOptionValue,
                 qty: 1
@@ -2024,15 +2242,25 @@
             }
         } catch (e) {}
 
-        if (promoCodes[code] !== undefined && Number(promoCodes[code]) > 0) {
-            appliedPromoCode = code;
-            appliedPromoDiscount = Number(promoCodes[code]);
-            promoMessage = `Промокод ${code} применён! Скидка -${appliedPromoDiscount.toFixed(2)} р.`;
-            promoError = false;
-            promoInputDraft = "";
+        if (promoCodes[code] !== undefined) {
+            const pObj = normalizePromoObj(promoCodes[code]);
+            if (pObj.max_uses > 0 && pObj.used_count >= pObj.max_uses) {
+                appliedPromoCode = "";
+                appliedPromoValue = 0;
+                promoMessage = "Лимит использований этого промокода исчерпан";
+                promoError = true;
+            } else if (pObj.discount > 0) {
+                appliedPromoCode = code;
+                appliedPromoValue = pObj.discount;
+                appliedPromoType = pObj.type;
+                const discLabel = pObj.type === 'percent' ? `-${pObj.discount}%` : `-${pObj.discount.toFixed(2)} р.`;
+                promoMessage = `Промокод ${code} применён! Скидка ${discLabel}`;
+                promoError = false;
+                promoInputDraft = "";
+            }
         } else {
             appliedPromoCode = "";
-            appliedPromoDiscount = 0;
+            appliedPromoValue = 0;
             promoMessage = "Неверный или неактивный промокод";
             promoError = true;
         }
@@ -2041,7 +2269,8 @@
 
     function removeAppliedPromo() {
         appliedPromoCode = "";
-        appliedPromoDiscount = 0;
+        appliedPromoValue = 0;
+        appliedPromoType = "rub";
         promoMessage = "";
         promoError = false;
         promoInputDraft = "";
@@ -2087,15 +2316,21 @@
         }
         itemsHtml += '</div>';
 
-        const actualDiscount = appliedPromoCode ? Math.min(subtotal, appliedPromoDiscount) : 0;
+        const actualDiscount = appliedPromoCode
+            ? calcPromoDiscount(subtotal, { discount: appliedPromoValue, type: appliedPromoType })
+            : 0;
         const finalTotal = Math.max(0, subtotal - actualDiscount);
+
+        const promoBadgeLabel = appliedPromoType === 'percent'
+            ? `${appliedPromoCode} (-${appliedPromoValue}% / -${actualDiscount.toFixed(2)} р.)`
+            : `${appliedPromoCode} (-${actualDiscount.toFixed(2)} р.)`;
 
         let promoBlockHtml = `
             <div class="promo-box">
                 <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">🎟 Промокод на скидку</div>
                 ${appliedPromoCode ? `
                     <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,255,102,0.1); border:1px solid var(--accent-green); padding:10px 12px; border-radius:12px;">
-                        <span style="font-size:13px; color:var(--accent-green); font-weight:700;">${appliedPromoCode} (-${actualDiscount.toFixed(2)} р.)</span>
+                        <span style="font-size:13px; color:var(--accent-green); font-weight:700;">${promoBadgeLabel}</span>
                         <button onclick="removeAppliedPromo()" style="background:none; border:none; color:var(--danger); font-weight:700; font-size:14px; cursor:pointer;">✕</button>
                     </div>
                 ` : `
@@ -2115,6 +2350,14 @@
             </div>
         ` : '';
 
+        const isBanned = BANNED_USER_IDS.includes(Number(currentUserId));
+        let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>`;
+        if (isBanned) {
+            checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
+        } else if (!isShopOpen && !OWNER_IDS.includes(Number(currentUserId))) {
+            checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${shopClosedMessage}</div>`;
+        }
+
         itemsHtml += promoBlockHtml + `
             <div class="cart-summary">
                 <div class="summary-row">
@@ -2131,7 +2374,7 @@
                     <span>${finalTotal.toFixed(2)} р.</span>
                 </div>
             </div>
-            <button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>
+            ${checkoutActionHtml}
         `;
 
         container.innerHTML = itemsHtml;
@@ -2195,6 +2438,14 @@
     function proceedToCheckout() {
         if (Object.keys(cart).length === 0) {
             switchScreen('cart');
+            return;
+        }
+        if (BANNED_USER_IDS.includes(Number(currentUserId))) {
+            alert("Ваш аккаунт заблокирован в магазине.");
+            return;
+        }
+        if (!isShopOpen && !OWNER_IDS.includes(Number(currentUserId))) {
+            alert(shopClosedMessage);
             return;
         }
         syncShopConfig();
@@ -2302,7 +2553,9 @@
         }
 
         const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
-        const actualDiscount = appliedPromoCode ? Math.min(subtotal, appliedPromoDiscount) : 0;
+        const actualDiscount = appliedPromoCode
+            ? calcPromoDiscount(subtotal, { discount: appliedPromoValue, type: appliedPromoType })
+            : 0;
         const total = Math.max(0, subtotal - actualDiscount);
         const orderId = String(Math.floor(10000 + Math.random() * 90000));
         const createdAt = getFormattedNowDateTime();
@@ -2340,7 +2593,7 @@
                 orderData.id = String(resData.order_id);
             }
         } catch (e) {
-            alert("⚠️ Нет связи с сервером! Заказ не отправлен. Нажмите /start в боте и попробуйте снова.");
+            alert("⚠️ Заказ не отправлен! Проверь связь с сервером или статус магазина.");
             return;
         }
 
@@ -2349,7 +2602,8 @@
 
         cart = {};
         appliedPromoCode = "";
-        appliedPromoDiscount = 0;
+        appliedPromoValue = 0;
+        appliedPromoType = "rub";
         promoMessage = "";
         promoInputDraft = "";
         saveCart();
@@ -2614,54 +2868,222 @@
             if (data.role === 'owner') {
                 const ownerAdminPanel = document.getElementById('owner-admin-panel');
                 if (ownerAdminPanel) ownerAdminPanel.style.display = 'block';
+                loadAdminStats();
             }
         } catch (e) {}
+    }
+
+    // ----- АДМИН-ПАНЕЛЬ ВЛАДЕЛЬЦА -----
+
+    function renderAdminShopMaster() {
+        const btn = document.getElementById('admin-shop-toggle-btn');
+        const input = document.getElementById('admin-closed-msg-input');
+        if (btn) {
+            btn.className = `toggle-pill ${isShopOpen ? 'on' : 'off'}`;
+            btn.innerText = isShopOpen ? '🟢 Открыт' : '🔴 Закрыт';
+        }
+        if (input && document.activeElement !== input && !input.value) {
+            input.value = shopClosedMessage;
+        }
+    }
+
+    async function adminToggleShopOpen() {
+        isShopOpen = !isShopOpen;
+        updateShopClosedUI();
+        renderAdminShopMaster();
+        renderCart();
+        const msg = (document.getElementById('admin-closed-msg-input')?.value || shopClosedMessage).trim();
+        try {
+            await apiFetch(`/api/admin/shop_status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), is_open: isShopOpen, closed_message: msg })
+            });
+        } catch (e) {
+            alert("Ошибка связи с сервером!");
+        }
+    }
+
+    async function adminSaveClosedMsg() {
+        const input = document.getElementById('admin-closed-msg-input');
+        const msg = (input ? input.value : '').trim();
+        if (!msg) return;
+        shopClosedMessage = msg;
+        updateShopClosedUI();
+        renderCart();
+        try {
+            await apiFetch(`/api/admin/shop_status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), is_open: isShopOpen, closed_message: msg })
+            });
+            alert("Текст закрытия сохранён!");
+        } catch (e) {
+            alert("Ошибка связи с сервером!");
+        }
     }
 
     function switchAdminTab(tab, el) {
         document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
-        document.getElementById('admin-tab-promos').style.display = tab === 'promos' ? 'block' : 'none';
-        document.getElementById('admin-tab-metro').style.display = tab === 'metro' ? 'block' : 'none';
-        document.getElementById('admin-tab-time').style.display = tab === 'time' ? 'block' : 'none';
-        document.getElementById('admin-tab-broadcast').style.display = tab === 'broadcast' ? 'block' : 'none';
+        ['stats', 'products', 'promos', 'metro', 'time', 'roles', 'broadcast'].forEach(t => {
+            const box = document.getElementById(`admin-tab-${t}`);
+            if (box) box.style.display = t === tab ? 'block' : 'none';
+        });
+        if (tab === 'stats') loadAdminStats();
+        if (tab === 'broadcast') loadBroadcastHistory();
     }
 
-    async function adminSendBroadcast() {
-        const textArea = document.getElementById('admin-broadcast-text');
-        const btn = document.getElementById('admin-broadcast-btn');
-        const resBox = document.getElementById('admin-broadcast-result');
-        const text = (textArea ? textArea.value : '').trim();
+    async function loadAdminStats() {
+        const box = document.getElementById('admin-stats-content');
+        if (!box || !OWNER_IDS.includes(Number(currentUserId))) return;
+        try {
+            const res = await apiFetch(`/api/admin/stats/${currentUserId}`);
+            const st = await res.json();
 
-        if (!text) {
-            alert("Введите текст объявления для рассылки.");
+            const topItemsHtml = (st.top_items && st.top_items.length > 0)
+                ? st.top_items.map((it, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. ${it.title}</span><b style="color:var(--accent-green);">${it.qty} шт.</b></div>`).join('')
+                : '<div style="color:var(--text-secondary);">Пока нет выданных заказов</div>';
+
+            const topStationsHtml = (st.top_stations && st.top_stations.length > 0)
+                ? st.top_stations.map((s, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. м. ${s.station}</span><b>${s.count} зак.</b></div>`).join('')
+                : '<div style="color:var(--text-secondary);">Нет данных</div>';
+
+            box.innerHTML = `
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-label">Сегодня</div>
+                        <div class="stat-card-val">${Number(st.today_rev).toFixed(2)} р.</div>
+                        <div class="stat-card-sub">Выдано: ${st.today_cnt} зак.</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-label">За 7 дней</div>
+                        <div class="stat-card-val">${Number(st.week_rev).toFixed(2)} р.</div>
+                        <div class="stat-card-sub">Выдано: ${st.week_cnt} зак.</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-label">Всего выручка</div>
+                        <div class="stat-card-val">${Number(st.total_rev).toFixed(2)} р.</div>
+                        <div class="stat-card-sub">Выдано: ${st.total_cnt} зак.</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-label">Активные / Отмены</div>
+                        <div class="stat-card-val" style="color:var(--text-main);">${st.active_cnt} / <span style="color:#ff6666;">${st.cancelled_cnt}</span></div>
+                        <div class="stat-card-sub">В работе / отменено</div>
+                    </div>
+                </div>
+                <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:8px;">
+                    <div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">🔥 Топ товаров:</div>
+                    ${topItemsHtml}
+                </div>
+                <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px;">
+                    <div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">🚇 Топ станций метро:</div>
+                    ${topStationsHtml}
+                </div>
+            `;
+        } catch (e) {
+            box.innerHTML = '<div style="color:#ff6666;">Не удалось загрузить статистику.</div>';
+        }
+    }
+
+    function renderAdminProducts() {
+        const container = document.getElementById('admin-products-list');
+        if (!container) return;
+        container.innerHTML = products.map(p => {
+            const isAvail = p.available !== false;
+            const isHit = p.tag === 'хит';
+            return `
+                <div class="admin-toggle-row" style="flex-direction:column; align-items:stretch; gap:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:600; ${!isAvail ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${p.icon} ${p.title}</span>
+                        <span style="color:var(--accent-green); font-weight:700;">${Number(p.price).toFixed(2)} р.</span>
+                    </div>
+                    <div style="display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
+                        <button class="toggle-pill ${isAvail ? 'on' : 'off'}" onclick="adminToggleProduct(${p.id}, 'available')">${isAvail ? 'В наличии' : 'Нет'}</button>
+                        <button class="toggle-pill ${isHit ? 'on' : ''}" style="${!isHit ? 'background:#1e2620; color:#9ca3af; border:1px solid #333;' : ''}" onclick="adminToggleProduct(${p.id}, 'hit')">🔥 Хит</button>
+                        <button class="toggle-pill on" onclick="adminEditProductPrice(${p.id}, ${p.price})">✏️ Цена</button>
+                        <button class="toggle-pill off" onclick="adminDeleteProduct(${p.id})">✕</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function adminAddProduct() {
+        const title = document.getElementById('admin-prod-title').value.trim();
+        const category = document.getElementById('admin-prod-cat').value;
+        const price = parseFloat(document.getElementById('admin-prod-price').value);
+        const icon = document.getElementById('admin-prod-icon').value.trim() || '🧪';
+
+        if (!title || isNaN(price) || price <= 0) {
+            alert("Введите название и корректную цену.");
             return;
         }
-        if (!confirm("Отправить это сообщение всем пользователям бота?")) {
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerText = "⏳ Отправка...";
-        resBox.innerText = "";
 
         try {
-            const res = await apiFetch(`/api/admin/broadcast`, {
+            await apiFetch(`/api/admin/save_product`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: Number(currentUserId), text: text })
+                body: JSON.stringify({ user_id: Number(currentUserId), id: 0, title, category, price, tag: '', icon, available: true })
             });
-            const data = await res.json();
-            textArea.value = "";
-            resBox.style.color = "var(--accent-green)";
-            resBox.innerText = `✅ Доставлено: ${data.sent} из ${data.total} (недоступны: ${data.failed})`;
+            document.getElementById('admin-prod-title').value = '';
+            document.getElementById('admin-prod-price').value = '';
+            await syncShopConfig();
         } catch (e) {
-            resBox.style.color = "var(--danger)";
-            resBox.innerText = "🔴 Ошибка отправки! Проверь связь с сервером.";
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "📢 Отправить всем";
+            alert("Ошибка сохранения товара.");
         }
+    }
+
+    async function adminToggleProduct(productId, field) {
+        try {
+            await apiFetch(`/api/admin/toggle_product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), product_id: productId, field })
+            });
+            await syncShopConfig();
+        } catch (e) {}
+    }
+
+    async function adminEditProductPrice(productId, oldPrice) {
+        const prod = products.find(p => p.id === productId);
+        if (!prod) return;
+        const input = prompt(`Новая цена для "${prod.title}" (р.):`, String(oldPrice));
+        if (input === null) return;
+        const newPrice = parseFloat(input.replace(',', '.'));
+        if (isNaN(newPrice) || newPrice <= 0) {
+            alert("Некорректная цена");
+            return;
+        }
+        try {
+            await apiFetch(`/api/admin/save_product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    id: prod.id,
+                    title: prod.title,
+                    category: prod.category,
+                    price: newPrice,
+                    tag: prod.tag || '',
+                    icon: prod.icon || '🧪',
+                    available: prod.available !== false
+                })
+            });
+            await syncShopConfig();
+        } catch (e) {}
+    }
+
+    async function adminDeleteProduct(productId) {
+        if (!confirm("Удалить этот товар из каталога?")) return;
+        try {
+            await apiFetch(`/api/admin/delete_product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), product_id: productId })
+            });
+            await syncShopConfig();
+        } catch (e) {}
     }
 
     function renderAdminPromos() {
@@ -2672,37 +3094,49 @@
             container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Активных промокодов нет</div>';
             return;
         }
-        container.innerHTML = entries.map(([code, disc]) => `
-            <div class="admin-toggle-row">
-                <span><b style="color:var(--accent-green);">${code}</b> — скидка ${Number(disc).toFixed(2)} р.</span>
-                <button class="toggle-pill off" onclick="adminDeletePromo('${code}')">Удалить</button>
-            </div>
-        `).join('');
+        container.innerHTML = entries.map(([code, raw]) => {
+            const p = normalizePromoObj(raw);
+            const discStr = p.type === 'percent' ? `${p.discount}%` : `${p.discount.toFixed(2)} р.`;
+            const limitStr = p.max_uses > 0 ? ` • исп. ${p.used_count}/${p.max_uses}` : ` • исп. ${p.used_count}/∞`;
+            return `
+                <div class="admin-toggle-row">
+                    <span><b style="color:var(--accent-green);">${code}</b> (-${discStr})<span style="font-size:11px; color:var(--text-secondary);">${limitStr}</span></span>
+                    <button class="toggle-pill off" onclick="adminDeletePromo('${code}')">Удалить</button>
+                </div>
+            `;
+        }).join('');
     }
 
     async function adminSavePromo() {
         const codeInput = document.getElementById('admin-promo-code');
         const discInput = document.getElementById('admin-promo-discount');
+        const typeSelect = document.getElementById('admin-promo-type');
+        const limitInput = document.getElementById('admin-promo-limit');
+
         const code = codeInput.value.trim().toUpperCase();
         const discount = parseFloat(discInput.value);
+        const discount_type = typeSelect ? typeSelect.value : 'rub';
+        const max_uses = parseInt(limitInput ? limitInput.value : '0', 10) || 0;
 
         if (!code || isNaN(discount) || discount <= 0) {
-            alert("Укажите корректный код и сумму скидки (больше 0)");
+            alert("Укажите корректный код и размер скидки (больше 0)");
             return;
         }
 
-        promoCodes[code] = discount;
+        promoCodes[code] = { discount, type: discount_type, max_uses, used_count: 0 };
         localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
         codeInput.value = '';
         discInput.value = '';
+        if (limitInput) limitInput.value = '';
         renderAdminPromos();
 
         try {
             await apiFetch(`/api/admin/save_promo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: Number(currentUserId), code: code, discount: discount })
+                body: JSON.stringify({ user_id: Number(currentUserId), code, discount, discount_type, max_uses })
             });
+            await syncShopConfig();
         } catch (e) {
             alert("Промокод сохранён только локально! Нет связи с сервером.");
         }
@@ -2717,7 +3151,7 @@
             await apiFetch(`/api/admin/delete_promo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: Number(currentUserId), code: code })
+                body: JSON.stringify({ user_id: Number(currentUserId), code })
             });
         } catch (e) {}
     }
@@ -2810,6 +3244,127 @@
             alert("Изменение времени применено только локально! Нет связи с сервером.");
         }
     }
+
+    function renderAdminRoles() {
+        const cBox = document.getElementById('admin-couriers-list');
+        const bBox = document.getElementById('admin-banned-list');
+        if (cBox) {
+            cBox.innerHTML = DYNAMIC_COURIER_IDS.map(cid => {
+                const isOwner = OWNER_IDS.includes(cid);
+                return `
+                    <div class="admin-toggle-row">
+                        <span>ID: <b>${cid}</b> ${isOwner ? '<span style="color:var(--accent-green); font-size:11px;">(Владелец)</span>' : ''}</span>
+                        ${!isOwner ? `<button class="toggle-pill off" onclick="adminManageRole('remove_courier', ${cid})">Убрать</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        if (bBox) {
+            if (BANNED_USER_IDS.length === 0) {
+                bBox.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary);">Заблокированных пользователей нет</div>';
+            } else {
+                bBox.innerHTML = BANNED_USER_IDS.map(bid => `
+                    <div class="admin-toggle-row">
+                        <span>ID: <b style="color:#ff6666;">${bid}</b></span>
+                        <button class="toggle-pill on" onclick="adminManageRole('unban_user', ${bid})">Разбанить</button>
+                    </div>
+                `).join('');
+            }
+        }
+    }
+
+    async function adminManageRole(action, explicitId = null) {
+        let targetId = explicitId;
+        if (!targetId) {
+            const inputId = action === 'add_courier' ? 'admin-courier-id-input' : 'admin-ban-id-input';
+            const el = document.getElementById(inputId);
+            targetId = parseInt(el ? el.value : '0', 10);
+            if (!targetId || targetId <= 0) {
+                alert("Введите корректный цифровой Telegram ID");
+                return;
+            }
+            if (el) el.value = '';
+        }
+
+        try {
+            await apiFetch(`/api/admin/manage_role`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), target_id: Number(targetId), action })
+            });
+            await syncShopConfig();
+        } catch (e) {
+            alert("Не удалось выполнить действие.");
+        }
+    }
+
+    async function loadBroadcastHistory() {
+        const countEl = document.getElementById('admin-subscribers-count');
+        const listEl = document.getElementById('admin-broadcast-history');
+        if (!OWNER_IDS.includes(Number(currentUserId))) return;
+
+        try {
+            const res = await apiFetch(`/api/admin/broadcast_history/${currentUserId}`);
+            const data = await res.json();
+            if (countEl) countEl.innerText = `${data.subscribers_count || 0} чел.`;
+            if (listEl) {
+                const hist = data.history || [];
+                if (hist.length === 0) {
+                    listEl.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary);">Рассылок ещё не было</div>';
+                } else {
+                    listEl.innerHTML = hist.map(h => `
+                        <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:10px; padding:9px 10px; margin-bottom:7px; font-size:11.5px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--text-secondary);">
+                                <span>📅 ${h.created_at}</span>
+                                <span style="color:var(--accent-green); font-weight:700;">✅ ${h.sent} / ❌ ${h.failed}</span>
+                            </div>
+                            <div style="color:var(--text-main); word-break:break-word;">${h.text}</div>
+                        </div>
+                    `).join('');
+                }
+            }
+        } catch (e) {}
+    }
+
+    async function adminSendBroadcast() {
+        const textArea = document.getElementById('admin-broadcast-text');
+        const btn = document.getElementById('admin-broadcast-btn');
+        const resBox = document.getElementById('admin-broadcast-result');
+        const text = (textArea ? textArea.value : '').trim();
+
+        if (!text) {
+            alert("Введите текст объявления для рассылки.");
+            return;
+        }
+        if (!confirm("Отправить это сообщение всем пользователям бота?")) {
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "⏳ Отправка...";
+        resBox.innerText = "";
+
+        try {
+            const res = await apiFetch(`/api/admin/broadcast`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), text: text })
+            });
+            const data = await res.json();
+            textArea.value = "";
+            resBox.style.color = "var(--accent-green)";
+            resBox.innerText = `✅ Доставлено: ${data.sent} из ${data.total} (недоступны: ${data.failed})`;
+            loadBroadcastHistory();
+        } catch (e) {
+            resBox.style.color = "var(--danger)";
+            resBox.innerText = "🔴 Ошибка отправки! Проверь связь с сервером.";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "📢 Отправить всем";
+        }
+    }
+
+    // ----- ПАНЕЛЬ КУРЬЕРА -----
 
     function renderCourierCards(orders) {
         const container = document.getElementById('courier-orders-list');
@@ -2991,6 +3546,10 @@
         }
         if (screenName === 'profile') {
             updateProfileAvatarUI();
+            if (OWNER_IDS.includes(Number(currentUserId))) {
+                loadAdminStats();
+                loadBroadcastHistory();
+            }
         }
         if (screenName === 'courier') {
             loadCourierOrders();
