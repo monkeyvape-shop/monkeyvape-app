@@ -38,7 +38,7 @@ TOKEN = load_token_from_env() or FALLBACK_TOKEN
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 
 # Актуальная ссылка туннеля (без скобок!)
-PUBLIC_TUNNEL_URL = "https://shark-highlight-change-frontier.trycloudflare.com"
+PUBLIC_TUNNEL_URL = "https://relax-indoor-claims-iso.trycloudflare.com"
 
 # РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
 OWNER_IDS = [7280921605]  # Владелец (Админ)
