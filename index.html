@@ -1089,7 +1089,7 @@
 
         .admin-sub-tabs {
             display: flex;
-            gap: 6px;
+            gap: 5px;
             margin-bottom: 14px;
         }
 
@@ -1098,12 +1098,13 @@
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
-            padding: 8px 6px;
+            padding: 8px 4px;
             border-radius: 10px;
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 600;
             text-align: center;
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .admin-sub-tab.active {
@@ -1122,6 +1123,27 @@
             border-radius: 10px;
             margin-bottom: 8px;
             font-size: 13px;
+        }
+
+        .broadcast-textarea {
+            width: 100%;
+            min-height: 92px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 11px 12px;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+            resize: vertical;
+            margin-bottom: 10px;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .broadcast-textarea:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green-glow);
         }
 
         .toggle-pill {
@@ -1348,9 +1370,10 @@
                 <div id="admin-server-status" class="server-status-bar err">⏳ Проверка связи с сервером...</div>
 
                 <div class="admin-sub-tabs">
-                    <div class="admin-sub-tab active" onclick="switchAdminTab('promos', this)">🎟 Промокоды</div>
-                    <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Станции</div>
+                    <div class="admin-sub-tab active" onclick="switchAdminTab('promos', this)">🎟 Промо</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('broadcast', this)">📢 Пост</div>
                 </div>
 
                 <!-- Вкладка 1: Промокоды -->
@@ -1377,6 +1400,14 @@
                 <div id="admin-tab-time" style="display: none;">
                     <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">Отключённое время станет недоступным для выбора при заказе:</p>
                     <div id="admin-time-list"></div>
+                </div>
+
+                <!-- Вкладка 4: Массовая рассылка -->
+                <div id="admin-tab-broadcast" style="display: none;">
+                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">Сообщение придёт в личку всем пользователям, запускавшим бота:</p>
+                    <textarea id="admin-broadcast-text" class="broadcast-textarea" placeholder="Например: Сегодня магазин работает до 19:00 или новая поставка жидкостей..."></textarea>
+                    <button class="primary-btn" id="admin-broadcast-btn" style="padding:11px; font-size:13px;" onclick="adminSendBroadcast()">📢 Отправить всем</button>
+                    <div id="admin-broadcast-result" style="font-size:11.5px; margin-top:8px; color:var(--accent-green);"></div>
                 </div>
             </div>
         </div>
@@ -1466,7 +1497,6 @@
         localStorage.setItem('monkey_backend_url', apiFromUrl);
     }
 
-    // Актуальная ссылка туннеля (чистая, без скобок):
     const DEFAULT_TUNNEL_URL = "https://relax-indoor-claims-iso.trycloudflare.com";
     let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
     let isServerConnected = false;
@@ -2461,7 +2491,6 @@
 
         activeOrders = deduplicateOrdersList(activeOrders);
 
-        // Показываем в 3-й вкладке ("Мои заказы") ТОЛЬКО личные заказы текущего пользователя
         const myPersonalOrders = currentUserId
             ? activeOrders.filter(o => Number(o.user_id) === Number(currentUserId))
             : [];
@@ -2595,6 +2624,44 @@
         document.getElementById('admin-tab-promos').style.display = tab === 'promos' ? 'block' : 'none';
         document.getElementById('admin-tab-metro').style.display = tab === 'metro' ? 'block' : 'none';
         document.getElementById('admin-tab-time').style.display = tab === 'time' ? 'block' : 'none';
+        document.getElementById('admin-tab-broadcast').style.display = tab === 'broadcast' ? 'block' : 'none';
+    }
+
+    async function adminSendBroadcast() {
+        const textArea = document.getElementById('admin-broadcast-text');
+        const btn = document.getElementById('admin-broadcast-btn');
+        const resBox = document.getElementById('admin-broadcast-result');
+        const text = (textArea ? textArea.value : '').trim();
+
+        if (!text) {
+            alert("Введите текст объявления для рассылки.");
+            return;
+        }
+        if (!confirm("Отправить это сообщение всем пользователям бота?")) {
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "⏳ Отправка...";
+        resBox.innerText = "";
+
+        try {
+            const res = await apiFetch(`/api/admin/broadcast`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), text: text })
+            });
+            const data = await res.json();
+            textArea.value = "";
+            resBox.style.color = "var(--accent-green)";
+            resBox.innerText = `✅ Доставлено: ${data.sent} из ${data.total} (недоступны: ${data.failed})`;
+        } catch (e) {
+            resBox.style.color = "var(--danger)";
+            resBox.innerText = "🔴 Ошибка отправки! Проверь связь с сервером.";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "📢 Отправить всем";
+        }
     }
 
     function renderAdminPromos() {
@@ -2870,7 +2937,6 @@
         const key = String(orderId).trim();
         const cancelledBy = status === 'cancelled' ? 'courier' : '';
 
-        // Мгновенно обновляем статус в панели курьера, чтобы заказ сразу перешёл в "Прошедшие"
         cachedCourierOrders = cachedCourierOrders.map(o =>
             String(o.id).trim() === key
                 ? { ...o, id: key, status: status, cancelled_by: cancelledBy || o.cancelled_by || '' }
@@ -2878,7 +2944,6 @@
         );
         renderCourierCards(cachedCourierOrders);
 
-        // Если курьер выдал/отменил свой же тестовый заказ — обновляем и личный список
         activeOrders = activeOrders.map(o =>
             String(o.id).trim() === key
                 ? { ...o, id: key, status: status, cancelled_by: cancelledBy || o.cancelled_by || '' }
