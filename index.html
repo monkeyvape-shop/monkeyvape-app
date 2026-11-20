@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -168,10 +168,10 @@
         .cat-chip { background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 14px; font-size: 13px; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
         .cat-chip.active { background-color: var(--accent-green); color: #0b0f0c; border-color: var(--accent-green); font-weight: 600; box-shadow: 0 0 15px var(--accent-green-glow); }
 
-        .promo-banner { background: var(--promo-grad); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .promo-banner { background: var(--promo-grad); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .promo-banner h3 { font-size: 16px; font-weight: 700; color: var(--accent-green); margin-bottom: 6px; }
         .promo-banner p { font-size: 12px; color: var(--text-secondary); }
-        .promo-badge { background-color: var(--accent-green); color: #000; font-size: 12px; font-weight: bold; padding: 6px 10px; border-radius: 10px; }
+        .promo-badge { background-color: var(--accent-green); color: #000; font-size: 12px; font-weight: bold; padding: 6px 10px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
 
         .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .product-card { background-color: var(--card-bg); border: 1.5px solid var(--border-color); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; cursor: pointer; position: relative; }
@@ -531,12 +531,12 @@
                 <button class="cat-chip" onclick="setCategory('disposable', this)">Одноразки</button>
                 <button class="cat-chip" onclick="setCategory('accessory', this)">Расходники</button>
             </div>
-            <div class="promo-banner">
+            <div class="promo-banner" id="catalog-promo-banner">
                 <div>
-                    <h3>AKCIJA - 20%</h3>
-                    <p>Топовые жижи и устройства недели</p>
+                    <h3 id="banner-title-text">AKCIJA - 20%</h3>
+                    <p id="banner-desc-text">Топовые жижи и устройства недели</p>
                 </div>
-                <div class="promo-badge">-20%</div>
+                <div class="promo-badge" id="banner-badge-text">-20%</div>
             </div>
             <div class="products-grid" id="products-grid"></div>
         </div>
@@ -651,7 +651,8 @@
                             <button class="toggle-pill" id="season-btn-winter" onclick="adminSetSeason('winter')">❄️ Зима (Снег)</button>
                             <button class="toggle-pill" id="season-btn-autumn" onclick="adminSetSeason('autumn')">🍂 Осень (Листья)</button>
                             <button class="toggle-pill" id="season-btn-spring" onclick="adminSetSeason('spring')">🌸 Весна (Лепестки)</button>
-                            <button class="toggle-pill" style="grid-column: span 2;" id="season-btn-summer" onclick="adminSetSeason('summer')">✨ Лето (Тёплые искры)</button>
+                            <button class="toggle-pill" id="season-btn-summer" onclick="adminSetSeason('summer')">✨ Лето (Искры)</button>
+                            <button class="toggle-pill" id="season-btn-rain" onclick="adminSetSeason('rain')">🌧 Дождь</button>
                         </div>
                     </div>
                     <div class="shop-master-box">
@@ -689,6 +690,14 @@
 
                 <div id="admin-tab-roles" style="display: none;">
                     <div style="margin-bottom:14px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">👑 Владельцы / Админы (Telegram ID)</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="number" id="admin-owner-id-input" class="promo-input" style="text-transform:none;" placeholder="ID второго админа">
+                            <button type="button" class="promo-apply-btn" onclick="adminManageRole('add_owner')">+</button>
+                        </div>
+                        <div id="admin-owners-list"></div>
+                    </div>
+                    <div style="margin-bottom:14px;">
                         <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">🛵 Курьеры (Telegram ID)</div>
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
                             <input type="number" id="admin-courier-id-input" class="promo-input" style="text-transform:none;" placeholder="ID нового курьера">
@@ -722,6 +731,26 @@
 
         <div id="screen-courier" class="screen">
             <div class="section-title">Панель курьера 🛵</div>
+
+            <!-- Настройка промо-баннера витрины в курьерской панели -->
+            <div class="shop-master-box" style="margin-bottom: 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleCourierBannerEditor()">
+                    <span style="font-size:12.5px; font-weight:700; color:var(--accent-green);">🏷 Баннер акции в каталоге</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button type="button" id="courier-banner-toggle-btn" class="toggle-pill on" onclick="event.stopPropagation(); toggleCourierBannerEnabled()">🟢 Показан</button>
+                        <span id="courier-banner-arrow" style="font-size:11px; color:var(--text-secondary);">▼</span>
+                    </div>
+                </div>
+                <div id="courier-banner-editor-body" style="display:none; margin-top:10px; flex-direction:column; gap:7px;">
+                    <div style="display:flex; gap:6px;">
+                        <input type="text" id="courier-banner-title" class="promo-input" style="text-transform:none; flex:1;" placeholder="Заголовок (напр. AKCIJA - 20%)">
+                        <input type="text" id="courier-banner-badge" class="promo-input" style="text-transform:none; width:82px; text-align:center;" placeholder="-20%">
+                    </div>
+                    <input type="text" id="courier-banner-desc" class="promo-input" style="text-transform:none; width:100%;" placeholder="Описание (напр. Топовые жижи и устройства недели)">
+                    <button type="button" class="primary-btn" style="padding:10px; font-size:13px;" onclick="saveCourierBanner()">Сохранить баннер</button>
+                </div>
+            </div>
+
             <div class="orders-tabs">
                 <button class="orders-tab-btn active" id="courier-tab-active" onclick="switchCourierSubTab('active')">
                     Активные <span class="tab-count-badge" id="courier-active-count">0</span>
@@ -803,8 +832,7 @@
         const rect = canvas.parentElement.getBoundingClientRect();
         canvas.width = rect.width; canvas.height = rect.height;
 
-        // Спокойное количество и медленная скорость, чтобы не отвлекать
-        const count = currentSeasonEffect === 'winter' ? 14 : 9;
+        const count = currentSeasonEffect === 'rain' ? 24 : (currentSeasonEffect === 'winter' ? 14 : 9);
         const autumnColors = ['#ff7b00', '#e64a19', '#ffb300', '#d84315'];
         const springColors = ['#ffb7c5', '#ff8da1', '#ffd1dc', '#ffffff'];
 
@@ -812,8 +840,11 @@
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
             r: currentSeasonEffect === 'winter' ? (1.3 + Math.random() * 1.6) : (2.6 + Math.random() * 2.4),
-            speedY: currentSeasonEffect === 'summer' ? -(0.16 + Math.random() * 0.25) : (0.24 + Math.random() * 0.36),
-            speedX: (Math.random() - 0.5) * 0.25,
+            len: 9 + Math.random() * 7,
+            speedY: currentSeasonEffect === 'rain'
+                ? (3.2 + Math.random() * 1.8)
+                : (currentSeasonEffect === 'summer' ? -(0.16 + Math.random() * 0.25) : (0.24 + Math.random() * 0.36)),
+            speedX: currentSeasonEffect === 'rain' ? -0.55 : ((Math.random() - 0.5) * 0.25),
             angle: Math.random() * Math.PI * 2,
             spin: (Math.random() - 0.5) * 0.015,
             color: currentSeasonEffect === 'autumn' ? autumnColors[Math.floor(Math.random() * autumnColors.length)]
@@ -824,23 +855,35 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             seasonParticles.forEach(p => {
                 p.y += p.speedY;
-                p.x += p.speedX + Math.sin(p.angle) * 0.16;
+                p.x += p.speedX + (currentSeasonEffect === 'rain' ? 0 : Math.sin(p.angle) * 0.16);
                 p.angle += p.spin;
-                if (p.y > canvas.height + 10) { p.y = -8; p.x = Math.random() * canvas.width; }
-                if (p.y < -10) { p.y = canvas.height + 8; p.x = Math.random() * canvas.width; }
-                if (p.x > canvas.width + 10) p.x = -8;
-                if (p.x < -10) p.x = canvas.width + 8;
+                if (p.y > canvas.height + 14) { p.y = -12; p.x = Math.random() * canvas.width; }
+                if (p.y < -14) { p.y = canvas.height + 12; p.x = Math.random() * canvas.width; }
+                if (p.x > canvas.width + 14) p.x = -12;
+                if (p.x < -14) p.x = canvas.width + 12;
 
-                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
-                if (currentSeasonEffect === 'winter') {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
-                    ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
-                } else if (currentSeasonEffect === 'autumn' || currentSeasonEffect === 'spring') {
-                    ctx.fillStyle = p.color; ctx.globalAlpha = 0.52;
-                    ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.52, 0, 0, Math.PI * 2); ctx.fill();
-                } else if (currentSeasonEffect === 'summer') {
-                    ctx.fillStyle = 'rgba(255, 230, 102, 0.48)'; ctx.shadowColor = '#ffd54f'; ctx.shadowBlur = 5;
-                    ctx.beginPath(); ctx.arc(0, 0, p.r * 0.45, 0, Math.PI * 2); ctx.fill();
+                ctx.save();
+                if (currentSeasonEffect === 'rain') {
+                    ctx.strokeStyle = 'rgba(135, 206, 250, 0.38)';
+                    ctx.lineWidth = 1.1;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x - 2, p.y + p.len);
+                    ctx.stroke();
+                } else {
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    if (currentSeasonEffect === 'winter') {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
+                        ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+                    } else if (currentSeasonEffect === 'autumn' || currentSeasonEffect === 'spring') {
+                        ctx.fillStyle = p.color; ctx.globalAlpha = 0.52;
+                        ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.52, 0, 0, Math.PI * 2); ctx.fill();
+                    } else if (currentSeasonEffect === 'summer') {
+                        ctx.fillStyle = 'rgba(255, 230, 102, 0.48)'; ctx.shadowColor = '#ffd54f'; ctx.shadowBlur = 5;
+                        ctx.beginPath(); ctx.arc(0, 0, p.r * 0.45, 0, Math.PI * 2); ctx.fill();
+                    }
                 }
                 ctx.restore();
             });
@@ -884,11 +927,19 @@
         throw new Error("Server unreachable");
     }
 
-    const OWNER_IDS = [7280921605];
+    const PRIMARY_OWNER_IDS = [7280921605];
+    let DYNAMIC_OWNER_IDS = [7280921605];
     let DYNAMIC_COURIER_IDS = [7280921605, 6658906694, 1335426710];
     let BANNED_USER_IDS = [];
     let isShopOpen = true, shopClosedMessage = "Магазин временно закрыт. Попробуйте оформить заказ позже.";
     let hitHighlightColor = localStorage.getItem('monkey_hit_color') || "#ffcc00";
+
+    let bannerConfig = JSON.parse(localStorage.getItem('monkey_banner_cfg')) || {
+        enabled: true,
+        title: "AKCIJA - 20%",
+        desc: "Топовые жижи и устройства недели",
+        badge: "-20%"
+    };
 
     const HIT_COLOR_PALETTE = [
         { name: "Белый", hex: "#ffffff" },
@@ -959,6 +1010,102 @@
         ]
     };
 
+    function isCurrentUserOwner() {
+        return DYNAMIC_OWNER_IDS.includes(Number(currentUserId));
+    }
+
+    function isCurrentUserCourier() {
+        return DYNAMIC_COURIER_IDS.includes(Number(currentUserId)) || isCurrentUserOwner();
+    }
+
+    function applyPromoBannerUI() {
+        const bannerEl = document.getElementById('catalog-promo-banner');
+        const titleEl = document.getElementById('banner-title-text');
+        const descEl = document.getElementById('banner-desc-text');
+        const badgeEl = document.getElementById('banner-badge-text');
+
+        if (bannerEl) {
+            bannerEl.style.display = bannerConfig.enabled ? 'flex' : 'none';
+        }
+        if (titleEl) titleEl.innerText = bannerConfig.title || '';
+        if (descEl) descEl.innerText = bannerConfig.desc || '';
+        if (badgeEl) {
+            badgeEl.style.display = bannerConfig.badge ? 'block' : 'none';
+            badgeEl.innerText = bannerConfig.badge || '';
+        }
+
+        const cToggle = document.getElementById('courier-banner-toggle-btn');
+        if (cToggle) {
+            cToggle.className = `toggle-pill ${bannerConfig.enabled ? 'on' : 'off'}`;
+            cToggle.innerText = bannerConfig.enabled ? '🟢 Показан' : '🔴 Скрыт';
+        }
+        const cTitle = document.getElementById('courier-banner-title');
+        const cDesc = document.getElementById('courier-banner-desc');
+        const cBadge = document.getElementById('courier-banner-badge');
+        if (cTitle && document.activeElement !== cTitle && !cTitle.value) cTitle.value = bannerConfig.title || '';
+        if (cDesc && document.activeElement !== cDesc && !cDesc.value) cDesc.value = bannerConfig.desc || '';
+        if (cBadge && document.activeElement !== cBadge && !cBadge.value) cBadge.value = bannerConfig.badge || '';
+    }
+
+    function toggleCourierBannerEditor() {
+        const body = document.getElementById('courier-banner-editor-body');
+        const arrow = document.getElementById('courier-banner-arrow');
+        if (!body) return;
+        const isOpen = body.style.display === 'flex';
+        body.style.display = isOpen ? 'none' : 'flex';
+        if (arrow) arrow.innerText = isOpen ? '▼' : '▲';
+        if (!isOpen) {
+            const cTitle = document.getElementById('courier-banner-title');
+            const cDesc = document.getElementById('courier-banner-desc');
+            const cBadge = document.getElementById('courier-banner-badge');
+            if (cTitle) cTitle.value = bannerConfig.title || '';
+            if (cDesc) cDesc.value = bannerConfig.desc || '';
+            if (cBadge) cBadge.value = bannerConfig.badge || '';
+        }
+    }
+
+    async function toggleCourierBannerEnabled() {
+        bannerConfig.enabled = !bannerConfig.enabled;
+        localStorage.setItem('monkey_banner_cfg', JSON.stringify(bannerConfig));
+        applyPromoBannerUI();
+        try {
+            await apiFetch(`/api/courier/banner`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    enabled: bannerConfig.enabled,
+                    title: bannerConfig.title,
+                    desc: bannerConfig.desc,
+                    badge: bannerConfig.badge
+                })
+            });
+        } catch (e) {}
+    }
+
+    async function saveCourierBanner() {
+        const title = (document.getElementById('courier-banner-title')?.value || '').trim();
+        const desc = (document.getElementById('courier-banner-desc')?.value || '').trim();
+        const badge = (document.getElementById('courier-banner-badge')?.value || '').trim();
+
+        bannerConfig = { ...bannerConfig, title, desc, badge };
+        localStorage.setItem('monkey_banner_cfg', JSON.stringify(bannerConfig));
+        applyPromoBannerUI();
+
+        try {
+            await apiFetch(`/api/courier/banner`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    enabled: bannerConfig.enabled,
+                    title, desc, badge
+                })
+            });
+            alert("✅ Баннер акции обновлён!");
+        } catch (e) {
+            alert("Ошибка сохранения баннера.");
+        }
+    }
+
     function hexToRgba(hex, alpha) {
         const clean = hex.replace('#', '');
         if (clean.length !== 6) return `rgba(255, 204, 0, ${alpha})`;
@@ -1014,14 +1161,23 @@
     }
 
     function showRoleTabsIfAllowed() {
-        const uidNum = Number(currentUserId);
         const courierNavBtn = document.getElementById('nav-courier-btn');
         const ownerAdminPanel = document.getElementById('owner-admin-panel');
-        if (courierNavBtn) courierNavBtn.style.display = DYNAMIC_COURIER_IDS.includes(uidNum) ? 'flex' : 'none';
-        if (ownerAdminPanel && OWNER_IDS.includes(uidNum)) {
-            ownerAdminPanel.style.display = 'block';
-            renderAdminShopMaster(); renderAdminAppearance(); renderAdminPromos();
-            renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles();
+        const useridElem = document.getElementById('profile-userid-text');
+
+        if (courierNavBtn) courierNavBtn.style.display = isCurrentUserCourier() ? 'flex' : 'none';
+        if (ownerAdminPanel) {
+            if (isCurrentUserOwner()) {
+                ownerAdminPanel.style.display = 'block';
+                renderAdminShopMaster(); renderAdminAppearance(); renderAdminPromos();
+                renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles();
+            } else {
+                ownerAdminPanel.style.display = 'none';
+            }
+        }
+        if (useridElem) {
+            const roleText = isCurrentUserOwner() ? 'Владелец (Админ)' : (isCurrentUserCourier() ? 'Курьер' : 'Покупатель');
+            useridElem.innerText = currentUserId ? `ID: ${currentUserId} • ${roleText}` : 'Telegram User';
         }
     }
 
@@ -1042,23 +1198,16 @@
         }
         if (!currentUserId && uidFromUrl) currentUserId = Number(uidFromUrl);
         if (currentUserName === "User" && unameFromUrl) currentUserName = unameFromUrl;
-        if (roleFromUrl === 'owner' || roleFromUrl === 'courier') {
-            const btn = document.getElementById('nav-courier-btn'); if (btn) btn.style.display = 'flex';
+        if (roleFromUrl === 'owner' && currentUserId && !DYNAMIC_OWNER_IDS.includes(currentUserId)) {
+            DYNAMIC_OWNER_IDS.push(currentUserId);
         }
-        if (roleFromUrl === 'owner') {
-            const pnl = document.getElementById('owner-admin-panel'); if (pnl) pnl.style.display = 'block';
+        if ((roleFromUrl === 'owner' || roleFromUrl === 'courier') && currentUserId && !DYNAMIC_COURIER_IDS.includes(currentUserId)) {
+            DYNAMIC_COURIER_IDS.push(currentUserId);
         }
 
         const usernameElem = document.getElementById('profile-username');
-        const useridElem = document.getElementById('profile-userid-text');
         if (usernameElem) usernameElem.innerText = currentUserName;
         updateProfileAvatarUI();
-        if (useridElem) {
-            const isOwner = OWNER_IDS.includes(Number(currentUserId));
-            const isCourier = DYNAMIC_COURIER_IDS.includes(Number(currentUserId));
-            const roleText = isOwner ? 'Владелец (Админ)' : (isCourier ? 'Курьер' : 'Покупатель');
-            useridElem.innerText = currentUserId ? `ID: ${currentUserId} • ${roleText}` : 'Telegram User';
-        }
         showRoleTabsIfAllowed(); checkUserRole(); syncShopConfig(); renderOrders(); syncClientOrdersStatus();
     }
 
@@ -1069,6 +1218,7 @@
                 if (e.deltaY !== 0) { e.preventDefault(); catScroll.scrollLeft += e.deltaY; }
             }, { passive: false });
         }
+        applyPromoBannerUI();
         if (currentSeasonEffect !== 'none') startSeasonCanvas(currentSeasonEffect);
     });
 
@@ -1125,12 +1275,24 @@
                 disabledTimes = cfg.disabled_times || [];
                 promoCodes = cfg.promocodes || {};
 
+                if (cfg.banner) {
+                    bannerConfig = {
+                        enabled: cfg.banner.enabled !== undefined ? Boolean(cfg.banner.enabled) : true,
+                        title: cfg.banner.title !== undefined ? cfg.banner.title : bannerConfig.title,
+                        desc: cfg.banner.desc !== undefined ? cfg.banner.desc : bannerConfig.desc,
+                        badge: cfg.banner.badge !== undefined ? cfg.banner.badge : bannerConfig.badge
+                    };
+                    localStorage.setItem('monkey_banner_cfg', JSON.stringify(bannerConfig));
+                    applyPromoBannerUI();
+                }
+
                 if (cfg.hit_color) { hitHighlightColor = cfg.hit_color; localStorage.setItem('monkey_hit_color', hitHighlightColor); }
                 if (cfg.season_effect && cfg.season_effect !== currentSeasonEffect) startSeasonCanvas(cfg.season_effect);
                 if (Array.isArray(cfg.time_slots) && cfg.time_slots.length > 0) { ALL_TIME_SLOTS = cfg.time_slots; localStorage.setItem('monkey_time_slots', JSON.stringify(ALL_TIME_SLOTS)); }
                 if (cfg.metro_stations) { metroStations = cfg.metro_stations; localStorage.setItem('monkey_metro_map', JSON.stringify(metroStations)); }
                 if (Array.isArray(cfg.products) && cfg.products.length > 0) products = cfg.products;
                 if (Array.isArray(cfg.banned_users)) BANNED_USER_IDS = cfg.banned_users.map(Number);
+                if (Array.isArray(cfg.owner_ids)) DYNAMIC_OWNER_IDS = cfg.owner_ids.map(Number);
                 if (Array.isArray(cfg.courier_ids)) DYNAMIC_COURIER_IDS = cfg.courier_ids.map(Number);
 
                 localStorage.setItem('monkey_disabled_stations', JSON.stringify(disabledStations));
@@ -1182,7 +1344,6 @@
                 card.style.boxShadow = `0 0 16px ${hexToRgba(hitHighlightColor, 0.35)}`;
             }
 
-            // На картинке оставляем ТОЛЬКО надпись "хит" (или "нет в наличии")
             let imageBadges = '';
             if (!isAvail) {
                 imageBadges = `<div class="product-tag soldout">нет в наличии</div>`;
@@ -1190,7 +1351,6 @@
                 imageBadges = `<div class="product-tag" style="color:${hitHighlightColor}; border:1px solid ${hexToRgba(hitHighlightColor, 0.55)};">🔥 хит</div>`;
             }
 
-            // Под названием товара: слева красная СКИДКА, справа Мало
             let underTitleBadges = '';
             if (isAvail && (hasDisc || isLow)) {
                 underTitleBadges = `
@@ -1205,7 +1365,6 @@
                 ? `<img src="${p.image_url}" alt="${p.title}" onerror="this.outerHTML='<span>${p.icon || '🧪'}</span>'">`
                 : `<span>${p.icon || '🧪'}</span>`;
 
-            // Старая цена зачёркнута, рядом стоит новая цена
             const priceHtml = `
                 <div class="price-block">
                     ${oldPrice > Number(p.price) ? `<span class="product-old-price">${oldPrice.toFixed(2)} р.</span>` : ''}
@@ -1215,7 +1374,7 @@
 
             const rightBtnHtml = isAvail
                 ? `<button class="add-btn" onclick="event.stopPropagation(); openProductModal(${p.id})">+</button>`
-                : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "\\'")}')">🔔 Жду</button>`;
+                : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "\'")}')">🔔 Жду</button>`;
 
             card.innerHTML = `
                 <div class="product-img-container"><div class="product-badges-stack">${imageBadges}</div>${mediaHtml}</div>
@@ -1463,7 +1622,7 @@
         const discountRowHtml = actualDiscount > 0 ? `<div class="summary-row"><span style="color:var(--accent-green);">Скидка (${appliedPromoCode}):</span><span style="color:var(--accent-green); font-weight:700;">-${actualDiscount.toFixed(2)} р.</span></div>` : '';
         let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>`;
         if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
-        else if (!isShopOpen && !OWNER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${shopClosedMessage}</div>`;
+        else if (!isShopOpen && !isCurrentUserOwner()) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${shopClosedMessage}</div>`;
 
         container.innerHTML = itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
@@ -1509,7 +1668,7 @@
     function proceedToCheckout() {
         if (Object.keys(cart).length === 0) { switchScreen('cart'); return; }
         if (BANNED_USER_IDS.includes(Number(currentUserId))) { alert("Ваш аккаунт заблокирован в магазине."); return; }
-        if (!isShopOpen && !OWNER_IDS.includes(Number(currentUserId))) { alert(shopClosedMessage); return; }
+        if (!isShopOpen && !isCurrentUserOwner()) { alert(shopClosedMessage); return; }
         syncShopConfig(); ensureValidSelectedStationAndTime(); switchScreen('checkout'); renderStations(currentLine); renderCheckoutTimeSlots();
     }
 
@@ -1783,13 +1942,14 @@
             const response = await apiFetch(`/api/check_role/${currentUserId}`);
             const data = await response.json();
             if (data.role === 'courier' || data.role === 'owner') {
-                const btn = document.getElementById('nav-courier-btn'); if (btn) btn.style.display = 'flex';
+                if (currentUserId && !DYNAMIC_COURIER_IDS.includes(Number(currentUserId))) DYNAMIC_COURIER_IDS.push(Number(currentUserId));
                 loadCourierOrders();
             }
             if (data.role === 'owner') {
-                const pnl = document.getElementById('owner-admin-panel'); if (pnl) pnl.style.display = 'block';
+                if (currentUserId && !DYNAMIC_OWNER_IDS.includes(Number(currentUserId))) DYNAMIC_OWNER_IDS.push(Number(currentUserId));
                 loadAdminStats();
             }
+            showRoleTabsIfAllowed();
         } catch (e) {}
     }
 
@@ -1839,7 +1999,7 @@
     }
 
     function renderAdminAppearance() {
-        ['none', 'winter', 'autumn', 'spring', 'summer'].forEach(s => {
+        ['none', 'winter', 'autumn', 'spring', 'summer', 'rain'].forEach(s => {
             const btn = document.getElementById(`season-btn-${s}`);
             if (btn) {
                 btn.className = `toggle-pill ${currentSeasonEffect === s ? 'on' : ''}`;
@@ -1907,7 +2067,7 @@
 
     async function loadAdminStats() {
         const box = document.getElementById('admin-stats-content');
-        if (!box || !OWNER_IDS.includes(Number(currentUserId))) return;
+        if (!box || !isCurrentUserOwner()) return;
         try {
             const st = await (await apiFetch(`/api/admin/stats/${currentUserId}`)).json();
             const topItemsHtml = st.top_items?.length ? st.top_items.map((it, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. ${it.title}</span><b style="color:var(--accent-green);">${it.qty} шт.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Пока нет выданных заказов</div>';
@@ -1964,7 +2124,6 @@
         const currentlyDiscounted = Boolean(prod.has_discount) || Number(prod.old_price || 0) > Number(prod.price);
 
         if (currentlyDiscounted) {
-            // Снимаем скидку и возвращаем старую цену, если она была указана
             const restoredPrice = Number(prod.old_price || 0) > Number(prod.price) ? Number(prod.old_price) : Number(prod.price);
             try {
                 await apiFetch(`/api/admin/save_product`, {
@@ -2193,7 +2352,7 @@
         if (!container) return;
         container.innerHTML = (metroStations[adminMetroLine] || []).map(st => {
             const isDisabled = disabledStations.includes(st.name);
-            const esc = st.name.replace(/'/g, "\\'");
+            const esc = st.name.replace(/'/g, "\'");
             return `
                 <div class="admin-toggle-row">
                     <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">${st.name}</span>
@@ -2292,11 +2451,20 @@
     }
 
     function renderAdminRoles() {
-        const cBox = document.getElementById('admin-couriers-list'), bBox = document.getElementById('admin-banned-list');
+        const oBox = document.getElementById('admin-owners-list');
+        const cBox = document.getElementById('admin-couriers-list');
+        const bBox = document.getElementById('admin-banned-list');
+
+        if (oBox) {
+            oBox.innerHTML = DYNAMIC_OWNER_IDS.map(oid => {
+                const isPrimary = PRIMARY_OWNER_IDS.includes(oid);
+                return `<div class="admin-toggle-row"><span>ID: <b>${oid}</b> ${isPrimary ? '<span style="color:var(--accent-green); font-size:11px;">(Главный)</span>' : ''}</span>${!isPrimary ? `<button class="toggle-pill off" onclick="adminManageRole('remove_owner', ${oid})">Убрать</button>` : ''}</div>`;
+            }).join('');
+        }
         if (cBox) {
             cBox.innerHTML = DYNAMIC_COURIER_IDS.map(cid => {
-                const isOwner = OWNER_IDS.includes(cid);
-                return `<div class="admin-toggle-row"><span>ID: <b>${cid}</b> ${isOwner ? '<span style="color:var(--accent-green); font-size:11px;">(Владелец)</span>' : ''}</span>${!isOwner ? `<button class="toggle-pill off" onclick="adminManageRole('remove_courier', ${cid})">Убрать</button>` : ''}</div>`;
+                const isOwner = DYNAMIC_OWNER_IDS.includes(cid);
+                return `<div class="admin-toggle-row"><span>ID: <b>${cid}</b> ${isOwner ? '<span style="color:var(--accent-green); font-size:11px;">(Админ)</span>' : ''}</span>${!isOwner ? `<button class="toggle-pill off" onclick="adminManageRole('remove_courier', ${cid})">Убрать</button>` : ''}</div>`;
             }).join('');
         }
         if (bBox) {
@@ -2307,7 +2475,12 @@
     async function adminManageRole(action, explicitId = null) {
         let targetId = explicitId;
         if (!targetId) {
-            const el = document.getElementById(action === 'add_courier' ? 'admin-courier-id-input' : 'admin-ban-id-input');
+            const inputMap = {
+                add_owner: 'admin-owner-id-input',
+                add_courier: 'admin-courier-id-input',
+                ban_user: 'admin-ban-id-input'
+            };
+            const el = document.getElementById(inputMap[action]);
             targetId = parseInt(el?.value || '0', 10);
             if (!targetId || targetId <= 0) { alert("Введите корректный цифровой Telegram ID"); return; }
             if (el) el.value = '';
@@ -2322,7 +2495,7 @@
     }
 
     async function loadBroadcastHistory() {
-        if (!OWNER_IDS.includes(Number(currentUserId))) return;
+        if (!isCurrentUserOwner()) return;
         try {
             const data = await (await apiFetch(`/api/admin/broadcast_history/${currentUserId}`)).json();
             const countEl = document.getElementById('admin-subscribers-count'), listEl = document.getElementById('admin-broadcast-history');
@@ -2364,7 +2537,7 @@
             });
             if (res.ok) loadCourierOrders();
         } catch (e) {
-            alert("Не удалось взять заказ (возможно, его уже забрал другой курьер).");
+            alert("Не удалось взять заказ (его уже забрал другой курьер).");
             loadCourierOrders();
         }
     }
@@ -2374,17 +2547,25 @@
         try {
             await apiFetch(`/api/courier/arrived`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: key, courier_name: currentUserName })
+                body: JSON.stringify({ order_id: key, courier_id: Number(currentUserId), courier_name: currentUserName })
             });
             alert("📍 Клиенту отправлено уведомление, что вы на месте!");
-        } catch (e) { alert("Ошибка отправки уведомления."); }
+        } catch (e) { alert("Ошибка отправки уведомления (возможно, заказ ведёт другой курьер)."); }
     }
 
     function renderCourierCards(orders) {
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
         cachedCourierOrders = deduplicateOrdersList(orders || []);
-        const visibleOrders = cachedCourierOrders.filter(o => !hiddenCourierOrderIds.includes(String(o.id).trim()) && !o.hidden_by_courier);
+
+        // Если заказ уже взял другой курьер (claimed_by_id != 0 и != currentUserId), полностью скрываем его
+        const visibleOrders = cachedCourierOrders.filter(o => {
+            if (hiddenCourierOrderIds.includes(String(o.id).trim()) || o.hidden_by_courier) return false;
+            const cId = Number(o.claimed_by_id || 0);
+            if (cId !== 0 && cId !== Number(currentUserId)) return false;
+            return true;
+        });
+
         const activeCourierList = visibleOrders.filter(o => o.status === 'active');
         const pastCourierList = visibleOrders.filter(o => o.status === 'completed' || o.status === 'cancelled');
 
@@ -2394,7 +2575,7 @@
 
         const listToRender = currentCourierSubTab === 'active' ? activeCourierList : pastCourierList;
         if (listToRender.length === 0) {
-            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${currentCourierSubTab === 'active' ? '✅' : '🗂️'}</div><p>${currentCourierSubTab === 'active' ? 'Нет активных заказов для доставки' : 'Прошедших заказов пока нет'}</p></div>`;
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${currentCourierSubTab === 'active' ? '✅' : '🗂️'}</div><p>${currentCourierSubTab === 'active' ? 'Нет свободных или ваших активных заказов' : 'Прошедших заказов пока нет'}</p></div>`;
             return;
         }
 
@@ -2403,7 +2584,6 @@
             const oid = String(ord.id).trim();
             const claimedId = Number(ord.claimed_by_id || 0);
             const isClaimedByMe = claimedId && claimedId === Number(currentUserId);
-            const isClaimedByOther = claimedId && claimedId !== Number(currentUserId);
 
             let itemsList = ord.items.map(i => `<div>• ${i.title} × ${i.qty} (${(i.price * i.qty).toFixed(2)} р.)</div>`).join('');
             let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
@@ -2411,8 +2591,8 @@
             if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
             else if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
 
-            let claimedBanner = claimedId
-                ? `<div style="font-size:11.5px; font-weight:700; color:${isClaimedByMe ? 'var(--accent-green)' : '#ffaa00'}; background:rgba(255,255,255,0.04); padding:5px 8px; border-radius:8px;">🛵 ${isClaimedByMe ? 'Вы ведёте этот заказ' : `Взял курьер: ${ord.claimed_by_name}`}</div>`
+            let claimedBanner = isClaimedByMe
+                ? `<div style="font-size:11.5px; font-weight:700; color:var(--accent-green); background:var(--accent-green-glow); padding:5px 8px; border-radius:8px;">🛵 Вы ведёте этот заказ</div>`
                 : '';
 
             let deleteBtn = (ord.status === 'completed' || ord.status === 'cancelled') ? `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${oid}')">✕</button>` : '';
@@ -2422,20 +2602,22 @@
 
             let courierActions = '';
             if (ord.status === 'active') {
-                const claimBtn = !claimedId
-                    ? `<button onclick="claimOrderByCourier('${oid}')" style="width:100%; background:rgba(0,229,255,0.14); border:1px solid #00e5ff; color:#00e5ff; padding:10px; border-radius:11px; font-size:12px; font-weight:700; cursor:pointer;">🙋‍♂️ Взять заказ в работу</button>`
-                    : '';
-                courierActions = `
-                    ${claimBtn}
-                    <div class="order-actions-row">
-                        <button class="order-btn-secondary" onclick="notifyClientCourierArrived('${oid}')">📍 Я на месте</button>
-                        <a class="order-btn-secondary" href="${chatHref}" target="_blank">💬 Написать</a>
-                    </div>
-                    <div class="order-actions-row">
-                        <button onclick="updateOrderStatusByCourier('${oid}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:11px; border-radius:12px; font-weight:700; cursor:pointer; ${isClaimedByOther ? 'opacity:0.65;' : ''}">✅ Выдан</button>
-                        <button onclick="updateOrderStatusByCourier('${oid}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
-                    </div>
-                `;
+                if (!claimedId) {
+                    courierActions = `
+                        <button onclick="claimOrderByCourier('${oid}')" style="width:100%; background:rgba(0,229,255,0.14); border:1px solid #00e5ff; color:#00e5ff; padding:11px; border-radius:11px; font-size:12.5px; font-weight:700; cursor:pointer;">🙋‍♂️ Взять заказ в работу</button>
+                    `;
+                } else if (isClaimedByMe) {
+                    courierActions = `
+                        <div class="order-actions-row">
+                            <button class="order-btn-secondary" onclick="notifyClientCourierArrived('${oid}')">📍 Я на месте</button>
+                            <a class="order-btn-secondary" href="${chatHref}" target="_blank">💬 Написать</a>
+                        </div>
+                        <div class="order-actions-row">
+                            <button onclick="updateOrderStatusByCourier('${oid}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
+                            <button onclick="updateOrderStatusByCourier('${oid}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                        </div>
+                    `;
+                }
             }
 
             let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
@@ -2463,8 +2645,12 @@
     }
 
     async function loadCourierOrders() {
-        try { renderCourierCards(await (await apiFetch(`/api/orders`)).json()); }
-        catch (e) { renderCourierCards(cachedCourierOrders); }
+        try {
+            const url = `/api/orders?courier_id=${Number(currentUserId || 0)}`;
+            renderCourierCards(await (await apiFetch(url)).json());
+        } catch (e) {
+            renderCourierCards(cachedCourierOrders);
+        }
     }
 
     async function updateOrderStatusByCourier(orderId, status) {
@@ -2481,7 +2667,9 @@
                     courier_id: Number(currentUserId), courier_name: currentUserName
                 })
             });
-        } catch (e) {}
+        } catch (e) {
+            alert("Не удалось обновить статус заказа.");
+        }
         loadCourierOrders();
     }
     setInterval(() => { if (document.getElementById('screen-courier').classList.contains('active')) loadCourierOrders(); }, 3500);
@@ -2497,9 +2685,12 @@
         if (screenName === 'orders') { syncClientOrdersStatus(); renderOrders(); }
         if (screenName === 'profile') {
             updateProfileAvatarUI();
-            if (OWNER_IDS.includes(Number(currentUserId))) { loadAdminStats(); loadBroadcastHistory(); }
+            if (isCurrentUserOwner()) { loadAdminStats(); loadBroadcastHistory(); }
         }
-        if (screenName === 'courier') loadCourierOrders();
+        if (screenName === 'courier') {
+            applyPromoBannerUI();
+            loadCourierOrders();
+        }
     }
 
     ensureValidSelectedStationAndTime();
