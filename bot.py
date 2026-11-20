@@ -60,6 +60,14 @@ def build_personal_url(uid: int, uname: str = "User") -> str:
 async def init_db():
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY,
+                user_name TEXT DEFAULT '',
+                joined_at TEXT DEFAULT ''
+            )
+        """)
+
+        await db.execute("""
             CREATE TABLE IF NOT EXISTS orders (
                 id TEXT PRIMARY KEY,
                 user_id INTEGER,
@@ -88,6 +96,12 @@ async def init_db():
                 await db.execute(col_sql)
             except Exception:
                 pass
+
+        # Переносим всех старых покупателей из orders в базу рассылки users
+        await db.execute("""
+            INSERT OR IGNORE INTO users (user_id, user_name, joined_at)
+            SELECT DISTINCT user_id, user_name, '' FROM orders WHERE user_id > 0
+        """)
 
         await db.execute("""
             CREATE TABLE IF NOT EXISTS shop_settings (
@@ -179,6 +193,10 @@ class AdminPromoSaveSchema(BaseModel):
 class AdminPromoDeleteSchema(BaseModel):
     user_id: int
     code: str
+
+class AdminBroadcastSchema(BaseModel):
+    user_id: int
+    text: str
 
 async def get_setting_list(db, key: str) -> list:
     async with db.execute("SELECT value FROM shop_settings WHERE key = ?", (key,)) as cursor:
@@ -278,11 +296,42 @@ async def admin_delete_promo(data: AdminPromoDeleteSchema):
         await db.commit()
     return {"success": True}
 
+@app.post("/api/admin/broadcast")
+async def admin_broadcast(data: AdminBroadcastSchema):
+    if data.user_id not in OWNER_IDS:
+        raise HTTPException(status_code=403, detail="Only owner can broadcast")
+    text = data.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Empty text")
+
+    async with aiosqlite.connect(DB_FILE) as db:
+        async with db.execute("SELECT user_id FROM users WHERE user_id > 0") as cursor:
+            rows = await cursor.fetchall()
+
+    user_ids = [r[0] for r in rows]
+    sent = 0
+    failed = 0
+
+    for uid in user_ids:
+        try:
+            await bot.send_message(uid, text)
+            sent += 1
+            await asyncio.sleep(0.05)
+        except Exception:
+            failed += 1
+
+    return {"success": True, "sent": sent, "failed": failed, "total": len(user_ids)}
+
 @app.post("/api/create_order")
 async def create_order(order: OrderSchema):
     order_id = str(order.id).strip()
     created_at = order.created_at or datetime.now().strftime("%d.%m.%Y, %H:%M")
     async with aiosqlite.connect(DB_FILE) as db:
+        if order.user_id > 0:
+            await db.execute(
+                "INSERT OR IGNORE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)",
+                (order.user_id, order.user_name, created_at)
+            )
         await db.execute(
             """INSERT OR REPLACE INTO orders 
                (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, created_at, cancelled_by)
@@ -483,10 +532,62 @@ async def check_role(user_id: int):
         return {"role": "courier"}
     return {"role": "client"}
 
+@dp.message(F.text.startswith("/post"))
+async def cmd_post_broadcast(message: Message):
+    if message.from_user.id not in OWNER_IDS:
+        return
+
+    inline_text = message.text[5:].strip()
+    if not message.reply_to_message and not inline_text:
+        await message.answer(
+            "📢 <b>Как сделать рассылку:</b>\n\n"
+            "1. Отправь боту готовый пост (текст, фото, видео или кружочек).\n"
+            "2. Нажми <b>«Ответить» (Reply)</b> на это сообщение и напиши <code>/post</code>.\n\n"
+            "<i>Либо напиши сразу:</i> <code>/post Текст объявления</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    async with aiosqlite.connect(DB_FILE) as db:
+        async with db.execute("SELECT user_id FROM users WHERE user_id > 0") as cursor:
+            rows = await cursor.fetchall()
+
+    user_ids = [r[0] for r in rows]
+    status_msg = await message.answer(f"⏳ Начинаю рассылку по базе ({len(user_ids)} чел.)...")
+
+    sent = 0
+    failed = 0
+    for uid in user_ids:
+        try:
+            if message.reply_to_message:
+                await message.reply_to_message.copy_to(chat_id=uid)
+            else:
+                await bot.send_message(uid, inline_text)
+            sent += 1
+            await asyncio.sleep(0.05)
+        except Exception:
+            failed += 1
+
+    await status_msg.edit_text(
+        f"✅ <b>Рассылка завершена!</b>\n\n"
+        f"📨 Доставлено: <b>{sent}</b>\n"
+        f"🚫 Заблокировали бота / недоступны: <b>{failed}</b>",
+        parse_mode="HTML"
+    )
+
 @dp.message(F.text == "/start")
 async def cmd_start(message: Message):
     uid = message.from_user.id
     uname = f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "User")
+    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
+
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)",
+            (uid, uname, now_str)
+        )
+        await db.commit()
+
     personal_url = build_personal_url(uid, uname)
 
     try:
