@@ -1383,6 +1383,14 @@
 
         <div id="screen-courier" class="screen">
             <div class="section-title">Панель курьера 🛵</div>
+            <div class="orders-tabs">
+                <button class="orders-tab-btn active" id="courier-tab-active" onclick="switchCourierSubTab('active')">
+                    Активные <span class="tab-count-badge" id="courier-active-count">0</span>
+                </button>
+                <button class="orders-tab-btn" id="courier-tab-past" onclick="switchCourierSubTab('past')">
+                    Прошедшие <span class="tab-count-badge" id="courier-past-count">0</span>
+                </button>
+            </div>
             <div id="courier-orders-list">
                 <div class="cart-empty">
                     <div class="cart-empty-icon">⏳</div>
@@ -1459,7 +1467,7 @@
     }
 
     // Актуальная ссылка туннеля (чистая, без скобок):
-    const DEFAULT_TUNNEL_URL = "https://shark-highlight-change-frontier.trycloudflare.com";
+    const DEFAULT_TUNNEL_URL = "https://relax-indoor-claims-iso.trycloudflare.com";
     let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
     let isServerConnected = false;
 
@@ -1531,6 +1539,8 @@
     let promoInputDraft = "";
     let adminMetroLine = 'green';
     let currentOrdersSubTab = 'active';
+    let currentCourierSubTab = 'active';
+    let cachedCourierOrders = [];
 
     function getFormattedNowDateTime() {
         const now = new Date();
@@ -1644,6 +1654,7 @@
         showRoleTabsIfAllowed();
         checkUserRole();
         syncShopConfig();
+        renderOrders();
         syncClientOrdersStatus();
     }
 
@@ -2348,6 +2359,9 @@
             localStorage.setItem('monkey_hidden_courier_orders', JSON.stringify(hiddenCourierOrderIds));
         }
 
+        cachedCourierOrders = cachedCourierOrders.filter(o => String(o.id).trim() !== key);
+        renderCourierCards(cachedCourierOrders);
+
         try {
             await apiFetch(`/api/delete_completed_order`, {
                 method: 'POST',
@@ -2416,6 +2430,15 @@
         renderOrders();
     }
 
+    function switchCourierSubTab(tab) {
+        currentCourierSubTab = tab;
+        const activeBtn = document.getElementById('courier-tab-active');
+        const pastBtn = document.getElementById('courier-tab-past');
+        if (activeBtn) activeBtn.classList.toggle('active', tab === 'active');
+        if (pastBtn) pastBtn.classList.toggle('active', tab === 'past');
+        renderCourierCards(cachedCourierOrders);
+    }
+
     function getCancelledLabel(ord) {
         if (ord.cancelled_by === 'client') return 'Отменено клиентом ✕';
         if (ord.cancelled_by === 'courier') return 'Отменено курьером ✕';
@@ -2438,8 +2461,13 @@
 
         activeOrders = deduplicateOrdersList(activeOrders);
 
-        const activeList = activeOrders.filter(o => o.status === 'active');
-        const pastList = activeOrders.filter(o => o.status === 'completed' || o.status === 'cancelled');
+        // Показываем в 3-й вкладке ("Мои заказы") ТОЛЬКО личные заказы текущего пользователя
+        const myPersonalOrders = currentUserId
+            ? activeOrders.filter(o => Number(o.user_id) === Number(currentUserId))
+            : [];
+
+        const activeList = myPersonalOrders.filter(o => o.status === 'active');
+        const pastList = myPersonalOrders.filter(o => o.status === 'completed' || o.status === 'cancelled');
 
         const activeCountEl = document.getElementById('active-orders-count');
         const pastCountEl = document.getElementById('past-orders-count');
@@ -2530,26 +2558,8 @@
             const response = await apiFetch(`/api/user_orders/${currentUserId}`);
             if (response.ok) {
                 const serverOrders = await response.json();
-                const map = new Map();
+                const merged = deduplicateOrdersList(serverOrders);
 
-                activeOrders.forEach(o => {
-                    if (o && o.id) {
-                        const k = String(o.id).trim();
-                        map.set(k, { ...o, id: k });
-                    }
-                });
-
-                serverOrders.forEach(srvOrd => {
-                    const key = String(srvOrd.id).trim();
-                    const existing = map.get(key) || {};
-                    map.set(key, {
-                        ...existing,
-                        ...srvOrd,
-                        id: key
-                    });
-                });
-
-                const merged = Array.from(map.values());
                 if (JSON.stringify(merged) !== JSON.stringify(activeOrders)) {
                     activeOrders = merged;
                     localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
@@ -2738,22 +2748,34 @@
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
 
-        const visibleOrders = (orders || []).filter(
+        cachedCourierOrders = deduplicateOrdersList(orders || []);
+
+        const visibleOrders = cachedCourierOrders.filter(
             o => !hiddenCourierOrderIds.includes(String(o.id).trim()) && !o.hidden_by_courier
         );
 
-        if (visibleOrders.length === 0) {
+        const activeCourierList = visibleOrders.filter(o => o.status === 'active');
+        const pastCourierList = visibleOrders.filter(o => o.status === 'completed' || o.status === 'cancelled');
+
+        const activeCountEl = document.getElementById('courier-active-count');
+        const pastCountEl = document.getElementById('courier-past-count');
+        if (activeCountEl) activeCountEl.innerText = activeCourierList.length;
+        if (pastCountEl) pastCountEl.innerText = pastCourierList.length;
+
+        const listToRender = currentCourierSubTab === 'active' ? activeCourierList : pastCourierList;
+
+        if (listToRender.length === 0) {
             container.innerHTML = `
                 <div class="cart-empty">
-                    <div class="cart-empty-icon">✅</div>
-                    <p>Нет активных заказов для доставки</p>
+                    <div class="cart-empty-icon">${currentCourierSubTab === 'active' ? '✅' : '🗂️'}</div>
+                    <p>${currentCourierSubTab === 'active' ? 'Нет активных заказов для доставки' : 'Прошедших заказов пока нет'}</p>
                 </div>
             `;
             return;
         }
 
         let html = '';
-        visibleOrders.forEach(ord => {
+        listToRender.forEach(ord => {
             const oid = String(ord.id).trim();
             let itemsList = '';
             ord.items.forEach(i => {
@@ -2776,14 +2798,14 @@
                 deleteBtn = `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${oid}')">✕</button>`;
             }
 
-            let courierActions = `
-                <div class="order-actions-row">
-                    <button onclick="updateOrderStatusByCourier('${oid}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
-                    <button onclick="updateOrderStatusByCourier('${oid}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
-                </div>
-            `;
-            if (ord.status !== 'active') {
-                courierActions = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding-top:2px;">Статус: ${ord.status === 'completed' ? 'Выдан ✅' : getCancelledLabel(ord)}</div>`;
+            let courierActions = '';
+            if (ord.status === 'active') {
+                courierActions = `
+                    <div class="order-actions-row">
+                        <button onclick="updateOrderStatusByCourier('${oid}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Выдан</button>
+                        <button onclick="updateOrderStatusByCourier('${oid}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                    </div>
+                `;
             }
 
             let timeNoteCourier = ord.time_changed
@@ -2840,13 +2862,23 @@
             const orders = await response.json();
             renderCourierCards(orders);
         } catch (e) {
-            renderCourierCards(activeOrders);
+            renderCourierCards(cachedCourierOrders);
         }
     }
 
     async function updateOrderStatusByCourier(orderId, status) {
         const key = String(orderId).trim();
         const cancelledBy = status === 'cancelled' ? 'courier' : '';
+
+        // Мгновенно обновляем статус в панели курьера, чтобы заказ сразу перешёл в "Прошедшие"
+        cachedCourierOrders = cachedCourierOrders.map(o =>
+            String(o.id).trim() === key
+                ? { ...o, id: key, status: status, cancelled_by: cancelledBy || o.cancelled_by || '' }
+                : o
+        );
+        renderCourierCards(cachedCourierOrders);
+
+        // Если курьер выдал/отменил свой же тестовый заказ — обновляем и личный список
         activeOrders = activeOrders.map(o =>
             String(o.id).trim() === key
                 ? { ...o, id: key, status: status, cancelled_by: cancelledBy || o.cancelled_by || '' }
