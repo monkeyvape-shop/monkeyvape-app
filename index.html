@@ -178,17 +178,59 @@
         .product-card:hover { border-color: var(--accent-green); transform: translateY(-2px); }
         .product-card.out-of-stock { opacity: 0.72; }
 
-        .product-img-container { width: 100%; height: 126px; background-color: var(--img-box-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; font-size: 40px; position: relative; overflow: hidden; }
+        .product-img-container { width: 100%; height: 122px; background-color: var(--img-box-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 9px; font-size: 40px; position: relative; overflow: hidden; }
         .product-img-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .product-badges-stack { position: absolute; top: 7px; left: 7px; right: 7px; display: flex; flex-wrap: wrap; gap: 4px; z-index: 2; pointer-events: none; }
         .product-tag { background-color: rgba(11, 15, 12, 0.78); backdrop-filter: blur(4px); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 6px; }
         .product-tag.soldout { background-color: rgba(255, 51, 51, 0.88); color: #ffffff; }
-        .product-tag.lowstock { background-color: rgba(255, 170, 0, 0.9); color: #0b0f0c; font-weight: 800; }
-        .product-tag.discount-ribbon { background: linear-gradient(135deg, #ff3b30, #ff7b00); color: #ffffff; font-weight: 800; letter-spacing: 0.3px; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.45); }
-        .product-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 36px; }
-        .product-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 4px; }
-        .price-block { display: flex; flex-direction: column; }
-        .product-old-price { font-size: 11px; color: var(--text-secondary); text-decoration: line-through; line-height: 1.1; }
+
+        .product-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 34px;
+        }
+
+        .product-sub-badges {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            min-height: 20px;
+            margin-bottom: 6px;
+        }
+
+        .discount-tag-under {
+            background: rgba(255, 51, 51, 0.15);
+            border: 1px solid rgba(255, 51, 51, 0.55);
+            color: #ff3333;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .lowstock-tag-right {
+            margin-left: auto;
+            background: rgba(255, 170, 0, 0.16);
+            border: 1px solid rgba(255, 170, 0, 0.55);
+            color: #ffaa00;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .product-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; gap: 4px; }
+        .price-block { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+        .product-old-price { font-size: 11.5px; color: var(--text-secondary); text-decoration: line-through; }
         .product-price { font-size: 14px; font-weight: 700; color: var(--accent-green); }
         .add-btn { background-color: var(--accent-green); color: #0b0f0c; border: none; width: 32px; height: 32px; border-radius: 10px; font-weight: bold; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .notify-btn { background: rgba(255, 170, 0, 0.16); border: 1px solid #ffaa00; color: #ffaa00; padding: 6px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -204,6 +246,46 @@
         .option-btn { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 10px; border-radius: 14px; font-size: 13px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .option-btn.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 600; }
         .option-btn.opt-unavail { opacity: 0.55; border-style: dashed; }
+
+        .hit-colors-modal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .hit-color-tile {
+            background: var(--bg-color);
+            border: 1.5px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .hit-color-tile.selected {
+            border-color: var(--accent-green);
+            background: var(--accent-green-glow);
+            transform: scale(1.03);
+        }
+
+        .hit-color-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(150, 150, 150, 0.45);
+        }
+
+        .hit-color-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: center;
+        }
 
         .cart-empty { text-align: center; padding: 50px 20px; color: var(--text-secondary); }
         .cart-empty-icon { font-size: 48px; margin-bottom: 14px; }
@@ -295,10 +377,6 @@
         .admin-sub-tab.active { border-color: var(--accent-green); color: var(--accent-green); background: var(--accent-green-glow); }
         .admin-toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; background: var(--bg-color); border: 1px solid var(--border-color); padding: 9px 10px; border-radius: 10px; margin-bottom: 8px; font-size: 12.5px; }
 
-        .color-swatch-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-        .color-swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.15s; }
-        .color-swatch.selected { border-color: var(--text-main); transform: scale(1.15); }
-
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .stat-card { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; }
         .stat-card-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
@@ -366,12 +444,23 @@
         </div>
     </div>
 
-    <!-- Редактор товара в админ-панели (цена, старая цена, фото, вкусы/опции) -->
+    <!-- Окно выбора цвета обводки и подсветки ХИТ -->
+    <div class="modal-overlay" id="hit-color-modal" onclick="if(event.target.id==='hit-color-modal') closeHitColorModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="modal-title">🎨 Цвет подсветки «ХИТ»</div>
+            <div class="modal-subtitle">Выберите цвет обводки и свечения для хитов продаж</div>
+            <div class="hit-colors-modal-grid" id="hit-colors-modal-grid"></div>
+            <button onclick="closeHitColorModal()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:6px; font-size:13px; cursor:pointer;">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Редактор товара в админ-панели -->
     <div class="modal-overlay" id="admin-edit-prod-modal" onclick="if(event.target.id==='admin-edit-prod-modal') closeAdminEditProductModal()">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
             <div class="modal-title">✏️ Редактирование товара</div>
-            <div class="modal-subtitle" id="edit-prod-subtitle">Настройка параметров и вкусов</div>
+            <div class="modal-subtitle">Настройка цены, скидки, фото и вкусов</div>
             <input type="hidden" id="edit-prod-id">
 
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
@@ -386,8 +475,8 @@
                     <input type="text" id="edit-prod-icon" class="promo-input" style="text-transform:none; width:50px; text-align:center;" placeholder="🧪">
                 </div>
                 <div style="display:flex; gap:6px;">
-                    <input type="number" id="edit-prod-price" class="promo-input" style="text-transform:none;" placeholder="Цена р." step="0.5">
-                    <input type="number" id="edit-prod-old-price" class="promo-input" style="text-transform:none;" placeholder="Старая цена (0 = нет)" step="0.5">
+                    <input type="number" id="edit-prod-old-price" class="promo-input" style="text-transform:none;" placeholder="Старая цена (напр. 17)" step="0.5">
+                    <input type="number" id="edit-prod-price" class="promo-input" style="text-transform:none;" placeholder="Цена сейчас (напр. 15)" step="0.5">
                 </div>
                 <input type="text" id="edit-prod-img" class="promo-input" style="text-transform:none;" placeholder="Ссылка на фото (или отправь фото боту)">
             </div>
@@ -566,9 +655,14 @@
                         </div>
                     </div>
                     <div class="shop-master-box">
-                        <div style="font-size:12.5px; font-weight:700; margin-bottom:4px;">🔥 Цвет обводки и подсветки «ХИТ»:</div>
-                        <div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;">Выделяет карточки хитов и окно выбора вкуса</div>
-                        <div class="color-swatch-row" id="hit-color-swatches"></div>
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🔥 Цвет обводки и подсветки «ХИТ»:</div>
+                        <button type="button" onclick="openHitColorModal()" style="width:100%; display:flex; align-items:center; justify-content:space-between; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); padding:10px 12px; border-radius:12px; font-size:13px; font-weight:600; cursor:pointer;">
+                            <span style="display:flex; align-items:center; gap:9px;">
+                                <span id="current-hit-color-dot" style="width:20px; height:20px; border-radius:50%; border:1.5px solid rgba(150,150,150,0.5); display:inline-block;"></span>
+                                <span id="current-hit-color-label">Золото</span>
+                            </span>
+                            <span style="color:var(--accent-green); font-size:12px;">Выбрать цвет ▸</span>
+                        </button>
                     </div>
                 </div>
 
@@ -709,15 +803,19 @@
         const rect = canvas.parentElement.getBoundingClientRect();
         canvas.width = rect.width; canvas.height = rect.height;
 
-        const count = currentSeasonEffect === 'winter' ? 42 : 26;
+        // Спокойное количество и медленная скорость, чтобы не отвлекать
+        const count = currentSeasonEffect === 'winter' ? 14 : 9;
         const autumnColors = ['#ff7b00', '#e64a19', '#ffb300', '#d84315'];
         const springColors = ['#ffb7c5', '#ff8da1', '#ffd1dc', '#ffffff'];
 
         seasonParticles = Array.from({ length: count }, () => ({
-            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-            r: currentSeasonEffect === 'winter' ? (2 + Math.random() * 3) : (4 + Math.random() * 5),
-            speedY: currentSeasonEffect === 'summer' ? -(0.4 + Math.random() * 0.8) : (0.7 + Math.random() * 1.4),
-            speedX: (Math.random() - 0.5) * 0.8, angle: Math.random() * Math.PI * 2, spin: (Math.random() - 0.5) * 0.04,
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: currentSeasonEffect === 'winter' ? (1.3 + Math.random() * 1.6) : (2.6 + Math.random() * 2.4),
+            speedY: currentSeasonEffect === 'summer' ? -(0.16 + Math.random() * 0.25) : (0.24 + Math.random() * 0.36),
+            speedX: (Math.random() - 0.5) * 0.25,
+            angle: Math.random() * Math.PI * 2,
+            spin: (Math.random() - 0.5) * 0.015,
             color: currentSeasonEffect === 'autumn' ? autumnColors[Math.floor(Math.random() * autumnColors.length)]
                 : (currentSeasonEffect === 'spring' ? springColors[Math.floor(Math.random() * springColors.length)] : '#ffffff')
         }));
@@ -725,19 +823,24 @@
         function drawFrame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             seasonParticles.forEach(p => {
-                p.y += p.speedY; p.x += p.speedX + Math.sin(p.angle) * 0.35; p.angle += p.spin;
-                if (p.y > canvas.height + 12) { p.y = -10; p.x = Math.random() * canvas.width; }
-                if (p.y < -12) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
-                if (p.x > canvas.width + 12) p.x = -10;
-                if (p.x < -12) p.x = canvas.width + 10;
+                p.y += p.speedY;
+                p.x += p.speedX + Math.sin(p.angle) * 0.16;
+                p.angle += p.spin;
+                if (p.y > canvas.height + 10) { p.y = -8; p.x = Math.random() * canvas.width; }
+                if (p.y < -10) { p.y = canvas.height + 8; p.x = Math.random() * canvas.width; }
+                if (p.x > canvas.width + 10) p.x = -8;
+                if (p.x < -10) p.x = canvas.width + 8;
 
                 ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
                 if (currentSeasonEffect === 'winter') {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.82)'; ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
+                    ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
                 } else if (currentSeasonEffect === 'autumn' || currentSeasonEffect === 'spring') {
-                    ctx.fillStyle = p.color; ctx.globalAlpha = 0.82; ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.52, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = p.color; ctx.globalAlpha = 0.52;
+                    ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.52, 0, 0, Math.PI * 2); ctx.fill();
                 } else if (currentSeasonEffect === 'summer') {
-                    ctx.fillStyle = 'rgba(255, 230, 102, 0.75)'; ctx.shadowColor = '#ffd54f'; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(0, 0, p.r * 0.45, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(255, 230, 102, 0.48)'; ctx.shadowColor = '#ffd54f'; ctx.shadowBlur = 5;
+                    ctx.beginPath(); ctx.arc(0, 0, p.r * 0.45, 0, Math.PI * 2); ctx.fill();
                 }
                 ctx.restore();
             });
@@ -788,11 +891,18 @@
     let hitHighlightColor = localStorage.getItem('monkey_hit_color') || "#ffcc00";
 
     const HIT_COLOR_PALETTE = [
+        { name: "Белый", hex: "#ffffff" },
         { name: "Золото", hex: "#ffcc00" },
         { name: "Неон-зелёный", hex: "#00ff66" },
         { name: "Фиолетовый", hex: "#b84dff" },
         { name: "Малиновый", hex: "#ff3366" },
-        { name: "Голубой", hex: "#00e5ff" }
+        { name: "Голубой", hex: "#00e5ff" },
+        { name: "Оранжевый", hex: "#ff7b00" },
+        { name: "Синий", hex: "#3b82f6" },
+        { name: "Розовый", hex: "#ff66b2" },
+        { name: "Лайм", hex: "#a3e635" },
+        { name: "Бирюзовый", hex: "#14b8a6" },
+        { name: "Серебро", hex: "#cbd5e1" }
     ];
 
     let currentUserId = 0, currentUserName = "User", currentUserPhotoUrl = "", avatarLoadedForId = 0;
@@ -868,7 +978,8 @@
 
     function isCartItemDiscounted(item) {
         const liveProd = products.find(p => Number(p.id) === Number(item.id));
-        return liveProd ? Boolean(liveProd.has_discount) : Boolean(item.has_discount);
+        if (liveProd) return Boolean(liveProd.has_discount) || Number(liveProd.old_price || 0) > Number(liveProd.price);
+        return Boolean(item.has_discount);
     }
 
     function getEligiblePromoSubtotal(items) {
@@ -1058,9 +1169,9 @@
         items.forEach(p => {
             const isAvail = p.available !== false;
             const isHit = p.tag === 'хит';
-            const hasDisc = Boolean(p.has_discount);
-            const isLow = Boolean(p.low_stock);
             const oldPrice = Number(p.old_price || 0);
+            const hasDisc = Boolean(p.has_discount) || oldPrice > Number(p.price);
+            const isLow = Boolean(p.low_stock);
 
             const card = document.createElement('div');
             card.className = `product-card ${!isAvail ? 'out-of-stock' : ''}`;
@@ -1068,24 +1179,33 @@
 
             if (isHit && isAvail) {
                 card.style.borderColor = hitHighlightColor;
-                card.style.boxShadow = `0 0 16px ${hexToRgba(hitHighlightColor, 0.32)}`;
+                card.style.boxShadow = `0 0 16px ${hexToRgba(hitHighlightColor, 0.35)}`;
             }
 
-            let badges = '';
-            if (!isAvail) badges += `<div class="product-tag soldout">нет в наличии</div>`;
-            else {
-                if (hasDisc) badges += `<div class="product-tag discount-ribbon">🔥 СКИДКА</div>`;
-                if (isLow) badges += `<div class="product-tag lowstock">⚡ Мало</div>`;
-                if (p.tag) {
-                    const hitStyle = isHit ? `style="color:${hitHighlightColor}; border:1px solid ${hexToRgba(hitHighlightColor, 0.5)};"` : '';
-                    badges += `<div class="product-tag" ${hitStyle}>${isHit ? '🔥 хит' : p.tag}</div>`;
-                }
+            // На картинке оставляем ТОЛЬКО надпись "хит" (или "нет в наличии")
+            let imageBadges = '';
+            if (!isAvail) {
+                imageBadges = `<div class="product-tag soldout">нет в наличии</div>`;
+            } else if (isHit) {
+                imageBadges = `<div class="product-tag" style="color:${hitHighlightColor}; border:1px solid ${hexToRgba(hitHighlightColor, 0.55)};">🔥 хит</div>`;
+            }
+
+            // Под названием товара: слева красная СКИДКА, справа Мало
+            let underTitleBadges = '';
+            if (isAvail && (hasDisc || isLow)) {
+                underTitleBadges = `
+                    <div class="product-sub-badges">
+                        ${hasDisc ? `<span class="discount-tag-under">СКИДКА</span>` : `<span></span>`}
+                        ${isLow ? `<span class="lowstock-tag-right">⚡ Мало</span>` : ``}
+                    </div>
+                `;
             }
 
             const mediaHtml = p.image_url
                 ? `<img src="${p.image_url}" alt="${p.title}" onerror="this.outerHTML='<span>${p.icon || '🧪'}</span>'">`
                 : `<span>${p.icon || '🧪'}</span>`;
 
+            // Старая цена зачёркнута, рядом стоит новая цена
             const priceHtml = `
                 <div class="price-block">
                     ${oldPrice > Number(p.price) ? `<span class="product-old-price">${oldPrice.toFixed(2)} р.</span>` : ''}
@@ -1098,8 +1218,9 @@
                 : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "\\'")}')">🔔 Жду</button>`;
 
             card.innerHTML = `
-                <div class="product-img-container"><div class="product-badges-stack">${badges}</div>${mediaHtml}</div>
+                <div class="product-img-container"><div class="product-badges-stack">${imageBadges}</div>${mediaHtml}</div>
                 <div class="product-title">${p.title}</div>
+                ${underTitleBadges}
                 <div class="product-footer">${priceHtml}${rightBtnHtml}</div>
             `;
             grid.appendChild(card);
@@ -1196,15 +1317,16 @@
     function confirmAddToCart() {
         if (!currentSelectedProduct || !chosenOptionAvailable) return;
         const cartKey = `${currentSelectedProduct.id}_${chosenOptionValue}`;
+        const hasDisc = Boolean(currentSelectedProduct.has_discount) || Number(currentSelectedProduct.old_price || 0) > Number(currentSelectedProduct.price);
         if (cart[cartKey]) {
             cart[cartKey].qty += 1;
-            cart[cartKey].has_discount = Boolean(currentSelectedProduct.has_discount);
+            cart[cartKey].has_discount = hasDisc;
             cart[cartKey].image_url = currentSelectedProduct.image_url || '';
         } else {
             cart[cartKey] = {
                 id: currentSelectedProduct.id, title: currentSelectedProduct.title, price: Number(currentSelectedProduct.price),
                 icon: currentSelectedProduct.icon, image_url: currentSelectedProduct.image_url || '',
-                has_discount: Boolean(currentSelectedProduct.has_discount), optionName: chosenOptionValue, qty: 1
+                has_discount: hasDisc, optionName: chosenOptionValue, qty: 1
             };
         }
         saveCart(); renderCart(); closeModalDirect();
@@ -1298,7 +1420,7 @@
                 <div class="cart-item">
                     <div class="cart-item-img">${thumbHtml}</div>
                     <div class="cart-item-info">
-                        <div class="cart-item-title">${item.title} ${itemDisc ? '<span style="color:#ff5722; font-size:10px; font-weight:800;">[СКИДКА]</span>' : ''}</div>
+                        <div class="cart-item-title">${item.title} ${itemDisc ? '<span style="color:#ff3333; font-size:10px; font-weight:800;">[СКИДКА]</span>' : ''}</div>
                         <div class="cart-item-sub">Параметр: ${item.optionName}</div>
                         <div class="cart-item-price">${(item.price * item.qty).toFixed(2)} р.</div>
                     </div>
@@ -1499,11 +1621,12 @@
             const prod = products.find(p => p.title.toLowerCase() === baseTitle.toLowerCase());
             if (prod && prod.available !== false) {
                 const cartKey = `${prod.id}_${optName}`;
+                const hasDisc = Boolean(prod.has_discount) || Number(prod.old_price || 0) > Number(prod.price);
                 if (cart[cartKey]) cart[cartKey].qty += Number(item.qty || 1);
                 else {
                     cart[cartKey] = {
                         id: prod.id, title: prod.title, price: Number(prod.price), icon: prod.icon,
-                        image_url: prod.image_url || '', has_discount: Boolean(prod.has_discount),
+                        image_url: prod.image_url || '', has_discount: hasDisc,
                         optionName: optName, qty: Number(item.qty || 1)
                     };
                 }
@@ -1725,14 +1848,37 @@
                 btn.style.border = currentSeasonEffect !== s ? '1px solid var(--border-color)' : '';
             }
         });
-        const swatchBox = document.getElementById('hit-color-swatches');
-        if (swatchBox) {
-            swatchBox.innerHTML = HIT_COLOR_PALETTE.map(c => `
-                <div class="color-swatch ${hitHighlightColor.toLowerCase() === c.hex.toLowerCase() ? 'selected' : ''}"
-                     style="background:${c.hex}; box-shadow: 0 0 10px ${hexToRgba(c.hex, 0.5)};"
-                     title="${c.name}" onclick="adminSetHitColor('${c.hex}')"></div>
-            `).join('');
+
+        const dot = document.getElementById('current-hit-color-dot');
+        const label = document.getElementById('current-hit-color-label');
+        const found = HIT_COLOR_PALETTE.find(c => c.hex.toLowerCase() === hitHighlightColor.toLowerCase());
+        if (dot) {
+            dot.style.background = hitHighlightColor;
+            dot.style.boxShadow = `0 0 10px ${hexToRgba(hitHighlightColor, 0.7)}`;
         }
+        if (label) {
+            label.innerText = found ? found.name : hitHighlightColor;
+        }
+    }
+
+    function openHitColorModal() {
+        const grid = document.getElementById('hit-colors-modal-grid');
+        if (grid) {
+            grid.innerHTML = HIT_COLOR_PALETTE.map(c => {
+                const isSelected = hitHighlightColor.toLowerCase() === c.hex.toLowerCase();
+                return `
+                    <div class="hit-color-tile ${isSelected ? 'selected' : ''}" onclick="adminSetHitColor('${c.hex}')">
+                        <div class="hit-color-dot" style="background:${c.hex}; box-shadow: 0 0 12px ${hexToRgba(c.hex, 0.75)};"></div>
+                        <span class="hit-color-name">${c.name}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        document.getElementById('hit-color-modal').classList.add('active');
+    }
+
+    function closeHitColorModal() {
+        document.getElementById('hit-color-modal').classList.remove('active');
     }
 
     async function adminSetSeason(season) {
@@ -1746,7 +1892,11 @@
     }
 
     async function adminSetHitColor(hexColor) {
-        hitHighlightColor = hexColor; localStorage.setItem('monkey_hit_color', hitHighlightColor); renderAdminAppearance(); filterProducts();
+        hitHighlightColor = hexColor;
+        localStorage.setItem('monkey_hit_color', hitHighlightColor);
+        renderAdminAppearance();
+        filterProducts();
+        closeHitColorModal();
         try {
             await apiFetch(`/api/admin/appearance`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1782,17 +1932,23 @@
         const container = document.getElementById('admin-products-list');
         if (!container) return;
         container.innerHTML = products.map(p => {
-            const isAvail = p.available !== false, isHit = p.tag === 'хит', hasDisc = Boolean(p.has_discount), isLow = Boolean(p.low_stock);
+            const isAvail = p.available !== false, isHit = p.tag === 'хит', isLow = Boolean(p.low_stock);
+            const oldP = Number(p.old_price || 0);
+            const hasDisc = Boolean(p.has_discount) || oldP > Number(p.price);
+            const priceLabel = oldP > Number(p.price)
+                ? `<span style="text-decoration:line-through; color:var(--text-secondary); font-size:11px; margin-right:4px;">${oldP.toFixed(2)} р.</span>${Number(p.price).toFixed(2)} р.`
+                : `${Number(p.price).toFixed(2)} р.`;
+
             return `
                 <div class="admin-toggle-row" style="flex-direction:column; align-items:stretch; gap:6px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
                         <span style="font-weight:600; ${!isAvail ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${p.image_url ? '🖼' : p.icon} ${p.title}</span>
-                        <span style="color:var(--accent-green); font-weight:700; white-space:nowrap;">${Number(p.price).toFixed(2)} р.</span>
+                        <span style="color:var(--accent-green); font-weight:700; white-space:nowrap;">${priceLabel}</span>
                     </div>
                     <div style="display:flex; gap:5px; justify-content:flex-end; flex-wrap:wrap;">
                         <button class="toggle-pill ${isAvail ? 'on' : 'off'}" onclick="adminToggleProduct(${p.id}, 'available')">${isAvail ? 'В наличии' : 'Нет'}</button>
                         <button class="toggle-pill ${isHit ? 'on' : ''}" style="${!isHit ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="adminToggleProduct(${p.id}, 'hit')">🔥 Хит</button>
-                        <button class="toggle-pill ${hasDisc ? 'off' : ''}" style="${!hasDisc ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="adminToggleProduct(${p.id}, 'discount')">🏷 Скидка</button>
+                        <button class="toggle-pill ${hasDisc ? 'off' : ''}" style="${!hasDisc ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="adminQuickDiscount(${p.id})">🏷 Скидка</button>
                         <button class="toggle-pill ${isLow ? 'on' : ''}" style="${!isLow ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="adminToggleProduct(${p.id}, 'low_stock')">⚡ Мало</button>
                         <button class="toggle-pill on" onclick="openAdminEditProductModal(${p.id})">✏️ Изменить</button>
                         <button class="toggle-pill off" onclick="adminDeleteProduct(${p.id})">✕</button>
@@ -1800,6 +1956,53 @@
                 </div>
             `;
         }).join('');
+    }
+
+    async function adminQuickDiscount(productId) {
+        const prod = products.find(p => p.id === productId);
+        if (!prod) return;
+        const currentlyDiscounted = Boolean(prod.has_discount) || Number(prod.old_price || 0) > Number(prod.price);
+
+        if (currentlyDiscounted) {
+            // Снимаем скидку и возвращаем старую цену, если она была указана
+            const restoredPrice = Number(prod.old_price || 0) > Number(prod.price) ? Number(prod.old_price) : Number(prod.price);
+            try {
+                await apiFetch(`/api/admin/save_product`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: Number(currentUserId), id: prod.id, title: prod.title, category: prod.category,
+                        price: restoredPrice, old_price: 0, tag: prod.tag || '', icon: prod.icon || '🧪',
+                        available: prod.available !== false, image_url: prod.image_url || '',
+                        has_discount: false, low_stock: Boolean(prod.low_stock), options: prod.options || []
+                    })
+                });
+                await syncShopConfig();
+            } catch (e) {}
+            return;
+        }
+
+        const oldRaw = prompt(`Введите СТАРУЮ цену (до скидки, например 17):`, String(prod.price));
+        if (oldRaw === null) return;
+        const oldPrice = parseFloat(oldRaw.replace(',', '.'));
+        if (isNaN(oldPrice) || oldPrice <= 0) { alert("Некорректная старая цена"); return; }
+
+        const newRaw = prompt(`Введите НОВУЮ цену со скидкой (например 15):`, String(Math.max(1, oldPrice - 2)));
+        if (newRaw === null) return;
+        const newPrice = parseFloat(newRaw.replace(',', '.'));
+        if (isNaN(newPrice) || newPrice <= 0) { alert("Некорректная новая цена"); return; }
+
+        try {
+            await apiFetch(`/api/admin/save_product`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId), id: prod.id, title: prod.title, category: prod.category,
+                    price: newPrice, old_price: oldPrice, tag: prod.tag || '', icon: prod.icon || '🧪',
+                    available: prod.available !== false, image_url: prod.image_url || '',
+                    has_discount: true, low_stock: Boolean(prod.low_stock), options: prod.options || []
+                })
+            });
+            await syncShopConfig();
+        } catch (e) { alert("Ошибка применения скидки."); }
     }
 
     async function adminAddProduct() {
@@ -1909,6 +2112,7 @@
         const image_url = document.getElementById('edit-prod-img').value.trim();
 
         if (!title || isNaN(price) || price <= 0) { alert("Укажите название и цену"); return; }
+        const autoDiscount = old_price > price ? true : Boolean(prod.has_discount && old_price > 0);
 
         try {
             await apiFetch(`/api/admin/save_product`, {
@@ -1916,7 +2120,7 @@
                 body: JSON.stringify({
                     user_id: Number(currentUserId), id, title, category, price, old_price,
                     tag: prod.tag || '', icon, available: prod.available !== false,
-                    image_url, has_discount: Boolean(prod.has_discount), low_stock: Boolean(prod.low_stock),
+                    image_url, has_discount: autoDiscount, low_stock: Boolean(prod.low_stock),
                     options: editingProductOptions
                 })
             });
@@ -2149,7 +2353,7 @@
         } finally { btn.disabled = false; btn.innerText = "📢 Отправить всем"; }
     }
 
-    // ----- ПАНЕЛЬ КУРЬЕРА (ВЗЯТЬ В РАБОТУ, Я НА МЕСТЕ, НАПИСАТЬ КЛИЕНТУ) -----
+    // ----- ПАНЕЛЬ КУРЬЕРА -----
 
     async function claimOrderByCourier(orderId) {
         const key = String(orderId).trim();
@@ -2158,9 +2362,7 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: key, courier_id: Number(currentUserId), courier_name: currentUserName })
             });
-            if (res.ok) {
-                loadCourierOrders();
-            }
+            if (res.ok) loadCourierOrders();
         } catch (e) {
             alert("Не удалось взять заказ (возможно, его уже забрал другой курьер).");
             loadCourierOrders();
@@ -2175,9 +2377,7 @@
                 body: JSON.stringify({ order_id: key, courier_name: currentUserName })
             });
             alert("📍 Клиенту отправлено уведомление, что вы на месте!");
-        } catch (e) {
-            alert("Ошибка отправки уведомления.");
-        }
+        } catch (e) { alert("Ошибка отправки уведомления."); }
     }
 
     function renderCourierCards(orders) {
@@ -2211,10 +2411,9 @@
             if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
             else if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
 
-            let claimedBanner = '';
-            if (claimedId) {
-                claimedBanner = `<div style="font-size:11.5px; font-weight:700; color:${isClaimedByMe ? 'var(--accent-green)' : '#ffaa00'}; background:rgba(255,255,255,0.04); padding:5px 8px; border-radius:8px;">🛵 ${isClaimedByMe ? 'Вы ведёте этот заказ' : `Взял курьер: ${ord.claimed_by_name}`}</div>`;
-            }
+            let claimedBanner = claimedId
+                ? `<div style="font-size:11.5px; font-weight:700; color:${isClaimedByMe ? 'var(--accent-green)' : '#ffaa00'}; background:rgba(255,255,255,0.04); padding:5px 8px; border-radius:8px;">🛵 ${isClaimedByMe ? 'Вы ведёте этот заказ' : `Взял курьер: ${ord.claimed_by_name}`}</div>`
+                : '';
 
             let deleteBtn = (ord.status === 'completed' || ord.status === 'cancelled') ? `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${oid}')">✕</button>` : '';
             
