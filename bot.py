@@ -35,21 +35,45 @@ def load_token_from_env():
 FALLBACK_TOKEN = "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
-PUBLIC_TUNNEL_URL = "https://relax-indoor-claims-iso.trycloudflare.com"
+TUNNEL_FILE = "tunnel_url.txt"
+
+def load_tunnel_url() -> str:
+    if os.path.exists(TUNNEL_FILE):
+        try:
+            with open(TUNNEL_FILE, "r", encoding="utf-8") as f:
+                saved = f.read().strip()
+                if saved.startswith("http"):
+                    return saved
+        except Exception:
+            pass
+    return "https://relax-indoor-claims-iso.trycloudflare.com"
+
+PUBLIC_TUNNEL_URL = load_tunnel_url()
 
 OWNER_IDS = [7280921605]
 DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
 DB_FILE = "database.db"
 
+DEFAULT_OPTIONS_BY_CAT = {
+    "liquid": ["Кола", "Клубника", "Skittles", "Малина", "Манго"],
+    "disposable": ["Кола", "Клубника", "Skittles", "Малина", "Манго"],
+    "pod": ["Черный мат", "Градиент", "Серебряный", "Зеленый неон"],
+    "accessory": ["0.6 Ом", "0.8 Ом", "1.0 Ом", "1.2 Ом"]
+}
+
+def make_default_options_json(category: str) -> str:
+    opts = DEFAULT_OPTIONS_BY_CAT.get(category, ["Стандарт"])
+    return json.dumps([{"name": o, "available": True} for o in opts], ensure_ascii=False)
+
 INITIAL_PRODUCTS = [
-    (1, "ANIMAL LOVE Killer 50mg", "liquid", 17.00, "жидкость", "🧪", 1, "", 0),
-    (2, "OGGO Rush 20mg", "liquid", 13.00, "жидкость", "🧪", 1, "", 0),
-    (3, "OGGO Cherry 20mg", "liquid", 13.00, "жидкость", "🧪", 1, "", 0),
-    (4, "BJORN ZLOY 60mg", "liquid", 13.00, "хит", "🧪", 1, "", 0),
-    (5, "XROS 3 Mini Pod Kit", "pod", 55.00, "вейп", "⚡", 1, "", 0),
-    (6, "Vaporesso XROS Pro", "pod", 85.00, "вейп", "⚡", 1, "", 0),
-    (7, "Lost Mary BM5000", "disposable", 25.00, "одноразка", "💨", 1, "", 0),
-    (8, "Сменный картридж XROS", "accessory", 9.00, "расходник", "📦", 1, "", 0),
+    (1, "ANIMAL LOVE Killer 50mg", "liquid", 17.00, 0.0, "жидкость", "🧪", 1, "", 0, 0, make_default_options_json("liquid")),
+    (2, "OGGO Rush 20mg", "liquid", 13.00, 0.0, "жидкость", "🧪", 1, "", 0, 0, make_default_options_json("liquid")),
+    (3, "OGGO Cherry 20mg", "liquid", 13.00, 0.0, "жидкость", "🧪", 1, "", 0, 0, make_default_options_json("liquid")),
+    (4, "BJORN ZLOY 60mg", "liquid", 13.00, 0.0, "хит", "🧪", 1, "", 0, 0, make_default_options_json("liquid")),
+    (5, "XROS 3 Mini Pod Kit", "pod", 55.00, 0.0, "вейп", "⚡", 1, "", 0, 0, make_default_options_json("pod")),
+    (6, "Vaporesso XROS Pro", "pod", 85.00, 0.0, "вейп", "⚡", 1, "", 0, 0, make_default_options_json("pod")),
+    (7, "Lost Mary BM5000", "disposable", 25.00, 0.0, "одноразка", "💨", 1, "", 0, 0, make_default_options_json("disposable")),
+    (8, "Сменный картридж XROS", "accessory", 9.00, 0.0, "расходник", "📦", 1, "", 0, 0, make_default_options_json("accessory")),
 ]
 
 DEFAULT_TIME_SLOTS = ["12:00", "14:30", "16:30", "18:10", "21:00"]
@@ -155,6 +179,46 @@ def build_personal_url(uid: int, uname: str = "User", is_courier: bool = False) 
         url += f"&api={quote(PUBLIC_TUNNEL_URL.strip())}"
     return url
 
+def parse_product_options(raw_json: str, category: str) -> list:
+    if raw_json:
+        try:
+            parsed = json.loads(raw_json)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                return [{"name": str(x.get("name", "")), "available": bool(x.get("available", True))} for x in parsed if x.get("name")]
+        except Exception:
+            pass
+    return [{"name": o, "available": True} for o in DEFAULT_OPTIONS_BY_CAT.get(category, ["Стандарт"])]
+
+async def notify_stock_subscribers(db, product_id: int, product_title: str, available_options: list[str] = None, all_restocked: bool = False):
+    async with db.execute("SELECT id, user_id, option_name FROM stock_notifications WHERE product_id = ?", (product_id,)) as cur:
+        rows = await cur.fetchall()
+
+    to_delete = []
+    for sub_id, uid, opt_name in rows:
+        should_notify = False
+        if all_restocked and not opt_name:
+            should_notify = True
+        elif opt_name and available_options and opt_name in available_options:
+            should_notify = True
+        elif all_restocked and opt_name and (not available_options or opt_name in available_options):
+            should_notify = True
+
+        if should_notify:
+            to_delete.append(sub_id)
+            opt_part = f" ({html.escape(opt_name)})" if opt_name else ""
+            try:
+                await bot.send_message(
+                    uid,
+                    f"🔔 <b>Товар снова в наличии!</b>\n\n"
+                    f"✨ <b>{html.escape(product_title)}{opt_part}</b> уже доступен для заказа в <b>Monkey Vape</b>!",
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass
+
+    for sub_id in to_delete:
+        await db.execute("DELETE FROM stock_notifications WHERE id = ?", (sub_id,))
+
 async def init_db():
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute("""
@@ -175,21 +239,35 @@ async def init_db():
             )
         """)
         await db.execute("""
+            CREATE TABLE IF NOT EXISTS stock_notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                product_id INTEGER,
+                option_name TEXT DEFAULT ''
+            )
+        """)
+        await db.execute("""
             CREATE TABLE IF NOT EXISTS products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT,
                 category TEXT,
                 price REAL,
+                old_price REAL DEFAULT 0,
                 tag TEXT DEFAULT '',
                 icon TEXT DEFAULT '🧪',
                 available INTEGER DEFAULT 1,
                 image_url TEXT DEFAULT '',
-                has_discount INTEGER DEFAULT 0
+                has_discount INTEGER DEFAULT 0,
+                low_stock INTEGER DEFAULT 0,
+                options_json TEXT DEFAULT ''
             )
         """)
         for col_sql in [
+            "ALTER TABLE products ADD COLUMN old_price REAL DEFAULT 0",
             "ALTER TABLE products ADD COLUMN image_url TEXT DEFAULT ''",
-            "ALTER TABLE products ADD COLUMN has_discount INTEGER DEFAULT 0"
+            "ALTER TABLE products ADD COLUMN has_discount INTEGER DEFAULT 0",
+            "ALTER TABLE products ADD COLUMN low_stock INTEGER DEFAULT 0",
+            "ALTER TABLE products ADD COLUMN options_json TEXT DEFAULT ''"
         ]:
             try:
                 await db.execute(col_sql)
@@ -200,7 +278,8 @@ async def init_db():
             row = await cur.fetchone()
             if row and row[0] == 0:
                 await db.executemany(
-                    "INSERT INTO products (id, title, category, price, tag, icon, available, image_url, has_discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    """INSERT INTO products (id, title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     INITIAL_PRODUCTS
                 )
 
@@ -219,7 +298,9 @@ async def init_db():
                 promo_code TEXT DEFAULT '',
                 discount REAL DEFAULT 0,
                 created_at TEXT DEFAULT '',
-                cancelled_by TEXT DEFAULT ''
+                cancelled_by TEXT DEFAULT '',
+                claimed_by_id INTEGER DEFAULT 0,
+                claimed_by_name TEXT DEFAULT ''
             )
         """)
         for col_sql in [
@@ -227,7 +308,9 @@ async def init_db():
             "ALTER TABLE orders ADD COLUMN promo_code TEXT DEFAULT ''",
             "ALTER TABLE orders ADD COLUMN discount REAL DEFAULT 0",
             "ALTER TABLE orders ADD COLUMN created_at TEXT DEFAULT ''",
-            "ALTER TABLE orders ADD COLUMN cancelled_by TEXT DEFAULT ''"
+            "ALTER TABLE orders ADD COLUMN cancelled_by TEXT DEFAULT ''",
+            "ALTER TABLE orders ADD COLUMN claimed_by_id INTEGER DEFAULT 0",
+            "ALTER TABLE orders ADD COLUMN claimed_by_name TEXT DEFAULT ''"
         ]:
             try:
                 await db.execute(col_sql)
@@ -314,6 +397,17 @@ class StatusUpdateSchema(BaseModel):
     order_id: str
     status: str
     cancelled_by: str = ""
+    courier_id: int = 0
+    courier_name: str = ""
+
+class CourierClaimSchema(BaseModel):
+    order_id: str
+    courier_id: int
+    courier_name: str
+
+class CourierArrivedSchema(BaseModel):
+    order_id: str
+    courier_name: str = ""
 
 class TimeUpdateSchema(BaseModel):
     order_id: str
@@ -321,6 +415,11 @@ class TimeUpdateSchema(BaseModel):
 
 class DeleteOrderSchema(BaseModel):
     order_id: str
+
+class StockNotifySchema(BaseModel):
+    user_id: int
+    product_id: int
+    option_name: str = ""
 
 class AdminStationToggleSchema(BaseModel):
     user_id: int
@@ -372,11 +471,14 @@ class AdminProductSaveSchema(BaseModel):
     title: str
     category: str
     price: float
+    old_price: float = 0.0
     tag: str = ""
     icon: str = "🧪"
     available: bool = True
     image_url: str = ""
     has_discount: bool = False
+    low_stock: bool = False
+    options: list = []
 
 class AdminProductToggleSchema(BaseModel):
     user_id: int
@@ -432,8 +534,7 @@ async def get_shop_config():
 
         promos = {}
         async with db.execute("SELECT code, discount, discount_type, max_uses, used_count FROM promocodes") as cursor:
-            rows = await cursor.fetchall()
-            for r in rows:
+            for r in await cursor.fetchall():
                 promos[r[0]] = {
                     "discount": float(r[1]),
                     "type": r[2] or "rub",
@@ -442,19 +543,25 @@ async def get_shop_config():
                 }
 
         products_list = []
-        async with db.execute("SELECT id, title, category, price, tag, icon, available, image_url, has_discount FROM products ORDER BY id ASC") as cursor:
-            p_rows = await cursor.fetchall()
-            for pr in p_rows:
+        async with db.execute("""
+            SELECT id, title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json
+            FROM products ORDER BY id ASC
+        """) as cursor:
+            for pr in await cursor.fetchall():
+                cat = pr[2]
                 products_list.append({
                     "id": pr[0],
                     "title": pr[1],
-                    "category": pr[2],
+                    "category": cat,
                     "price": float(pr[3]),
-                    "tag": pr[4] or "",
-                    "icon": pr[5] or "🧪",
-                    "available": bool(pr[6]),
-                    "image_url": pr[7] or "",
-                    "has_discount": bool(pr[8])
+                    "old_price": float(pr[4] or 0.0),
+                    "tag": pr[5] or "",
+                    "icon": pr[6] or "🧪",
+                    "available": bool(pr[7]),
+                    "image_url": pr[8] or "",
+                    "has_discount": bool(pr[9]),
+                    "low_stock": bool(pr[10]),
+                    "options": parse_product_options(pr[11] or "", cat)
                 })
 
         return {
@@ -471,6 +578,23 @@ async def get_shop_config():
             "banned_users": banned_users,
             "courier_ids": courier_ids
         }
+
+@app.post("/api/subscribe_stock")
+async def subscribe_stock(data: StockNotifySchema):
+    if not data.user_id:
+        raise HTTPException(status_code=400, detail="No user id")
+    async with aiosqlite.connect(DB_FILE) as db:
+        async with db.execute(
+            "SELECT id FROM stock_notifications WHERE user_id = ? AND product_id = ? AND option_name = ?",
+            (data.user_id, data.product_id, data.option_name.strip())
+        ) as cur:
+            if not await cur.fetchone():
+                await db.execute(
+                    "INSERT INTO stock_notifications (user_id, product_id, option_name) VALUES (?, ?, ?)",
+                    (data.user_id, data.product_id, data.option_name.strip())
+                )
+                await db.commit()
+    return {"success": True}
 
 @app.post("/api/admin/shop_status")
 async def admin_shop_status(data: AdminShopStatusSchema):
@@ -508,8 +632,7 @@ async def admin_manage_metro(data: AdminMetroManageSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         metro_map = await get_metro_map(db)
         if data.action == "add":
-            exists = any(s["name"].lower() == st_name.lower() for s in metro_map[data.line])
-            if not exists:
+            if not any(s["name"].lower() == st_name.lower() for s in metro_map[data.line]):
                 metro_map[data.line].append({"name": st_name, "line": LINE_NAMES[data.line]})
         elif data.action == "delete":
             metro_map[data.line] = [s for s in metro_map[data.line] if s["name"] != st_name]
@@ -599,25 +722,40 @@ async def admin_delete_promo(data: AdminPromoDeleteSchema):
 async def admin_save_product(data: AdminProductSaveSchema):
     if data.user_id not in OWNER_IDS:
         raise HTTPException(status_code=403, detail="Only owner")
+
+    clean_opts = [{"name": str(o.get("name", "")).strip(), "available": bool(o.get("available", True))} for o in (data.options or []) if str(o.get("name", "")).strip()]
+    if not clean_opts:
+        clean_opts = [{"name": o, "available": True} for o in DEFAULT_OPTIONS_BY_CAT.get(data.category, ["Стандарт"])]
+    opts_json = json.dumps(clean_opts, ensure_ascii=False)
+
     async with aiosqlite.connect(DB_FILE) as db:
         if data.id and data.id > 0:
+            async with db.execute("SELECT available FROM products WHERE id = ?", (data.id,)) as cur:
+                old_row = await cur.fetchone()
+            was_avail = bool(old_row[0]) if old_row else False
+
             await db.execute(
-                """UPDATE products SET title = ?, category = ?, price = ?, tag = ?, icon = ?,
-                   available = ?, image_url = ?, has_discount = ? WHERE id = ?""",
+                """UPDATE products SET title = ?, category = ?, price = ?, old_price = ?, tag = ?, icon = ?,
+                   available = ?, image_url = ?, has_discount = ?, low_stock = ?, options_json = ? WHERE id = ?""",
                 (
-                    data.title.strip(), data.category, float(data.price), data.tag.strip(),
-                    data.icon.strip() or "🧪", 1 if data.available else 0,
-                    data.image_url.strip(), 1 if data.has_discount else 0, data.id
+                    data.title.strip(), data.category, float(data.price), float(data.old_price or 0.0),
+                    data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0,
+                    data.image_url.strip(), 1 if data.has_discount else 0, 1 if data.low_stock else 0,
+                    opts_json, data.id
                 )
             )
+            avail_opt_names = [o["name"] for o in clean_opts if o["available"]]
+            if data.available:
+                await notify_stock_subscribers(db, data.id, data.title.strip(), avail_opt_names, all_restocked=(not was_avail))
         else:
             await db.execute(
-                """INSERT INTO products (title, category, price, tag, icon, available, image_url, has_discount)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO products (title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    data.title.strip(), data.category, float(data.price), data.tag.strip(),
-                    data.icon.strip() or "🧪", 1 if data.available else 0,
-                    data.image_url.strip(), 1 if data.has_discount else 0
+                    data.title.strip(), data.category, float(data.price), float(data.old_price or 0.0),
+                    data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0,
+                    data.image_url.strip(), 1 if data.has_discount else 0, 1 if data.low_stock else 0,
+                    opts_json
                 )
             )
         await db.commit()
@@ -629,11 +767,19 @@ async def admin_toggle_product(data: AdminProductToggleSchema):
         raise HTTPException(status_code=403, detail="Only owner")
     async with aiosqlite.connect(DB_FILE) as db:
         if data.field == "available":
+            async with db.execute("SELECT title, available, category, options_json FROM products WHERE id = ?", (data.product_id,)) as cur:
+                row = await cur.fetchone()
             await db.execute("UPDATE products SET available = CASE WHEN available = 1 THEN 0 ELSE 1 END WHERE id = ?", (data.product_id,))
+            if row and not bool(row[1]):
+                opts = parse_product_options(row[3] or "", row[2])
+                avail_names = [o["name"] for o in opts if o["available"]]
+                await notify_stock_subscribers(db, data.product_id, row[0], avail_names, all_restocked=True)
         elif data.field == "hit":
             await db.execute("UPDATE products SET tag = CASE WHEN tag = 'хит' THEN '' ELSE 'хит' END WHERE id = ?", (data.product_id,))
         elif data.field == "discount":
             await db.execute("UPDATE products SET has_discount = CASE WHEN has_discount = 1 THEN 0 ELSE 1 END WHERE id = ?", (data.product_id,))
+        elif data.field == "low_stock":
+            await db.execute("UPDATE products SET low_stock = CASE WHEN low_stock = 1 THEN 0 ELSE 1 END WHERE id = ?", (data.product_id,))
         await db.commit()
     return {"success": True}
 
@@ -643,6 +789,7 @@ async def admin_delete_product(data: AdminProductDeleteSchema):
         raise HTTPException(status_code=403, detail="Only owner")
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute("DELETE FROM products WHERE id = ?", (data.product_id,))
+        await db.execute("DELETE FROM stock_notifications WHERE product_id = ?", (data.product_id,))
         await db.commit()
     return {"success": True}
 
@@ -684,13 +831,13 @@ async def admin_stats(user_id: int):
 
     today_rev = week_rev = total_rev = 0.0
     today_cnt = week_cnt = total_cnt = cancelled_cnt = active_cnt = 0
-    item_counts, station_counts = {}, {}
+    item_counts, station_counts, courier_map = {}, {}, {}
 
     async with aiosqlite.connect(DB_FILE) as db:
-        async with db.execute("SELECT total, status, created_at, items, station FROM orders") as cursor:
+        async with db.execute("SELECT total, status, created_at, items, station, claimed_by_id, claimed_by_name FROM orders") as cursor:
             rows = await cursor.fetchall()
 
-        for total, status, created_at, items_json, station in rows:
+        for total, status, created_at, items_json, station, c_id, c_name in rows:
             val = float(total or 0)
             c_str = created_at or ""
             if status == "completed":
@@ -708,6 +855,11 @@ async def admin_stats(user_id: int):
                     pass
                 if station:
                     station_counts[station] = station_counts.get(station, 0) + 1
+                c_label = c_name if c_name else (f"ID {c_id}" if c_id else "Без закрепления")
+                if c_label not in courier_map:
+                    courier_map[c_label] = {"name": c_label, "count": 0, "revenue": 0.0}
+                courier_map[c_label]["count"] += 1
+                courier_map[c_label]["revenue"] = round(courier_map[c_label]["revenue"] + val, 2)
                 try:
                     for it in json.loads(items_json or "[]"):
                         t = it.get("title", "Товар")
@@ -722,6 +874,7 @@ async def admin_stats(user_id: int):
 
     top_items = sorted(item_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     top_stations = sorted(station_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    courier_stats = sorted(courier_map.values(), key=lambda x: x["revenue"], reverse=True)
 
     return {
         "today_rev": round(today_rev, 2), "today_cnt": today_cnt,
@@ -729,7 +882,8 @@ async def admin_stats(user_id: int):
         "total_rev": round(total_rev, 2), "total_cnt": total_cnt,
         "cancelled_cnt": cancelled_cnt, "active_cnt": active_cnt,
         "top_items": [{"title": k, "qty": v} for k, v in top_items],
-        "top_stations": [{"station": k, "count": v} for k, v in top_stations]
+        "top_stations": [{"station": k, "count": v} for k, v in top_stations],
+        "courier_stats": courier_stats
     }
 
 @app.get("/api/admin/broadcast_history/{user_id}")
@@ -810,8 +964,8 @@ async def create_order(order: OrderSchema):
 
         await db.execute(
             """INSERT OR REPLACE INTO orders 
-               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, created_at, cancelled_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, '')""",
+               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, created_at, cancelled_by, claimed_by_id, claimed_by_name)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, '', 0, '')""",
             (
                 order_id, order.user_id, order.user_name, order.station, order.time,
                 order.total, json.dumps(order.items), order.status, order.promo_code, order.discount, created_at
@@ -834,7 +988,7 @@ async def create_order(order: OrderSchema):
         f"⏰ <b>Время встречи:</b> {safe_time}\n"
         f"💰 <b>Итого:</b> {order.total:.2f} р.\n\n"
         f"📦 <b>Состав:</b>\n{items_str}{promo_line}\n\n"
-        f"Зайдите в мини-приложение во вкладку <b>«Курьер»</b> для управления заказом."
+        f"Зайдите в мини-приложение во вкладку <b>«Курьер»</b>, чтобы взять заказ в работу."
     )
 
     for cid in all_couriers:
@@ -865,6 +1019,55 @@ async def create_order(order: OrderSchema):
 
     return {"success": True, "order_id": order_id}
 
+@app.post("/api/courier/claim_order")
+async def courier_claim_order(data: CourierClaimSchema):
+    oid = str(data.order_id).strip()
+    async with aiosqlite.connect(DB_FILE) as db:
+        async with db.execute("SELECT user_id, claimed_by_id, claimed_by_name, station, time FROM orders WHERE id = ?", (oid,)) as cur:
+            row = await cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Order not found")
+        buyer_id, current_cid, current_cname, station, time_str = row[0], row[1], row[2], row[3], row[4]
+        if current_cid and int(current_cid) != 0 and int(current_cid) != int(data.courier_id):
+            raise HTTPException(status_code=409, detail=f"Заказ уже взял {current_cname}")
+
+        await db.execute(
+            "UPDATE orders SET claimed_by_id = ?, claimed_by_name = ? WHERE id = ?",
+            (int(data.courier_id), data.courier_name.strip(), oid)
+        )
+        await db.commit()
+
+    if buyer_id and int(current_cid or 0) == 0:
+        try:
+            await bot.send_message(
+                buyer_id,
+                f"🛵 <b>Курьер взял ваш заказ #{html.escape(oid)} в работу!</b>\n"
+                f"👤 Курьер: {html.escape(data.courier_name)}\n"
+                f"🚇 Станция: м. {html.escape(station)} в {html.escape(time_str)}",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+    return {"success": True}
+
+@app.post("/api/courier/arrived")
+async def courier_arrived(data: CourierArrivedSchema):
+    oid = str(data.order_id).strip()
+    async with aiosqlite.connect(DB_FILE) as db:
+        async with db.execute("SELECT user_id, station FROM orders WHERE id = ?", (oid,)) as cur:
+            row = await cur.fetchone()
+    if row and row[0]:
+        try:
+            await bot.send_message(
+                row[0],
+                f"📍 <b>Курьер прибыл на станцию м. {html.escape(row[1])}!</b>\n"
+                f"Заказ #{html.escape(oid)} ожидает вас на месте встречи.",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+    return {"success": True}
+
 @app.get("/api/orders")
 async def get_orders():
     async with aiosqlite.connect(DB_FILE) as db:
@@ -876,7 +1079,8 @@ async def get_orders():
                 "items": json.loads(row["items"]), "status": row["status"],
                 "time_changed": bool(row["time_changed"]), "hidden_by_courier": bool(row["hidden_by_courier"]),
                 "promo_code": row["promo_code"] or "", "discount": row["discount"] or 0.0,
-                "created_at": row["created_at"] or "", "cancelled_by": row["cancelled_by"] or ""
+                "created_at": row["created_at"] or "", "cancelled_by": row["cancelled_by"] or "",
+                "claimed_by_id": row["claimed_by_id"] or 0, "claimed_by_name": row["claimed_by_name"] or ""
             } for row in await cursor.fetchall()]
 
 @app.get("/api/user_orders/{user_id}")
@@ -890,14 +1094,24 @@ async def get_user_orders(user_id: int):
                 "items": json.loads(row["items"]), "status": row["status"],
                 "time_changed": bool(row["time_changed"]), "promo_code": row["promo_code"] or "",
                 "discount": row["discount"] or 0.0, "created_at": row["created_at"] or "",
-                "cancelled_by": row["cancelled_by"] or ""
+                "cancelled_by": row["cancelled_by"] or "",
+                "claimed_by_id": row["claimed_by_id"] or 0, "claimed_by_name": row["claimed_by_name"] or ""
             } for row in await cursor.fetchall()]
 
 @app.post("/api/update_order_status")
 async def update_order_status(data: StatusUpdateSchema):
     cancelled_by = data.cancelled_by if data.status == 'cancelled' else ''
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?", (data.status, cancelled_by, str(data.order_id)))
+        if data.courier_id:
+            await db.execute(
+                """UPDATE orders SET status = ?, cancelled_by = ?,
+                   claimed_by_id = CASE WHEN claimed_by_id = 0 THEN ? ELSE claimed_by_id END,
+                   claimed_by_name = CASE WHEN claimed_by_name = '' THEN ? ELSE claimed_by_name END
+                   WHERE id = ?""",
+                (data.status, cancelled_by, int(data.courier_id), data.courier_name, str(data.order_id))
+            )
+        else:
+            await db.execute("UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?", (data.status, cancelled_by, str(data.order_id)))
         all_couriers = await get_all_courier_ids(db)
         await db.commit()
 
@@ -980,10 +1194,27 @@ async def handle_owner_photo_upload(message: Message):
     photo_url = f"{base}/api/tg_photo/{file_id}"
     await message.answer(
         f"🖼 <b>Ссылка на фото для товара готова!</b>\n\n"
-        f"Нажми на ссылку ниже, чтобы скопировать её, и вставь в настройках товара в мини-приложении:\n"
+        f"Нажми на ссылку ниже, чтобы скопировать её, и вставь в настройках товара:\n"
         f"<code>{html.escape(photo_url)}</code>",
         parse_mode="HTML"
     )
+
+@dp.message(F.text.startswith("/seturl"))
+async def cmd_set_tunnel_url(message: Message):
+    global PUBLIC_TUNNEL_URL
+    if message.from_user.id not in OWNER_IDS:
+        return
+    new_url = message.text[7:].strip().rstrip("/")
+    if not new_url.startswith("http"):
+        await message.answer("Укажи ссылку после команды, например:\n<code>/seturl https://твой-домен.com</code>", parse_mode="HTML")
+        return
+    PUBLIC_TUNNEL_URL = new_url
+    try:
+        with open(TUNNEL_FILE, "w", encoding="utf-8") as f:
+            f.write(new_url)
+    except Exception:
+        pass
+    await message.answer(f"✅ Новый адрес сервера сохранён:\n<code>{html.escape(new_url)}</code>\n\nНажми /start, чтобы обновить кнопку.", parse_mode="HTML")
 
 @dp.message(F.text.startswith("/post"))
 async def cmd_post_broadcast(message: Message):
