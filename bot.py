@@ -32,30 +32,74 @@ def load_token_from_env():
             pass
     return None
 
-# ----- НАСТРОЙКИ И ТОКЕНЫ -----
 FALLBACK_TOKEN = "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
-
-# Актуальная ссылка туннеля (без скобок!)
 PUBLIC_TUNNEL_URL = "https://relax-indoor-claims-iso.trycloudflare.com"
 
-# БАЗОВЫЕ РОЛИ ПОЛЬЗОВАТЕЛЕЙ (Telegram ID)
-OWNER_IDS = [7280921605]  # Владелец (Админ)
-DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]  # Базовые курьеры
-
+OWNER_IDS = [7280921605]
+DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
 DB_FILE = "database.db"
 
 INITIAL_PRODUCTS = [
-    (1, "ANIMAL LOVE Killer 50mg", "liquid", 17.00, "жидкость", "🧪", 1),
-    (2, "OGGO Rush 20mg", "liquid", 13.00, "жидкость", "🧪", 1),
-    (3, "OGGO Cherry 20mg", "liquid", 13.00, "жидкость", "🧪", 1),
-    (4, "BJORN ZLOY 60mg", "liquid", 13.00, "хит", "🧪", 1),
-    (5, "XROS 3 Mini Pod Kit", "pod", 55.00, "вейп", "⚡", 1),
-    (6, "Vaporesso XROS Pro", "pod", 85.00, "вейп", "⚡", 1),
-    (7, "Lost Mary BM5000", "disposable", 25.00, "одноразка", "💨", 1),
-    (8, "Сменный картридж XROS", "accessory", 9.00, "расходник", "📦", 1),
+    (1, "ANIMAL LOVE Killer 50mg", "liquid", 17.00, "жидкость", "🧪", 1, "", 0),
+    (2, "OGGO Rush 20mg", "liquid", 13.00, "жидкость", "🧪", 1, "", 0),
+    (3, "OGGO Cherry 20mg", "liquid", 13.00, "жидкость", "🧪", 1, "", 0),
+    (4, "BJORN ZLOY 60mg", "liquid", 13.00, "хит", "🧪", 1, "", 0),
+    (5, "XROS 3 Mini Pod Kit", "pod", 55.00, "вейп", "⚡", 1, "", 0),
+    (6, "Vaporesso XROS Pro", "pod", 85.00, "вейп", "⚡", 1, "", 0),
+    (7, "Lost Mary BM5000", "disposable", 25.00, "одноразка", "💨", 1, "", 0),
+    (8, "Сменный картридж XROS", "accessory", 9.00, "расходник", "📦", 1, "", 0),
 ]
+
+DEFAULT_TIME_SLOTS = ["12:00", "14:30", "16:30", "18:10", "21:00"]
+
+DEFAULT_METRO_STATIONS = {
+    "green": [
+        {"name": "Юбилейная площадь", "line": "Зеленая ветка"},
+        {"name": "Площадь Франтишка Богушевича", "line": "Зеленая ветка"},
+        {"name": "Вокзальная", "line": "Зеленая ветка"},
+        {"name": "Ковальская Слобода", "line": "Зеленая ветка"},
+        {"name": "Аэродромная", "line": "Зеленая ветка"},
+        {"name": "Неморшанский Сад", "line": "Зеленая ветка"},
+        {"name": "Слуцкий Гостинец", "line": "Зеленая ветка"}
+    ],
+    "blue": [
+        {"name": "Уручье", "line": "Синяя ветка"},
+        {"name": "Борисовский тракт", "line": "Синяя ветка"},
+        {"name": "Восток", "line": "Синяя ветка"},
+        {"name": "Московская", "line": "Синяя ветка"},
+        {"name": "Парк Челюскинцев", "line": "Синяя ветка"},
+        {"name": "Академия наук", "line": "Синяя ветка"},
+        {"name": "Площадь Якуба Коласа", "line": "Синяя ветка"},
+        {"name": "Площадь Победы", "line": "Синяя ветка"},
+        {"name": "Октябрьская", "line": "Синяя ветка"},
+        {"name": "Площадь Ленина", "line": "Синяя ветка"},
+        {"name": "Институт культуры", "line": "Синяя ветка"},
+        {"name": "Грушевка", "line": "Синяя ветка"},
+        {"name": "Михалово", "line": "Синяя ветка"},
+        {"name": "Петровщина", "line": "Синяя ветка"},
+        {"name": "Малиновка", "line": "Синяя ветка"}
+    ],
+    "red": [
+        {"name": "Каменная Горка", "line": "Красная ветка"},
+        {"name": "Кунцевщина", "line": "Красная ветка"},
+        {"name": "Спортивная", "line": "Красная ветка"},
+        {"name": "Пушкинская", "line": "Красная ветка"},
+        {"name": "Молодежная", "line": "Красная ветка"},
+        {"name": "Фрунзенская", "line": "Красная ветка"},
+        {"name": "Немига", "line": "Красная ветка"},
+        {"name": "Купаловская", "line": "Красная ветка"},
+        {"name": "Первомайская", "line": "Красная ветка"},
+        {"name": "Пролетарская", "line": "Красная ветка"},
+        {"name": "Тракторный завод", "line": "Красная ветка"},
+        {"name": "Партизанская", "line": "Красная ветка"},
+        {"name": "Автозаводская", "line": "Красная ветка"},
+        {"name": "Могилевская", "line": "Красная ветка"}
+    ]
+}
+
+LINE_NAMES = {"green": "Зеленая ветка", "blue": "Синяя ветка", "red": "Красная ветка"}
 
 async def get_setting_raw(db, key: str, default: str = "") -> str:
     async with db.execute("SELECT value FROM shop_settings WHERE key = ?", (key,)) as cursor:
@@ -65,20 +109,30 @@ async def get_setting_raw(db, key: str, default: str = "") -> str:
     return default
 
 async def set_setting_raw(db, key: str, value: str):
-    await db.execute(
-        "INSERT OR REPLACE INTO shop_settings (key, value) VALUES (?, ?)",
-        (key, value)
-    )
+    await db.execute("INSERT OR REPLACE INTO shop_settings (key, value) VALUES (?, ?)", (key, value))
 
-async def get_setting_list(db, key: str) -> list:
-    raw = await get_setting_raw(db, key, "[]")
+async def get_setting_list(db, key: str, default_list=None) -> list:
+    raw = await get_setting_raw(db, key, "")
+    if not raw:
+        return list(default_list) if default_list is not None else []
     try:
         return json.loads(raw)
     except Exception:
-        return []
+        return list(default_list) if default_list is not None else []
 
 async def set_setting_list(db, key: str, values: list):
-    await set_setting_raw(db, key, json.dumps(values))
+    await set_setting_raw(db, key, json.dumps(values, ensure_ascii=False))
+
+async def get_metro_map(db) -> dict:
+    raw = await get_setting_raw(db, "metro_stations", "")
+    if raw:
+        try:
+            data = json.loads(raw)
+            if isinstance(data, dict) and "green" in data:
+                return data
+        except Exception:
+            pass
+    return json.loads(json.dumps(DEFAULT_METRO_STATIONS))
 
 async def get_all_courier_ids(db) -> list[int]:
     extra = await get_setting_list(db, "extra_couriers")
@@ -110,7 +164,6 @@ async def init_db():
                 joined_at TEXT DEFAULT ''
             )
         """)
-
         await db.execute("""
             CREATE TABLE IF NOT EXISTS broadcasts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,7 +174,6 @@ async def init_db():
                 total INTEGER DEFAULT 0
             )
         """)
-
         await db.execute("""
             CREATE TABLE IF NOT EXISTS products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,15 +182,25 @@ async def init_db():
                 price REAL,
                 tag TEXT DEFAULT '',
                 icon TEXT DEFAULT '🧪',
-                available INTEGER DEFAULT 1
+                available INTEGER DEFAULT 1,
+                image_url TEXT DEFAULT '',
+                has_discount INTEGER DEFAULT 0
             )
         """)
+        for col_sql in [
+            "ALTER TABLE products ADD COLUMN image_url TEXT DEFAULT ''",
+            "ALTER TABLE products ADD COLUMN has_discount INTEGER DEFAULT 0"
+        ]:
+            try:
+                await db.execute(col_sql)
+            except Exception:
+                pass
 
         async with db.execute("SELECT COUNT(*) FROM products") as cur:
             row = await cur.fetchone()
             if row and row[0] == 0:
                 await db.executemany(
-                    "INSERT INTO products (id, title, category, price, tag, icon, available) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO products (id, title, category, price, tag, icon, available, image_url, has_discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     INITIAL_PRODUCTS
                 )
 
@@ -176,14 +238,7 @@ async def init_db():
             INSERT OR IGNORE INTO users (user_id, user_name, joined_at)
             SELECT DISTINCT user_id, user_name, '' FROM orders WHERE user_id > 0
         """)
-
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS shop_settings (
-                key TEXT PRIMARY KEY,
-                value TEXT
-            )
-        """)
-
+        await db.execute("CREATE TABLE IF NOT EXISTS shop_settings (key TEXT PRIMARY KEY, value TEXT)")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS promocodes (
                 code TEXT PRIMARY KEY,
@@ -210,7 +265,6 @@ async def init_db():
                     "INSERT INTO promocodes (code, discount, discount_type, max_uses, used_count) VALUES (?, ?, 'rub', 0, 0)",
                     ("MONKEY3", 3.0)
                 )
-
         await db.commit()
 
 @asynccontextmanager
@@ -276,6 +330,22 @@ class AdminTimeToggleSchema(BaseModel):
     user_id: int
     time: str
 
+class AdminMetroManageSchema(BaseModel):
+    user_id: int
+    line: str
+    station: str
+    action: str
+
+class AdminTimeManageSchema(BaseModel):
+    user_id: int
+    time: str
+    action: str
+
+class AdminAppearanceSchema(BaseModel):
+    user_id: int
+    season_effect: str = "none"
+    hit_color: str = "#ffcc00"
+
 class AdminPromoSaveSchema(BaseModel):
     user_id: int
     code: str
@@ -305,6 +375,8 @@ class AdminProductSaveSchema(BaseModel):
     tag: str = ""
     icon: str = "🧪"
     available: bool = True
+    image_url: str = ""
+    has_discount: bool = False
 
 class AdminProductToggleSchema(BaseModel):
     user_id: int
@@ -335,13 +407,26 @@ async def get_user_avatar(user_id: int):
         pass
     raise HTTPException(status_code=404, detail="Avatar not found")
 
+@app.get("/api/tg_photo/{file_id}")
+async def get_tg_photo(file_id: str):
+    try:
+        tg_file = await bot.get_file(file_id)
+        file_bytes_io = await bot.download_file(tg_file.file_path)
+        return Response(content=file_bytes_io.read(), media_type="image/jpeg")
+    except Exception:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
 @app.get("/api/shop_config")
 async def get_shop_config():
     async with aiosqlite.connect(DB_FILE) as db:
         disabled_stations = await get_setting_list(db, "disabled_stations")
         disabled_times = await get_setting_list(db, "disabled_times")
+        time_slots = await get_setting_list(db, "time_slots", DEFAULT_TIME_SLOTS)
+        metro_stations = await get_metro_map(db)
         shop_open_raw = await get_setting_raw(db, "shop_open", "1")
         closed_message = await get_setting_raw(db, "closed_message", "Магазин временно закрыт. Попробуйте оформить заказ позже.")
+        season_effect = await get_setting_raw(db, "season_effect", "none")
+        hit_color = await get_setting_raw(db, "hit_color", "#ffcc00")
         banned_users = [int(x) for x in await get_setting_list(db, "banned_users")]
         courier_ids = await get_all_courier_ids(db)
 
@@ -357,7 +442,7 @@ async def get_shop_config():
                 }
 
         products_list = []
-        async with db.execute("SELECT id, title, category, price, tag, icon, available FROM products ORDER BY id ASC") as cursor:
+        async with db.execute("SELECT id, title, category, price, tag, icon, available, image_url, has_discount FROM products ORDER BY id ASC") as cursor:
             p_rows = await cursor.fetchall()
             for pr in p_rows:
                 products_list.append({
@@ -367,12 +452,18 @@ async def get_shop_config():
                     "price": float(pr[3]),
                     "tag": pr[4] or "",
                     "icon": pr[5] or "🧪",
-                    "available": bool(pr[6])
+                    "available": bool(pr[6]),
+                    "image_url": pr[7] or "",
+                    "has_discount": bool(pr[8])
                 })
 
         return {
             "shop_open": shop_open_raw == "1",
             "closed_message": closed_message,
+            "season_effect": season_effect,
+            "hit_color": hit_color,
+            "time_slots": time_slots,
+            "metro_stations": metro_stations,
             "disabled_stations": disabled_stations,
             "disabled_times": disabled_times,
             "promocodes": promos,
@@ -384,7 +475,7 @@ async def get_shop_config():
 @app.post("/api/admin/shop_status")
 async def admin_shop_status(data: AdminShopStatusSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can change shop status")
+        raise HTTPException(status_code=403, detail="Only owner")
     async with aiosqlite.connect(DB_FILE) as db:
         await set_setting_raw(db, "shop_open", "1" if data.is_open else "0")
         if data.closed_message.strip():
@@ -392,10 +483,64 @@ async def admin_shop_status(data: AdminShopStatusSchema):
         await db.commit()
     return {"success": True}
 
+@app.post("/api/admin/appearance")
+async def admin_appearance(data: AdminAppearanceSchema):
+    if data.user_id not in OWNER_IDS:
+        raise HTTPException(status_code=403, detail="Only owner")
+    season = data.season_effect if data.season_effect in ("none", "winter", "autumn", "spring", "summer") else "none"
+    color = data.hit_color.strip() or "#ffcc00"
+    async with aiosqlite.connect(DB_FILE) as db:
+        await set_setting_raw(db, "season_effect", season)
+        await set_setting_raw(db, "hit_color", color)
+        await db.commit()
+    return {"success": True}
+
+@app.post("/api/admin/manage_metro")
+async def admin_manage_metro(data: AdminMetroManageSchema):
+    if data.user_id not in OWNER_IDS:
+        raise HTTPException(status_code=403, detail="Only owner")
+    if data.line not in ("green", "blue", "red"):
+        raise HTTPException(status_code=400, detail="Invalid line")
+    st_name = data.station.strip()
+    if not st_name:
+        raise HTTPException(status_code=400, detail="Empty station")
+
+    async with aiosqlite.connect(DB_FILE) as db:
+        metro_map = await get_metro_map(db)
+        if data.action == "add":
+            exists = any(s["name"].lower() == st_name.lower() for s in metro_map[data.line])
+            if not exists:
+                metro_map[data.line].append({"name": st_name, "line": LINE_NAMES[data.line]})
+        elif data.action == "delete":
+            metro_map[data.line] = [s for s in metro_map[data.line] if s["name"] != st_name]
+        await set_setting_raw(db, "metro_stations", json.dumps(metro_map, ensure_ascii=False))
+        await db.commit()
+    return {"success": True}
+
+@app.post("/api/admin/manage_time")
+async def admin_manage_time(data: AdminTimeManageSchema):
+    if data.user_id not in OWNER_IDS:
+        raise HTTPException(status_code=403, detail="Only owner")
+    t_str = data.time.strip()
+    if not t_str:
+        raise HTTPException(status_code=400, detail="Empty time")
+
+    async with aiosqlite.connect(DB_FILE) as db:
+        slots = await get_setting_list(db, "time_slots", DEFAULT_TIME_SLOTS)
+        if data.action == "add":
+            if t_str not in slots:
+                slots.append(t_str)
+                slots.sort()
+        elif data.action == "delete":
+            slots = [s for s in slots if s != t_str]
+        await set_setting_list(db, "time_slots", slots)
+        await db.commit()
+    return {"success": True}
+
 @app.post("/api/admin/toggle_station")
 async def admin_toggle_station(data: AdminStationToggleSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can change stations")
+        raise HTTPException(status_code=403, detail="Only owner")
     async with aiosqlite.connect(DB_FILE) as db:
         stations = await get_setting_list(db, "disabled_stations")
         if data.station in stations:
@@ -409,7 +554,7 @@ async def admin_toggle_station(data: AdminStationToggleSchema):
 @app.post("/api/admin/toggle_time")
 async def admin_toggle_time(data: AdminTimeToggleSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can change times")
+        raise HTTPException(status_code=403, detail="Only owner")
     async with aiosqlite.connect(DB_FILE) as db:
         times = await get_setting_list(db, "disabled_times")
         if data.time in times:
@@ -423,7 +568,7 @@ async def admin_toggle_time(data: AdminTimeToggleSchema):
 @app.post("/api/admin/save_promo")
 async def admin_save_promo(data: AdminPromoSaveSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can manage promos")
+        raise HTTPException(status_code=403, detail="Only owner")
     code = data.code.strip().upper()
     dtype = data.discount_type if data.discount_type in ("rub", "percent") else "rub"
     max_uses = max(0, int(data.max_uses or 0))
@@ -443,7 +588,7 @@ async def admin_save_promo(data: AdminPromoSaveSchema):
 @app.post("/api/admin/delete_promo")
 async def admin_delete_promo(data: AdminPromoDeleteSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can manage promos")
+        raise HTTPException(status_code=403, detail="Only owner")
     code = data.code.strip().upper()
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute("DELETE FROM promocodes WHERE code = ?", (code,))
@@ -453,17 +598,27 @@ async def admin_delete_promo(data: AdminPromoDeleteSchema):
 @app.post("/api/admin/save_product")
 async def admin_save_product(data: AdminProductSaveSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can manage products")
+        raise HTTPException(status_code=403, detail="Only owner")
     async with aiosqlite.connect(DB_FILE) as db:
         if data.id and data.id > 0:
             await db.execute(
-                "UPDATE products SET title = ?, category = ?, price = ?, tag = ?, icon = ?, available = ? WHERE id = ?",
-                (data.title.strip(), data.category, float(data.price), data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0, data.id)
+                """UPDATE products SET title = ?, category = ?, price = ?, tag = ?, icon = ?,
+                   available = ?, image_url = ?, has_discount = ? WHERE id = ?""",
+                (
+                    data.title.strip(), data.category, float(data.price), data.tag.strip(),
+                    data.icon.strip() or "🧪", 1 if data.available else 0,
+                    data.image_url.strip(), 1 if data.has_discount else 0, data.id
+                )
             )
         else:
             await db.execute(
-                "INSERT INTO products (title, category, price, tag, icon, available) VALUES (?, ?, ?, ?, ?, ?)",
-                (data.title.strip(), data.category, float(data.price), data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0)
+                """INSERT INTO products (title, category, price, tag, icon, available, image_url, has_discount)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    data.title.strip(), data.category, float(data.price), data.tag.strip(),
+                    data.icon.strip() or "🧪", 1 if data.available else 0,
+                    data.image_url.strip(), 1 if data.has_discount else 0
+                )
             )
         await db.commit()
     return {"success": True}
@@ -471,19 +626,21 @@ async def admin_save_product(data: AdminProductSaveSchema):
 @app.post("/api/admin/toggle_product")
 async def admin_toggle_product(data: AdminProductToggleSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can manage products")
+        raise HTTPException(status_code=403, detail="Only owner")
     async with aiosqlite.connect(DB_FILE) as db:
         if data.field == "available":
             await db.execute("UPDATE products SET available = CASE WHEN available = 1 THEN 0 ELSE 1 END WHERE id = ?", (data.product_id,))
         elif data.field == "hit":
             await db.execute("UPDATE products SET tag = CASE WHEN tag = 'хит' THEN '' ELSE 'хит' END WHERE id = ?", (data.product_id,))
+        elif data.field == "discount":
+            await db.execute("UPDATE products SET has_discount = CASE WHEN has_discount = 1 THEN 0 ELSE 1 END WHERE id = ?", (data.product_id,))
         await db.commit()
     return {"success": True}
 
 @app.post("/api/admin/delete_product")
 async def admin_delete_product(data: AdminProductDeleteSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can manage products")
+        raise HTTPException(status_code=403, detail="Only owner")
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute("DELETE FROM products WHERE id = ?", (data.product_id,))
         await db.commit()
@@ -492,7 +649,7 @@ async def admin_delete_product(data: AdminProductDeleteSchema):
 @app.post("/api/admin/manage_role")
 async def admin_manage_role(data: AdminRoleManageSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can manage roles")
+        raise HTTPException(status_code=403, detail="Only owner")
     tid = int(data.target_id)
     async with aiosqlite.connect(DB_FILE) as db:
         if data.action == "add_courier":
@@ -519,23 +676,15 @@ async def admin_manage_role(data: AdminRoleManageSchema):
 @app.get("/api/admin/stats/{user_id}")
 async def admin_stats(user_id: int):
     if user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can view stats")
+        raise HTTPException(status_code=403, detail="Only owner")
 
     now = datetime.now()
     today_prefix = now.strftime("%d.%m.%Y")
     week_ago = now - timedelta(days=7)
 
-    today_rev = 0.0
-    today_cnt = 0
-    week_rev = 0.0
-    week_cnt = 0
-    total_rev = 0.0
-    total_cnt = 0
-    cancelled_cnt = 0
-    active_cnt = 0
-
-    item_counts = {}
-    station_counts = {}
+    today_rev = week_rev = total_rev = 0.0
+    today_cnt = week_cnt = total_cnt = cancelled_cnt = active_cnt = 0
+    item_counts, station_counts = {}, {}
 
     async with aiosqlite.connect(DB_FILE) as db:
         async with db.execute("SELECT total, status, created_at, items, station FROM orders") as cursor:
@@ -557,7 +706,6 @@ async def admin_stats(user_id: int):
                         week_cnt += 1
                 except Exception:
                     pass
-
                 if station:
                     station_counts[station] = station_counts.get(station, 0) + 1
                 try:
@@ -576,14 +724,10 @@ async def admin_stats(user_id: int):
     top_stations = sorted(station_counts.items(), key=lambda x: x[1], reverse=True)[:5]
 
     return {
-        "today_rev": round(today_rev, 2),
-        "today_cnt": today_cnt,
-        "week_rev": round(week_rev, 2),
-        "week_cnt": week_cnt,
-        "total_rev": round(total_rev, 2),
-        "total_cnt": total_cnt,
-        "cancelled_cnt": cancelled_cnt,
-        "active_cnt": active_cnt,
+        "today_rev": round(today_rev, 2), "today_cnt": today_cnt,
+        "week_rev": round(week_rev, 2), "week_cnt": week_cnt,
+        "total_rev": round(total_rev, 2), "total_cnt": total_cnt,
+        "cancelled_cnt": cancelled_cnt, "active_cnt": active_cnt,
         "top_items": [{"title": k, "qty": v} for k, v in top_items],
         "top_stations": [{"station": k, "count": v} for k, v in top_stations]
     }
@@ -596,29 +740,16 @@ async def admin_broadcast_history(user_id: int):
         async with db.execute("SELECT COUNT(*) FROM users WHERE user_id > 0") as cur:
             u_row = await cur.fetchone()
             subscribers_count = u_row[0] if u_row else 0
-
         history = []
         async with db.execute("SELECT id, created_at, text, sent, failed, total FROM broadcasts ORDER BY id DESC LIMIT 15") as cursor:
-            rows = await cursor.fetchall()
-            for r in rows:
-                history.append({
-                    "id": r[0],
-                    "created_at": r[1],
-                    "text": r[2],
-                    "sent": r[3],
-                    "failed": r[4],
-                    "total": r[5]
-                })
-
-    return {
-        "subscribers_count": subscribers_count,
-        "history": history
-    }
+            for r in await cursor.fetchall():
+                history.append({"id": r[0], "created_at": r[1], "text": r[2], "sent": r[3], "failed": r[4], "total": r[5]})
+    return {"subscribers_count": subscribers_count, "history": history}
 
 @app.post("/api/admin/broadcast")
 async def admin_broadcast(data: AdminBroadcastSchema):
     if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner can broadcast")
+        raise HTTPException(status_code=403, detail="Only owner")
     text = data.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Empty text")
@@ -628,9 +759,7 @@ async def admin_broadcast(data: AdminBroadcastSchema):
             rows = await cursor.fetchall()
 
     user_ids = [r[0] for r in rows]
-    sent = 0
-    failed = 0
-
+    sent = failed = 0
     for uid in user_ids:
         try:
             await bot.send_message(uid, text)
@@ -646,7 +775,6 @@ async def admin_broadcast(data: AdminBroadcastSchema):
             (now_str, text[:300], sent, failed, len(user_ids))
         )
         await db.commit()
-
     return {"success": True, "sent": sent, "failed": failed, "total": len(user_ids)}
 
 @app.post("/api/create_order")
@@ -695,13 +823,8 @@ async def create_order(order: OrderSchema):
     safe_user = html.escape(order.user_name or "User")
     safe_station = html.escape(order.station or "")
     safe_time = html.escape(order.time or "")
-    items_str = "\n".join(
-        [f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} р." for i in order.items]
-    )
-    promo_line = (
-        f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{order.discount:.2f} р.)"
-        if order.promo_code else ""
-    )
+    items_str = "\n".join([f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} р." for i in order.items])
+    promo_line = f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{order.discount:.2f} р.)" if order.promo_code else ""
 
     courier_text = (
         f"🛵 <b>Новый заказ #{html.escape(order_id)}!</b>\n\n"
@@ -722,7 +845,7 @@ async def create_order(order: OrderSchema):
             ])
             await bot.send_message(cid, courier_text, parse_mode="HTML", reply_markup=kb)
         except Exception as e:
-            print(f"[ERR] Не удалось отправить уведомление курьеру {cid}: {e}")
+            print(f"[ERR] Курьер {cid}: {e}")
 
     user_text = (
         f"✅ <b>Спасибо за заказ #{html.escape(order_id)}!</b>\n"
@@ -738,7 +861,7 @@ async def create_order(order: OrderSchema):
         try:
             await bot.send_message(order.user_id, user_text, parse_mode="HTML")
         except Exception as e:
-            print(f"[ERR] Не удалось отправить чек покупателю {order.user_id}: {e}")
+            print(f"[ERR] Покупатель {order.user_id}: {e}")
 
     return {"success": True, "order_id": order_id}
 
@@ -747,60 +870,34 @@ async def get_orders():
     async with aiosqlite.connect(DB_FILE) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM orders WHERE hidden_by_courier = 0 ORDER BY rowid DESC") as cursor:
-            rows = await cursor.fetchall()
-            result = []
-            for row in rows:
-                result.append({
-                    "id": str(row["id"]),
-                    "user_id": row["user_id"],
-                    "user_name": row["user_name"],
-                    "station": row["station"],
-                    "time": row["time"],
-                    "total": row["total"],
-                    "items": json.loads(row["items"]),
-                    "status": row["status"],
-                    "time_changed": bool(row["time_changed"]),
-                    "hidden_by_courier": bool(row["hidden_by_courier"]),
-                    "promo_code": row["promo_code"] or "",
-                    "discount": row["discount"] or 0.0,
-                    "created_at": row["created_at"] or "",
-                    "cancelled_by": row["cancelled_by"] or ""
-                })
-            return result
+            return [{
+                "id": str(row["id"]), "user_id": row["user_id"], "user_name": row["user_name"],
+                "station": row["station"], "time": row["time"], "total": row["total"],
+                "items": json.loads(row["items"]), "status": row["status"],
+                "time_changed": bool(row["time_changed"]), "hidden_by_courier": bool(row["hidden_by_courier"]),
+                "promo_code": row["promo_code"] or "", "discount": row["discount"] or 0.0,
+                "created_at": row["created_at"] or "", "cancelled_by": row["cancelled_by"] or ""
+            } for row in await cursor.fetchall()]
 
 @app.get("/api/user_orders/{user_id}")
 async def get_user_orders(user_id: int):
     async with aiosqlite.connect(DB_FILE) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY rowid DESC", (user_id,)) as cursor:
-            rows = await cursor.fetchall()
-            result = []
-            for row in rows:
-                result.append({
-                    "id": str(row["id"]),
-                    "user_id": row["user_id"],
-                    "user_name": row["user_name"],
-                    "station": row["station"],
-                    "time": row["time"],
-                    "total": row["total"],
-                    "items": json.loads(row["items"]),
-                    "status": row["status"],
-                    "time_changed": bool(row["time_changed"]),
-                    "promo_code": row["promo_code"] or "",
-                    "discount": row["discount"] or 0.0,
-                    "created_at": row["created_at"] or "",
-                    "cancelled_by": row["cancelled_by"] or ""
-                })
-            return result
+            return [{
+                "id": str(row["id"]), "user_id": row["user_id"], "user_name": row["user_name"],
+                "station": row["station"], "time": row["time"], "total": row["total"],
+                "items": json.loads(row["items"]), "status": row["status"],
+                "time_changed": bool(row["time_changed"]), "promo_code": row["promo_code"] or "",
+                "discount": row["discount"] or 0.0, "created_at": row["created_at"] or "",
+                "cancelled_by": row["cancelled_by"] or ""
+            } for row in await cursor.fetchall()]
 
 @app.post("/api/update_order_status")
 async def update_order_status(data: StatusUpdateSchema):
     cancelled_by = data.cancelled_by if data.status == 'cancelled' else ''
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?",
-            (data.status, cancelled_by, str(data.order_id))
-        )
+        await db.execute("UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?", (data.status, cancelled_by, str(data.order_id)))
         all_couriers = await get_all_courier_ids(db)
         await db.commit()
 
@@ -811,9 +908,7 @@ async def update_order_status(data: StatusUpdateSchema):
                 safe_user = html.escape(user_name or "User")
                 safe_station = html.escape(station or "")
                 if data.status == 'cancelled':
-                    who_text = "Отменено клиентом" if cancelled_by == 'client' else (
-                        "Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён"
-                    )
+                    who_text = "Отменено клиентом" if cancelled_by == 'client' else ("Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён")
                     if user_id:
                         try:
                             await bot.send_message(user_id, f"❌ Заказ #{html.escape(str(data.order_id))} ({who_text}).")
@@ -821,11 +916,7 @@ async def update_order_status(data: StatusUpdateSchema):
                             pass
                     for cid in all_couriers:
                         try:
-                            await bot.send_message(
-                                cid,
-                                f"❌ Заказ #{html.escape(str(data.order_id))} ({safe_user}, м. {safe_station}) — <b>{who_text}</b>.",
-                                parse_mode="HTML"
-                            )
+                            await bot.send_message(cid, f"❌ Заказ #{html.escape(str(data.order_id))} ({safe_user}, м. {safe_station}) — <b>{who_text}</b>.", parse_mode="HTML")
                         except Exception:
                             pass
                 elif data.status == 'completed':
@@ -834,16 +925,12 @@ async def update_order_status(data: StatusUpdateSchema):
                             await bot.send_message(user_id, f"✅ Ваш заказ #{html.escape(str(data.order_id))} выдан! Спасибо за покупку.")
                         except Exception:
                             pass
-
     return {"success": True}
 
 @app.post("/api/delete_completed_order")
 async def delete_completed_order(data: DeleteOrderSchema):
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "UPDATE orders SET hidden_by_courier = 1 WHERE id = ? AND status IN ('completed', 'cancelled')",
-            (str(data.order_id),)
-        )
+        await db.execute("UPDATE orders SET hidden_by_courier = 1 WHERE id = ? AND status IN ('completed', 'cancelled')", (str(data.order_id),))
         await db.commit()
     return {"success": True}
 
@@ -872,7 +959,6 @@ async def update_order_time(data: TimeUpdateSchema):
                         )
                     except Exception:
                         pass
-
     return {"success": True}
 
 @app.get("/api/check_role/{user_id}")
@@ -885,11 +971,24 @@ async def check_role(user_id: int):
         return {"role": "courier"}
     return {"role": "client"}
 
+@dp.message(F.photo)
+async def handle_owner_photo_upload(message: Message):
+    if message.from_user.id not in OWNER_IDS:
+        return
+    file_id = message.photo[-1].file_id
+    base = PUBLIC_TUNNEL_URL.strip().rstrip("/")
+    photo_url = f"{base}/api/tg_photo/{file_id}"
+    await message.answer(
+        f"🖼 <b>Ссылка на фото для товара готова!</b>\n\n"
+        f"Нажми на ссылку ниже, чтобы скопировать её, и вставь в настройках товара в мини-приложении:\n"
+        f"<code>{html.escape(photo_url)}</code>",
+        parse_mode="HTML"
+    )
+
 @dp.message(F.text.startswith("/post"))
 async def cmd_post_broadcast(message: Message):
     if message.from_user.id not in OWNER_IDS:
         return
-
     inline_text = message.text[5:].strip()
     if not message.reply_to_message and not inline_text:
         await message.answer(
@@ -908,8 +1007,7 @@ async def cmd_post_broadcast(message: Message):
     user_ids = [r[0] for r in rows]
     status_msg = await message.answer(f"⏳ Начинаю рассылку по базе ({len(user_ids)} чел.)...")
 
-    sent = 0
-    failed = 0
+    sent = failed = 0
     for uid in user_ids:
         try:
             if message.reply_to_message:
@@ -952,7 +1050,6 @@ async def cmd_start(message: Message):
         await db.commit()
 
     personal_url = build_personal_url(uid, uname, is_courier=(uid in couriers))
-
     try:
         await bot.set_chat_menu_button(
             chat_id=uid,
@@ -962,9 +1059,7 @@ async def cmd_start(message: Message):
         pass
 
     kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🛒 Открыть Monkey Vape", web_app=WebAppInfo(url=personal_url))]
-        ],
+        keyboard=[[KeyboardButton(text="🛒 Открыть Monkey Vape", web_app=WebAppInfo(url=personal_url))]],
         resize_keyboard=True
     )
     await message.answer(
