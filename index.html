@@ -8,31 +8,43 @@
     <style>
         :root {
             --bg-color: #0b0f0c;
+            --topbar-bg: #0b0f0c;
+            --bottomnav-bg: #0b0f0c;
             --card-bg: #131b14;
             --card-hover: #1b261d;
+            --banner-bg: #132b17;
             --accent-green: #00ff66;
             --accent-green-glow: rgba(0, 255, 102, 0.25);
+            --icon-color: #00ff66;
+            --icon-glow: rgba(0, 255, 102, 0.22);
+            --logo-color-1: #ffffff;
+            --logo-color-2: #00ff66;
             --text-main: #ffffff;
             --text-secondary: #9ca3af;
             --border-color: #223525;
             --danger: #ff3333;
             --img-box-bg: #080d09;
-            --promo-grad: linear-gradient(135deg, #132b17 0%, #0d1a10 100%);
             --items-text: #d1d5db;
         }
 
         [data-theme="light"] {
             --bg-color: #f3f6f4;
+            --topbar-bg: #ffffff;
+            --bottomnav-bg: #ffffff;
             --card-bg: #ffffff;
             --card-hover: #eaf2ed;
+            --banner-bg: #dcf5e5;
             --accent-green: #00a844;
             --accent-green-glow: rgba(0, 168, 68, 0.18);
+            --icon-color: #00a844;
+            --icon-glow: rgba(0, 168, 68, 0.18);
+            --logo-color-1: #111813;
+            --logo-color-2: #00a844;
             --text-main: #111813;
             --text-secondary: #5a685e;
             --border-color: #d3e0d7;
             --danger: #e52525;
             --img-box-bg: #e9f0ec;
-            --promo-grad: linear-gradient(135deg, #dcf5e5 0%, #eafaf0 100%);
             --items-text: #27332b;
         }
 
@@ -64,7 +76,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            box-shadow: 0 0 40px rgba(0, 255, 102, 0.1);
+            box-shadow: 0 0 40px var(--accent-green-glow);
             overflow: hidden;
             border: 1px solid var(--border-color);
             transition: background-color 0.25s, border-color 0.25s;
@@ -86,7 +98,7 @@
         #splash-screen {
             position: absolute;
             inset: 0;
-            background: radial-gradient(circle at 50% 38%, #132c19 0%, #070a08 75%);
+            background: radial-gradient(circle at 50% 38%, var(--banner-bg) 0%, var(--bg-color) 75%);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -110,10 +122,10 @@
             inset: 0;
             border-radius: 50%;
             border: 3px solid transparent;
-            border-top-color: #00ff66;
-            border-right-color: rgba(0, 255, 102, 0.35);
+            border-top-color: var(--accent-green);
+            border-right-color: var(--accent-green-glow);
             animation: spinClockwise 1.2s linear infinite;
-            box-shadow: 0 0 22px rgba(0, 255, 102, 0.35);
+            box-shadow: 0 0 22px var(--accent-green-glow);
         }
 
         .splash-ring-inner {
@@ -121,8 +133,8 @@
             inset: 12px;
             border-radius: 50%;
             border: 2px solid transparent;
-            border-bottom-color: #00e5ff;
-            border-left-color: rgba(0, 229, 255, 0.3);
+            border-bottom-color: var(--icon-color);
+            border-left-color: var(--icon-glow);
             animation: spinCounter 1.7s linear infinite;
         }
 
@@ -134,23 +146,23 @@
         @keyframes spinClockwise { to { transform: rotate(360deg); } }
         @keyframes spinCounter { to { transform: rotate(-360deg); } }
         @keyframes pulseGlow {
-            0%, 100% { transform: scale(0.95); filter: drop-shadow(0 0 8px rgba(0, 255, 102, 0.4)); }
-            50% { transform: scale(1.08); filter: drop-shadow(0 0 18px rgba(0, 255, 102, 0.85)); }
+            0%, 100% { transform: scale(0.95); filter: drop-shadow(0 0 8px var(--accent-green-glow)); }
+            50% { transform: scale(1.08); filter: drop-shadow(0 0 18px var(--accent-green)); }
         }
 
-        .splash-logo { font-size: 30px; font-weight: 900; color: #ffffff; text-shadow: 0 0 22px rgba(0, 255, 102, 0.55); margin-bottom: 8px; letter-spacing: 2px; text-align: center; padding: 0 16px; }
-        .splash-logo span { color: #00ff66; }
-        .splash-sub { color: #9ca3af; font-size: 13px; margin-bottom: 26px; letter-spacing: 0.4px; }
-        .progress-bar { width: 210px; height: 6px; background-color: rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden; border: 1px solid rgba(0, 255, 102, 0.25); }
-        .progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #00b84a, #00ff66, #7affb2); box-shadow: 0 0 14px #00ff66; transition: width 1.15s cubic-bezier(0.22, 1, 0.36, 1); }
+        .splash-logo { font-size: 30px; font-weight: 900; color: var(--logo-color-1); text-shadow: 0 0 22px var(--accent-green-glow); margin-bottom: 8px; letter-spacing: 2px; text-align: center; padding: 0 16px; }
+        .splash-logo span { color: var(--logo-color-2); }
+        .splash-sub { color: var(--text-secondary); font-size: 13px; margin-bottom: 26px; letter-spacing: 0.4px; }
+        .progress-bar { width: 210px; height: 6px; background-color: rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+        .progress-fill { width: 0%; height: 100%; background: var(--accent-green); box-shadow: 0 0 14px var(--accent-green); transition: width 1.15s cubic-bezier(0.22, 1, 0.36, 1); }
 
-        .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 14px 16px; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); z-index: 10; }
-        .brand-title { font-size: 17px; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .brand-title span { color: var(--accent-green); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 14px 16px; background-color: var(--topbar-bg); border-bottom: 1px solid var(--border-color); z-index: 10; transition: background-color 0.25s; }
+        .brand-title { font-size: 17px; font-weight: 800; color: var(--logo-color-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .brand-title span { color: var(--logo-color-2); }
         .top-bar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .theme-toggle-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 34px; height: 34px; border-radius: 11px; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .metro-selector-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 7px 12px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 7px; cursor: pointer; }
-        .metro-icon { background-color: var(--accent-green); color: #000; width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; }
+        .metro-icon { background-color: var(--icon-color); color: #000; width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; }
 
         .content-area { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
         .screen { display: none; }
@@ -160,7 +172,7 @@
         .search-box { position: relative; margin-bottom: 20px; }
         .search-input { width: 100%; padding: 14px 16px 14px 44px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; color: var(--text-main); font-size: 14px; outline: none; user-select: text; -webkit-user-select: text; }
         .search-input:focus { border-color: var(--accent-green); box-shadow: 0 0 12px var(--accent-green-glow); }
-        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 16px; pointer-events: none; }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--icon-color); font-size: 16px; pointer-events: none; }
 
         .categories-scroll { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--accent-green) var(--card-bg); }
         .categories-scroll::-webkit-scrollbar { height: 4px; }
@@ -168,7 +180,7 @@
         .cat-chip { background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 14px; font-size: 13px; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
         .cat-chip.active { background-color: var(--accent-green); color: #0b0f0c; border-color: var(--accent-green); font-weight: 600; box-shadow: 0 0 15px var(--accent-green-glow); }
 
-        .promo-banner { background: var(--promo-grad); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .promo-banner { background: linear-gradient(135deg, var(--banner-bg) 0%, var(--card-bg) 100%); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
         .promo-banner h3 { font-size: 16px; font-weight: 700; color: var(--accent-green); margin-bottom: 6px; word-break: break-word; }
         .promo-banner p { font-size: 12px; color: var(--text-secondary); word-break: break-word; }
         .promo-badge { background-color: var(--accent-green); color: #000; font-size: 12px; font-weight: bold; padding: 6px 10px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
@@ -289,7 +301,7 @@
 
         .img-upload-btn {
             width: 100%;
-            background: rgba(0, 255, 102, 0.12);
+            background: var(--accent-green-glow);
             border: 1.5px dashed var(--accent-green);
             color: var(--accent-green);
             padding: 11px 12px;
@@ -363,7 +375,7 @@
         .order-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
         .order-id-label { font-size: 14px; font-weight: 800; color: var(--text-main); white-space: nowrap; }
         .order-status-pill { font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; line-height: 1.2; }
-        .order-status-pill.active { background: rgba(0, 255, 102, 0.12); color: var(--accent-green); border: 1px solid rgba(0, 255, 102, 0.35); }
+        .order-status-pill.active { background: var(--accent-green-glow); color: var(--accent-green); border: 1px solid var(--accent-green); }
         .order-status-pill.completed { background: rgba(0, 204, 68, 0.14); color: #00b84a; border: 1px solid rgba(0, 204, 68, 0.4); }
         .order-status-pill.cancelled { background: rgba(255, 51, 51, 0.12); color: var(--danger); border: 1px solid rgba(255, 51, 51, 0.35); }
         .order-meta-grid { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); line-height: 1.35; }
@@ -396,20 +408,278 @@
         .time-slot { background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 12px 8px; border-radius: 12px; text-align: center; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
         .time-slot.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 600; }
 
-        .profile-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 20px; display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
-        .profile-avatar { width: 64px; height: 64px; min-width: 64px; background-color: var(--accent-green); color: #0b0f0c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 0 15px var(--accent-green-glow); overflow: hidden; border: 2px solid var(--accent-green); }
+        .profile-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+        .profile-avatar { width: 64px; height: 64px; min-width: 64px; background-color: var(--accent-green); color: #0b0f0c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 0 18px var(--accent-green-glow); overflow: hidden; border: 2px solid var(--accent-green); }
         .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .profile-info h3 { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+        .profile-info h3 { font-size: 16.5px; font-weight: 800; margin-bottom: 4px; }
         .profile-info p { font-size: 12px; color: var(--text-secondary); }
-        .profile-menu-item { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; text-decoration: none; color: var(--text-main); font-size: 14px; transition: border-color 0.2s; }
-        .profile-menu-item:hover { border-color: var(--accent-green); }
-        .profile-menu-item span:first-child { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-        .profile-menu-item span:last-child { color: var(--accent-green); font-weight: 600; font-size: 13px; white-space: nowrap; }
 
-        .admin-section { background-color: var(--card-bg); border: 1px solid var(--accent-green); border-radius: 18px; padding: 16px; margin-top: 16px; }
+        /* Современные карточки каналов и поддержки в профиле */
+        .profile-social-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .profile-social-grid.single {
+            grid-template-columns: 1fr;
+        }
+        .profile-bento-card {
+            background: linear-gradient(145deg, var(--card-bg) 0%, var(--icon-glow) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 14px;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+            transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .profile-bento-card:hover {
+            border-color: var(--icon-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px var(--icon-glow);
+        }
+        .profile-bento-card:active {
+            transform: scale(0.98);
+        }
+        .profile-bento-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .profile-bento-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: var(--icon-glow);
+            border: 1px solid var(--icon-color);
+            color: var(--icon-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .profile-bento-arrow {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .profile-bento-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+        .profile-bento-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .profile-support-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 13px 15px;
+            margin-bottom: 14px;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            transition: transform 0.18s ease, border-color 0.2s ease;
+        }
+        .profile-support-card:hover {
+            border-color: var(--icon-color);
+            transform: translateY(-1px);
+        }
+        .profile-support-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+        .profile-support-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 13px;
+            background: var(--icon-glow);
+            border: 1px solid var(--icon-color);
+            color: var(--icon-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .profile-support-pill {
+            background: var(--icon-glow);
+            border: 1px solid var(--icon-color);
+            color: var(--icon-color);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 11px;
+            border-radius: 11px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Палитра цветов интерфейса в админке */
+        .theme-presets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+            margin-bottom: 4px;
+        }
+        .theme-preset-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 11px;
+            padding: 8px 10px;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: left;
+            transition: border-color 0.15s, transform 0.12s;
+        }
+        .theme-preset-btn:hover {
+            border-color: var(--accent-green);
+            transform: translateY(-1px);
+        }
+        .preset-dots {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .preset-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,255,255,0.35);
+        }
+        .preset-dot + .preset-dot {
+            margin-left: -5px;
+        }
+
+        .palette-control-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 9px 10px;
+            margin-bottom: 8px;
+        }
+        .palette-control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 7px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .palette-hex-badge {
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: var(--card-bg);
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .palette-swatches-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .swatch-circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.22);
+            cursor: pointer;
+            transition: transform 0.12s, border-color 0.12s;
+            flex-shrink: 0;
+        }
+        .swatch-circle:hover {
+            transform: scale(1.12);
+        }
+        .swatch-circle.active {
+            border-color: #ffffff;
+            box-shadow: 0 0 0 2px var(--accent-green);
+            transform: scale(1.12);
+        }
+        .color-wheel-label {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .color-wheel-label input[type="color"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        /* Карточки команд во вкладке "Команды" */
+        .cmd-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+        .cmd-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+        .cmd-code-pill {
+            font-family: monospace;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--accent-green);
+            background: var(--accent-green-glow);
+            border: 1px solid var(--accent-green);
+            padding: 3px 8px;
+            border-radius: 7px;
+        }
+        .cmd-desc-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .admin-section { background-color: var(--card-bg); border: 1px solid var(--accent-green); border-radius: 18px; padding: 16px; margin-top: 14px; }
         .admin-title { font-size: 15px; font-weight: 700; color: var(--accent-green); margin-bottom: 8px; }
         .server-status-bar { font-size: 11px; padding: 7px 10px; border-radius: 10px; margin-bottom: 10px; line-height: 1.4; }
-        .server-status-bar.ok { background: rgba(0, 255, 102, 0.1); border: 1px solid rgba(0, 255, 102, 0.35); color: var(--accent-green); }
+        .server-status-bar.ok { background: var(--accent-green-glow); border: 1px solid var(--accent-green); color: var(--accent-green); }
         .server-status-bar.err { background: rgba(255, 51, 51, 0.1); border: 1px solid rgba(255, 51, 51, 0.4); color: var(--danger); }
         .shop-master-box { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
         .admin-sub-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 14px; }
@@ -425,15 +695,15 @@
 
         .broadcast-textarea { width: 100%; min-height: 82px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; color: var(--text-main); font-size: 13px; outline: none; resize: vertical; margin-bottom: 10px; user-select: text; -webkit-user-select: text; }
         .toggle-pill { padding: 5px 8px; border-radius: 8px; font-size: 10.5px; font-weight: 700; border: none; cursor: pointer; white-space: nowrap; }
-        .toggle-pill.on { background: rgba(0, 255, 102, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .toggle-pill.on { background: var(--accent-green-glow); color: var(--accent-green); border: 1px solid var(--accent-green); }
         .toggle-pill.off { background: rgba(255, 51, 51, 0.15); color: var(--danger); border: 1px solid var(--danger); }
         .delete-order-x { background: rgba(255, 51, 51, 0.12); border: 1px solid var(--danger); color: var(--danger); width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
 
-        .bottom-nav { position: absolute; bottom: 0; left: 0; width: 100%; height: 75px; background-color: var(--bg-color); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 10; }
+        .bottom-nav { position: absolute; bottom: 0; left: 0; width: 100%; height: 75px; background-color: var(--bottomnav-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 10; transition: background-color 0.25s; }
         .nav-item { background: none; border: none; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; position: relative; }
-        .nav-item.active { color: var(--accent-green); }
+        .nav-item.active { color: var(--icon-color); }
         .nav-icon { font-size: 22px; }
-        .cart-badge { position: absolute; top: -2px; right: 4px; background-color: var(--accent-green); color: #0b0f0c; font-size: 10px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .cart-badge { position: absolute; top: -2px; right: 4px; background-color: var(--icon-color); color: #0b0f0c; font-size: 10px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -560,7 +830,7 @@
             <button class="metro-selector-btn" onclick="openMetroPicker()">
                 <div class="metro-icon">M</div>
                 <span id="current-metro-label">Партизанская</span>
-                <span style="font-size: 10px; color: var(--accent-green);">▼</span>
+                <span style="font-size: 10px; color: var(--icon-color);">▼</span>
             </button>
         </div>
     </div>
@@ -613,7 +883,7 @@
                 </div>
             </div>
 
-            <!-- Динамические кнопки каналов (Новости, Отзывы, Поддержка) для всех пользователей -->
+            <!-- Современные карточки каналов и поддержки -->
             <div id="profile-links-container"></div>
 
             <div id="owner-admin-panel" class="admin-section" style="display: none;">
@@ -636,11 +906,13 @@
                     <div class="admin-sub-tab" onclick="switchAdminTab('products', this)">🛍️ Товары</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('promos', this)">🎟 Промо</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('appearance', this)">🎨 Вид</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('interface', this)">🖌 Интерфейс</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('channels', this)">🔗 Каналы</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('roles', this)">👥 Доступ</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('broadcast', this)">📢 Пост</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('commands', this)">📖 Команды</div>
                 </div>
 
                 <div id="admin-tab-stats">
@@ -648,7 +920,6 @@
                 </div>
 
                 <div id="admin-tab-products" style="display: none;">
-                    <!-- Управление вкладками категорий в каталоге -->
                     <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:12px;">
                         <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">📂 Вкладки категорий в каталоге</div>
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
@@ -658,12 +929,10 @@
                         <div id="admin-categories-list" style="max-height:170px; overflow-y:auto;"></div>
                     </div>
 
-                    <!-- Добавление нового товара -->
                     <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:12px;">
                         <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">➕ Добавить новый товар</div>
                         <input type="text" id="admin-prod-title" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Название (напр. Brusko 20mg)">
 
-                        <!-- Прямая загрузка фото без ссылок -->
                         <input type="file" id="admin-prod-file" accept="image/*" style="display:none;" onchange="handleProductImageFileSelect(this, 'add')">
                         <button type="button" class="img-upload-btn" onclick="document.getElementById('admin-prod-file').click()">
                             📷 Выбрать фото из галереи / с ПК (без ссылок)
@@ -705,17 +974,15 @@
                 </div>
 
                 <div id="admin-tab-appearance" style="display: none;">
-                    <!-- Настройка названия логотипа -->
                     <div class="shop-master-box">
                         <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🏷 Название логотипа магазина:</div>
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
                             <input type="text" id="admin-logo-part1" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 1 (напр. MONKEY)">
-                            <input type="text" id="admin-logo-part2" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 2 зелёным (напр. VAPE)">
+                            <input type="text" id="admin-logo-part2" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 2 (напр. VAPE)">
                         </div>
                         <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBranding()">💾 Сохранить логотип</button>
                     </div>
 
-                    <!-- Настройка промо-баннера в каталоге -->
                     <div class="shop-master-box">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                             <span style="font-size:12.5px; font-weight:700;">🎯 Промо-баннер в каталоге:</span>
@@ -752,11 +1019,24 @@
                     </div>
                 </div>
 
+                <!-- Вкладка "Интерфейс" — полная палитра цветов всего приложения -->
+                <div id="admin-tab-interface" style="display: none;">
+                    <div class="shop-master-box">
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">⚡ Готовые цветовые темы (в 1 клик):</div>
+                        <div class="theme-presets-grid" id="ui-theme-presets-grid"></div>
+                    </div>
+
+                    <div id="ui-palette-controls-container"></div>
+
+                    <button type="button" class="primary-btn" style="padding:11px; font-size:13px; margin-bottom:8px;" onclick="adminSaveUiTheme()">💾 Сохранить цвета для всех</button>
+                    <button type="button" onclick="adminResetUiTheme()" style="width:100%; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-secondary); padding:10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer;">🔄 Сбросить стандартные цвета</button>
+                </div>
+
                 <!-- Вкладка управления Telegram-каналами (Новости, Отзывы, Поддержка) -->
                 <div id="admin-tab-channels" style="display: none;">
                     <div class="shop-master-box">
                         <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; line-height:1.4;">
-                            Эти кнопки появятся у всех покупателей во вкладке <b>«Профиль»</b>, а также будут автоматически присылаться в личку после оформления и выдачи заказа.
+                            Эти карточки отображаются у всех покупателей во вкладке <b>«Профиль»</b>, а ссылки на отзывы и новости автоматически приходят покупателю после выдачи заказа.
                         </div>
                         <div style="margin-bottom:8px;">
                             <div style="font-size:12px; font-weight:700; margin-bottom:4px;">✈️ Telegram-канал (Новости):</div>
@@ -833,6 +1113,14 @@
                     <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:14px 0 8px 0;">📋 История и отчёты рассылок:</div>
                     <div id="admin-broadcast-history" style="max-height:220px; overflow-y:auto;"></div>
                 </div>
+
+                <!-- Вкладка "Команды" — шпаргалка по всем командам бота для владельца -->
+                <div id="admin-tab-commands" style="display: none;">
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; line-height:1.4;">
+                        Все команды отправляются в личный чат с ботом. Нажми <b>«Скопировать»</b>, чтобы быстро вставить команду в чат.
+                    </div>
+                    <div id="admin-commands-list"></div>
+                </div>
             </div>
         </div>
 
@@ -891,12 +1179,147 @@
 </div>
 
 <script>
+    function hexToRgba(hex, alpha) {
+        const clean = String(hex || '').replace('#', '');
+        if (clean.length !== 6) return `rgba(0, 255, 102, ${alpha})`;
+        return `rgba(${parseInt(clean.substring(0, 2), 16)}, ${parseInt(clean.substring(2, 4), 16)}, ${parseInt(clean.substring(4, 6), 16)}, ${alpha})`;
+    }
+
+    const DEFAULT_UI_THEME = {
+        bg_color: '#0b0f0c',
+        topbar_bg: '#0b0f0c',
+        bottomnav_bg: '#0b0f0c',
+        card_bg: '#131b14',
+        banner_bg: '#132b17',
+        border_color: '#223525',
+        accent_color: '#00ff66',
+        icon_color: '#00ff66',
+        logo_color_1: '#ffffff',
+        logo_color_2: '#00ff66',
+        text_main: '#ffffff',
+        text_secondary: '#9ca3af'
+    };
+
+    const UI_THEME_PRESETS = [
+        {
+            name: 'Неон-Зелёный',
+            dots: ['#00ff66', '#131b14'],
+            theme: { ...DEFAULT_UI_THEME }
+        },
+        {
+            name: 'Кибер-Синий',
+            dots: ['#00b4ff', '#0f1926'],
+            theme: {
+                bg_color: '#080e17', topbar_bg: '#0a121e', bottomnav_bg: '#0a121e',
+                card_bg: '#0f1926', banner_bg: '#112a45', border_color: '#1e3552',
+                accent_color: '#00b4ff', icon_color: '#38bdf8',
+                logo_color_1: '#ffffff', logo_color_2: '#00b4ff',
+                text_main: '#f8fafc', text_secondary: '#94a3b8'
+            }
+        },
+        {
+            name: 'Фиолетовый Неон',
+            dots: ['#b84dff', '#181124'],
+            theme: {
+                bg_color: '#0d0914', topbar_bg: '#110b1a', bottomnav_bg: '#110b1a',
+                card_bg: '#181124', banner_bg: '#2c1847', border_color: '#33224d',
+                accent_color: '#b84dff', icon_color: '#d946ef',
+                logo_color_1: '#ffffff', logo_color_2: '#b84dff',
+                text_main: '#faf5ff', text_secondary: '#a78bfa'
+            }
+        },
+        {
+            name: 'Золотой Премиум',
+            dots: ['#ffcc00', '#1a160f'],
+            theme: {
+                bg_color: '#0e0c08', topbar_bg: '#120f0a', bottomnav_bg: '#120f0a',
+                card_bg: '#1a160f', banner_bg: '#332914', border_color: '#3d311a',
+                accent_color: '#ffcc00', icon_color: '#fbbf24',
+                logo_color_1: '#ffffff', logo_color_2: '#ffcc00',
+                text_main: '#fffbeb', text_secondary: '#a8a29e'
+            }
+        },
+        {
+            name: 'Красный Спорт',
+            dots: ['#ff3b5c', '#1f1114'],
+            theme: {
+                bg_color: '#12090b', topbar_bg: '#160b0e', bottomnav_bg: '#160b0e',
+                card_bg: '#1f1114', banner_bg: '#3b151d', border_color: '#471d26',
+                accent_color: '#ff3b5c', icon_color: '#fb7185',
+                logo_color_1: '#ffffff', logo_color_2: '#ff3b5c',
+                text_main: '#fff1f2', text_secondary: '#fda4af'
+            }
+        },
+        {
+            name: 'Бирюзовый',
+            dots: ['#14e6c3', '#10201e'],
+            theme: {
+                bg_color: '#081110', topbar_bg: '#0b1615', bottomnav_bg: '#0b1615',
+                card_bg: '#10201e', banner_bg: '#143833', border_color: '#1e3d39',
+                accent_color: '#14e6c3', icon_color: '#2dd4bf',
+                logo_color_1: '#ffffff', logo_color_2: '#14e6c3',
+                text_main: '#f0fdfa', text_secondary: '#99f6e4'
+            }
+        }
+    ];
+
+    const UI_PALETTE_FIELDS = [
+        { key: 'logo_color_1', label: '🏷 Логотип: цвет 1-й части', swatches: ['#ffffff', '#00ff66', '#00b4ff', '#ffcc00', '#b84dff', '#ff3b5c', '#14e6c3', '#111813'] },
+        { key: 'logo_color_2', label: '🏷 Логотип: цвет 2-й части', swatches: ['#00ff66', '#ffffff', '#00b4ff', '#ffcc00', '#b84dff', '#ff3b5c', '#14e6c3', '#ff7b00'] },
+        { key: 'topbar_bg', label: '⬆️ Верхняя панель (шапка)', swatches: ['#0b0f0c', '#080e17', '#0d0914', '#12090b', '#141414', '#1e293b', '#ffffff'] },
+        { key: 'bottomnav_bg', label: '⬇️ Нижняя панель (навигация)', swatches: ['#0b0f0c', '#080e17', '#0d0914', '#12090b', '#141414', '#1e293b', '#ffffff'] },
+        { key: 'bg_color', label: '🖥 Главный фон экрана', swatches: ['#0b0f0c', '#080e17', '#0d0914', '#0e0c08', '#12090b', '#111315', '#f3f6f4'] },
+        { key: 'card_bg', label: '🃏 Фон карточек и меню', swatches: ['#131b14', '#0f1926', '#181124', '#1a160f', '#1f1114', '#1c1f24', '#ffffff'] },
+        { key: 'banner_bg', label: '🎯 Фон промо-баннера', swatches: ['#132b17', '#112a45', '#2c1847', '#332914', '#3b151d', '#143833', '#dcf5e5'] },
+        { key: 'border_color', label: '📐 Цвет рамок и обводок', swatches: ['#223525', '#1e3552', '#33224d', '#3d311a', '#471d26', '#2e333b', '#d3e0d7'] },
+        { key: 'accent_color', label: '⚡ Главный акцент (кнопки, цены)', swatches: ['#00ff66', '#00b4ff', '#b84dff', '#ffcc00', '#ff3b5c', '#14e6c3', '#ff7b00', '#3b82f6'] },
+        { key: 'icon_color', label: '✨ Цвет значков и иконок', swatches: ['#00ff66', '#38bdf8', '#d946ef', '#fbbf24', '#fb7185', '#2dd4bf', '#ff7b00', '#ffffff'] },
+        { key: 'text_main', label: '🔤 Основной цвет текста', swatches: ['#ffffff', '#f8fafc', '#fffbeb', '#e2e8f0', '#111813'] },
+        { key: 'text_secondary', label: '💬 Второстепенный текст', swatches: ['#9ca3af', '#94a3b8', '#a78bfa', '#a8a29e', '#5a685e'] }
+    ];
+
+    let customUiTheme = JSON.parse(localStorage.getItem('monkey_custom_ui_theme')) || { ...DEFAULT_UI_THEME };
+    let isCustomThemeModified = localStorage.getItem('monkey_custom_ui_active') === '1';
     let currentAppTheme = localStorage.getItem('monkey_theme') || 'dark';
+
+    function applyCustomUiCssVars(themeObj) {
+        const root = document.documentElement;
+        const t = { ...DEFAULT_UI_THEME, ...(themeObj || {}) };
+        root.style.setProperty('--bg-color', t.bg_color);
+        root.style.setProperty('--topbar-bg', t.topbar_bg);
+        root.style.setProperty('--bottomnav-bg', t.bottomnav_bg);
+        root.style.setProperty('--card-bg', t.card_bg);
+        root.style.setProperty('--banner-bg', t.banner_bg);
+        root.style.setProperty('--border-color', t.border_color);
+        root.style.setProperty('--accent-green', t.accent_color);
+        root.style.setProperty('--accent-green-glow', hexToRgba(t.accent_color, 0.25));
+        root.style.setProperty('--icon-color', t.icon_color);
+        root.style.setProperty('--icon-glow', hexToRgba(t.icon_color, 0.20));
+        root.style.setProperty('--logo-color-1', t.logo_color_1);
+        root.style.setProperty('--logo-color-2', t.logo_color_2);
+        root.style.setProperty('--text-main', t.text_main);
+        root.style.setProperty('--text-secondary', t.text_secondary);
+        root.style.setProperty('--img-box-bg', t.bg_color);
+        root.style.setProperty('--items-text', t.text_main);
+    }
+
+    function clearInlineUiCssVars() {
+        const root = document.documentElement;
+        ['--bg-color', '--topbar-bg', '--bottomnav-bg', '--card-bg', '--banner-bg', '--border-color',
+         '--accent-green', '--accent-green-glow', '--icon-color', '--icon-glow',
+         '--logo-color-1', '--logo-color-2', '--text-main', '--text-secondary', '--img-box-bg', '--items-text'].forEach(v => root.style.removeProperty(v));
+    }
+
     function applyAppTheme(theme) {
         currentAppTheme = theme;
         localStorage.setItem('monkey_theme', theme);
-        if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
-        else document.documentElement.removeAttribute('data-theme');
+        if (theme === 'light') {
+            clearInlineUiCssVars();
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            applyCustomUiCssVars(customUiTheme);
+        }
         const btn = document.getElementById('theme-toggle-btn');
         if (btn) btn.innerText = theme === 'light' ? '🌙' : '☀️';
     }
@@ -981,32 +1404,73 @@
         if (!container) return;
         let html = '';
 
-        if (newsChannelUrl) {
-            const href = normalizeTelegramUrl(newsChannelUrl);
-            html += `
-                <a href="${escapeHtml(href)}" target="_blank" class="profile-menu-item">
-                    <span>✈️ Telegram-канал новости</span>
-                    <span>Перейти ↗</span>
-                </a>
-            `;
-        }
+        const hasNews = Boolean(newsChannelUrl);
+        const hasReviews = Boolean(reviewsChannelUrl);
 
-        if (reviewsChannelUrl) {
-            const href = normalizeTelegramUrl(reviewsChannelUrl);
-            html += `
-                <a href="${escapeHtml(href)}" target="_blank" class="profile-menu-item">
-                    <span>✅ Отзывы покупателей</span>
-                    <span>Перейти ↗</span>
-                </a>
-            `;
+        if (hasNews || hasReviews) {
+            const gridClass = (hasNews && hasReviews) ? 'profile-social-grid' : 'profile-social-grid single';
+            html += `<div class="${gridClass}">`;
+
+            if (hasNews) {
+                const href = normalizeTelegramUrl(newsChannelUrl);
+                html += `
+                    <a href="${escapeHtml(href)}" target="_blank" class="profile-bento-card">
+                        <div class="profile-bento-top">
+                            <div class="profile-bento-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 2L11 13"></path>
+                                    <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                                </svg>
+                            </div>
+                            <span class="profile-bento-arrow">↗</span>
+                        </div>
+                        <div>
+                            <div class="profile-bento-title">Новости</div>
+                            <div class="profile-bento-sub">Telegram-канал</div>
+                        </div>
+                    </a>
+                `;
+            }
+
+            if (hasReviews) {
+                const href = normalizeTelegramUrl(reviewsChannelUrl);
+                html += `
+                    <a href="${escapeHtml(href)}" target="_blank" class="profile-bento-card">
+                        <div class="profile-bento-top">
+                            <div class="profile-bento-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                            </div>
+                            <span class="profile-bento-arrow">↗</span>
+                        </div>
+                        <div>
+                            <div class="profile-bento-title">Отзывы</div>
+                            <div class="profile-bento-sub">Мнения клиентов</div>
+                        </div>
+                    </a>
+                `;
+            }
+
+            html += `</div>`;
         }
 
         const suppHref = normalizeTelegramUrl(supportUsername || '@warat_24');
         const suppLabel = supportUsername || '@warat_24';
         html += `
-            <a href="${escapeHtml(suppHref)}" target="_blank" class="profile-menu-item">
-                <span>💬 Менеджер поддержки</span>
-                <span>${escapeHtml(suppLabel)}</span>
+            <a href="${escapeHtml(suppHref)}" target="_blank" class="profile-support-card">
+                <div class="profile-support-left">
+                    <div class="profile-support-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <div class="profile-bento-title">Менеджер поддержки</div>
+                        <div class="profile-bento-sub">Помощь по заказам и вопросам</div>
+                    </div>
+                </div>
+                <span class="profile-support-pill">${escapeHtml(suppLabel)} ↗</span>
             </a>
         `;
         container.innerHTML = html;
@@ -1067,8 +1531,8 @@
                 p.angle += p.spin;
                 if (p.y > canvas.height + 10) { p.y = -8; p.x = Math.random() * canvas.width; }
                 if (p.y < -10) { p.y = canvas.height + 8; p.x = Math.random() * canvas.width; }
-                if (p.x > canvas.width + 10) p.x = -8;
-                if (p.x < -10) p.x = canvas.width + 8;
+                if (p.x > canvas.width + 10) { p.x = -8; p.x = canvas.width + 8; }
+                if (p.x < -10) { p.x = canvas.width + 8; }
 
                 ctx.save();
                 if (currentSeasonEffect === 'rain') {
@@ -1242,12 +1706,6 @@
         ]
     };
 
-    function hexToRgba(hex, alpha) {
-        const clean = hex.replace('#', '');
-        if (clean.length !== 6) return `rgba(255, 204, 0, ${alpha})`;
-        return `rgba(${parseInt(clean.substring(0, 2), 16)}, ${parseInt(clean.substring(2, 4), 16)}, ${parseInt(clean.substring(4, 6), 16)}, ${alpha})`;
-    }
-
     function normalizePromoObj(raw) {
         if (typeof raw === 'number') return { discount: raw, type: 'rub', max_uses: 0, used_count: 0 };
         return { discount: Number(raw.discount || 0), type: raw.type || 'rub', max_uses: Number(raw.max_uses || 0), used_count: Number(raw.used_count || 0) };
@@ -1304,9 +1762,9 @@
         if (ownerAdminPanel) {
             if (isCurrentUserOwner()) {
                 ownerAdminPanel.style.display = 'block';
-                renderAdminShopMaster(); renderAdminAppearance(); renderAdminPromos();
+                renderAdminShopMaster(); renderAdminAppearance(); renderAdminInterfaceTab(); renderAdminPromos();
                 renderAdminCategories(); populateCategorySelects();
-                renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles();
+                renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles(); renderAdminCommands();
             } else {
                 ownerAdminPanel.style.display = 'none';
             }
@@ -1447,6 +1905,19 @@
                 disabledTimes = cfg.disabled_times || [];
                 promoCodes = cfg.promocodes || {};
 
+                if (cfg.ui_theme && typeof cfg.ui_theme === 'object') {
+                    const prevJson = JSON.stringify(customUiTheme);
+                    const nextTheme = { ...DEFAULT_UI_THEME, ...cfg.ui_theme };
+                    if (JSON.stringify(nextTheme) !== prevJson) {
+                        customUiTheme = nextTheme;
+                        localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme));
+                        if (currentAppTheme !== 'light') applyCustomUiCssVars(customUiTheme);
+                        if (document.getElementById('admin-tab-interface')?.style.display !== 'none') {
+                            renderAdminInterfaceTab();
+                        }
+                    }
+                }
+
                 if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined) {
                     logoPart1 = cfg.logo_part1 ?? 'MONKEY';
                     logoPart2 = cfg.logo_part2 ?? 'VAPE';
@@ -1575,7 +2046,7 @@
 
             const rightBtnHtml = isAvail
                 ? `<button class="add-btn" onclick="event.stopPropagation(); openProductModal(${p.id})">+</button>`
-                : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "\'")}')">🔔 Жду</button>`;
+                : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "'")}')">🔔 Жду</button>`;
 
             card.innerHTML = `
                 <div class="product-img-container"><div class="product-badges-stack">${imageBadges}</div>${mediaHtml}</div>
@@ -1828,7 +2299,7 @@
         const discountRowHtml = actualDiscount > 0 ? `<div class="summary-row"><span style="color:var(--accent-green);">Скидка (${appliedPromoCode}):</span><span style="color:var(--accent-green); font-weight:700;">-${actualDiscount.toFixed(2)} р.</span></div>` : '';
         let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>`;
         if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
-        else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${escapeHtml(shopClosedMessage)}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:rgba(0,255,102,0.16); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
+        else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${escapeHtml(shopClosedMessage)}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
 
         container.innerHTML = itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
@@ -2240,6 +2711,176 @@
         syncImagePreviewFromInput(mode);
     }
 
+    // ----- ВКЛАДКА "ИНТЕРФЕЙС" — ПАЛИТРА ЦВЕТОВ ВСЕГО ПРИЛОЖЕНИЯ -----
+
+    function renderAdminInterfaceTab() {
+        const presetsGrid = document.getElementById('ui-theme-presets-grid');
+        if (presetsGrid) {
+            presetsGrid.innerHTML = UI_THEME_PRESETS.map((p, idx) => `
+                <button type="button" class="theme-preset-btn" onclick="applyPresetTheme(${idx})">
+                    <span class="preset-dots">
+                        <span class="preset-dot" style="background:${p.dots[0]};"></span>
+                        <span class="preset-dot" style="background:${p.dots[1]};"></span>
+                    </span>
+                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.name}</span>
+                </button>
+            `).join('');
+        }
+
+        const container = document.getElementById('ui-palette-controls-container');
+        if (!container) return;
+        container.innerHTML = UI_PALETTE_FIELDS.map(field => {
+            const curVal = (customUiTheme[field.key] || DEFAULT_UI_THEME[field.key]).toLowerCase();
+            const swatchesHtml = field.swatches.map(hex => {
+                const isAct = curVal === hex.toLowerCase();
+                return `<span class="swatch-circle ${isAct ? 'active' : ''}" style="background:${hex};" title="${hex}" onclick="updateSingleUiColor('${field.key}', '${hex}')"></span>`;
+            }).join('');
+            return `
+                <div class="palette-control-card">
+                    <div class="palette-control-header">
+                        <span>${field.label}</span>
+                        <span class="palette-hex-badge" id="hex-badge-${field.key}">${curVal.toUpperCase()}</span>
+                    </div>
+                    <div class="palette-swatches-row">
+                        ${swatchesHtml}
+                        <label class="color-wheel-label" title="Выбрать любой цвет на палитре">
+                            <input type="color" value="${curVal}" oninput="updateSingleUiColor('${field.key}', this.value)">
+                        </label>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function updateSingleUiColor(key, hexVal) {
+        customUiTheme[key] = hexVal;
+        localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme));
+        if (currentAppTheme === 'light') {
+            currentAppTheme = 'dark';
+            localStorage.setItem('monkey_theme', 'dark');
+            document.documentElement.removeAttribute('data-theme');
+            const btn = document.getElementById('theme-toggle-btn');
+            if (btn) btn.innerText = '☀️';
+        }
+        applyCustomUiCssVars(customUiTheme);
+        renderAdminInterfaceTab();
+    }
+
+    function applyPresetTheme(idx) {
+        const preset = UI_THEME_PRESETS[idx];
+        if (!preset) return;
+        customUiTheme = { ...DEFAULT_UI_THEME, ...preset.theme };
+        localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme));
+        if (currentAppTheme === 'light') {
+            currentAppTheme = 'dark';
+            localStorage.setItem('monkey_theme', 'dark');
+            document.documentElement.removeAttribute('data-theme');
+            const btn = document.getElementById('theme-toggle-btn');
+            if (btn) btn.innerText = '☀️';
+        }
+        applyCustomUiCssVars(customUiTheme);
+        renderAdminInterfaceTab();
+    }
+
+    async function adminSaveUiTheme() {
+        try {
+            await apiFetch(`/api/admin/ui_theme`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), theme: customUiTheme, reset: false })
+            });
+            alert("✅ Цвета интерфейса сохранены и применены для всех пользователей!");
+        } catch (e) { alert("Ошибка сохранения цветов на сервере."); }
+    }
+
+    async function adminResetUiTheme() {
+        if (!confirm("Сбросить все цвета интерфейса на стандартные?")) return;
+        customUiTheme = { ...DEFAULT_UI_THEME };
+        localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme));
+        applyCustomUiCssVars(customUiTheme);
+        renderAdminInterfaceTab();
+        try {
+            await apiFetch(`/api/admin/ui_theme`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), theme: customUiTheme, reset: true })
+            });
+            alert("🔄 Стандартные цвета восстановлены!");
+        } catch (e) {}
+    }
+
+    // ----- ВКЛАДКА "КОМАНДЫ" — СПРАВОЧНИК КОМАНД БОТА -----
+
+    const BOT_COMMANDS_LIST = [
+        {
+            cmd: '/post',
+            copyText: '/post ',
+            desc: 'Рассылка по всем пользователям бота. Напиши <b>/post Текст</b> или отправь боту фото/видео/кружочек и ответь (Reply) на него командой <b>/post</b>.'
+        },
+        {
+            cmd: '/stats',
+            copyText: '/stats',
+            desc: 'Мгновенная сводка статистики магазина в личке с ботом: выручка за сегодня, за 7 дней, за всё время, активные заказы и размер базы.'
+        },
+        {
+            cmd: '/open',
+            copyText: '/open',
+            desc: 'Быстро открыть приём заказов в магазине и разослать уведомление всем клиентам, которые подписались на открытие.'
+        },
+        {
+            cmd: '/close [причина]',
+            copyText: '/close ',
+            desc: 'Быстро закрыть приём заказов. Можно дописать причину прямо в команде, например: <b>/close Откроемся в 18:00</b>.'
+        },
+        {
+            cmd: '/seturl https://...',
+            copyText: '/seturl ',
+            desc: 'Обновить ссылку на туннель/сервер API, если изменился домен сервера.'
+        },
+        {
+            cmd: '/start',
+            copyText: '/start',
+            desc: 'Перезапустить меню бота и обновить кнопку запуска мини-приложения внизу чата.'
+        },
+        {
+            cmd: '📷 Фото в чат боту',
+            copyText: '',
+            desc: 'Отправь любую фотографию в личку боту без команды — он сразу вернёт прямую ссылку (хотя теперь фото можно выбирать и прямо из галереи в админке).'
+        }
+    ];
+
+    function renderAdminCommands() {
+        const box = document.getElementById('admin-commands-list');
+        if (!box) return;
+        box.innerHTML = BOT_COMMANDS_LIST.map((item, idx) => `
+            <div class="cmd-card">
+                <div class="cmd-card-top">
+                    <span class="cmd-code-pill">${escapeHtml(item.cmd)}</span>
+                    ${item.copyText ? `<button type="button" class="toggle-pill on" id="copy-cmd-btn-${idx}" onclick="copyBotCommand(${idx})">📋 Копировать</button>` : ''}
+                </div>
+                <div class="cmd-desc-text">${item.desc}</div>
+            </div>
+        `).join('');
+    }
+
+    function copyBotCommand(idx) {
+        const item = BOT_COMMANDS_LIST[idx];
+        if (!item || !item.copyText) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(item.copyText).catch(() => {});
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = item.copyText;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+        }
+        const btn = document.getElementById(`copy-cmd-btn-${idx}`);
+        if (btn) {
+            btn.innerText = '✅ Скопировано';
+            setTimeout(() => { btn.innerText = '📋 Копировать'; }, 1500);
+        }
+    }
+
     // ----- АДМИН-ПАНЕЛЬ ВЛАДЕЛЬЦА -----
 
     function renderAdminShopMaster() {
@@ -2276,15 +2917,17 @@
     function switchAdminTab(tab, el) {
         document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
-        ['stats', 'products', 'promos', 'appearance', 'channels', 'metro', 'time', 'roles', 'broadcast'].forEach(t => {
+        ['stats', 'products', 'promos', 'appearance', 'interface', 'channels', 'metro', 'time', 'roles', 'broadcast', 'commands'].forEach(t => {
             const box = document.getElementById(`admin-tab-${t}`);
             if (box) box.style.display = t === tab ? 'block' : 'none';
         });
         if (tab === 'stats') loadAdminStats();
         if (tab === 'appearance') { renderAdminAppearance(); applyLogoBranding(); applyPromoBannerUI(); }
+        if (tab === 'interface') renderAdminInterfaceTab();
         if (tab === 'products') { renderAdminCategories(); populateCategorySelects(); renderAdminProducts(); }
         if (tab === 'channels') renderProfileLinks();
         if (tab === 'broadcast') loadBroadcastHistory();
+        if (tab === 'commands') renderAdminCommands();
     }
 
     async function adminSaveBranding() {
@@ -2799,7 +3442,7 @@
         if (!container) return;
         container.innerHTML = (metroStations[adminMetroLine] || []).map(st => {
             const isDisabled = disabledStations.includes(st.name);
-            const esc = st.name.replace(/'/g, "\'");
+            const esc = st.name.replace(/'/g, "'");
             return `
                 <div class="admin-toggle-row">
                     <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">${escapeHtml(st.name)}</span>
@@ -2925,6 +3568,10 @@
             targetId = parseInt(el?.value || '0', 10);
             if (!targetId || targetId <= 0) { alert("Введите корректный цифровой Telegram ID"); return; }
             if (el) el.value = '';
+        }
+        if (action === 'remove_courier') {
+            DYNAMIC_COURIER_IDS = DYNAMIC_COURIER_IDS.filter(id => Number(id) !== Number(targetId));
+            renderAdminRoles();
         }
         try {
             await apiFetch(`/api/admin/manage_role`, {
@@ -3134,4 +3781,3 @@
     renderOrders();
 </script>
 </body>
-</html>
