@@ -903,7 +903,7 @@
     const PRIMARY_OWNER_IDS = [7280921605];
     let DYNAMIC_OWNER_IDS = [7280921605];
     let DYNAMIC_COURIER_IDS = [7280921605, 6658906694, 1335426710];
-    function isCurrentUserOwner() { return DYNAMIC_isCurrentUserOwner(); }
+    function isCurrentUserOwner() { return PRIMARY_OWNER_IDS.includes(Number(currentUserId)) || DYNAMIC_OWNER_IDS.includes(Number(currentUserId)); }
     function isCurrentUserCourier() { return DYNAMIC_COURIER_IDS.includes(Number(currentUserId)) || isCurrentUserOwner(); }
     let BANNED_USER_IDS = [];
     let isShopOpen = true, shopClosedMessage = "Магазин сейчас не работает, попробуйте позже.";
