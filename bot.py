@@ -1,1078 +1,2567 @@
-import asyncio
-import html
-import json
-import os
-from datetime import datetime, timedelta
-from contextlib import asynccontextmanager
-from urllib.parse import quote
-import uvicorn
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import Response
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import aiosqlite
-from aiogram import Bot, Dispatcher, F
-from aiogram.types import (
-    Message, ReplyKeyboardMarkup, KeyboardButton,
-    InlineKeyboardMarkup, InlineKeyboardButton,
-    WebAppInfo, MenuButtonWebApp
-)
-
-def load_token_from_env():
-    if os.path.exists(".env"):
-        try:
-            with open(".env", "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, val = line.split("=", 1)
-                        if "TOKEN" in key.upper():
-                            return val.strip().strip('"').strip("'")
-        except Exception:
-            pass
-    return None
-
-FALLBACK_TOKEN = "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
-TOKEN = load_token_from_env() or FALLBACK_TOKEN
-WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
-PUBLIC_TUNNEL_URL = "https://relax-indoor-claims-iso.trycloudflare.com"
-
-OWNER_IDS = [7280921605]
-DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
-DB_FILE = "database.db"
-
-INITIAL_PRODUCTS = [
-    (1, "ANIMAL LOVE Killer 50mg", "liquid", 17.00, "жидкость", "🧪", 1, "", 0),
-    (2, "OGGO Rush 20mg", "liquid", 13.00, "жидкость", "🧪", 1, "", 0),
-    (3, "OGGO Cherry 20mg", "liquid", 13.00, "жидкость", "🧪", 1, "", 0),
-    (4, "BJORN ZLOY 60mg", "liquid", 13.00, "хит", "🧪", 1, "", 0),
-    (5, "XROS 3 Mini Pod Kit", "pod", 55.00, "вейп", "⚡", 1, "", 0),
-    (6, "Vaporesso XROS Pro", "pod", 85.00, "вейп", "⚡", 1, "", 0),
-    (7, "Lost Mary BM5000", "disposable", 25.00, "одноразка", "💨", 1, "", 0),
-    (8, "Сменный картридж XROS", "accessory", 9.00, "расходник", "📦", 1, "", 0),
-]
-
-DEFAULT_TIME_SLOTS = ["12:00", "14:30", "16:30", "18:10", "21:00"]
-
-DEFAULT_METRO_STATIONS = {
-    "green": [
-        {"name": "Юбилейная площадь", "line": "Зеленая ветка"},
-        {"name": "Площадь Франтишка Богушевича", "line": "Зеленая ветка"},
-        {"name": "Вокзальная", "line": "Зеленая ветка"},
-        {"name": "Ковальская Слобода", "line": "Зеленая ветка"},
-        {"name": "Аэродромная", "line": "Зеленая ветка"},
-        {"name": "Неморшанский Сад", "line": "Зеленая ветка"},
-        {"name": "Слуцкий Гостинец", "line": "Зеленая ветка"}
-    ],
-    "blue": [
-        {"name": "Уручье", "line": "Синяя ветка"},
-        {"name": "Борисовский тракт", "line": "Синяя ветка"},
-        {"name": "Восток", "line": "Синяя ветка"},
-        {"name": "Московская", "line": "Синяя ветка"},
-        {"name": "Парк Челюскинцев", "line": "Синяя ветка"},
-        {"name": "Академия наук", "line": "Синяя ветка"},
-        {"name": "Площадь Якуба Коласа", "line": "Синяя ветка"},
-        {"name": "Площадь Победы", "line": "Синяя ветка"},
-        {"name": "Октябрьская", "line": "Синяя ветка"},
-        {"name": "Площадь Ленина", "line": "Синяя ветка"},
-        {"name": "Институт культуры", "line": "Синяя ветка"},
-        {"name": "Грушевка", "line": "Синяя ветка"},
-        {"name": "Михалово", "line": "Синяя ветка"},
-        {"name": "Петровщина", "line": "Синяя ветка"},
-        {"name": "Малиновка", "line": "Синяя ветка"}
-    ],
-    "red": [
-        {"name": "Каменная Горка", "line": "Красная ветка"},
-        {"name": "Кунцевщина", "line": "Красная ветка"},
-        {"name": "Спортивная", "line": "Красная ветка"},
-        {"name": "Пушкинская", "line": "Красная ветка"},
-        {"name": "Молодежная", "line": "Красная ветка"},
-        {"name": "Фрунзенская", "line": "Красная ветка"},
-        {"name": "Немига", "line": "Красная ветка"},
-        {"name": "Купаловская", "line": "Красная ветка"},
-        {"name": "Первомайская", "line": "Красная ветка"},
-        {"name": "Пролетарская", "line": "Красная ветка"},
-        {"name": "Тракторный завод", "line": "Красная ветка"},
-        {"name": "Партизанская", "line": "Красная ветка"},
-        {"name": "Автозаводская", "line": "Красная ветка"},
-        {"name": "Могилевская", "line": "Красная ветка"}
-    ]
-}
-
-LINE_NAMES = {"green": "Зеленая ветка", "blue": "Синяя ветка", "red": "Красная ветка"}
-
-async def get_setting_raw(db, key: str, default: str = "") -> str:
-    async with db.execute("SELECT value FROM shop_settings WHERE key = ?", (key,)) as cursor:
-        row = await cursor.fetchone()
-        if row and row[0] is not None:
-            return row[0]
-    return default
-
-async def set_setting_raw(db, key: str, value: str):
-    await db.execute("INSERT OR REPLACE INTO shop_settings (key, value) VALUES (?, ?)", (key, value))
-
-async def get_setting_list(db, key: str, default_list=None) -> list:
-    raw = await get_setting_raw(db, key, "")
-    if not raw:
-        return list(default_list) if default_list is not None else []
-    try:
-        return json.loads(raw)
-    except Exception:
-        return list(default_list) if default_list is not None else []
-
-async def set_setting_list(db, key: str, values: list):
-    await set_setting_raw(db, key, json.dumps(values, ensure_ascii=False))
-
-async def get_metro_map(db) -> dict:
-    raw = await get_setting_raw(db, "metro_stations", "")
-    if raw:
-        try:
-            data = json.loads(raw)
-            if isinstance(data, dict) and "green" in data:
-                return data
-        except Exception:
-            pass
-    return json.loads(json.dumps(DEFAULT_METRO_STATIONS))
-
-async def get_all_courier_ids(db) -> list[int]:
-    extra = await get_setting_list(db, "extra_couriers")
-    combined = set(DEFAULT_COURIER_IDS + OWNER_IDS)
-    for x in extra:
-        try:
-            combined.add(int(x))
-        except Exception:
-            pass
-    return list(combined)
-
-def build_personal_url(uid: int, uname: str = "User", is_courier: bool = False) -> str:
-    role = "client"
-    if uid in OWNER_IDS:
-        role = "owner"
-    elif uid in DEFAULT_COURIER_IDS or is_courier:
-        role = "courier"
-    url = f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}"
-    if PUBLIC_TUNNEL_URL:
-        url += f"&api={quote(PUBLIC_TUNNEL_URL.strip())}"
-    return url
-
-async def init_db():
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY,
-                user_name TEXT DEFAULT '',
-                joined_at TEXT DEFAULT ''
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS broadcasts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                created_at TEXT,
-                text TEXT,
-                sent INTEGER DEFAULT 0,
-                failed INTEGER DEFAULT 0,
-                total INTEGER DEFAULT 0
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS products (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT,
-                category TEXT,
-                price REAL,
-                tag TEXT DEFAULT '',
-                icon TEXT DEFAULT '🧪',
-                available INTEGER DEFAULT 1,
-                image_url TEXT DEFAULT '',
-                has_discount INTEGER DEFAULT 0
-            )
-        """)
-        for col_sql in [
-            "ALTER TABLE products ADD COLUMN image_url TEXT DEFAULT ''",
-            "ALTER TABLE products ADD COLUMN has_discount INTEGER DEFAULT 0"
-        ]:
-            try:
-                await db.execute(col_sql)
-            except Exception:
-                pass
-
-        async with db.execute("SELECT COUNT(*) FROM products") as cur:
-            row = await cur.fetchone()
-            if row and row[0] == 0:
-                await db.executemany(
-                    "INSERT INTO products (id, title, category, price, tag, icon, available, image_url, has_discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    INITIAL_PRODUCTS
-                )
-
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS orders (
-                id TEXT PRIMARY KEY,
-                user_id INTEGER,
-                user_name TEXT,
-                station TEXT,
-                time TEXT,
-                total REAL,
-                items TEXT,
-                status TEXT DEFAULT 'active',
-                time_changed INTEGER DEFAULT 0,
-                hidden_by_courier INTEGER DEFAULT 0,
-                promo_code TEXT DEFAULT '',
-                discount REAL DEFAULT 0,
-                created_at TEXT DEFAULT '',
-                cancelled_by TEXT DEFAULT ''
-            )
-        """)
-        for col_sql in [
-            "ALTER TABLE orders ADD COLUMN hidden_by_courier INTEGER DEFAULT 0",
-            "ALTER TABLE orders ADD COLUMN promo_code TEXT DEFAULT ''",
-            "ALTER TABLE orders ADD COLUMN discount REAL DEFAULT 0",
-            "ALTER TABLE orders ADD COLUMN created_at TEXT DEFAULT ''",
-            "ALTER TABLE orders ADD COLUMN cancelled_by TEXT DEFAULT ''"
-        ]:
-            try:
-                await db.execute(col_sql)
-            except Exception:
-                pass
-
-        await db.execute("""
-            INSERT OR IGNORE INTO users (user_id, user_name, joined_at)
-            SELECT DISTINCT user_id, user_name, '' FROM orders WHERE user_id > 0
-        """)
-        await db.execute("CREATE TABLE IF NOT EXISTS shop_settings (key TEXT PRIMARY KEY, value TEXT)")
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS promocodes (
-                code TEXT PRIMARY KEY,
-                discount REAL,
-                discount_type TEXT DEFAULT 'rub',
-                max_uses INTEGER DEFAULT 0,
-                used_count INTEGER DEFAULT 0
-            )
-        """)
-        for p_col in [
-            "ALTER TABLE promocodes ADD COLUMN discount_type TEXT DEFAULT 'rub'",
-            "ALTER TABLE promocodes ADD COLUMN max_uses INTEGER DEFAULT 0",
-            "ALTER TABLE promocodes ADD COLUMN used_count INTEGER DEFAULT 0"
-        ]:
-            try:
-                await db.execute(p_col)
-            except Exception:
-                pass
-
-        async with db.execute("SELECT COUNT(*) FROM promocodes") as cur:
-            row = await cur.fetchone()
-            if row and row[0] == 0:
-                await db.execute(
-                    "INSERT INTO promocodes (code, discount, discount_type, max_uses, used_count) VALUES (?, ?, 'rub', 0, 0)",
-                    ("MONKEY3", 3.0)
-                )
-        await db.commit()
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await init_db()
-    yield
-
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
-app = FastAPI(lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.middleware("http")
-async def add_private_network_header(request: Request, call_next):
-    if request.method == "OPTIONS":
-        response = Response(status_code=200)
-    else:
-        response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    response.headers["Access-Control-Allow-Private-Network"] = "true"
-    return response
-
-class OrderSchema(BaseModel):
-    id: str
-    user_id: int
-    user_name: str
-    items: list
-    total: float
-    station: str
-    time: str
-    status: str = "active"
-    promo_code: str = ""
-    discount: float = 0.0
-    created_at: str = ""
-    cancelled_by: str = ""
-
-class StatusUpdateSchema(BaseModel):
-    order_id: str
-    status: str
-    cancelled_by: str = ""
-
-class TimeUpdateSchema(BaseModel):
-    order_id: str
-    time: str
-
-class DeleteOrderSchema(BaseModel):
-    order_id: str
-
-class AdminStationToggleSchema(BaseModel):
-    user_id: int
-    station: str
-
-class AdminTimeToggleSchema(BaseModel):
-    user_id: int
-    time: str
-
-class AdminMetroManageSchema(BaseModel):
-    user_id: int
-    line: str
-    station: str
-    action: str
-
-class AdminTimeManageSchema(BaseModel):
-    user_id: int
-    time: str
-    action: str
-
-class AdminAppearanceSchema(BaseModel):
-    user_id: int
-    season_effect: str = "none"
-    hit_color: str = "#ffcc00"
-
-class AdminPromoSaveSchema(BaseModel):
-    user_id: int
-    code: str
-    discount: float
-    discount_type: str = "rub"
-    max_uses: int = 0
-
-class AdminPromoDeleteSchema(BaseModel):
-    user_id: int
-    code: str
-
-class AdminBroadcastSchema(BaseModel):
-    user_id: int
-    text: str
-
-class AdminShopStatusSchema(BaseModel):
-    user_id: int
-    is_open: bool
-    closed_message: str = ""
-
-class AdminProductSaveSchema(BaseModel):
-    user_id: int
-    id: int = 0
-    title: str
-    category: str
-    price: float
-    tag: str = ""
-    icon: str = "🧪"
-    available: bool = True
-    image_url: str = ""
-    has_discount: bool = False
-
-class AdminProductToggleSchema(BaseModel):
-    user_id: int
-    product_id: int
-    field: str
-
-class AdminProductDeleteSchema(BaseModel):
-    user_id: int
-    product_id: int
-
-class AdminRoleManageSchema(BaseModel):
-    user_id: int
-    target_id: int
-    action: str
-
-@app.get("/api/user_avatar/{user_id}")
-async def get_user_avatar(user_id: int):
-    if not user_id:
-        raise HTTPException(status_code=404, detail="No user id")
-    try:
-        photos = await bot.get_user_profile_photos(user_id=user_id, limit=1)
-        if photos.total_count > 0 and photos.photos:
-            file_id = photos.photos[0][-1].file_id
-            tg_file = await bot.get_file(file_id)
-            file_bytes_io = await bot.download_file(tg_file.file_path)
-            return Response(content=file_bytes_io.read(), media_type="image/jpeg")
-    except Exception:
-        pass
-    raise HTTPException(status_code=404, detail="Avatar not found")
-
-@app.get("/api/tg_photo/{file_id}")
-async def get_tg_photo(file_id: str):
-    try:
-        tg_file = await bot.get_file(file_id)
-        file_bytes_io = await bot.download_file(tg_file.file_path)
-        return Response(content=file_bytes_io.read(), media_type="image/jpeg")
-    except Exception:
-        raise HTTPException(status_code=404, detail="Photo not found")
-
-@app.get("/api/shop_config")
-async def get_shop_config():
-    async with aiosqlite.connect(DB_FILE) as db:
-        disabled_stations = await get_setting_list(db, "disabled_stations")
-        disabled_times = await get_setting_list(db, "disabled_times")
-        time_slots = await get_setting_list(db, "time_slots", DEFAULT_TIME_SLOTS)
-        metro_stations = await get_metro_map(db)
-        shop_open_raw = await get_setting_raw(db, "shop_open", "1")
-        closed_message = await get_setting_raw(db, "closed_message", "Магазин временно закрыт. Попробуйте оформить заказ позже.")
-        season_effect = await get_setting_raw(db, "season_effect", "none")
-        hit_color = await get_setting_raw(db, "hit_color", "#ffcc00")
-        banned_users = [int(x) for x in await get_setting_list(db, "banned_users")]
-        courier_ids = await get_all_courier_ids(db)
-
-        promos = {}
-        async with db.execute("SELECT code, discount, discount_type, max_uses, used_count FROM promocodes") as cursor:
-            rows = await cursor.fetchall()
-            for r in rows:
-                promos[r[0]] = {
-                    "discount": float(r[1]),
-                    "type": r[2] or "rub",
-                    "max_uses": int(r[3] or 0),
-                    "used_count": int(r[4] or 0)
-                }
-
-        products_list = []
-        async with db.execute("SELECT id, title, category, price, tag, icon, available, image_url, has_discount FROM products ORDER BY id ASC") as cursor:
-            p_rows = await cursor.fetchall()
-            for pr in p_rows:
-                products_list.append({
-                    "id": pr[0],
-                    "title": pr[1],
-                    "category": pr[2],
-                    "price": float(pr[3]),
-                    "tag": pr[4] or "",
-                    "icon": pr[5] or "🧪",
-                    "available": bool(pr[6]),
-                    "image_url": pr[7] or "",
-                    "has_discount": bool(pr[8])
-                })
-
-        return {
-            "shop_open": shop_open_raw == "1",
-            "closed_message": closed_message,
-            "season_effect": season_effect,
-            "hit_color": hit_color,
-            "time_slots": time_slots,
-            "metro_stations": metro_stations,
-            "disabled_stations": disabled_stations,
-            "disabled_times": disabled_times,
-            "promocodes": promos,
-            "products": products_list,
-            "banned_users": banned_users,
-            "courier_ids": courier_ids
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monkey Vape — Online Shop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f0c;
+            --card-bg: #131b14;
+            --card-hover: #1b261d;
+            --accent-green: #00ff66;
+            --accent-green-glow: rgba(0, 255, 102, 0.25);
+            --text-main: #ffffff;
+            --text-secondary: #9ca3af;
+            --border-color: #223525;
+            --danger: #ff3333;
+            --img-box-bg: #080d09;
+            --promo-grad: linear-gradient(135deg, #132b17 0%, #0d1a10 100%);
+            --items-text: #d1d5db;
         }
 
-@app.post("/api/admin/shop_status")
-async def admin_shop_status(data: AdminShopStatusSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    async with aiosqlite.connect(DB_FILE) as db:
-        await set_setting_raw(db, "shop_open", "1" if data.is_open else "0")
-        if data.closed_message.strip():
-            await set_setting_raw(db, "closed_message", data.closed_message.strip())
-        await db.commit()
-    return {"success": True}
+        [data-theme="light"] {
+            --bg-color: #f3f6f4;
+            --card-bg: #ffffff;
+            --card-hover: #eaf2ed;
+            --accent-green: #00a844;
+            --accent-green-glow: rgba(0, 168, 68, 0.18);
+            --text-main: #111813;
+            --text-secondary: #5a685e;
+            --border-color: #d3e0d7;
+            --danger: #e52525;
+            --img-box-bg: #e9f0ec;
+            --promo-grad: linear-gradient(135deg, #dcf5e5 0%, #eafaf0 100%);
+            --items-text: #27332b;
+        }
 
-@app.post("/api/admin/appearance")
-async def admin_appearance(data: AdminAppearanceSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    season = data.season_effect if data.season_effect in ("none", "winter", "autumn", "spring", "summer") else "none"
-    color = data.hit_color.strip() or "#ffcc00"
-    async with aiosqlite.connect(DB_FILE) as db:
-        await set_setting_raw(db, "season_effect", season)
-        await set_setting_raw(db, "hit_color", color)
-        await db.commit()
-    return {"success": True}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-@app.post("/api/admin/manage_metro")
-async def admin_manage_metro(data: AdminMetroManageSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    if data.line not in ("green", "blue", "red"):
-        raise HTTPException(status_code=400, detail="Invalid line")
-    st_name = data.station.strip()
-    if not st_name:
-        raise HTTPException(status_code=400, detail="Empty station")
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.25s, color 0.25s;
+        }
 
-    async with aiosqlite.connect(DB_FILE) as db:
-        metro_map = await get_metro_map(db)
-        if data.action == "add":
-            exists = any(s["name"].lower() == st_name.lower() for s in metro_map[data.line])
-            if not exists:
-                metro_map[data.line].append({"name": st_name, "line": LINE_NAMES[data.line]})
-        elif data.action == "delete":
-            metro_map[data.line] = [s for s in metro_map[data.line] if s["name"] != st_name]
-        await set_setting_raw(db, "metro_stations", json.dumps(metro_map, ensure_ascii=False))
-        await db.commit()
-    return {"success": True}
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 255, 102, 0.1);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.25s, border-color 0.25s;
+        }
 
-@app.post("/api/admin/manage_time")
-async def admin_manage_time(data: AdminTimeManageSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    t_str = data.time.strip()
-    if not t_str:
-        raise HTTPException(status_code=400, detail="Empty time")
+        @media (min-width: 481px) {
+            .app-container { border-radius: 24px; }
+        }
 
-    async with aiosqlite.connect(DB_FILE) as db:
-        slots = await get_setting_list(db, "time_slots", DEFAULT_TIME_SLOTS)
-        if data.action == "add":
-            if t_str not in slots:
-                slots.append(t_str)
-                slots.sort()
-        elif data.action == "delete":
-            slots = [s for s in slots if s != t_str]
-        await set_setting_list(db, "time_slots", slots)
-        await db.commit()
-    return {"success": True}
+        #season-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 900;
+        }
 
-@app.post("/api/admin/toggle_station")
-async def admin_toggle_station(data: AdminStationToggleSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    async with aiosqlite.connect(DB_FILE) as db:
-        stations = await get_setting_list(db, "disabled_stations")
-        if data.station in stations:
-            stations.remove(data.station)
-        else:
-            stations.append(data.station)
-        await set_setting_list(db, "disabled_stations", stations)
-        await db.commit()
-    return {"success": True, "disabled_stations": stations}
+        #splash-screen {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 38%, #132c19 0%, #070a08 75%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
 
-@app.post("/api/admin/toggle_time")
-async def admin_toggle_time(data: AdminTimeToggleSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    async with aiosqlite.connect(DB_FILE) as db:
-        times = await get_setting_list(db, "disabled_times")
-        if data.time in times:
-            times.remove(data.time)
-        else:
-            times.append(data.time)
-        await set_setting_list(db, "disabled_times", times)
-        await db.commit()
-    return {"success": True, "disabled_times": times}
+        .splash-orbit {
+            position: relative;
+            width: 96px;
+            height: 96px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 22px;
+        }
 
-@app.post("/api/admin/save_promo")
-async def admin_save_promo(data: AdminPromoSaveSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    code = data.code.strip().upper()
-    dtype = data.discount_type if data.discount_type in ("rub", "percent") else "rub"
-    max_uses = max(0, int(data.max_uses or 0))
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            """INSERT INTO promocodes (code, discount, discount_type, max_uses, used_count)
-               VALUES (?, ?, ?, ?, 0)
-               ON CONFLICT(code) DO UPDATE SET
-               discount = excluded.discount,
-               discount_type = excluded.discount_type,
-               max_uses = excluded.max_uses""",
-            (code, float(data.discount), dtype, max_uses)
-        )
-        await db.commit()
-    return {"success": True}
+        .splash-ring-outer {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #00ff66;
+            border-right-color: rgba(0, 255, 102, 0.35);
+            animation: spinClockwise 1.2s linear infinite;
+            box-shadow: 0 0 22px rgba(0, 255, 102, 0.35);
+        }
 
-@app.post("/api/admin/delete_promo")
-async def admin_delete_promo(data: AdminPromoDeleteSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    code = data.code.strip().upper()
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("DELETE FROM promocodes WHERE code = ?", (code,))
-        await db.commit()
-    return {"success": True}
+        .splash-ring-inner {
+            position: absolute;
+            inset: 12px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-bottom-color: #00e5ff;
+            border-left-color: rgba(0, 229, 255, 0.3);
+            animation: spinCounter 1.7s linear infinite;
+        }
 
-@app.post("/api/admin/save_product")
-async def admin_save_product(data: AdminProductSaveSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    async with aiosqlite.connect(DB_FILE) as db:
-        if data.id and data.id > 0:
-            await db.execute(
-                """UPDATE products SET title = ?, category = ?, price = ?, tag = ?, icon = ?,
-                   available = ?, image_url = ?, has_discount = ? WHERE id = ?""",
-                (
-                    data.title.strip(), data.category, float(data.price), data.tag.strip(),
-                    data.icon.strip() or "🧪", 1 if data.available else 0,
-                    data.image_url.strip(), 1 if data.has_discount else 0, data.id
-                )
-            )
-        else:
-            await db.execute(
-                """INSERT INTO products (title, category, price, tag, icon, available, image_url, has_discount)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    data.title.strip(), data.category, float(data.price), data.tag.strip(),
-                    data.icon.strip() or "🧪", 1 if data.available else 0,
-                    data.image_url.strip(), 1 if data.has_discount else 0
-                )
-            )
-        await db.commit()
-    return {"success": True}
+        .splash-emblem {
+            font-size: 36px;
+            animation: pulseGlow 1.6s ease-in-out infinite;
+        }
 
-@app.post("/api/admin/toggle_product")
-async def admin_toggle_product(data: AdminProductToggleSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    async with aiosqlite.connect(DB_FILE) as db:
-        if data.field == "available":
-            await db.execute("UPDATE products SET available = CASE WHEN available = 1 THEN 0 ELSE 1 END WHERE id = ?", (data.product_id,))
-        elif data.field == "hit":
-            await db.execute("UPDATE products SET tag = CASE WHEN tag = 'хит' THEN '' ELSE 'хит' END WHERE id = ?", (data.product_id,))
-        elif data.field == "discount":
-            await db.execute("UPDATE products SET has_discount = CASE WHEN has_discount = 1 THEN 0 ELSE 1 END WHERE id = ?", (data.product_id,))
-        await db.commit()
-    return {"success": True}
+        @keyframes spinClockwise { to { transform: rotate(360deg); } }
+        @keyframes spinCounter { to { transform: rotate(-360deg); } }
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(0.95); filter: drop-shadow(0 0 8px rgba(0, 255, 102, 0.4)); }
+            50% { transform: scale(1.08); filter: drop-shadow(0 0 18px rgba(0, 255, 102, 0.85)); }
+        }
 
-@app.post("/api/admin/delete_product")
-async def admin_delete_product(data: AdminProductDeleteSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("DELETE FROM products WHERE id = ?", (data.product_id,))
-        await db.commit()
-    return {"success": True}
+        .splash-logo { font-size: 30px; font-weight: 900; color: #ffffff; text-shadow: 0 0 22px rgba(0, 255, 102, 0.55); margin-bottom: 8px; letter-spacing: 2px; }
+        .splash-logo span { color: #00ff66; }
+        .splash-sub { color: #9ca3af; font-size: 13px; margin-bottom: 26px; letter-spacing: 0.4px; }
+        .progress-bar { width: 210px; height: 6px; background-color: rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden; border: 1px solid rgba(0, 255, 102, 0.25); }
+        .progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #00b84a, #00ff66, #7affb2); box-shadow: 0 0 14px #00ff66; transition: width 1.15s cubic-bezier(0.22, 1, 0.36, 1); }
 
-@app.post("/api/admin/manage_role")
-async def admin_manage_role(data: AdminRoleManageSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    tid = int(data.target_id)
-    async with aiosqlite.connect(DB_FILE) as db:
-        if data.action == "add_courier":
-            couriers = [int(x) for x in await get_setting_list(db, "extra_couriers")]
-            if tid not in couriers and tid not in DEFAULT_COURIER_IDS:
-                couriers.append(tid)
-                await set_setting_list(db, "extra_couriers", couriers)
-        elif data.action == "remove_courier":
-            couriers = [int(x) for x in await get_setting_list(db, "extra_couriers") if int(x) != tid]
-            await set_setting_list(db, "extra_couriers", couriers)
-        elif data.action == "ban_user":
-            if tid in OWNER_IDS:
-                raise HTTPException(status_code=400, detail="Cannot ban owner")
-            banned = [int(x) for x in await get_setting_list(db, "banned_users")]
-            if tid not in banned:
-                banned.append(tid)
-                await set_setting_list(db, "banned_users", banned)
-        elif data.action == "unban_user":
-            banned = [int(x) for x in await get_setting_list(db, "banned_users") if int(x) != tid]
-            await set_setting_list(db, "banned_users", banned)
-        await db.commit()
-    return {"success": True}
+        .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 14px 16px; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); z-index: 10; }
+        .brand-title { font-size: 17px; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+        .brand-title span { color: var(--accent-green); }
+        .top-bar-actions { display: flex; align-items: center; gap: 8px; }
+        .theme-toggle-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 34px; height: 34px; border-radius: 11px; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .metro-selector-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 7px 12px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 7px; cursor: pointer; }
+        .metro-icon { background-color: var(--accent-green); color: #000; width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; }
 
-@app.get("/api/admin/stats/{user_id}")
-async def admin_stats(user_id: int):
-    if user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
+        .content-area { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
+        .screen { display: none; }
+        .screen.active { display: block; }
 
-    now = datetime.now()
-    today_prefix = now.strftime("%d.%m.%Y")
-    week_ago = now - timedelta(days=7)
+        .closed-shop-banner { background: rgba(255, 51, 51, 0.12); border: 1px solid var(--danger); color: var(--danger); padding: 12px 14px; border-radius: 14px; font-size: 12.5px; margin-bottom: 16px; line-height: 1.4; }
+        .search-box { position: relative; margin-bottom: 20px; }
+        .search-input { width: 100%; padding: 14px 16px 14px 44px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; color: var(--text-main); font-size: 14px; outline: none; user-select: text; -webkit-user-select: text; }
+        .search-input:focus { border-color: var(--accent-green); box-shadow: 0 0 12px var(--accent-green-glow); }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 16px; pointer-events: none; }
 
-    today_rev = week_rev = total_rev = 0.0
-    today_cnt = week_cnt = total_cnt = cancelled_cnt = active_cnt = 0
-    item_counts, station_counts = {}, {}
+        .categories-scroll { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--accent-green) var(--card-bg); }
+        .categories-scroll::-webkit-scrollbar { height: 4px; }
+        .categories-scroll::-webkit-scrollbar-thumb { background: var(--accent-green); border-radius: 4px; }
+        .cat-chip { background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 14px; font-size: 13px; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
+        .cat-chip.active { background-color: var(--accent-green); color: #0b0f0c; border-color: var(--accent-green); font-weight: 600; box-shadow: 0 0 15px var(--accent-green-glow); }
 
-    async with aiosqlite.connect(DB_FILE) as db:
-        async with db.execute("SELECT total, status, created_at, items, station FROM orders") as cursor:
-            rows = await cursor.fetchall()
+        .promo-banner { background: var(--promo-grad); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .promo-banner h3 { font-size: 16px; font-weight: 700; color: var(--accent-green); margin-bottom: 6px; }
+        .promo-banner p { font-size: 12px; color: var(--text-secondary); }
+        .promo-badge { background-color: var(--accent-green); color: #000; font-size: 12px; font-weight: bold; padding: 6px 10px; border-radius: 10px; }
 
-        for total, status, created_at, items_json, station in rows:
-            val = float(total or 0)
-            c_str = created_at or ""
-            if status == "completed":
-                total_rev += val
-                total_cnt += 1
-                if c_str.startswith(today_prefix):
-                    today_rev += val
-                    today_cnt += 1
-                try:
-                    dt = datetime.strptime(c_str[:10], "%d.%m.%Y")
-                    if dt >= week_ago.replace(hour=0, minute=0, second=0, microsecond=0):
-                        week_rev += val
-                        week_cnt += 1
-                except Exception:
-                    pass
-                if station:
-                    station_counts[station] = station_counts.get(station, 0) + 1
-                try:
-                    for it in json.loads(items_json or "[]"):
-                        t = it.get("title", "Товар")
-                        q = int(it.get("qty", 1))
-                        item_counts[t] = item_counts.get(t, 0) + q
-                except Exception:
-                    pass
-            elif status == "cancelled":
-                cancelled_cnt += 1
-            elif status == "active":
-                active_cnt += 1
+        .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .product-card { background-color: var(--card-bg); border: 1.5px solid var(--border-color); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; cursor: pointer; position: relative; }
+        .product-card:hover { border-color: var(--accent-green); transform: translateY(-2px); }
+        .product-card.out-of-stock { opacity: 0.72; }
 
-    top_items = sorted(item_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-    top_stations = sorted(station_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        .product-img-container { width: 100%; height: 122px; background-color: var(--img-box-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 9px; font-size: 40px; position: relative; overflow: hidden; }
+        .product-img-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .product-badges-stack { position: absolute; top: 7px; left: 7px; right: 7px; display: flex; flex-wrap: wrap; gap: 4px; z-index: 2; pointer-events: none; }
+        .product-tag { background-color: rgba(11, 15, 12, 0.78); backdrop-filter: blur(4px); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 6px; }
+        .product-tag.soldout { background-color: rgba(255, 51, 51, 0.88); color: #ffffff; }
 
-    return {
-        "today_rev": round(today_rev, 2), "today_cnt": today_cnt,
-        "week_rev": round(week_rev, 2), "week_cnt": week_cnt,
-        "total_rev": round(total_rev, 2), "total_cnt": total_cnt,
-        "cancelled_cnt": cancelled_cnt, "active_cnt": active_cnt,
-        "top_items": [{"title": k, "qty": v} for k, v in top_items],
-        "top_stations": [{"station": k, "count": v} for k, v in top_stations]
+        .product-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 34px;
+        }
+
+        .product-sub-badges {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            min-height: 20px;
+            margin-bottom: 6px;
+        }
+
+        .discount-tag-under {
+            background: rgba(255, 51, 51, 0.15);
+            border: 1px solid rgba(255, 51, 51, 0.55);
+            color: #ff3333;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .lowstock-tag-right {
+            margin-left: auto;
+            background: rgba(255, 170, 0, 0.16);
+            border: 1px solid rgba(255, 170, 0, 0.55);
+            color: #ffaa00;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .product-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; gap: 4px; }
+        .price-block { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+        .product-old-price { font-size: 11.5px; color: var(--text-secondary); text-decoration: line-through; }
+        .product-price { font-size: 14px; font-weight: 700; color: var(--accent-green); }
+        .add-btn { background-color: var(--accent-green); color: #0b0f0c; border: none; width: 32px; height: 32px; border-radius: 10px; font-weight: bold; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .notify-btn { background: rgba(255, 170, 0, 0.16); border: 1px solid #ffaa00; color: #ffaa00; padding: 6px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.75); display: none; justify-content: center; align-items: flex-end; z-index: 2000; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .modal-card { width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; background-color: var(--card-bg); border: 1.5px solid var(--border-color); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 20px 24px 24px 24px; animation: slideUp 0.3s ease; }
+        .sheet-handle { width: 44px; height: 5px; background-color: var(--border-color); border-radius: 3px; margin: 0 auto 16px auto; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+        .modal-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .option-btn { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 10px; border-radius: 14px; font-size: 13px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .option-btn.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 600; }
+        .option-btn.opt-unavail { opacity: 0.55; border-style: dashed; }
+
+        .hit-colors-modal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .hit-color-tile {
+            background: var(--bg-color);
+            border: 1.5px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .hit-color-tile.selected {
+            border-color: var(--accent-green);
+            background: var(--accent-green-glow);
+            transform: scale(1.03);
+        }
+
+        .hit-color-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(150, 150, 150, 0.45);
+        }
+
+        .hit-color-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: center;
+        }
+
+        .cart-empty { text-align: center; padding: 50px 20px; color: var(--text-secondary); }
+        .cart-empty-icon { font-size: 48px; margin-bottom: 14px; }
+        .cart-items-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+        .cart-item { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; display: flex; align-items: center; gap: 14px; }
+        .cart-item-img { width: 54px; height: 54px; background-color: var(--img-box-bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; overflow: hidden; flex-shrink: 0; }
+        .cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
+        .cart-item-info { flex: 1; min-width: 0; }
+        .cart-item-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .cart-item-sub { font-size: 11px; color: var(--accent-green); margin-bottom: 6px; }
+        .cart-item-price { font-size: 14px; color: var(--accent-green); font-weight: 700; }
+        .qty-controls { display: flex; align-items: center; gap: 10px; background-color: var(--bg-color); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border-color); }
+        .qty-btn { background: none; border: none; color: var(--text-main); font-size: 16px; cursor: pointer; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+        .qty-val { font-size: 14px; font-weight: 600; min-width: 18px; text-align: center; }
+
+        .promo-box { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; margin-bottom: 16px; position: relative; z-index: 2; }
+        .promo-input-row { display: flex; gap: 8px; align-items: center; }
+        .promo-input { flex: 1; min-width: 0; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; color: var(--text-main); font-size: 13px; outline: none; text-transform: uppercase; user-select: text; -webkit-user-select: text; pointer-events: auto; position: relative; z-index: 3; }
+        .promo-input:focus { border-color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green-glow); }
+        .admin-select { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 10px; color: var(--text-main); font-size: 12.5px; outline: none; }
+        .promo-apply-btn { background-color: var(--accent-green); color: #0b0f0c; border: none; border-radius: 12px; padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; position: relative; z-index: 3; }
+
+        .cart-summary { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: var(--text-secondary); }
+        .summary-row.total { font-size: 16px; font-weight: 700; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; }
+        .summary-row.total span:last-child { color: var(--accent-green); }
+
+        .primary-btn { width: 100%; background-color: var(--accent-green); color: #0b0f0c; border: none; padding: 16px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px var(--accent-green-glow); }
+        .section-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+
+        .orders-tabs { display: flex; gap: 8px; background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 5px; border-radius: 14px; margin-bottom: 18px; }
+        .orders-tab-btn { flex: 1; background: none; border: none; color: var(--text-secondary); padding: 10px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .orders-tab-btn.active { background-color: var(--accent-green); color: #0b0f0c; font-weight: 700; box-shadow: 0 0 12px var(--accent-green-glow); }
+        .tab-count-badge { background: rgba(0, 0, 0, 0.15); padding: 1px 7px; border-radius: 8px; font-size: 11px; }
+
+        .order-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 13px 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 9px; }
+        .order-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+        .order-id-label { font-size: 14px; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+        .order-status-pill { font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; line-height: 1.2; }
+        .order-status-pill.active { background: rgba(0, 255, 102, 0.12); color: var(--accent-green); border: 1px solid rgba(0, 255, 102, 0.35); }
+        .order-status-pill.completed { background: rgba(0, 204, 68, 0.14); color: #00b84a; border: 1px solid rgba(0, 204, 68, 0.4); }
+        .order-status-pill.cancelled { background: rgba(255, 51, 51, 0.12); color: var(--danger); border: 1px solid rgba(255, 51, 51, 0.35); }
+        .order-meta-grid { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); line-height: 1.35; }
+        .order-meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .order-meta-row b { color: var(--text-main); font-weight: 600; }
+        .order-items-box { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 9px 11px; font-size: 12px; color: var(--items-text); line-height: 1.45; }
+        .order-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 2px; }
+        .order-total-price { font-size: 15px; font-weight: 700; color: var(--accent-green); }
+        .order-actions-row { display: flex; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
+        .order-btn-secondary { flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 10px; border-radius: 11px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+        .order-btn-danger { flex: 1; background: rgba(255, 51, 51, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 10px 10px; border-radius: 11px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+
+        .method-card { background-color: var(--card-bg); border: 1px solid var(--accent-green); border-radius: 16px; padding: 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .method-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .method-info p { font-size: 12px; color: var(--text-secondary); }
+
+        .metro-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+        .metro-tab { flex: 1; padding: 10px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-align: center; cursor: pointer; }
+        .metro-tab.active-green { border-color: #00b84a; color: #00b84a; background: rgba(0,204,68,0.12); }
+        .metro-tab.active-blue { border-color: #0088ff; color: #0088ff; background: rgba(0,136,255,0.12); }
+        .metro-tab.active-red { border-color: #ff3333; color: #ff3333; background: rgba(255,51,51,0.12); }
+
+        .stations-list { display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; margin-bottom: 18px; padding-right: 4px; }
+        .station-item { position: relative; overflow: hidden; background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 12px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .station-item.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 600; }
+        .station-item.disabled-item, .time-slot.disabled-item { cursor: not-allowed; opacity: 0.55; }
+        .unavail-pill { background: rgba(156, 163, 175, 0.22); border: 1px solid rgba(156, 163, 175, 0.45); color: var(--text-secondary); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+
+        .time-slots { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+        .time-slot { background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 12px 8px; border-radius: 12px; text-align: center; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+        .time-slot.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 600; }
+
+        .profile-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 20px; display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+        .profile-avatar { width: 64px; height: 64px; min-width: 64px; background-color: var(--accent-green); color: #0b0f0c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 0 15px var(--accent-green-glow); overflow: hidden; border: 2px solid var(--accent-green); }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .profile-info h3 { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+        .profile-info p { font-size: 12px; color: var(--text-secondary); }
+        .profile-menu-item { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; text-decoration: none; color: var(--text-main); font-size: 14px; }
+        .profile-menu-item span { color: var(--accent-green); font-weight: 600; }
+
+        .admin-section { background-color: var(--card-bg); border: 1px solid var(--accent-green); border-radius: 18px; padding: 16px; margin-top: 16px; }
+        .admin-title { font-size: 15px; font-weight: 700; color: var(--accent-green); margin-bottom: 8px; }
+        .server-status-bar { font-size: 11px; padding: 7px 10px; border-radius: 10px; margin-bottom: 10px; line-height: 1.4; }
+        .server-status-bar.ok { background: rgba(0, 255, 102, 0.1); border: 1px solid rgba(0, 255, 102, 0.35); color: var(--accent-green); }
+        .server-status-bar.err { background: rgba(255, 51, 51, 0.1); border: 1px solid rgba(255, 51, 51, 0.4); color: var(--danger); }
+        .shop-master-box { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+        .admin-sub-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
+        .admin-sub-tab { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 3px; border-radius: 10px; font-size: 10.5px; font-weight: 600; text-align: center; cursor: pointer; white-space: nowrap; }
+        .admin-sub-tab.active { border-color: var(--accent-green); color: var(--accent-green); background: var(--accent-green-glow); }
+        .admin-toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; background: var(--bg-color); border: 1px solid var(--border-color); padding: 9px 10px; border-radius: 10px; margin-bottom: 8px; font-size: 12.5px; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .stat-card { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; }
+        .stat-card-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+        .stat-card-val { font-size: 15px; font-weight: 800; color: var(--accent-green); }
+        .stat-card-sub { font-size: 10.5px; color: var(--text-secondary); margin-top: 2px; }
+
+        .broadcast-textarea { width: 100%; min-height: 82px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; color: var(--text-main); font-size: 13px; outline: none; resize: vertical; margin-bottom: 10px; user-select: text; -webkit-user-select: text; }
+        .toggle-pill { padding: 5px 8px; border-radius: 8px; font-size: 10.5px; font-weight: 700; border: none; cursor: pointer; white-space: nowrap; }
+        .toggle-pill.on { background: rgba(0, 255, 102, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .toggle-pill.off { background: rgba(255, 51, 51, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+        .delete-order-x { background: rgba(255, 51, 51, 0.12); border: 1px solid var(--danger); color: var(--danger); width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+
+        .bottom-nav { position: absolute; bottom: 0; left: 0; width: 100%; height: 75px; background-color: var(--bg-color); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 10; }
+        .nav-item { background: none; border: none; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; position: relative; }
+        .nav-item.active { color: var(--accent-green); }
+        .nav-icon { font-size: 22px; }
+        .cart-badge { position: absolute; top: -2px; right: 4px; background-color: var(--accent-green); color: #0b0f0c; font-size: 10px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <canvas id="season-canvas"></canvas>
+
+    <div id="splash-screen">
+        <div class="splash-orbit">
+            <div class="splash-ring-outer"></div>
+            <div class="splash-ring-inner"></div>
+            <div class="splash-emblem">🐵</div>
+        </div>
+        <div class="splash-logo">MONKEY <span>VAPE</span></div>
+        <div class="splash-sub">Подключение к витрине...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Выбор станции метро -->
+    <div class="modal-overlay" id="metro-modal" onclick="closeMetroModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="modal-title">Выберите станцию метро 🚇</div>
+            <div class="modal-subtitle">Минский метрополитен — место доставки и встречи</div>
+            <div class="metro-tabs" id="modal-metro-tabs">
+                <div class="metro-tab active-green" onclick="switchModalMetroLine('green', this)">Зеленая ветка</div>
+                <div class="metro-tab" onclick="switchModalMetroLine('blue', this)">Синяя ветка</div>
+                <div class="metro-tab" onclick="switchModalMetroLine('red', this)">Красная ветка</div>
+            </div>
+            <div class="stations-list" id="modal-stations-list-container"></div>
+            <button class="primary-btn" onclick="closeMetroModalDirect()">Подтвердить станцию</button>
+        </div>
+    </div>
+
+    <!-- Выбор вкуса/опции товара или подписка на поступление -->
+    <div class="modal-overlay" id="option-modal" onclick="closeModal(event)">
+        <div class="modal-card" id="option-modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div id="modal-hit-badge" style="display:none; font-size:11px; font-weight:800; margin-bottom:6px;">🔥 ХИТ ПРОДАЖ</div>
+            <div class="modal-title" id="modal-product-title">Название товара</div>
+            <div class="modal-subtitle" id="modal-subtitle-text">Выберите параметр:</div>
+            <div class="options-grid" id="modal-options-grid"></div>
+            <button class="primary-btn" id="modal-add-cart-btn" onclick="confirmAddToCart()">Добавить в корзину</button>
+            <button id="modal-notify-btn" onclick="subscribeToSelectedOption()" style="display:none; width:100%; background:rgba(255,170,0,0.16); border:1px solid #ffaa00; color:#ffaa00; padding:14px; border-radius:16px; font-size:14px; font-weight:700; cursor:pointer;">🔔 Сообщить, когда появится</button>
+            <button onclick="closeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Окно выбора цвета обводки и подсветки ХИТ -->
+    <div class="modal-overlay" id="hit-color-modal" onclick="if(event.target.id==='hit-color-modal') closeHitColorModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="modal-title">🎨 Цвет подсветки «ХИТ»</div>
+            <div class="modal-subtitle">Выберите цвет обводки и свечения для хитов продаж</div>
+            <div class="hit-colors-modal-grid" id="hit-colors-modal-grid"></div>
+            <button onclick="closeHitColorModal()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:6px; font-size:13px; cursor:pointer;">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Редактор товара в админ-панели -->
+    <div class="modal-overlay" id="admin-edit-prod-modal" onclick="if(event.target.id==='admin-edit-prod-modal') closeAdminEditProductModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="modal-title">✏️ Редактирование товара</div>
+            <div class="modal-subtitle">Настройка цены, скидки, фото и вкусов</div>
+            <input type="hidden" id="edit-prod-id">
+
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+                <input type="text" id="edit-prod-title" class="promo-input" style="text-transform:none;" placeholder="Название товара">
+                <div style="display:flex; gap:6px;">
+                    <select id="edit-prod-cat" class="admin-select" style="flex:1;">
+                        <option value="liquid">Жидкость</option>
+                        <option value="pod">Под / Вейп</option>
+                        <option value="disposable">Одноразка</option>
+                        <option value="accessory">Расходник</option>
+                    </select>
+                    <input type="text" id="edit-prod-icon" class="promo-input" style="text-transform:none; width:50px; text-align:center;" placeholder="🧪">
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <input type="number" id="edit-prod-old-price" class="promo-input" style="text-transform:none;" placeholder="Старая цена (напр. 17)" step="0.5">
+                    <input type="number" id="edit-prod-price" class="promo-input" style="text-transform:none;" placeholder="Цена сейчас (напр. 15)" step="0.5">
+                </div>
+                <input type="text" id="edit-prod-img" class="promo-input" style="text-transform:none;" placeholder="Ссылка на фото (или отправь фото боту)">
+            </div>
+
+            <div style="font-size:12px; font-weight:700; margin-bottom:6px;">🍓 Вкусы / варианты в наличии:</div>
+            <div style="display:flex; gap:6px; margin-bottom:8px;">
+                <input type="text" id="edit-prod-new-opt" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Добавить вкус (напр. Арбуз)">
+                <button type="button" class="promo-apply-btn" style="padding:8px 12px;" onclick="adminAddOptionToEditModal()">+</button>
+            </div>
+            <div id="edit-prod-options-list" style="max-height:150px; overflow-y:auto; margin-bottom:14px;"></div>
+
+            <button class="primary-btn" onclick="adminSaveEditedProduct()">Сохранить изменения</button>
+            <button onclick="closeAdminEditProductModal()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Изменение времени встречи покупателем -->
+    <div class="modal-overlay" id="time-modal" onclick="closeTimeModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="modal-title">Изменить время встречи</div>
+            <div class="modal-subtitle">Выберите новое время для заказа #<span id="time-modal-order-id"></span></div>
+            <div class="time-slots" id="change-time-slots-container"></div>
+            <button class="primary-btn" onclick="confirmTimeChangeFinal()">Сохранить новое время</button>
+            <button onclick="closeTimeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Назад</button>
+        </div>
+    </div>
+
+    <div class="top-bar">
+        <div class="brand-title">MONKEY <span>VAPE</span></div>
+        <div class="top-bar-actions">
+            <button class="theme-toggle-btn" id="theme-toggle-btn" title="Сменить тему" onclick="toggleAppTheme()">☀️</button>
+            <button class="metro-selector-btn" onclick="openMetroPicker()">
+                <div class="metro-icon">M</div>
+                <span id="current-metro-label">Партизанская</span>
+                <span style="font-size: 10px; color: var(--accent-green);">▼</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <div id="screen-catalog" class="screen active">
+            <div id="catalog-closed-banner" class="closed-shop-banner" style="display: none;"></div>
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров..." oninput="filterProducts()">
+            </div>
+            <div class="categories-scroll" id="categories-scroll">
+                <button class="cat-chip active" onclick="setCategory('all', this)">Все товары</button>
+                <button class="cat-chip" onclick="setCategory('liquid', this)">Жидкости</button>
+                <button class="cat-chip" onclick="setCategory('pod', this)">Поды и Вейпы</button>
+                <button class="cat-chip" onclick="setCategory('disposable', this)">Одноразки</button>
+                <button class="cat-chip" onclick="setCategory('accessory', this)">Расходники</button>
+            </div>
+            <div class="promo-banner">
+                <div>
+                    <h3>AKCIJA - 20%</h3>
+                    <p>Топовые жижи и устройства недели</p>
+                </div>
+                <div class="promo-badge">-20%</div>
+            </div>
+            <div class="products-grid" id="products-grid"></div>
+        </div>
+
+        <div id="screen-cart" class="screen">
+            <div class="section-title">Корзина</div>
+            <div id="cart-content"></div>
+        </div>
+
+        <div id="screen-orders" class="screen">
+            <div class="section-title">Мои заказы</div>
+            <div class="orders-tabs">
+                <button class="orders-tab-btn active" id="orders-tab-active" onclick="switchOrdersSubTab('active')">
+                    Активные <span class="tab-count-badge" id="active-orders-count">0</span>
+                </button>
+                <button class="orders-tab-btn" id="orders-tab-past" onclick="switchOrdersSubTab('past')">
+                    Прошедшие <span class="tab-count-badge" id="past-orders-count">0</span>
+                </button>
+            </div>
+            <div id="orders-list"></div>
+        </div>
+
+        <div id="screen-profile" class="screen">
+            <div class="section-title">Профиль</div>
+            <div class="profile-card">
+                <div class="profile-avatar" id="profile-avatar-box">
+                    <span id="profile-avatar-letter">V</span>
+                </div>
+                <div class="profile-info">
+                    <h3 id="profile-username">@user</h3>
+                    <p id="profile-userid-text">Telegram User</p>
+                </div>
+            </div>
+
+            <a href="https://t.me/warat_24" target="_blank" class="profile-menu-item">
+                <span>Менеджер поддержки</span>
+                <span>@warat_24</span>
+            </a>
+
+            <div id="owner-admin-panel" class="admin-section" style="display: none;">
+                <div class="admin-title"><span>👑 Управление магазином</span></div>
+                <div id="admin-server-status" class="server-status-bar err">⏳ Проверка связи с сервером...</div>
+
+                <div class="shop-master-box">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:13px; font-weight:700;">Статус приёма заказов:</span>
+                        <button id="admin-shop-toggle-btn" class="toggle-pill on" onclick="adminToggleShopOpen()">🟢 Открыт</button>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <input type="text" id="admin-closed-msg-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Текст при закрытии (напр. Откроемся в 16:00)">
+                        <button type="button" class="promo-apply-btn" style="padding:8px 12px; font-size:12px;" onclick="adminSaveClosedMsg()">Ок</button>
+                    </div>
+                </div>
+
+                <div class="admin-sub-tabs">
+                    <div class="admin-sub-tab active" onclick="switchAdminTab('stats', this)">📊 Стата</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('products', this)">🛍️ Товары</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('promos', this)">🎟 Промо</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('appearance', this)">🎨 Вид</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('roles', this)">👥 Доступ</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('broadcast', this)">📢 Пост</div>
+                </div>
+
+                <div id="admin-tab-stats">
+                    <div id="admin-stats-content" style="font-size:12px; color:var(--text-secondary);">Загрузка статистики...</div>
+                </div>
+
+                <div id="admin-tab-products" style="display: none;">
+                    <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:12px;">
+                        <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">➕ Новый товар (отправь фото боту в чат, чтобы получить ссылку)</div>
+                        <input type="text" id="admin-prod-title" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Название (напр. Brusko 20mg)">
+                        <input type="text" id="admin-prod-img" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Ссылка на картинку (необязательно)">
+                        <input type="text" id="admin-prod-opts" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Вкусы через запятую (необязательно)">
+                        <div style="display:flex; gap:6px; margin-bottom:6px;">
+                            <select id="admin-prod-cat" class="admin-select" style="flex:1;">
+                                <option value="liquid">Жидкость</option>
+                                <option value="pod">Под / Вейп</option>
+                                <option value="disposable">Одноразка</option>
+                                <option value="accessory">Расходник</option>
+                            </select>
+                            <input type="number" id="admin-prod-price" class="promo-input" style="text-transform:none; width:82px;" placeholder="Цена р." step="0.5">
+                            <input type="text" id="admin-prod-icon" class="promo-input" style="text-transform:none; width:44px; text-align:center;" value="🧪">
+                        </div>
+                        <button class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminAddProduct()">Добавить в каталог</button>
+                    </div>
+                    <div id="admin-products-list" style="max-height:320px; overflow-y:auto;"></div>
+                </div>
+
+                <div id="admin-tab-promos" style="display: none;">
+                    <div style="display:flex; gap:6px; margin-bottom:8px;">
+                        <input type="text" id="admin-promo-code" class="promo-input" placeholder="Код (LOL123)" style="flex:1;">
+                        <input type="number" id="admin-promo-discount" class="promo-input" placeholder="Скидка" step="0.5" style="width:78px; text-transform:none;">
+                        <select id="admin-promo-type" class="admin-select">
+                            <option value="rub">р.</option>
+                            <option value="percent">%</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-bottom:10px; align-items:center;">
+                        <input type="number" id="admin-promo-limit" class="promo-input" placeholder="Лимит активаций (0 = безлимит)" style="text-transform:none; font-size:12px;">
+                    </div>
+                    <button class="primary-btn" style="padding:10px; font-size:13px; margin-bottom:12px;" onclick="adminSavePromo()">Сохранить промокод</button>
+                    <div id="admin-promos-list"></div>
+                </div>
+
+                <div id="admin-tab-appearance" style="display: none;">
+                    <div class="shop-master-box">
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🌦 Сезонный эффект на экране:</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                            <button class="toggle-pill" id="season-btn-none" onclick="adminSetSeason('none')">🚫 Выключен</button>
+                            <button class="toggle-pill" id="season-btn-winter" onclick="adminSetSeason('winter')">❄️ Зима (Снег)</button>
+                            <button class="toggle-pill" id="season-btn-autumn" onclick="adminSetSeason('autumn')">🍂 Осень (Листья)</button>
+                            <button class="toggle-pill" id="season-btn-spring" onclick="adminSetSeason('spring')">🌸 Весна (Лепестки)</button>
+                            <button class="toggle-pill" id="season-btn-summer" onclick="adminSetSeason('summer')">✨ Лето (Искры)</button>
+                            <button class="toggle-pill" id="season-btn-rain" onclick="adminSetSeason('rain')">🌧 Дождь</button>
+                        </div>
+                    </div>
+                    <div class="shop-master-box">
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🔥 Цвет обводки и подсветки «ХИТ»:</div>
+                        <button type="button" onclick="openHitColorModal()" style="width:100%; display:flex; align-items:center; justify-content:space-between; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); padding:10px 12px; border-radius:12px; font-size:13px; font-weight:600; cursor:pointer;">
+                            <span style="display:flex; align-items:center; gap:9px;">
+                                <span id="current-hit-color-dot" style="width:20px; height:20px; border-radius:50%; border:1.5px solid rgba(150,150,150,0.5); display:inline-block;"></span>
+                                <span id="current-hit-color-label">Золото</span>
+                            </span>
+                            <span style="color:var(--accent-green); font-size:12px;">Выбрать цвет ▸</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="admin-tab-metro" style="display: none;">
+                    <div class="metro-tabs" style="margin-bottom:10px;">
+                        <div class="metro-tab active-green" onclick="switchAdminMetroLine('green', this)">Зелёная</div>
+                        <div class="metro-tab" onclick="switchAdminMetroLine('blue', this)">Синяя</div>
+                        <div class="metro-tab" onclick="switchAdminMetroLine('red', this)">Красная</div>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-bottom:10px;">
+                        <input type="text" id="admin-new-station-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Новая станция на эту ветку...">
+                        <button type="button" class="promo-apply-btn" style="padding:9px 12px;" onclick="adminAddStation()">+</button>
+                    </div>
+                    <div id="admin-metro-list" style="max-height:240px; overflow-y:auto;"></div>
+                </div>
+
+                <div id="admin-tab-time" style="display: none;">
+                    <div style="display:flex; gap:6px; margin-bottom:10px;">
+                        <input type="text" id="admin-new-time-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Новое время (напр. 19:30)">
+                        <button type="button" class="promo-apply-btn" style="padding:9px 12px;" onclick="adminAddTimeSlot()">+</button>
+                    </div>
+                    <div id="admin-time-list"></div>
+                </div>
+
+                <div id="admin-tab-roles" style="display: none;">
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">👑 Админы / Владельцы (Telegram ID)</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="number" id="admin-owner-id-input" class="promo-input" style="text-transform:none;" placeholder="ID второго админа">
+                            <button type="button" class="promo-apply-btn" onclick="adminManageRole('add_owner')">+</button>
+                        </div>
+                        <div id="admin-owners-list"></div>
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">🛵 Курьеры (Telegram ID)</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="number" id="admin-courier-id-input" class="promo-input" style="text-transform:none;" placeholder="ID нового курьера">
+                            <button type="button" class="promo-apply-btn" onclick="adminManageRole('add_courier')">+</button>
+                        </div>
+                        <div id="admin-couriers-list"></div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px; font-weight:700; color:var(--danger); margin-bottom:6px;">🚫 Чёрный список покупателей (ID)</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="number" id="admin-ban-id-input" class="promo-input" style="text-transform:none;" placeholder="ID нарушителя">
+                            <button type="button" class="promo-apply-btn" style="background:var(--danger); color:#fff;" onclick="adminManageRole('ban_user')">Бан</button>
+                        </div>
+                        <div id="admin-banned-list"></div>
+                    </div>
+                </div>
+
+                <div id="admin-tab-broadcast" style="display: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:12px;">
+                        <span style="color:var(--text-secondary);">База подписчиков бота:</span>
+                        <b id="admin-subscribers-count" style="color:var(--accent-green);">0 чел.</b>
+                    </div>
+                    <textarea id="admin-broadcast-text" class="broadcast-textarea" placeholder="Текст рассылки (для фото/кружочков используй /post ответом на пост в чате с ботом)..."></textarea>
+                    <button class="primary-btn" id="admin-broadcast-btn" style="padding:11px; font-size:13px;" onclick="adminSendBroadcast()">📢 Отправить всем</button>
+                    <div id="admin-broadcast-result" style="font-size:11.5px; margin-top:8px; color:var(--accent-green);"></div>
+                    <div style="font-size:12px; font-weight:700; color:var(--text-main); margin:14px 0 8px 0;">📋 История и отчёты рассылок:</div>
+                    <div id="admin-broadcast-history" style="max-height:220px; overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-courier" class="screen">
+            <div class="section-title">Панель курьера 🛵</div>
+            <div class="orders-tabs">
+                <button class="orders-tab-btn active" id="courier-tab-active" onclick="switchCourierSubTab('active')">
+                    Активные <span class="tab-count-badge" id="courier-active-count">0</span>
+                </button>
+                <button class="orders-tab-btn" id="courier-tab-past" onclick="switchCourierSubTab('past')">
+                    Прошедшие <span class="tab-count-badge" id="courier-past-count">0</span>
+                </button>
+            </div>
+            <div id="courier-orders-list">
+                <div class="cart-empty"><div class="cart-empty-icon">⏳</div><p>Загрузка заказов...</p></div>
+            </div>
+        </div>
+
+        <div id="screen-checkout" class="screen">
+            <div class="section-title">Оформление заказа</div>
+            <div style="margin-bottom: 18px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Способ получения</p>
+                <div class="method-card">
+                    <div class="method-info">
+                        <h4>Самовывоз из метро (Минск)</h4>
+                        <p>Оплата при встрече наличными или переводом</p>
+                    </div>
+                    <div style="color: var(--accent-green); font-size: 18px;">✓</div>
+                </div>
+            </div>
+            <div style="margin-bottom: 18px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Выберите ветку и станцию</p>
+                <div class="metro-tabs" id="checkout-metro-tabs">
+                    <div class="metro-tab active-green" onclick="switchMetroLine('green', this)">Зеленая ветка</div>
+                    <div class="metro-tab" onclick="switchMetroLine('blue', this)">Синяя ветка</div>
+                    <div class="metro-tab" onclick="switchMetroLine('red', this)">Красная ветка</div>
+                </div>
+                <div class="stations-list" id="stations-list-container"></div>
+            </div>
+            <div style="margin-bottom: 24px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Время получения</p>
+                <div class="time-slots" id="checkout-time-slots-container"></div>
+            </div>
+            <button class="primary-btn" onclick="confirmOrderFinal()">Подтвердить заказ</button>
+            <button onclick="switchScreen('cart')" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Назад в корзину</button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchScreen('catalog')"><span class="nav-icon">🛍️</span><span>Каталог</span></button>
+        <button class="nav-item" onclick="switchScreen('cart')"><span class="nav-icon">🛒</span><span>Корзина</span><div class="cart-badge" id="cart-badge" style="display: none;">0</div></button>
+        <button class="nav-item" onclick="switchScreen('orders')"><span class="nav-icon">📦</span><span>Заказы</span></button>
+        <button class="nav-item" onclick="switchScreen('profile')"><span class="nav-icon">👤</span><span>Профиль</span></button>
+        <button class="nav-item" id="nav-courier-btn" onclick="switchScreen('courier')" style="display: none;"><span class="nav-icon">🛵</span><span>Курьер</span></button>
+    </div>
+</div>
+
+<script>
+    let currentAppTheme = localStorage.getItem('monkey_theme') || 'dark';
+    function applyAppTheme(theme) {
+        currentAppTheme = theme;
+        localStorage.setItem('monkey_theme', theme);
+        if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        else document.documentElement.removeAttribute('data-theme');
+        const btn = document.getElementById('theme-toggle-btn');
+        if (btn) btn.innerText = theme === 'light' ? '🌙' : '☀️';
+    }
+    function toggleAppTheme() { applyAppTheme(currentAppTheme === 'light' ? 'dark' : 'light'); }
+    applyAppTheme(currentAppTheme);
+
+    let currentSeasonEffect = localStorage.getItem('monkey_season_effect') || 'none';
+    let seasonAnimId = null, seasonParticles = [];
+
+    function startSeasonCanvas(effect) {
+        currentSeasonEffect = effect || 'none';
+        localStorage.setItem('monkey_season_effect', currentSeasonEffect);
+        const canvas = document.getElementById('season-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (seasonAnimId) { cancelAnimationFrame(seasonAnimId); seasonAnimId = null; }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (currentSeasonEffect === 'none') { seasonParticles = []; return; }
+
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width; canvas.height = rect.height;
+
+        // Спокойное количество и медленная скорость, чтобы не отвлекать
+        const count = currentSeasonEffect === 'rain' ? 22 : (currentSeasonEffect === 'winter' ? 14 : 9);
+        const autumnColors = ['#ff7b00', '#e64a19', '#ffb300', '#d84315'];
+        const springColors = ['#ffb7c5', '#ff8da1', '#ffd1dc', '#ffffff'];
+
+        seasonParticles = Array.from({ length: count }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: currentSeasonEffect === 'winter' ? (1.3 + Math.random() * 1.6) : (2.6 + Math.random() * 2.4),
+            len: 9 + Math.random() * 6,
+            speedY: currentSeasonEffect === 'rain' ? (3.0 + Math.random() * 1.6) : (currentSeasonEffect === 'summer' ? -(0.16 + Math.random() * 0.25) : (0.24 + Math.random() * 0.36)),
+            speedX: currentSeasonEffect === 'rain' ? -0.5 : ((Math.random() - 0.5) * 0.25),
+            angle: Math.random() * Math.PI * 2,
+            spin: (Math.random() - 0.5) * 0.015,
+            color: currentSeasonEffect === 'autumn' ? autumnColors[Math.floor(Math.random() * autumnColors.length)]
+                : (currentSeasonEffect === 'spring' ? springColors[Math.floor(Math.random() * springColors.length)] : '#ffffff')
+        }));
+
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            seasonParticles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX + Math.sin(p.angle) * 0.16;
+                p.angle += p.spin;
+                if (p.y > canvas.height + 10) { p.y = -8; p.x = Math.random() * canvas.width; }
+                if (p.y < -10) { p.y = canvas.height + 8; p.x = Math.random() * canvas.width; }
+                if (p.x > canvas.width + 10) p.x = -8;
+                if (p.x < -10) p.x = canvas.width + 8;
+
+                ctx.save();
+                if (currentSeasonEffect === 'rain') {
+                    ctx.strokeStyle = 'rgba(135, 206, 250, 0.36)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 2, p.y + p.len); ctx.stroke();
+                    ctx.restore(); return;
+                }
+                ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+                if (currentSeasonEffect === 'winter') {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
+                    ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+                } else if (currentSeasonEffect === 'autumn' || currentSeasonEffect === 'spring') {
+                    ctx.fillStyle = p.color; ctx.globalAlpha = 0.52;
+                    ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.52, 0, 0, Math.PI * 2); ctx.fill();
+                } else if (currentSeasonEffect === 'summer') {
+                    ctx.fillStyle = 'rgba(255, 230, 102, 0.48)'; ctx.shadowColor = '#ffd54f'; ctx.shadowBlur = 5;
+                    ctx.beginPath(); ctx.arc(0, 0, p.r * 0.45, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.restore();
+            });
+            seasonAnimId = requestAnimationFrame(drawFrame);
+        }
+        drawFrame();
     }
 
-@app.get("/api/admin/broadcast_history/{user_id}")
-async def admin_broadcast_history(user_id: int):
-    if user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    async with aiosqlite.connect(DB_FILE) as db:
-        async with db.execute("SELECT COUNT(*) FROM users WHERE user_id > 0") as cur:
-            u_row = await cur.fetchone()
-            subscribers_count = u_row[0] if u_row else 0
-        history = []
-        async with db.execute("SELECT id, created_at, text, sent, failed, total FROM broadcasts ORDER BY id DESC LIMIT 15") as cursor:
-            for r in await cursor.fetchall():
-                history.append({"id": r[0], "created_at": r[1], "text": r[2], "sent": r[3], "failed": r[4], "total": r[5]})
-    return {"subscribers_count": subscribers_count, "history": history}
+    const urlParamsGlobal = new URLSearchParams(window.location.search);
+    const apiFromUrl = urlParamsGlobal.get('api');
+    if (apiFromUrl) localStorage.setItem('monkey_backend_url', apiFromUrl);
 
-@app.post("/api/admin/broadcast")
-async def admin_broadcast(data: AdminBroadcastSchema):
-    if data.user_id not in OWNER_IDS:
-        raise HTTPException(status_code=403, detail="Only owner")
-    text = data.text.strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="Empty text")
+    const DEFAULT_TUNNEL_URL = "https://ntwdj-2a09-bac1-13a0-8--420-1c.free.pinggy.net";
+    let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
+    const CANDIDATE_BACKENDS = Array.from(new Set([
+        apiFromUrl, DEFAULT_TUNNEL_URL, localStorage.getItem('monkey_backend_url'), "http://127.0.0.1:8000", "http://localhost:8000"
+    ])).filter(Boolean);
 
-    async with aiosqlite.connect(DB_FILE) as db:
-        async with db.execute("SELECT user_id FROM users WHERE user_id > 0") as cursor:
-            rows = await cursor.fetchall()
+    function updateServerStatusBadge(connected, activeUrl = "") {
+        const bar = document.getElementById('admin-server-status');
+        if (!bar) return;
+        bar.className = connected ? "server-status-bar ok" : "server-status-bar err";
+        bar.innerText = connected ? `🟢 Сервер подключен (${activeUrl})` : "🔴 Нет связи с сервером! Проверь туннель и python bot.py.";
+    }
 
-    user_ids = [r[0] for r in rows]
-    sent = failed = 0
-    for uid in user_ids:
-        try:
-            await bot.send_message(uid, text)
-            sent += 1
-            await asyncio.sleep(0.05)
-        except Exception:
-            failed += 1
+    async function apiFetch(path, options = {}, expectJson = true) {
+        options.headers = Object.assign({
+            'Bypass-Tunnel-Reminder': 'true', 'X-Pinggy-No-Screen': 'true', 'ngrok-skip-browser-warning': 'true'
+        }, options.headers || {});
+        for (const base of CANDIDATE_BACKENDS) {
+            if (!base) continue;
+            try {
+                const res = await fetch(`${base}${path}`, options);
+                if (res.ok) {
+                    if (expectJson && !(res.headers.get("content-type") || "").includes("application/json")) continue;
+                    BACKEND_URL = base; updateServerStatusBadge(true, base); return res;
+                }
+            } catch (e) {}
+        }
+        updateServerStatusBadge(false);
+        throw new Error("Server unreachable");
+    }
 
-    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "INSERT INTO broadcasts (created_at, text, sent, failed, total) VALUES (?, ?, ?, ?, ?)",
-            (now_str, text[:300], sent, failed, len(user_ids))
-        )
-        await db.commit()
-    return {"success": True, "sent": sent, "failed": failed, "total": len(user_ids)}
+    const PRIMARY_OWNER_IDS = [7280921605];
+    let DYNAMIC_OWNER_IDS = [7280921605];
+    let DYNAMIC_COURIER_IDS = [7280921605, 6658906694, 1335426710];
+    function isCurrentUserOwner() { return DYNAMIC_isCurrentUserOwner(); }
+    function isCurrentUserCourier() { return DYNAMIC_COURIER_IDS.includes(Number(currentUserId)) || isCurrentUserOwner(); }
+    let BANNED_USER_IDS = [];
+    let isShopOpen = true, shopClosedMessage = "Магазин сейчас не работает, попробуйте позже.";
+    let hitHighlightColor = localStorage.getItem('monkey_hit_color') || "#ffcc00";
 
-@app.post("/api/create_order")
-async def create_order(order: OrderSchema):
-    order_id = str(order.id).strip()
-    created_at = order.created_at or datetime.now().strftime("%d.%m.%Y, %H:%M")
+    const HIT_COLOR_PALETTE = [
+        { name: "Белый", hex: "#ffffff" },
+        { name: "Золото", hex: "#ffcc00" },
+        { name: "Неон-зелёный", hex: "#00ff66" },
+        { name: "Фиолетовый", hex: "#b84dff" },
+        { name: "Малиновый", hex: "#ff3366" },
+        { name: "Голубой", hex: "#00e5ff" },
+        { name: "Оранжевый", hex: "#ff7b00" },
+        { name: "Синий", hex: "#3b82f6" },
+        { name: "Розовый", hex: "#ff66b2" },
+        { name: "Лайм", hex: "#a3e635" },
+        { name: "Бирюзовый", hex: "#14b8a6" },
+        { name: "Серебро", hex: "#cbd5e1" }
+    ];
 
-    async with aiosqlite.connect(DB_FILE) as db:
-        shop_open_raw = await get_setting_raw(db, "shop_open", "1")
-        if shop_open_raw != "1" and order.user_id not in OWNER_IDS:
-            closed_msg = await get_setting_raw(db, "closed_message", "Магазин временно закрыт.")
-            raise HTTPException(status_code=403, detail=closed_msg)
+    let currentUserId = 0, currentUserName = "User", currentUserPhotoUrl = "", avatarLoadedForId = 0;
+    let ALL_TIME_SLOTS = JSON.parse(localStorage.getItem('monkey_time_slots')) || ['12:00', '14:30', '16:30', '18:10', '21:00'];
+    let disabledStations = JSON.parse(localStorage.getItem('monkey_disabled_stations')) || [];
+    let disabledTimes = JSON.parse(localStorage.getItem('monkey_disabled_times')) || [];
+    let promoCodes = JSON.parse(localStorage.getItem('monkey_promocodes')) || { "MONKEY3": { discount: 3.0, type: "rub", max_uses: 0, used_count: 0 } };
+    let appliedPromoCode = "", appliedPromoValue = 0, appliedPromoType = "rub", promoMessage = "", promoError = false, promoInputDraft = "";
+    let adminMetroLine = 'green', currentOrdersSubTab = 'active', currentCourierSubTab = 'active', cachedCourierOrders = [];
 
-        banned = [int(x) for x in await get_setting_list(db, "banned_users")]
-        if int(order.user_id) in banned:
-            raise HTTPException(status_code=403, detail="Ваш аккаунт заблокирован в магазине.")
+    const DEFAULT_OPTS = {
+        liquid: [{ name: 'Кола', available: true }, { name: 'Клубника', available: true }, { name: 'Skittles', available: true }, { name: 'Малина', available: true }, { name: 'Манго', available: true }],
+        disposable: [{ name: 'Кола', available: true }, { name: 'Клубника', available: true }, { name: 'Skittles', available: true }, { name: 'Малина', available: true }, { name: 'Манго', available: true }],
+        pod: [{ name: 'Черный мат', available: true }, { name: 'Градиент', available: true }, { name: 'Серебряный', available: true }, { name: 'Зеленый неон', available: true }],
+        accessory: [{ name: '0.6 Ом', available: true }, { name: '0.8 Ом', available: true }, { name: '1.0 Ом', available: true }, { name: '1.2 Ом', available: true }]
+    };
 
-        if order.user_id > 0:
-            await db.execute(
-                "INSERT OR IGNORE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)",
-                (order.user_id, order.user_name, created_at)
-            )
+    let products = [
+        { id: 1, title: 'ANIMAL LOVE Killer 50mg', category: 'liquid', price: 17.00, old_price: 0, tag: 'жидкость', icon: '🧪', available: true, image_url: '', has_discount: false, low_stock: false, options: DEFAULT_OPTS.liquid },
+        { id: 2, title: 'OGGO Rush 20mg', category: 'liquid', price: 13.00, old_price: 0, tag: 'жидкость', icon: '🧪', available: true, image_url: '', has_discount: false, low_stock: false, options: DEFAULT_OPTS.liquid },
+        { id: 3, title: 'OGGO Cherry 20mg', category: 'liquid', price: 13.00, old_price: 0, tag: 'жидкость', icon: '🧪', available: true, image_url: '', has_discount: false, low_stock: false, options: DEFAULT_OPTS.liquid },
+        { id: 4, title: 'BJORN ZLOY 60mg', category: 'liquid', price: 13.00, old_price: 0, tag: 'хит', icon: '🧪', available: true, image_url: '', has_discount: false, low_stock: false, options: DEFAULT_OPTS.liquid },
+        { id: 5, title: 'XROS 3 Mini Pod Kit', category: 'pod', price: 55.00, old_price: 0, tag: 'вейп', icon: '⚡', available: true, image_url: '', has_discount: false, low_stock: false, options: DEFAULT_OPTS.pod },
+        { id: 6, title: 'Vaporesso XROS Pro', category: 'pod', price: 85.00, old_price: 0, tag: 'вейп', icon: '⚡', available: true, image_url: '', has_discount: false, low_stock: false, options: DEFAULT_OPTS.pod },
+        { id: 7, title: 'Lost Mary BM5000', category: 'disposable', price: 25.00, old_price: 0, tag: 'одноразка', icon: '💨', available: true, image_url: '', has_discount: false, low_stock: false, options: DEFAULT_OPTS.disposable },
+        { id: 8, title: 'Сменный картридж XROS', category: 'accessory', price: 9.00, old_price: 0, tag: 'расходник', icon: '📦', available: true, image_url: '', has_discount: false, low_stock: false, options: DEFAULT_OPTS.accessory }
+    ];
 
-        if order.promo_code:
-            code_up = order.promo_code.strip().upper()
-            async with db.execute("SELECT max_uses, used_count FROM promocodes WHERE code = ?", (code_up,)) as cur:
-                p_row = await cur.fetchone()
-                if p_row:
-                    m_uses, u_cnt = int(p_row[0] or 0), int(p_row[1] or 0)
-                    if m_uses > 0 and u_cnt >= m_uses:
-                        raise HTTPException(status_code=400, detail="Лимит использований промокода исчерпан.")
-                    await db.execute("UPDATE promocodes SET used_count = used_count + 1 WHERE code = ?", (code_up,))
+    let metroStations = JSON.parse(localStorage.getItem('monkey_metro_map')) || {
+        green: [
+            { name: 'Юбилейная площадь', line: 'Зеленая ветка' }, { name: 'Площадь Франтишка Богушевича', line: 'Зеленая ветка' },
+            { name: 'Вокзальная', line: 'Зеленая ветка' }, { name: 'Ковальская Слобода', line: 'Зеленая ветка' },
+            { name: 'Аэродромная', line: 'Зеленая ветка' }, { name: 'Неморшанский Сад', line: 'Зеленая ветка' },
+            { name: 'Слуцкий Гостинец', line: 'Зеленая ветка' }
+        ],
+        blue: [
+            { name: 'Уручье', line: 'Синяя ветка' }, { name: 'Борисовский тракт', line: 'Синяя ветка' },
+            { name: 'Восток', line: 'Синяя ветка' }, { name: 'Московская', line: 'Синяя ветка' },
+            { name: 'Парк Челюскинцев', line: 'Синяя ветка' }, { name: 'Академия наук', line: 'Синяя ветка' },
+            { name: 'Площадь Якуба Коласа', line: 'Синяя ветка' }, { name: 'Площадь Победы', line: 'Синяя ветка' },
+            { name: 'Октябрьская', line: 'Синяя ветка' }, { name: 'Площадь Ленина', line: 'Синяя ветка' },
+            { name: 'Институт культуры', line: 'Синяя ветка' }, { name: 'Грушевка', line: 'Синяя ветка' },
+            { name: 'Михалово', line: 'Синяя ветка' }, { name: 'Петровщина', line: 'Синяя ветка' },
+            { name: 'Малиновка', line: 'Синяя ветка' }
+        ],
+        red: [
+            { name: 'Каменная Горка', line: 'Красная ветка' }, { name: 'Кунцевщина', line: 'Красная ветка' },
+            { name: 'Спортивная', line: 'Красная ветка' }, { name: 'Пушкинская', line: 'Красная ветка' },
+            { name: 'Молодежная', line: 'Красная ветка' }, { name: 'Фрунзенская', line: 'Красная ветка' },
+            { name: 'Немига', line: 'Красная ветка' }, { name: 'Купаловская', line: 'Красная ветка' },
+            { name: 'Первомайская', line: 'Красная ветка' }, { name: 'Пролетарская', line: 'Красная ветка' },
+            { name: 'Тракторный завод', line: 'Красная ветка' }, { name: 'Партизанская', line: 'Красная ветка' },
+            { name: 'Автозаводская', line: 'Красная ветка' }, { name: 'Могилевская', line: 'Красная ветка' }
+        ]
+    };
 
-        await db.execute(
-            """INSERT OR REPLACE INTO orders 
-               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, created_at, cancelled_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, '')""",
-            (
-                order_id, order.user_id, order.user_name, order.station, order.time,
-                order.total, json.dumps(order.items), order.status, order.promo_code, order.discount, created_at
-            )
-        )
-        all_couriers = await get_all_courier_ids(db)
-        await db.commit()
+    function hexToRgba(hex, alpha) {
+        const clean = hex.replace('#', '');
+        if (clean.length !== 6) return `rgba(255, 204, 0, ${alpha})`;
+        return `rgba(${parseInt(clean.substring(0, 2), 16)}, ${parseInt(clean.substring(2, 4), 16)}, ${parseInt(clean.substring(4, 6), 16)}, ${alpha})`;
+    }
 
-    safe_user = html.escape(order.user_name or "User")
-    safe_station = html.escape(order.station or "")
-    safe_time = html.escape(order.time or "")
-    items_str = "\n".join([f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} р." for i in order.items])
-    promo_line = f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{order.discount:.2f} р.)" if order.promo_code else ""
+    function normalizePromoObj(raw) {
+        if (typeof raw === 'number') return { discount: raw, type: 'rub', max_uses: 0, used_count: 0 };
+        return { discount: Number(raw.discount || 0), type: raw.type || 'rub', max_uses: Number(raw.max_uses || 0), used_count: Number(raw.used_count || 0) };
+    }
 
-    courier_text = (
-        f"🛵 <b>Новый заказ #{html.escape(order_id)}!</b>\n\n"
-        f"👤 <b>Покупатель:</b> {safe_user}\n"
-        f"🆔 <b>ID покупателя:</b> <code>{order.user_id}</code>\n"
-        f"🚇 <b>Станция:</b> м. {safe_station}\n"
-        f"⏰ <b>Время встречи:</b> {safe_time}\n"
-        f"💰 <b>Итого:</b> {order.total:.2f} р.\n\n"
-        f"📦 <b>Состав:</b>\n{items_str}{promo_line}\n\n"
-        f"Зайдите в мини-приложение во вкладку <b>«Курьер»</b> для управления заказом."
-    )
+    function calcPromoDiscount(eligibleSubtotal, pObj) {
+        if (!pObj || eligibleSubtotal <= 0) return 0;
+        if (pObj.type === 'percent') return Math.min(eligibleSubtotal, Math.round(eligibleSubtotal * (pObj.discount / 100) * 100) / 100);
+        return Math.min(eligibleSubtotal, pObj.discount);
+    }
 
-    for cid in all_couriers:
-        try:
-            courier_url = build_personal_url(cid, "Courier", is_courier=True)
-            kb = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🛵 Открыть панель курьера", web_app=WebAppInfo(url=courier_url))]
-            ])
-            await bot.send_message(cid, courier_text, parse_mode="HTML", reply_markup=kb)
-        except Exception as e:
-            print(f"[ERR] Курьер {cid}: {e}")
+    function isCartItemDiscounted(item) {
+        const liveProd = products.find(p => Number(p.id) === Number(item.id));
+        if (liveProd) return Boolean(liveProd.has_discount) || Number(liveProd.old_price || 0) > Number(liveProd.price);
+        return Boolean(item.has_discount);
+    }
 
-    user_text = (
-        f"✅ <b>Спасибо за заказ #{html.escape(order_id)}!</b>\n"
-        f"📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n"
-        f"🚇 <b>Станция метро:</b> м. {safe_station}\n"
-        f"⏰ <b>Время встречи:</b> {safe_time}\n\n"
-        f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}\n\n"
-        f"💰 <b>Итого к оплате:</b> {order.total:.2f} р.\n\n"
-        f"Ожидайте курьера. Статус заказа можно отслеживать во вкладке <b>«Заказы»</b>."
-    )
+    function getEligiblePromoSubtotal(items) {
+        return items.reduce((sum, item) => isCartItemDiscounted(item) ? sum : sum + (item.price * item.qty), 0);
+    }
 
-    if order.user_id:
-        try:
-            await bot.send_message(order.user_id, user_text, parse_mode="HTML")
-        except Exception as e:
-            print(f"[ERR] Покупатель {order.user_id}: {e}")
+    function getFormattedNowDateTime() {
+        const now = new Date();
+        return `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}, ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
 
-    return {"success": True, "order_id": order_id}
+    async function updateProfileAvatarUI() {
+        const avatarBox = document.getElementById('profile-avatar-box');
+        if (!avatarBox) return;
+        const fallbackLetter = currentUserName.replace('@', '').charAt(0).toUpperCase() || 'V';
+        if (currentUserPhotoUrl) {
+            avatarBox.innerHTML = `<img src="${currentUserPhotoUrl}" alt="Avatar" onerror="this.parentElement.innerHTML='<span>${fallbackLetter}</span>'">`;
+            return;
+        }
+        if (currentUserId && avatarLoadedForId !== currentUserId) {
+            try {
+                const res = await apiFetch(`/api/user_avatar/${currentUserId}`, {}, false);
+                if (res.ok && (res.headers.get("content-type") || "").startsWith("image/")) {
+                    const blobUrl = URL.createObjectURL(await res.blob());
+                    avatarLoadedForId = currentUserId;
+                    avatarBox.innerHTML = `<img src="${blobUrl}" alt="Avatar">`;
+                    return;
+                }
+            } catch (e) {}
+        }
+        if (!avatarLoadedForId) avatarBox.innerHTML = `<span>${fallbackLetter}</span>`;
+    }
 
-@app.get("/api/orders")
-async def get_orders():
-    async with aiosqlite.connect(DB_FILE) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM orders WHERE hidden_by_courier = 0 ORDER BY rowid DESC") as cursor:
-            return [{
-                "id": str(row["id"]), "user_id": row["user_id"], "user_name": row["user_name"],
-                "station": row["station"], "time": row["time"], "total": row["total"],
-                "items": json.loads(row["items"]), "status": row["status"],
-                "time_changed": bool(row["time_changed"]), "hidden_by_courier": bool(row["hidden_by_courier"]),
-                "promo_code": row["promo_code"] or "", "discount": row["discount"] or 0.0,
-                "created_at": row["created_at"] or "", "cancelled_by": row["cancelled_by"] or ""
-            } for row in await cursor.fetchall()]
+    function showRoleTabsIfAllowed() {
+        const courierNavBtn = document.getElementById('nav-courier-btn');
+        const ownerAdminPanel = document.getElementById('owner-admin-panel');
+        const useridElem = document.getElementById('profile-userid-text');
+        if (courierNavBtn) courierNavBtn.style.display = isCurrentUserCourier() ? 'flex' : 'none';
+        if (ownerAdminPanel) {
+            if (isCurrentUserOwner()) {
+                ownerAdminPanel.style.display = 'block';
+                renderAdminShopMaster(); renderAdminAppearance(); renderAdminPromos();
+                renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles();
+            } else {
+                ownerAdminPanel.style.display = 'none';
+            }
+        }
+        if (useridElem) {
+            const roleText = isCurrentUserOwner() ? 'Владелец (Админ)' : (isCurrentUserCourier() ? 'Курьер' : 'Покупатель');
+            useridElem.innerText = currentUserId ? `ID: ${currentUserId} • ${roleText}` : 'Telegram User';
+        }
+    }
 
-@app.get("/api/user_orders/{user_id}")
-async def get_user_orders(user_id: int):
-    async with aiosqlite.connect(DB_FILE) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY rowid DESC", (user_id,)) as cursor:
-            return [{
-                "id": str(row["id"]), "user_id": row["user_id"], "user_name": row["user_name"],
-                "station": row["station"], "time": row["time"], "total": row["total"],
-                "items": json.loads(row["items"]), "status": row["status"],
-                "time_changed": bool(row["time_changed"]), "promo_code": row["promo_code"] or "",
-                "discount": row["discount"] or 0.0, "created_at": row["created_at"] or "",
-                "cancelled_by": row["cancelled_by"] or ""
-            } for row in await cursor.fetchall()]
+    function initTelegramUser() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const uidFromUrl = urlParams.get('uid'), unameFromUrl = urlParams.get('uname'), roleFromUrl = urlParams.get('role');
+        if (window.Telegram && window.Telegram.WebApp) {
+            let tg = window.Telegram.WebApp;
+            tg.ready(); tg.expand();
+            try {
+                if (tg.initDataUnsafe?.user?.id) {
+                    const user = tg.initDataUnsafe.user;
+                    currentUserId = Number(user.id);
+                    currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
+                    if (user.photo_url) currentUserPhotoUrl = user.photo_url;
+                }
+            } catch (err) {}
+        }
+        if (!currentUserId && uidFromUrl) currentUserId = Number(uidFromUrl);
+        if (currentUserName === "User" && unameFromUrl) currentUserName = unameFromUrl;
+        if (roleFromUrl === 'owner' && currentUserId && !DYNAMIC_OWNER_IDS.includes(Number(currentUserId))) {
+            DYNAMIC_OWNER_IDS.push(Number(currentUserId));
+        }
+        if ((roleFromUrl === 'owner' || roleFromUrl === 'courier') && currentUserId && !DYNAMIC_COURIER_IDS.includes(Number(currentUserId))) {
+            DYNAMIC_COURIER_IDS.push(Number(currentUserId));
+        }
 
-@app.post("/api/update_order_status")
-async def update_order_status(data: StatusUpdateSchema):
-    cancelled_by = data.cancelled_by if data.status == 'cancelled' else ''
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?", (data.status, cancelled_by, str(data.order_id)))
-        all_couriers = await get_all_courier_ids(db)
-        await db.commit()
+        const usernameElem = document.getElementById('profile-username');
+        const useridElem = document.getElementById('profile-userid-text');
+        if (usernameElem) usernameElem.innerText = currentUserName;
+        updateProfileAvatarUI();
+        if (useridElem) {
+            const isOwner = isCurrentUserOwner();
+            const isCourier = DYNAMIC_COURIER_IDS.includes(Number(currentUserId));
+            const roleText = isOwner ? 'Владелец (Админ)' : (isCourier ? 'Курьер' : 'Покупатель');
+            useridElem.innerText = currentUserId ? `ID: ${currentUserId} • ${roleText}` : 'Telegram User';
+        }
+        showRoleTabsIfAllowed(); checkUserRole(); syncShopConfig(); renderOrders(); syncClientOrdersStatus();
+    }
 
-        async with db.execute("SELECT user_id, user_name, station, time FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
-            row = await cursor.fetchone()
-            if row:
-                user_id, user_name, station, time = row[0], row[1], row[2], row[3]
-                safe_user = html.escape(user_name or "User")
-                safe_station = html.escape(station or "")
-                if data.status == 'cancelled':
-                    who_text = "Отменено клиентом" if cancelled_by == 'client' else ("Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён")
-                    if user_id:
-                        try:
-                            await bot.send_message(user_id, f"❌ Заказ #{html.escape(str(data.order_id))} ({who_text}).")
-                        except Exception:
-                            pass
-                    for cid in all_couriers:
-                        try:
-                            await bot.send_message(cid, f"❌ Заказ #{html.escape(str(data.order_id))} ({safe_user}, м. {safe_station}) — <b>{who_text}</b>.", parse_mode="HTML")
-                        except Exception:
-                            pass
-                elif data.status == 'completed':
-                    if user_id:
-                        try:
-                            await bot.send_message(user_id, f"✅ Ваш заказ #{html.escape(str(data.order_id))} выдан! Спасибо за покупку.")
-                        except Exception:
-                            pass
-    return {"success": True}
+    document.addEventListener('DOMContentLoaded', () => {
+        const catScroll = document.getElementById('categories-scroll');
+        if (catScroll) {
+            catScroll.addEventListener('wheel', (e) => {
+                if (e.deltaY !== 0) { e.preventDefault(); catScroll.scrollLeft += e.deltaY; }
+            }, { passive: false });
+        }
+        if (currentSeasonEffect !== 'none') startSeasonCanvas(currentSeasonEffect);
+    });
 
-@app.post("/api/delete_completed_order")
-async def delete_completed_order(data: DeleteOrderSchema):
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("UPDATE orders SET hidden_by_courier = 1 WHERE id = ? AND status IN ('completed', 'cancelled')", (str(data.order_id),))
-        await db.commit()
-    return {"success": True}
+    window.addEventListener('load', () => {
+        initTelegramUser();
+        setTimeout(initTelegramUser, 500);
+        setTimeout(() => { const pf = document.getElementById('progress-fill'); if (pf) pf.style.width = '100%'; }, 100);
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            if (splash) { splash.style.opacity = '0'; splash.style.transform = 'scale(1.04)'; setTimeout(() => splash.remove(), 550); }
+        }, 1250);
+    });
 
-@app.post("/api/update_order_time")
-async def update_order_time(data: TimeUpdateSchema):
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("UPDATE orders SET time = ?, time_changed = 1 WHERE id = ?", (data.time, str(data.order_id)))
-        all_couriers = await get_all_courier_ids(db)
-        await db.commit()
+    let cart = JSON.parse(localStorage.getItem('monkey_cart')) || {};
+    let activeCategory = 'all', currentLine = 'green', modalCurrentLine = 'green';
+    let selectedStation = localStorage.getItem('monkey_selected_station') || 'Партизанская';
+    let selectedTime = ALL_TIME_SLOTS[0] || '12:00';
+    let activeOrders = JSON.parse(localStorage.getItem('monkey_orders')) || [];
+    let hiddenCourierOrderIds = JSON.parse(localStorage.getItem('monkey_hidden_courier_orders')) || [];
+    let currentSelectedProduct = null, chosenOptionValue = '', chosenOptionAvailable = true;
+    let changingOrderId = null, newSelectedTime = ALL_TIME_SLOTS[0] || '12:00';
+    let editingProductOptions = [];
 
-        async with db.execute("SELECT user_id, user_name, station FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
-            row = await cursor.fetchone()
-            if row:
-                user_id, user_name, station = row[0], row[1], row[2]
-                safe_user = html.escape(user_name or "User")
-                safe_station = html.escape(station or "")
-                for cid in all_couriers:
-                    try:
-                        await bot.send_message(
-                            cid,
-                            f"⏰ <b>Покупатель изменил время заказа #{html.escape(str(data.order_id))}</b>\n"
-                            f"👤 Покупатель: {safe_user} (ID: <code>{user_id}</code>)\n"
-                            f"🚇 Станция: м. {safe_station}\n"
-                            f"🕒 Новое время: <b>{html.escape(data.time)}</b>",
-                            parse_mode="HTML"
-                        )
-                    except Exception:
-                        pass
-    return {"success": True}
+    function ensureValidSelectedStationAndTime() {
+        const allSt = [...(metroStations.green || []), ...(metroStations.blue || []), ...(metroStations.red || [])];
+        if (!allSt.some(s => s.name === selectedStation) || disabledStations.includes(selectedStation)) {
+            const firstAvail = allSt.find(s => !disabledStations.includes(s.name));
+            selectedStation = firstAvail ? firstAvail.name : '';
+            localStorage.setItem('monkey_selected_station', selectedStation);
+        }
+        if (!ALL_TIME_SLOTS.includes(selectedTime) || disabledTimes.includes(selectedTime)) {
+            selectedTime = ALL_TIME_SLOTS.find(t => !disabledTimes.includes(t)) || '';
+        }
+        const metroLabel = document.getElementById('current-metro-label');
+        if (metroLabel) metroLabel.innerText = selectedStation || 'Не выбрана';
+    }
 
-@app.get("/api/check_role/{user_id}")
-async def check_role(user_id: int):
-    if user_id in OWNER_IDS:
-        return {"role": "owner"}
-    async with aiosqlite.connect(DB_FILE) as db:
-        couriers = await get_all_courier_ids(db)
-    if user_id in couriers:
-        return {"role": "courier"}
-    return {"role": "client"}
+    function updateShopClosedUI() {
+        const banner = document.getElementById('catalog-closed-banner');
+        if (banner) {
+            banner.style.display = !isShopOpen ? 'block' : 'none';
+            if (!isShopOpen) banner.innerText = `🔴 ${shopClosedMessage}`;
+        }
+    }
 
-@dp.message(F.photo)
-async def handle_owner_photo_upload(message: Message):
-    if message.from_user.id not in OWNER_IDS:
-        return
-    file_id = message.photo[-1].file_id
-    base = PUBLIC_TUNNEL_URL.strip().rstrip("/")
-    photo_url = f"{base}/api/tg_photo/{file_id}"
-    await message.answer(
-        f"🖼 <b>Ссылка на фото для товара готова!</b>\n\n"
-        f"Нажми на ссылку ниже, чтобы скопировать её, и вставь в настройках товара в мини-приложении:\n"
-        f"<code>{html.escape(photo_url)}</code>",
-        parse_mode="HTML"
-    )
+    async function syncShopConfig() {
+        try {
+            const res = await apiFetch(`/api/shop_config`);
+            if (res.ok) {
+                const cfg = await res.json();
+                isShopOpen = cfg.shop_open !== undefined ? Boolean(cfg.shop_open) : true;
+                shopClosedMessage = cfg.closed_message || shopClosedMessage;
+                disabledStations = cfg.disabled_stations || [];
+                disabledTimes = cfg.disabled_times || [];
+                promoCodes = cfg.promocodes || {};
 
-@dp.message(F.text.startswith("/post"))
-async def cmd_post_broadcast(message: Message):
-    if message.from_user.id not in OWNER_IDS:
-        return
-    inline_text = message.text[5:].strip()
-    if not message.reply_to_message and not inline_text:
-        await message.answer(
-            "📢 <b>Как сделать рассылку:</b>\n\n"
-            "1. Отправь боту готовый пост (текст, фото, видео или кружочек).\n"
-            "2. Нажми <b>«Ответить» (Reply)</b> на это сообщение и напиши <code>/post</code>.\n\n"
-            "<i>Либо напиши сразу:</i> <code>/post Текст объявления</code>",
-            parse_mode="HTML"
-        )
-        return
+                if (cfg.hit_color) { hitHighlightColor = cfg.hit_color; localStorage.setItem('monkey_hit_color', hitHighlightColor); }
+                if (cfg.season_effect && cfg.season_effect !== currentSeasonEffect) startSeasonCanvas(cfg.season_effect);
+                if (Array.isArray(cfg.time_slots) && cfg.time_slots.length > 0) { ALL_TIME_SLOTS = cfg.time_slots; localStorage.setItem('monkey_time_slots', JSON.stringify(ALL_TIME_SLOTS)); }
+                if (cfg.metro_stations) { metroStations = cfg.metro_stations; localStorage.setItem('monkey_metro_map', JSON.stringify(metroStations)); }
+                if (Array.isArray(cfg.products) && cfg.products.length > 0) products = cfg.products;
+                if (Array.isArray(cfg.banned_users)) BANNED_USER_IDS = cfg.banned_users.map(Number);
+                if (Array.isArray(cfg.owner_ids)) DYNAMIC_OWNER_IDS = cfg.owner_ids.map(Number);
+                if (Array.isArray(cfg.courier_ids)) DYNAMIC_COURIER_IDS = cfg.courier_ids.map(Number);
 
-    async with aiosqlite.connect(DB_FILE) as db:
-        async with db.execute("SELECT user_id FROM users WHERE user_id > 0") as cursor:
-            rows = await cursor.fetchall()
+                localStorage.setItem('monkey_disabled_stations', JSON.stringify(disabledStations));
+                localStorage.setItem('monkey_disabled_times', JSON.stringify(disabledTimes));
+                localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
 
-    user_ids = [r[0] for r in rows]
-    status_msg = await message.answer(f"⏳ Начинаю рассылку по базе ({len(user_ids)} чел.)...")
+                if (appliedPromoCode) {
+                    if (promoCodes[appliedPromoCode] !== undefined) {
+                        const pObj = normalizePromoObj(promoCodes[appliedPromoCode]);
+                        appliedPromoValue = pObj.discount; appliedPromoType = pObj.type;
+                    } else {
+                        appliedPromoCode = ""; appliedPromoValue = 0; promoMessage = "Промокод больше недействителен"; promoError = true;
+                    }
+                }
 
-    sent = failed = 0
-    for uid in user_ids:
-        try:
-            if message.reply_to_message:
-                await message.reply_to_message.copy_to(chat_id=uid)
-            else:
-                await bot.send_message(uid, inline_text)
-            sent += 1
-            await asyncio.sleep(0.05)
-        except Exception:
-            failed += 1
+                updateShopClosedUI(); ensureValidSelectedStationAndTime(); filterProducts();
+                renderModalStations(modalCurrentLine); renderStations(currentLine);
+                renderCheckoutTimeSlots(); renderChangeTimeSlots();
 
-    post_preview = inline_text or (message.reply_to_message.text or message.reply_to_message.caption or "[Медиа-пост]")
-    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "INSERT INTO broadcasts (created_at, text, sent, failed, total) VALUES (?, ?, ?, ?, ?)",
-            (now_str, post_preview[:300], sent, failed, len(user_ids))
-        )
-        await db.commit()
+                const activeEl = document.activeElement;
+                if (!activeEl || (activeEl.id !== 'promo-input' && activeEl.id !== 'admin-closed-msg-input')) renderCart();
+                showRoleTabsIfAllowed(); updateProfileAvatarUI();
+            }
+        } catch (e) {}
+    }
+    setInterval(syncShopConfig, 4000);
 
-    await status_msg.edit_text(
-        f"✅ <b>Рассылка завершена!</b>\n\n"
-        f"📨 Доставлено: <b>{sent}</b>\n"
-        f"🚫 Заблокировали бота / недоступны: <b>{failed}</b>",
-        parse_mode="HTML"
-    )
+    function renderProducts(items) {
+        const grid = document.getElementById('products-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (items.length === 0) {
+            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 30px;">Товары не найдены</div>';
+            return;
+        }
+        items.forEach(p => {
+            const isAvail = p.available !== false;
+            const isHit = p.tag === 'хит';
+            const oldPrice = Number(p.old_price || 0);
+            const hasDisc = Boolean(p.has_discount) || oldPrice > Number(p.price);
+            const isLow = Boolean(p.low_stock);
 
-@dp.message(F.text == "/start")
-async def cmd_start(message: Message):
-    uid = message.from_user.id
-    uname = f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "User")
-    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
+            const card = document.createElement('div');
+            card.className = `product-card ${!isAvail ? 'out-of-stock' : ''}`;
+            card.onclick = () => { if (isAvail) openProductModal(p.id); };
 
-    async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "INSERT OR REPLACE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)",
-            (uid, uname, now_str)
-        )
-        couriers = await get_all_courier_ids(db)
-        await db.commit()
+            if (isHit && isAvail) {
+                card.style.borderColor = hitHighlightColor;
+                card.style.boxShadow = `0 0 16px ${hexToRgba(hitHighlightColor, 0.35)}`;
+            }
 
-    personal_url = build_personal_url(uid, uname, is_courier=(uid in couriers))
-    try:
-        await bot.set_chat_menu_button(
-            chat_id=uid,
-            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=personal_url))
-        )
-    except Exception:
-        pass
+            // На картинке оставляем ТОЛЬКО надпись "хит" (или "нет в наличии")
+            let imageBadges = '';
+            if (!isAvail) {
+                imageBadges = `<div class="product-tag soldout">нет в наличии</div>`;
+            } else if (isHit) {
+                imageBadges = `<div class="product-tag" style="color:${hitHighlightColor}; border:1px solid ${hexToRgba(hitHighlightColor, 0.55)};">🔥 хит</div>`;
+            }
 
-    kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="🛒 Открыть Monkey Vape", web_app=WebAppInfo(url=personal_url))]],
-        resize_keyboard=True
-    )
-    await message.answer(
-        "👋 Добро пожаловать в <b>Monkey Vape</b>!\n\nНажми кнопку ниже, чтобы открыть каталог и сделать заказ.",
-        reply_markup=kb,
-        parse_mode="HTML"
-    )
+            // Под названием товара: слева красная СКИДКА, справа Мало
+            let underTitleBadges = '';
+            if (isAvail && (hasDisc || isLow)) {
+                underTitleBadges = `
+                    <div class="product-sub-badges">
+                        ${hasDisc ? `<span class="discount-tag-under">СКИДКА</span>` : `<span></span>`}
+                        ${isLow ? `<span class="lowstock-tag-right">⚡ Мало</span>` : ``}
+                    </div>
+                `;
+            }
 
-async def main():
-    asyncio.create_task(dp.start_polling(bot))
-    config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="info")
-    server = uvicorn.Server(config)
-    await server.serve()
+            const mediaHtml = p.image_url
+                ? `<img src="${p.image_url}" alt="${p.title}" onerror="this.outerHTML='<span>${p.icon || '🧪'}</span>'">`
+                : `<span>${p.icon || '🧪'}</span>`;
 
-if __name__ == "__main__":
-    asyncio.run(main())
+            // Старая цена зачёркнута, рядом стоит новая цена
+            const priceHtml = `
+                <div class="price-block">
+                    ${oldPrice > Number(p.price) ? `<span class="product-old-price">${oldPrice.toFixed(2)} р.</span>` : ''}
+                    <span class="product-price">${Number(p.price).toFixed(2)} р.</span>
+                </div>
+            `;
+
+            const rightBtnHtml = isAvail
+                ? `<button class="add-btn" onclick="event.stopPropagation(); openProductModal(${p.id})">+</button>`
+                : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "\\'")}')">🔔 Жду</button>`;
+
+            card.innerHTML = `
+                <div class="product-img-container"><div class="product-badges-stack">${imageBadges}</div>${mediaHtml}</div>
+                <div class="product-title">${p.title}</div>
+                ${underTitleBadges}
+                <div class="product-footer">${priceHtml}${rightBtnHtml}</div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    async function subscribeWholeProduct(productId, title) {
+        if (!currentUserId) { alert("Откройте магазин внутри Telegram, чтобы получать уведомления."); return; }
+        try {
+            await apiFetch(`/api/subscribe_stock`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), product_id: productId, option_name: '' })
+            });
+            alert(`🔔 Вы подписались на поступление "${title}". Бот напишет вам, как только товар появится!`);
+        } catch (e) { alert("Не удалось оформить подписку."); }
+    }
+
+    function openProductModal(productId) {
+        const prod = products.find(p => p.id === productId);
+        if (!prod || prod.available === false) return;
+        currentSelectedProduct = prod;
+
+        const modalCard = document.getElementById('option-modal-card');
+        const hitBadge = document.getElementById('modal-hit-badge');
+        const isHit = prod.tag === 'хит';
+        if (modalCard) {
+            modalCard.style.borderColor = isHit ? hitHighlightColor : 'var(--border-color)';
+            modalCard.style.boxShadow = isHit ? `0 -4px 28px ${hexToRgba(hitHighlightColor, 0.35)}` : 'none';
+        }
+        if (hitBadge) {
+            hitBadge.style.display = isHit ? 'inline-block' : 'none';
+            if (isHit) hitBadge.style.color = hitHighlightColor;
+        }
+
+        document.getElementById('modal-product-title').innerText = prod.title;
+        const grid = document.getElementById('modal-options-grid');
+        const subtitle = document.getElementById('modal-subtitle-text');
+        grid.innerHTML = '';
+
+        subtitle.innerText = prod.category === 'pod' ? 'Выберите цвет устройства:' : (prod.category === 'accessory' ? 'Выберите сопротивление (ом):' : 'Выберите вкус:');
+
+        const opts = (Array.isArray(prod.options) && prod.options.length > 0)
+            ? prod.options
+            : (DEFAULT_OPTS[prod.category] || [{ name: 'Стандарт', available: true }]);
+
+        const firstAvailIdx = opts.findIndex(o => o.available !== false);
+        const defaultIdx = firstAvailIdx >= 0 ? firstAvailIdx : 0;
+
+        chosenOptionValue = opts[defaultIdx].name;
+        chosenOptionAvailable = opts[defaultIdx].available !== false;
+        updateOptionModalButtons();
+
+        opts.forEach((optObj, index) => {
+            const isOptAvail = optObj.available !== false;
+            const btn = document.createElement('div');
+            btn.className = `option-btn ${index === defaultIdx ? 'selected' : ''} ${!isOptAvail ? 'opt-unavail' : ''}`;
+            btn.innerHTML = isOptAvail
+                ? `<span>${optObj.name}</span>`
+                : `<span>${optObj.name}</span><span style="font-size:10px; color:#ffaa00;">нет в наличии</span>`;
+            btn.onclick = () => {
+                document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                chosenOptionValue = optObj.name;
+                chosenOptionAvailable = isOptAvail;
+                updateOptionModalButtons();
+            };
+            grid.appendChild(btn);
+        });
+        document.getElementById('option-modal').classList.add('active');
+    }
+
+    function updateOptionModalButtons() {
+        const addBtn = document.getElementById('modal-add-cart-btn');
+        const notifyBtn = document.getElementById('modal-notify-btn');
+        if (addBtn) addBtn.style.display = chosenOptionAvailable ? 'block' : 'none';
+        if (notifyBtn) notifyBtn.style.display = chosenOptionAvailable ? 'none' : 'block';
+    }
+
+    async function subscribeToSelectedOption() {
+        if (!currentSelectedProduct || !currentUserId) return;
+        try {
+            await apiFetch(`/api/subscribe_stock`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), product_id: currentSelectedProduct.id, option_name: chosenOptionValue })
+            });
+            alert(`🔔 Вы подписались на вкус "${chosenOptionValue}" (${currentSelectedProduct.title}). Бот сообщит, когда он появится!`);
+            closeModalDirect();
+        } catch (e) { alert("Ошибка подписки."); }
+    }
+
+    function closeModal(e) { if (e.target.id === 'option-modal') document.getElementById('option-modal').classList.remove('active'); }
+    function closeModalDirect() { document.getElementById('option-modal').classList.remove('active'); }
+
+    function confirmAddToCart() {
+        if (!currentSelectedProduct || !chosenOptionAvailable) return;
+        const cartKey = `${currentSelectedProduct.id}_${chosenOptionValue}`;
+        const hasDisc = Boolean(currentSelectedProduct.has_discount) || Number(currentSelectedProduct.old_price || 0) > Number(currentSelectedProduct.price);
+        if (cart[cartKey]) {
+            cart[cartKey].qty += 1;
+            cart[cartKey].has_discount = hasDisc;
+            cart[cartKey].image_url = currentSelectedProduct.image_url || '';
+        } else {
+            cart[cartKey] = {
+                id: currentSelectedProduct.id, title: currentSelectedProduct.title, price: Number(currentSelectedProduct.price),
+                icon: currentSelectedProduct.icon, image_url: currentSelectedProduct.image_url || '',
+                has_discount: hasDisc, optionName: chosenOptionValue, qty: 1
+            };
+        }
+        saveCart(); renderCart(); closeModalDirect();
+    }
+
+    function filterProducts() {
+        const query = (document.getElementById('search-input')?.value || '').toLowerCase();
+        renderProducts(products.filter(p => (activeCategory === 'all' || p.category === activeCategory) && p.title.toLowerCase().includes(query)));
+    }
+
+    function setCategory(cat, el) {
+        activeCategory = cat;
+        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
+        filterProducts();
+    }
+
+    function changeQty(cartKey, delta) {
+        if (cart[cartKey]) {
+            cart[cartKey].qty += delta;
+            if (cart[cartKey].qty <= 0) delete cart[cartKey];
+        }
+        saveCart(); renderCart();
+    }
+
+    function saveCart() {
+        localStorage.setItem('monkey_cart', JSON.stringify(cart));
+        const badge = document.getElementById('cart-badge');
+        if (!badge) return;
+        const totalCount = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+        badge.style.display = totalCount > 0 ? 'flex' : 'none';
+        if (totalCount > 0) badge.innerText = totalCount;
+    }
+
+    function handlePromoInput(val) { promoInputDraft = val; }
+
+    async function applyPromoCode() {
+        const items = Object.values(cart);
+        if (getEligiblePromoSubtotal(items) <= 0) {
+            appliedPromoCode = ""; appliedPromoValue = 0; promoMessage = "На товары со скидкой промокод не действует"; promoError = true;
+            renderCart(); return;
+        }
+        const input = document.getElementById('promo-input');
+        const code = ((input ? input.value : promoInputDraft) || '').trim().toUpperCase();
+        if (!code) { promoMessage = "Введите промокод"; promoError = true; renderCart(); return; }
+
+        try {
+            const res = await apiFetch(`/api/shop_config`);
+            if (res.ok) {
+                const cfg = await res.json();
+                promoCodes = cfg.promocodes || promoCodes;
+                localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
+            }
+        } catch (e) {}
+
+        if (promoCodes[code] !== undefined) {
+            const pObj = normalizePromoObj(promoCodes[code]);
+            if (pObj.max_uses > 0 && pObj.used_count >= pObj.max_uses) {
+                appliedPromoCode = ""; appliedPromoValue = 0; promoMessage = "Лимит использований промокода исчерпан"; promoError = true;
+            } else if (pObj.discount > 0) {
+                appliedPromoCode = code; appliedPromoValue = pObj.discount; appliedPromoType = pObj.type;
+                const discLabel = pObj.type === 'percent' ? `-${pObj.discount}%` : `-${pObj.discount.toFixed(2)} р.`;
+                promoMessage = items.some(isCartItemDiscounted) ? `Промокод ${code} (${discLabel}) применён только к товарам без скидки` : `Промокод ${code} применён! Скидка ${discLabel}`;
+                promoError = false; promoInputDraft = "";
+            }
+        } else {
+            appliedPromoCode = ""; appliedPromoValue = 0; promoMessage = "Неверный или неактивный промокод"; promoError = true;
+        }
+        renderCart();
+    }
+
+    function removeAppliedPromo() {
+        appliedPromoCode = ""; appliedPromoValue = 0; appliedPromoType = "rub"; promoMessage = ""; promoError = false; promoInputDraft = ""; renderCart();
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-content');
+        if (!container) return;
+        const items = Object.values(cart);
+        if (items.length === 0) {
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>Корзина пуста</p><button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">В каталог</button></div>`;
+            return;
+        }
+
+        let itemsHtml = '<div class="cart-items-list">', subtotal = 0;
+        for (const [key, item] of Object.entries(cart)) {
+            subtotal += item.price * item.qty;
+            const itemDisc = isCartItemDiscounted(item);
+            const thumbHtml = item.image_url ? `<img src="${item.image_url}" alt="" onerror="this.outerHTML='${item.icon || '🧪'}'">` : `${item.icon || '🧪'}`;
+            itemsHtml += `
+                <div class="cart-item">
+                    <div class="cart-item-img">${thumbHtml}</div>
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.title} ${itemDisc ? '<span style="color:#ff3333; font-size:10px; font-weight:800;">[СКИДКА]</span>' : ''}</div>
+                        <div class="cart-item-sub">Параметр: ${item.optionName}</div>
+                        <div class="cart-item-price">${(item.price * item.qty).toFixed(2)} р.</div>
+                    </div>
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="changeQty('${key}', -1)">-</button>
+                        <span class="qty-val">${item.qty}</span>
+                        <button class="qty-btn" onclick="changeQty('${key}', 1)">+</button>
+                    </div>
+                </div>
+            `;
+        }
+        itemsHtml += '</div>';
+
+        const eligibleSubtotal = getEligiblePromoSubtotal(items);
+        if (appliedPromoCode && eligibleSubtotal <= 0) {
+            appliedPromoCode = ""; appliedPromoValue = 0; promoMessage = "Промокод снят: в корзине только товары со скидкой"; promoError = true;
+        }
+        const actualDiscount = appliedPromoCode ? calcPromoDiscount(eligibleSubtotal, { discount: appliedPromoValue, type: appliedPromoType }) : 0;
+        const finalTotal = Math.max(0, subtotal - actualDiscount);
+        const promoBadgeLabel = appliedPromoType === 'percent' ? `${appliedPromoCode} (-${appliedPromoValue}% / -${actualDiscount.toFixed(2)} р.)` : `${appliedPromoCode} (-${actualDiscount.toFixed(2)} р.)`;
+
+        const promoBlockHtml = `
+            <div class="promo-box">
+                <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">🎟 Промокод на скидку</div>
+                ${appliedPromoCode ? `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:var(--accent-green-glow); border:1px solid var(--accent-green); padding:10px 12px; border-radius:12px;">
+                        <span style="font-size:13px; color:var(--accent-green); font-weight:700;">${promoBadgeLabel}</span>
+                        <button onclick="removeAppliedPromo()" style="background:none; border:none; color:var(--danger); font-weight:700; font-size:14px; cursor:pointer;">✕</button>
+                    </div>
+                ` : `
+                    <div class="promo-input-row">
+                        <input type="text" id="promo-input" class="promo-input" value="${promoInputDraft}" placeholder="Введите промокод..." oninput="handlePromoInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); applyPromoCode();}">
+                        <button type="button" class="promo-apply-btn" onclick="applyPromoCode()">Применить</button>
+                    </div>
+                `}
+                ${promoMessage ? `<div style="font-size:11px; margin-top:8px; color:${promoError ? 'var(--danger)' : 'var(--accent-green)'};">${promoMessage}</div>` : ''}
+            </div>
+        `;
+
+        const discountRowHtml = actualDiscount > 0 ? `<div class="summary-row"><span style="color:var(--accent-green);">Скидка (${appliedPromoCode}):</span><span style="color:var(--accent-green); font-weight:700;">-${actualDiscount.toFixed(2)} р.</span></div>` : '';
+        let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>`;
+        if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
+        else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${shopClosedMessage}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:rgba(0,255,102,0.16); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
+
+        container.innerHTML = itemsHtml + promoBlockHtml + `
+            <div class="cart-summary">
+                <div class="summary-row"><span>Станция доставки:</span><span style="color:var(--accent-green); font-weight:600;">${selectedStation ? 'м. ' + selectedStation : 'Не выбрана'}</span></div>
+                <div class="summary-row"><span>Товары (${items.reduce((s,i)=>s+i.qty,0)})</span><span>${subtotal.toFixed(2)} р.</span></div>
+                ${discountRowHtml}
+                <div class="summary-row total"><span>Итого к оплате:</span><span>${finalTotal.toFixed(2)} р.</span></div>
+            </div>
+            ${checkoutActionHtml}
+        `;
+    }
+
+    function openMetroPicker() { syncShopConfig(); document.getElementById('metro-modal').classList.add('active'); renderModalStations(modalCurrentLine); }
+    function closeMetroModal(e) { if (e.target.id === 'metro-modal') document.getElementById('metro-modal').classList.remove('active'); }
+    function closeMetroModalDirect() { document.getElementById('metro-modal').classList.remove('active'); }
+    function switchModalMetroLine(line, el) {
+        modalCurrentLine = line;
+        document.querySelectorAll('#modal-metro-tabs .metro-tab').forEach(t => t.className = 'metro-tab');
+        el.className = `metro-tab active-${line}`;
+        renderModalStations(line);
+    }
+
+    function renderModalStations(line) {
+        const container = document.getElementById('modal-stations-list-container');
+        if (!container) return;
+        container.innerHTML = '';
+        (metroStations[line] || []).forEach(st => {
+            const isDisabled = disabledStations.includes(st.name);
+            const isSel = !isDisabled && st.name === selectedStation;
+            const div = document.createElement('div');
+            div.className = `station-item ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
+            div.innerHTML = `<span>${st.name}</span>${isDisabled ? `<span class="unavail-pill">Недоступно</span>` : `<span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>`}`;
+            if (!isDisabled) {
+                div.onclick = () => {
+                    selectedStation = st.name; localStorage.setItem('monkey_selected_station', selectedStation);
+                    ensureValidSelectedStationAndTime(); renderModalStations(line); renderStations(currentLine); renderCart();
+                };
+            }
+            container.appendChild(div);
+        });
+    }
+
+    function proceedToCheckout() {
+        if (Object.keys(cart).length === 0) { switchScreen('cart'); return; }
+        if (BANNED_USER_IDS.includes(Number(currentUserId))) { alert("Ваш аккаунт заблокирован в магазине."); return; }
+        if (!isShopOpen) { alert(`🔴 ${shopClosedMessage}`); return; }
+        syncShopConfig(); ensureValidSelectedStationAndTime(); switchScreen('checkout'); renderStations(currentLine); renderCheckoutTimeSlots();
+    }
+
+    function switchMetroLine(line, el) {
+        currentLine = line;
+        document.querySelectorAll('#checkout-metro-tabs .metro-tab').forEach(t => t.className = 'metro-tab');
+        el.className = `metro-tab active-${line}`;
+        renderStations(line);
+    }
+
+    function renderStations(line) {
+        const container = document.getElementById('stations-list-container');
+        if (!container) return;
+        container.innerHTML = '';
+        (metroStations[line] || []).forEach(st => {
+            const isDisabled = disabledStations.includes(st.name);
+            const isSel = !isDisabled && st.name === selectedStation;
+            const div = document.createElement('div');
+            div.className = `station-item ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
+            div.innerHTML = `<span>${st.name}</span>${isDisabled ? `<span class="unavail-pill">Недоступно</span>` : `<span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>`}`;
+            if (!isDisabled) {
+                div.onclick = () => {
+                    selectedStation = st.name; localStorage.setItem('monkey_selected_station', selectedStation);
+                    ensureValidSelectedStationAndTime(); renderStations(line); renderCart();
+                };
+            }
+            container.appendChild(div);
+        });
+    }
+
+    function renderCheckoutTimeSlots() {
+        const container = document.getElementById('checkout-time-slots-container');
+        if (!container) return;
+        container.innerHTML = '';
+        ALL_TIME_SLOTS.forEach(t => {
+            const isDisabled = disabledTimes.includes(t);
+            const isSel = !isDisabled && selectedTime === t;
+            const div = document.createElement('div');
+            div.className = `time-slot ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
+            div.innerHTML = isDisabled ? `<span>${t}</span><span class="unavail-pill" style="font-size:9px; padding:1px 5px;">Недоступно</span>` : `<span>${t}</span>`;
+            if (!isDisabled) div.onclick = () => { selectedTime = t; renderCheckoutTimeSlots(); };
+            container.appendChild(div);
+        });
+    }
+
+    function renderChangeTimeSlots() {
+        const container = document.getElementById('change-time-slots-container');
+        if (!container) return;
+        container.innerHTML = '';
+        ALL_TIME_SLOTS.forEach(t => {
+            const isDisabled = disabledTimes.includes(t);
+            const isSel = !isDisabled && newSelectedTime === t;
+            const div = document.createElement('div');
+            div.className = `time-slot ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
+            div.innerHTML = isDisabled ? `<span>${t}</span><span class="unavail-pill" style="font-size:9px; padding:1px 5px;">Недоступно</span>` : `<span>${t}</span>`;
+            if (!isDisabled) div.onclick = () => { newSelectedTime = t; renderChangeTimeSlots(); };
+            container.appendChild(div);
+        });
+    }
+
+    async function subscribeShopOpenNotify() {
+        if (!currentUserId) { alert("Откройте магазин внутри Telegram, чтобы получить уведомление."); return; }
+        try {
+            await apiFetch(`/api/subscribe_shop_open`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId) })
+            });
+            alert("🔔 Готово! Как только магазин снова откроется, бот пришлёт вам уведомление в личку.");
+        } catch (e) { alert("Не удалось подписаться. Проверьте соединение."); }
+    }
+
+    async function confirmOrderFinal() {
+        if (!isShopOpen) { alert(`🔴 ${shopClosedMessage}`); switchScreen('cart'); return; }
+        const items = Object.values(cart);
+        if (items.length === 0) { switchScreen('cart'); return; }
+        if (!selectedStation || disabledStations.includes(selectedStation)) { alert("Выбранная станция метро недоступна."); return; }
+        if (!selectedTime || disabledTimes.includes(selectedTime)) { alert("Выбранное время недоступно."); return; }
+
+        const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        const eligibleSubtotal = getEligiblePromoSubtotal(items);
+        const actualDiscount = (appliedPromoCode && eligibleSubtotal > 0) ? calcPromoDiscount(eligibleSubtotal, { discount: appliedPromoValue, type: appliedPromoType }) : 0;
+        const total = Math.max(0, subtotal - actualDiscount);
+        const orderId = String(Math.floor(10000 + Math.random() * 90000));
+        const createdAt = getFormattedNowDateTime();
+
+        const orderData = {
+            id: orderId, user_id: currentUserId, user_name: currentUserName,
+            items: items.map(i => ({ title: `${i.title} (${i.optionName})`, price: i.price, qty: i.qty })),
+            total, station: selectedStation, time: selectedTime, status: 'active', time_changed: false,
+            promo_code: actualDiscount > 0 ? appliedPromoCode : '', discount: actualDiscount, created_at: createdAt,
+            cancelled_by: '', claimed_by_id: 0, claimed_by_name: ''
+        };
+
+        try {
+            const res = await apiFetch(`/api/create_order`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData)
+            });
+            const resData = await res.json();
+            if (resData?.order_id) orderData.id = String(resData.order_id);
+        } catch (e) {
+            alert("⚠️ Заказ не отправлен! Проверь связь с сервером или статус магазина.");
+            return;
+        }
+
+        activeOrders = deduplicateOrdersList([orderData, ...activeOrders]);
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
+        cart = {}; appliedPromoCode = ""; appliedPromoValue = 0; appliedPromoType = "rub"; promoMessage = ""; promoInputDraft = "";
+        saveCart(); renderCart(); currentOrdersSubTab = 'active'; renderOrders(); switchScreen('orders');
+    }
+
+    function repeatPastOrder(orderId) {
+        const key = String(orderId).trim();
+        const ord = activeOrders.find(o => String(o.id).trim() === key);
+        if (!ord || !Array.isArray(ord.items)) return;
+
+        let addedCount = 0;
+        ord.items.forEach(item => {
+            const match = String(item.title || '').match(/^(.+?)\s*\(([^()]+)\)$/);
+            const baseTitle = match ? match[1].trim() : String(item.title || '').trim();
+            const optName = match ? match[2].trim() : 'Стандарт';
+            const prod = products.find(p => p.title.toLowerCase() === baseTitle.toLowerCase());
+            if (prod && prod.available !== false) {
+                const cartKey = `${prod.id}_${optName}`;
+                const hasDisc = Boolean(prod.has_discount) || Number(prod.old_price || 0) > Number(prod.price);
+                if (cart[cartKey]) cart[cartKey].qty += Number(item.qty || 1);
+                else {
+                    cart[cartKey] = {
+                        id: prod.id, title: prod.title, price: Number(prod.price), icon: prod.icon,
+                        image_url: prod.image_url || '', has_discount: hasDisc,
+                        optionName: optName, qty: Number(item.qty || 1)
+                    };
+                }
+                addedCount++;
+            }
+        });
+
+        if (addedCount === 0) {
+            alert("К сожалению, товары из этого заказа сейчас недоступны.");
+            return;
+        }
+        saveCart(); renderCart(); switchScreen('cart');
+    }
+
+    async function cancelOrderByClient(orderId) {
+        const key = String(orderId).trim();
+        activeOrders = activeOrders.map(o => String(o.id).trim() === key ? { ...o, id: key, status: 'cancelled', cancelled_by: 'client' } : o);
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders)); renderOrders();
+        try {
+            await apiFetch(`/api/update_order_status`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: key, status: 'cancelled', cancelled_by: 'client' })
+            });
+        } catch (e) {}
+        if (document.getElementById('screen-courier').classList.contains('active')) loadCourierOrders();
+    }
+
+    async function deleteFinishedOrderCourier(orderId) {
+        const key = String(orderId).trim();
+        if (!hiddenCourierOrderIds.includes(key)) {
+            hiddenCourierOrderIds.push(key); localStorage.setItem('monkey_hidden_courier_orders', JSON.stringify(hiddenCourierOrderIds));
+        }
+        cachedCourierOrders = cachedCourierOrders.filter(o => String(o.id).trim() !== key);
+        renderCourierCards(cachedCourierOrders);
+        try {
+            await apiFetch(`/api/delete_completed_order`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: key })
+            });
+        } catch (e) {}
+        loadCourierOrders();
+    }
+
+    function openTimeModal(orderId) {
+        changingOrderId = String(orderId).trim();
+        newSelectedTime = ALL_TIME_SLOTS.find(t => !disabledTimes.includes(t)) || '';
+        document.getElementById('time-modal-order-id').innerText = changingOrderId;
+        renderChangeTimeSlots(); document.getElementById('time-modal').classList.add('active');
+    }
+    function closeTimeModal(e) { if (e.target.id === 'time-modal') document.getElementById('time-modal').classList.remove('active'); }
+    function closeTimeModalDirect() { document.getElementById('time-modal').classList.remove('active'); }
+
+    async function confirmTimeChangeFinal() {
+        if (!changingOrderId) return;
+        if (!newSelectedTime || disabledTimes.includes(newSelectedTime)) { alert("Это время недоступно."); return; }
+        activeOrders = activeOrders.map(o => String(o.id).trim() === changingOrderId ? { ...o, time: newSelectedTime, time_changed: true } : o);
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders)); renderOrders(); closeTimeModalDirect();
+        try {
+            await apiFetch(`/api/update_order_time`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: changingOrderId, time: newSelectedTime })
+            });
+        } catch (e) {}
+        if (document.getElementById('screen-courier').classList.contains('active')) loadCourierOrders();
+    }
+
+    function switchOrdersSubTab(tab) {
+        currentOrdersSubTab = tab;
+        document.getElementById('orders-tab-active')?.classList.toggle('active', tab === 'active');
+        document.getElementById('orders-tab-past')?.classList.toggle('active', tab === 'past');
+        renderOrders();
+    }
+
+    function switchCourierSubTab(tab) {
+        currentCourierSubTab = tab;
+        document.getElementById('courier-tab-active')?.classList.toggle('active', tab === 'active');
+        document.getElementById('courier-tab-past')?.classList.toggle('active', tab === 'past');
+        renderCourierCards(cachedCourierOrders);
+    }
+
+    function getCancelledLabel(ord) {
+        if (ord.cancelled_by === 'client') return 'Отменено клиентом ✕';
+        if (ord.cancelled_by === 'courier') return 'Отменено курьером ✕';
+        return 'Заказ отменён ✕';
+    }
+
+    function deduplicateOrdersList(list) {
+        const map = new Map();
+        (list || []).forEach(item => { if (item?.id) { const key = String(item.id).trim(); map.set(key, { ...item, id: key }); } });
+        return Array.from(map.values());
+    }
+
+    function renderOrders() {
+        const container = document.getElementById('orders-list');
+        if (!container) return;
+        activeOrders = deduplicateOrdersList(activeOrders);
+        const myPersonalOrders = currentUserId ? activeOrders.filter(o => Number(o.user_id) === Number(currentUserId)) : [];
+        const activeList = myPersonalOrders.filter(o => o.status === 'active');
+        const pastList = myPersonalOrders.filter(o => o.status === 'completed' || o.status === 'cancelled');
+
+        const aEl = document.getElementById('active-orders-count'), pEl = document.getElementById('past-orders-count');
+        if (aEl) aEl.innerText = activeList.length;
+        if (pEl) pEl.innerText = pastList.length;
+
+        const listToRender = currentOrdersSubTab === 'active' ? activeList : pastList;
+        if (listToRender.length === 0) {
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${currentOrdersSubTab === 'active' ? '📦' : '🗂️'}</div><p>${currentOrdersSubTab === 'active' ? 'Нет активных заказов' : 'Прошедших заказов пока нет'}</p></div>`;
+            return;
+        }
+
+        let html = '';
+        listToRender.forEach(ord => {
+            let statusHtml = `<span class="order-status-pill active">Активен</span>`;
+            if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
+            else if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
+
+            let itemsList = ord.items.map(i => `<div>• ${i.title} × ${i.qty}</div>`).join('');
+            let promoNote = ord.promo_code ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+            let actionButtons = ord.status === 'active'
+                ? `<div class="order-actions-row"><button class="order-btn-secondary" onclick="openTimeModal('${ord.id}')">⏰ Изменить время</button><button class="order-btn-danger" onclick="cancelOrderByClient('${ord.id}')">✕ Отменить</button></div>`
+                : `<div class="order-actions-row"><button class="order-btn-secondary" style="border-color:var(--accent-green); color:var(--accent-green);" onclick="repeatPastOrder('${ord.id}')">🔄 Повторить заказ</button></div>`;
+            let timeNote = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
+            let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${ord.created_at}</b></div>` : '';
+            let courierInfoHtml = ord.claimed_by_name ? `<div class="order-meta-row"><span>🛵 Курьер:</span> <b style="color:var(--accent-green);">${ord.claimed_by_name}</b></div>` : '';
+
+            html += `
+                <div class="order-card">
+                    <div class="order-card-header"><span class="order-id-label">Заказ #${ord.id}</span>${statusHtml}</div>
+                    <div class="order-meta-grid">${createdAtHtml}${courierInfoHtml}<div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${ord.station}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${ord.time}</b> ${timeNote}</div></div>
+                    <div class="order-items-box">${itemsList}${promoNote}</div>
+                    <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">К оплате:</span><span class="order-total-price">${ord.total.toFixed(2)} р.</span></div>
+                    ${actionButtons}
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    async function syncClientOrdersStatus() {
+        if (!currentUserId) return;
+        try {
+            const response = await apiFetch(`/api/user_orders/${currentUserId}`);
+            if (response.ok) {
+                const merged = deduplicateOrdersList(await response.json());
+                if (JSON.stringify(merged) !== JSON.stringify(activeOrders)) {
+                    activeOrders = merged; localStorage.setItem('monkey_orders', JSON.stringify(activeOrders)); renderOrders();
+                }
+            }
+        } catch (e) {}
+    }
+    setInterval(syncClientOrdersStatus, 3500);
+
+    async function checkUserRole() {
+        showRoleTabsIfAllowed();
+        try {
+            const response = await apiFetch(`/api/check_role/${currentUserId}`);
+            const data = await response.json();
+            if (data.role === 'courier' || data.role === 'owner') {
+                const btn = document.getElementById('nav-courier-btn'); if (btn) btn.style.display = 'flex';
+                loadCourierOrders();
+            }
+            if (data.role === 'owner') {
+                const pnl = document.getElementById('owner-admin-panel'); if (pnl) pnl.style.display = 'block';
+                loadAdminStats();
+            }
+        } catch (e) {}
+    }
+
+    // ----- АДМИН-ПАНЕЛЬ ВЛАДЕЛЬЦА -----
+
+    function renderAdminShopMaster() {
+        const btn = document.getElementById('admin-shop-toggle-btn');
+        const input = document.getElementById('admin-closed-msg-input');
+        if (btn) { btn.className = `toggle-pill ${isShopOpen ? 'on' : 'off'}`; btn.innerText = isShopOpen ? '🟢 Открыт' : '🔴 Закрыт'; }
+        if (input && document.activeElement !== input && !input.value) input.value = shopClosedMessage;
+    }
+
+    async function adminToggleShopOpen() {
+        isShopOpen = !isShopOpen; updateShopClosedUI(); renderAdminShopMaster(); renderCart();
+        const msg = (document.getElementById('admin-closed-msg-input')?.value || shopClosedMessage).trim();
+        try {
+            await apiFetch(`/api/admin/shop_status`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), is_open: isShopOpen, closed_message: msg })
+            });
+        } catch (e) { alert("Ошибка связи с сервером!"); }
+    }
+
+    async function adminSaveClosedMsg() {
+        const msg = (document.getElementById('admin-closed-msg-input')?.value || '').trim();
+        if (!msg) return;
+        shopClosedMessage = msg; updateShopClosedUI(); renderCart();
+        try {
+            await apiFetch(`/api/admin/shop_status`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), is_open: isShopOpen, closed_message: msg })
+            });
+            alert("Текст закрытия сохранён!");
+        } catch (e) { alert("Ошибка связи с сервером!"); }
+    }
+
+    function switchAdminTab(tab, el) {
+        document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        ['stats', 'products', 'promos', 'appearance', 'metro', 'time', 'roles', 'broadcast'].forEach(t => {
+            const box = document.getElementById(`admin-tab-${t}`);
+            if (box) box.style.display = t === tab ? 'block' : 'none';
+        });
+        if (tab === 'stats') loadAdminStats();
+        if (tab === 'appearance') renderAdminAppearance();
+        if (tab === 'broadcast') loadBroadcastHistory();
+    }
+
+    function renderAdminAppearance() {
+        ['none', 'winter', 'autumn', 'spring', 'summer', 'rain'].forEach(s => {
+            const btn = document.getElementById(`season-btn-${s}`);
+            if (btn) {
+                btn.className = `toggle-pill ${currentSeasonEffect === s ? 'on' : ''}`;
+                btn.style.background = currentSeasonEffect !== s ? 'var(--card-bg)' : '';
+                btn.style.color = currentSeasonEffect !== s ? 'var(--text-secondary)' : '';
+                btn.style.border = currentSeasonEffect !== s ? '1px solid var(--border-color)' : '';
+            }
+        });
+
+        const dot = document.getElementById('current-hit-color-dot');
+        const label = document.getElementById('current-hit-color-label');
+        const found = HIT_COLOR_PALETTE.find(c => c.hex.toLowerCase() === hitHighlightColor.toLowerCase());
+        if (dot) {
+            dot.style.background = hitHighlightColor;
+            dot.style.boxShadow = `0 0 10px ${hexToRgba(hitHighlightColor, 0.7)}`;
+        }
+        if (label) {
+            label.innerText = found ? found.name : hitHighlightColor;
+        }
+    }
+
+    function openHitColorModal() {
+        const grid = document.getElementById('hit-colors-modal-grid');
+        if (grid) {
+            grid.innerHTML = HIT_COLOR_PALETTE.map(c => {
+                const isSelected = hitHighlightColor.toLowerCase() === c.hex.toLowerCase();
+                return `
+                    <div class="hit-color-tile ${isSelected ? 'selected' : ''}" onclick="adminSetHitColor('${c.hex}')">
+                        <div class="hit-color-dot" style="background:${c.hex}; box-shadow: 0 0 12px ${hexToRgba(c.hex, 0.75)};"></div>
+                        <span class="hit-color-name">${c.name}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        document.getElementById('hit-color-modal').classList.add('active');
+    }
+
+    function closeHitColorModal() {
+        document.getElementById('hit-color-modal').classList.remove('active');
+    }
+
+    async function adminSetSeason(season) {
+        startSeasonCanvas(season); renderAdminAppearance();
+        try {
+            await apiFetch(`/api/admin/appearance`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), season_effect: season, hit_color: hitHighlightColor })
+            });
+        } catch (e) {}
+    }
+
+    async function adminSetHitColor(hexColor) {
+        hitHighlightColor = hexColor;
+        localStorage.setItem('monkey_hit_color', hitHighlightColor);
+        renderAdminAppearance();
+        filterProducts();
+        closeHitColorModal();
+        try {
+            await apiFetch(`/api/admin/appearance`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), season_effect: currentSeasonEffect, hit_color: hexColor })
+            });
+        } catch (e) {}
+    }
+
+    async function loadAdminStats() {
+        const box = document.getElementById('admin-stats-content');
+        if (!box || !isCurrentUserOwner()) return;
+        try {
+            const st = await (await apiFetch(`/api/admin/stats/${currentUserId}`)).json();
+            const topItemsHtml = st.top_items?.length ? st.top_items.map((it, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. ${it.title}</span><b style="color:var(--accent-green);">${it.qty} шт.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Пока нет выданных заказов</div>';
+            const topStationsHtml = st.top_stations?.length ? st.top_stations.map((s, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. м. ${s.station}</span><b>${s.count} зак.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
+            const couriersHtml = st.courier_stats?.length ? st.courier_stats.map(c => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>🛵 ${c.name} (${c.count} зак.)</span><b style="color:var(--accent-green);">${Number(c.revenue).toFixed(2)} р.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
+
+            box.innerHTML = `
+                <div class="stat-grid">
+                    <div class="stat-card"><div class="stat-card-label">Сегодня</div><div class="stat-card-val">${Number(st.today_rev).toFixed(2)} р.</div><div class="stat-card-sub">Выдано: ${st.today_cnt} зак.</div></div>
+                    <div class="stat-card"><div class="stat-card-label">За 7 дней</div><div class="stat-card-val">${Number(st.week_rev).toFixed(2)} р.</div><div class="stat-card-sub">Выдано: ${st.week_cnt} зак.</div></div>
+                    <div class="stat-card"><div class="stat-card-label">Всего выручка</div><div class="stat-card-val">${Number(st.total_rev).toFixed(2)} р.</div><div class="stat-card-sub">Выдано: ${st.total_cnt} зак.</div></div>
+                    <div class="stat-card"><div class="stat-card-label">Активные / Отмены</div><div class="stat-card-val" style="color:var(--text-main);">${st.active_cnt} / <span style="color:var(--danger);">${st.cancelled_cnt}</span></div><div class="stat-card-sub">В работе / отменено</div></div>
+                </div>
+                <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:8px;"><div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">🛵 Выручка по курьерам:</div>${couriersHtml}</div>
+                <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:8px;"><div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">🔥 Топ товаров:</div>${topItemsHtml}</div>
+                <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px;"><div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">🚇 Топ станций метро:</div>${topStationsHtml}</div>
+            `;
+        } catch (e) { box.innerHTML = '<div style="color:var(--danger);">Не удалось загрузить статистику.</div>'; }
+    }
+
+    function renderAdminProducts() {
+        const container = document.getElementById('admin-products-list');
+        if (!container) return;
+        container.innerHTML = products.map(p => {
+            const isAvail = p.available !== false, isHit = p.tag === 'хит', isLow = Boolean(p.low_stock);
+            const oldP = Number(p.old_price || 0);
+            const hasDisc = Boolean(p.has_discount) || oldP > Number(p.price);
+            const priceLabel = oldP > Number(p.price)
+                ? `<span style="text-decoration:line-through; color:var(--text-secondary); font-size:11px; margin-right:4px;">${oldP.toFixed(2)} р.</span>${Number(p.price).toFixed(2)} р.`
+                : `${Number(p.price).toFixed(2)} р.`;
+
+            return `
+                <div class="admin-toggle-row" style="flex-direction:column; align-items:stretch; gap:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                        <span style="font-weight:600; ${!isAvail ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${p.image_url ? '🖼' : p.icon} ${p.title}</span>
+                        <span style="color:var(--accent-green); font-weight:700; white-space:nowrap;">${priceLabel}</span>
+                    </div>
+                    <div style="display:flex; gap:5px; justify-content:flex-end; flex-wrap:wrap;">
+                        <button class="toggle-pill ${isAvail ? 'on' : 'off'}" onclick="adminToggleProduct(${p.id}, 'available')">${isAvail ? 'В наличии' : 'Нет'}</button>
+                        <button class="toggle-pill ${isHit ? 'on' : ''}" style="${!isHit ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="adminToggleProduct(${p.id}, 'hit')">🔥 Хит</button>
+                        <button class="toggle-pill ${hasDisc ? 'off' : ''}" style="${!hasDisc ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="adminQuickDiscount(${p.id})">🏷 Скидка</button>
+                        <button class="toggle-pill ${isLow ? 'on' : ''}" style="${!isLow ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="adminToggleProduct(${p.id}, 'low_stock')">⚡ Мало</button>
+                        <button class="toggle-pill on" onclick="openAdminEditProductModal(${p.id})">✏️ Изменить</button>
+                        <button class="toggle-pill off" onclick="adminDeleteProduct(${p.id})">✕</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function adminQuickDiscount(productId) {
+        const prod = products.find(p => p.id === productId);
+        if (!prod) return;
+        const currentlyDiscounted = Boolean(prod.has_discount) || Number(prod.old_price || 0) > Number(prod.price);
+
+        if (currentlyDiscounted) {
+            // Снимаем скидку и возвращаем старую цену, если она была указана
+            const restoredPrice = Number(prod.old_price || 0) > Number(prod.price) ? Number(prod.old_price) : Number(prod.price);
+            try {
+                await apiFetch(`/api/admin/save_product`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: Number(currentUserId), id: prod.id, title: prod.title, category: prod.category,
+                        price: restoredPrice, old_price: 0, tag: prod.tag || '', icon: prod.icon || '🧪',
+                        available: prod.available !== false, image_url: prod.image_url || '',
+                        has_discount: false, low_stock: Boolean(prod.low_stock), options: prod.options || []
+                    })
+                });
+                await syncShopConfig();
+            } catch (e) {}
+            return;
+        }
+
+        const oldRaw = prompt(`Введите СТАРУЮ цену (до скидки, например 17):`, String(prod.price));
+        if (oldRaw === null) return;
+        const oldPrice = parseFloat(oldRaw.replace(',', '.'));
+        if (isNaN(oldPrice) || oldPrice <= 0) { alert("Некорректная старая цена"); return; }
+
+        const newRaw = prompt(`Введите НОВУЮ цену со скидкой (например 15):`, String(Math.max(1, oldPrice - 2)));
+        if (newRaw === null) return;
+        const newPrice = parseFloat(newRaw.replace(',', '.'));
+        if (isNaN(newPrice) || newPrice <= 0) { alert("Некорректная новая цена"); return; }
+
+        try {
+            await apiFetch(`/api/admin/save_product`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId), id: prod.id, title: prod.title, category: prod.category,
+                    price: newPrice, old_price: oldPrice, tag: prod.tag || '', icon: prod.icon || '🧪',
+                    available: prod.available !== false, image_url: prod.image_url || '',
+                    has_discount: true, low_stock: Boolean(prod.low_stock), options: prod.options || []
+                })
+            });
+            await syncShopConfig();
+        } catch (e) { alert("Ошибка применения скидки."); }
+    }
+
+    async function adminAddProduct() {
+        const title = document.getElementById('admin-prod-title').value.trim();
+        const image_url = document.getElementById('admin-prod-img').value.trim();
+        const optsRaw = document.getElementById('admin-prod-opts').value.trim();
+        const category = document.getElementById('admin-prod-cat').value;
+        const price = parseFloat(document.getElementById('admin-prod-price').value);
+        const icon = document.getElementById('admin-prod-icon').value.trim() || '🧪';
+        if (!title || isNaN(price) || price <= 0) { alert("Введите название и корректную цену."); return; }
+
+        const options = optsRaw
+            ? optsRaw.split(',').map(s => s.trim()).filter(Boolean).map(name => ({ name, available: true }))
+            : [];
+
+        try {
+            await apiFetch(`/api/admin/save_product`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId), id: 0, title, category, price, old_price: 0,
+                    tag: '', icon, available: true, image_url, has_discount: false, low_stock: false, options
+                })
+            });
+            document.getElementById('admin-prod-title').value = '';
+            document.getElementById('admin-prod-img').value = '';
+            document.getElementById('admin-prod-opts').value = '';
+            document.getElementById('admin-prod-price').value = '';
+            await syncShopConfig();
+        } catch (e) { alert("Ошибка сохранения товара."); }
+    }
+
+    async function adminToggleProduct(productId, field) {
+        try {
+            await apiFetch(`/api/admin/toggle_product`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), product_id: productId, field })
+            });
+            await syncShopConfig();
+        } catch (e) {}
+    }
+
+    function openAdminEditProductModal(productId) {
+        const prod = products.find(p => p.id === productId);
+        if (!prod) return;
+        document.getElementById('edit-prod-id').value = prod.id;
+        document.getElementById('edit-prod-title').value = prod.title;
+        document.getElementById('edit-prod-cat').value = prod.category;
+        document.getElementById('edit-prod-icon').value = prod.icon || '🧪';
+        document.getElementById('edit-prod-price').value = prod.price;
+        document.getElementById('edit-prod-old-price').value = prod.old_price || 0;
+        document.getElementById('edit-prod-img').value = prod.image_url || '';
+
+        editingProductOptions = JSON.parse(JSON.stringify(
+            (Array.isArray(prod.options) && prod.options.length > 0) ? prod.options : (DEFAULT_OPTS[prod.category] || [{ name: 'Стандарт', available: true }])
+        ));
+        renderEditProductOptionsList();
+        document.getElementById('admin-edit-prod-modal').classList.add('active');
+    }
+
+    function closeAdminEditProductModal() {
+        document.getElementById('admin-edit-prod-modal').classList.remove('active');
+    }
+
+    function renderEditProductOptionsList() {
+        const box = document.getElementById('edit-prod-options-list');
+        if (!box) return;
+        box.innerHTML = editingProductOptions.map((opt, idx) => `
+            <div class="admin-toggle-row">
+                <span style="flex:1; ${opt.available === false ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${opt.name}</span>
+                <button class="toggle-pill ${opt.available !== false ? 'on' : 'off'}" onclick="adminToggleEditOptAvail(${idx})">${opt.available !== false ? 'Есть' : 'Нет'}</button>
+                <button class="toggle-pill off" onclick="adminRemoveEditOpt(${idx})">✕</button>
+            </div>
+        `).join('');
+    }
+
+    function adminAddOptionToEditModal() {
+        const input = document.getElementById('edit-prod-new-opt');
+        const val = (input?.value || '').trim();
+        if (!val) return;
+        editingProductOptions.push({ name: val, available: true });
+        input.value = '';
+        renderEditProductOptionsList();
+    }
+
+    function adminToggleEditOptAvail(idx) {
+        if (editingProductOptions[idx]) {
+            editingProductOptions[idx].available = !(editingProductOptions[idx].available !== false);
+            renderEditProductOptionsList();
+        }
+    }
+
+    function adminRemoveEditOpt(idx) {
+        editingProductOptions.splice(idx, 1);
+        renderEditProductOptionsList();
+    }
+
+    async function adminSaveEditedProduct() {
+        const id = parseInt(document.getElementById('edit-prod-id').value, 10);
+        const prod = products.find(p => p.id === id);
+        if (!prod) return;
+
+        const title = document.getElementById('edit-prod-title').value.trim();
+        const category = document.getElementById('edit-prod-cat').value;
+        const icon = document.getElementById('edit-prod-icon').value.trim() || '🧪';
+        const price = parseFloat(document.getElementById('edit-prod-price').value);
+        const old_price = parseFloat(document.getElementById('edit-prod-old-price').value) || 0;
+        const image_url = document.getElementById('edit-prod-img').value.trim();
+
+        if (!title || isNaN(price) || price <= 0) { alert("Укажите название и цену"); return; }
+        const autoDiscount = old_price > price ? true : Boolean(prod.has_discount && old_price > 0);
+
+        try {
+            await apiFetch(`/api/admin/save_product`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId), id, title, category, price, old_price,
+                    tag: prod.tag || '', icon, available: prod.available !== false,
+                    image_url, has_discount: autoDiscount, low_stock: Boolean(prod.low_stock),
+                    options: editingProductOptions
+                })
+            });
+            closeAdminEditProductModal();
+            await syncShopConfig();
+        } catch (e) { alert("Ошибка сохранения."); }
+    }
+
+    async function adminDeleteProduct(productId) {
+        if (!confirm("Удалить этот товар из каталога?")) return;
+        try {
+            await apiFetch(`/api/admin/delete_product`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), product_id: productId })
+            });
+            await syncShopConfig();
+        } catch (e) {}
+    }
+
+    function renderAdminPromos() {
+        const container = document.getElementById('admin-promos-list');
+        if (!container) return;
+        const entries = Object.entries(promoCodes);
+        if (entries.length === 0) { container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Активных промокодов нет</div>'; return; }
+        container.innerHTML = entries.map(([code, raw]) => {
+            const p = normalizePromoObj(raw);
+            const discStr = p.type === 'percent' ? `${p.discount}%` : `${p.discount.toFixed(2)} р.`;
+            const limitStr = p.max_uses > 0 ? ` • исп. ${p.used_count}/${p.max_uses}` : ` • исп. ${p.used_count}/∞`;
+            return `<div class="admin-toggle-row"><span><b style="color:var(--accent-green);">${code}</b> (-${discStr})<span style="font-size:11px; color:var(--text-secondary);">${limitStr}</span></span><button class="toggle-pill off" onclick="adminDeletePromo('${code}')">Удалить</button></div>`;
+        }).join('');
+    }
+
+    async function adminSavePromo() {
+        const code = document.getElementById('admin-promo-code').value.trim().toUpperCase();
+        const discount = parseFloat(document.getElementById('admin-promo-discount').value);
+        const discount_type = document.getElementById('admin-promo-type')?.value || 'rub';
+        const max_uses = parseInt(document.getElementById('admin-promo-limit')?.value || '0', 10) || 0;
+        if (!code || isNaN(discount) || discount <= 0) { alert("Укажите корректный код и размер скидки"); return; }
+        promoCodes[code] = { discount, type: discount_type, max_uses, used_count: 0 };
+        localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
+        document.getElementById('admin-promo-code').value = ''; document.getElementById('admin-promo-discount').value = ''; document.getElementById('admin-promo-limit').value = '';
+        renderAdminPromos();
+        try {
+            await apiFetch(`/api/admin/save_promo`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), code, discount, discount_type, max_uses })
+            });
+            await syncShopConfig();
+        } catch (e) { alert("Промокод сохранён только локально! Нет связи с сервером."); }
+    }
+
+    async function adminDeletePromo(code) {
+        delete promoCodes[code]; localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes)); renderAdminPromos();
+        try {
+            await apiFetch(`/api/admin/delete_promo`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: Number(currentUserId), code })
+            });
+        } catch (e) {}
+    }
+
+    function switchAdminMetroLine(line, el) {
+        adminMetroLine = line;
+        el.parentElement.querySelectorAll('.metro-tab').forEach(t => t.className = 'metro-tab');
+        el.className = `metro-tab active-${line}`;
+        renderAdminMetro();
+    }
+
+    function renderAdminMetro() {
+        const container = document.getElementById('admin-metro-list');
+        if (!container) return;
+        container.innerHTML = (metroStations[adminMetroLine] || []).map(st => {
+            const isDisabled = disabledStations.includes(st.name);
+            const esc = st.name.replace(/'/g, "\\'");
+            return `
+                <div class="admin-toggle-row">
+                    <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">${st.name}</span>
+                    <button class="toggle-pill ${isDisabled ? 'off' : 'on'}" onclick="adminToggleStation('${esc}')">${isDisabled ? 'Отключена' : 'Работает'}</button>
+                    <button class="toggle-pill off" onclick="adminDeleteStation('${esc}')">✕</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function adminAddStation() {
+        const input = document.getElementById('admin-new-station-input');
+        const stName = (input?.value || '').trim();
+        if (!stName) return;
+        input.value = '';
+        try {
+            await apiFetch(`/api/admin/manage_metro`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), line: adminMetroLine, station: stName, action: 'add' })
+            });
+            await syncShopConfig();
+        } catch (e) { alert("Ошибка добавления станции."); }
+    }
+
+    async function adminDeleteStation(stationName) {
+        if (!confirm(`Удалить станцию "${stationName}" со списка?`)) return;
+        try {
+            await apiFetch(`/api/admin/manage_metro`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), line: adminMetroLine, station: stationName, action: 'delete' })
+            });
+            await syncShopConfig();
+        } catch (e) {}
+    }
+
+    async function adminToggleStation(stationName) {
+        disabledStations = disabledStations.includes(stationName) ? disabledStations.filter(s => s !== stationName) : [...disabledStations, stationName];
+        localStorage.setItem('monkey_disabled_stations', JSON.stringify(disabledStations));
+        ensureValidSelectedStationAndTime(); renderAdminMetro(); renderModalStations(modalCurrentLine); renderStations(currentLine); renderCart();
+        try {
+            await apiFetch(`/api/admin/toggle_station`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: Number(currentUserId), station: stationName })
+            });
+        } catch (e) {}
+    }
+
+    function renderAdminTimes() {
+        const container = document.getElementById('admin-time-list');
+        if (!container) return;
+        container.innerHTML = ALL_TIME_SLOTS.map(t => {
+            const isDisabled = disabledTimes.includes(t);
+            return `
+                <div class="admin-toggle-row">
+                    <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">⏰ ${t}</span>
+                    <button class="toggle-pill ${isDisabled ? 'off' : 'on'}" onclick="adminToggleTime('${t}')">${isDisabled ? 'Отключено' : 'Доступно'}</button>
+                    <button class="toggle-pill off" onclick="adminDeleteTimeSlot('${t}')">✕</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function adminAddTimeSlot() {
+        const input = document.getElementById('admin-new-time-input');
+        const tVal = (input?.value || '').trim();
+        if (!tVal) return;
+        input.value = '';
+        try {
+            await apiFetch(`/api/admin/manage_time`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), time: tVal, action: 'add' })
+            });
+            await syncShopConfig();
+        } catch (e) { alert("Ошибка добавления времени."); }
+    }
+
+    async function adminDeleteTimeSlot(timeStr) {
+        if (!confirm(`Удалить слот времени "${timeStr}"?`)) return;
+        try {
+            await apiFetch(`/api/admin/manage_time`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), time: timeStr, action: 'delete' })
+            });
+            await syncShopConfig();
+        } catch (e) {}
+    }
+
+    async function adminToggleTime(timeStr) {
+        disabledTimes = disabledTimes.includes(timeStr) ? disabledTimes.filter(t => t !== timeStr) : [...disabledTimes, timeStr];
+        localStorage.setItem('monkey_disabled_times', JSON.stringify(disabledTimes));
+        ensureValidSelectedStationAndTime(); renderAdminTimes(); renderCheckoutTimeSlots(); renderChangeTimeSlots();
+        try {
+            await apiFetch(`/api/admin/toggle_time`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: Number(currentUserId), time: timeStr })
+            });
+        } catch (e) {}
+    }
+
+    function renderAdminRoles() {
+        const oBox = document.getElementById('admin-owners-list');
+        const cBox = document.getElementById('admin-couriers-list'), bBox = document.getElementById('admin-banned-list');
+        if (oBox) {
+            oBox.innerHTML = DYNAMIC_OWNER_IDS.map(oid => {
+                const isPrimary = PRIMARY_OWNER_IDS.includes(oid);
+                return `<div class="admin-toggle-row"><span>ID: <b>${oid}</b> ${isPrimary ? '<span style="color:var(--accent-green); font-size:11px;">(Главный)</span>' : '<span style="color:var(--accent-green); font-size:11px;">(Админ)</span>'}</span>${!isPrimary ? `<button class="toggle-pill off" onclick="adminManageRole('remove_owner', ${oid})">Убрать</button>` : ''}</div>`;
+            }).join('');
+        }
+        if (cBox) {
+            cBox.innerHTML = DYNAMIC_COURIER_IDS.map(cid => {
+                const isOwner = DYNAMIC_OWNER_IDS.includes(cid);
+                return `<div class="admin-toggle-row"><span>ID: <b>${cid}</b> ${isOwner ? '<span style="color:var(--accent-green); font-size:11px;">(Админ)</span>' : ''}</span>${!isOwner ? `<button class="toggle-pill off" onclick="adminManageRole('remove_courier', ${cid})">Убрать</button>` : ''}</div>`;
+            }).join('');
+        }
+        if (bBox) {
+            bBox.innerHTML = BANNED_USER_IDS.length === 0 ? '<div style="font-size:11.5px; color:var(--text-secondary);">Заблокированных пользователей нет</div>' : BANNED_USER_IDS.map(bid => `<div class="admin-toggle-row"><span>ID: <b style="color:var(--danger);">${bid}</b></span><button class="toggle-pill on" onclick="adminManageRole('unban_user', ${bid})">Разбанить</button></div>`).join('');
+        }
+    }
+
+    async function adminManageRole(action, explicitId = null) {
+        let targetId = explicitId;
+        if (!targetId) {
+            const mapInp = { add_owner: 'admin-owner-id-input', add_courier: 'admin-courier-id-input', ban_user: 'admin-ban-id-input' };
+            const el = document.getElementById(mapInp[action]);
+            targetId = parseInt(el?.value || '0', 10);
+            if (!targetId || targetId <= 0) { alert("Введите корректный цифровой Telegram ID"); return; }
+            if (el) el.value = '';
+        }
+        try {
+            await apiFetch(`/api/admin/manage_role`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), target_id: Number(targetId), action })
+            });
+            await syncShopConfig();
+        } catch (e) { alert("Не удалось выполнить действие."); }
+    }
+
+    async function loadBroadcastHistory() {
+        if (!isCurrentUserOwner()) return;
+        try {
+            const data = await (await apiFetch(`/api/admin/broadcast_history/${currentUserId}`)).json();
+            const countEl = document.getElementById('admin-subscribers-count'), listEl = document.getElementById('admin-broadcast-history');
+            if (countEl) countEl.innerText = `${data.subscribers_count || 0} чел.`;
+            if (listEl) {
+                const hist = data.history || [];
+                listEl.innerHTML = hist.length === 0 ? '<div style="font-size:11.5px; color:var(--text-secondary);">Рассылок ещё не было</div>' : hist.map(h => `<div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:10px; padding:9px 10px; margin-bottom:7px; font-size:11.5px;"><div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--text-secondary);"><span>📅 ${h.created_at}</span><span style="color:var(--accent-green); font-weight:700;">✅ ${h.sent} / ❌ ${h.failed}</span></div><div style="color:var(--text-main); word-break:break-word;">${h.text}</div></div>`).join('');
+            }
+        } catch (e) {}
+    }
+
+    async function adminSendBroadcast() {
+        const textArea = document.getElementById('admin-broadcast-text'), btn = document.getElementById('admin-broadcast-btn'), resBox = document.getElementById('admin-broadcast-result');
+        const text = (textArea?.value || '').trim();
+        if (!text) { alert("Введите текст объявления."); return; }
+        if (!confirm("Отправить это сообщение всем пользователям бота?")) return;
+        btn.disabled = true; btn.innerText = "⏳ Отправка..."; resBox.innerText = "";
+        try {
+            const data = await (await apiFetch(`/api/admin/broadcast`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), text })
+            })).json();
+            textArea.value = ""; resBox.style.color = "var(--accent-green)";
+            resBox.innerText = `✅ Доставлено: ${data.sent} из ${data.total} (недоступны: ${data.failed})`;
+            loadBroadcastHistory();
+        } catch (e) {
+            resBox.style.color = "var(--danger)"; resBox.innerText = "🔴 Ошибка отправки! Проверь связь с сервером.";
+        } finally { btn.disabled = false; btn.innerText = "📢 Отправить всем"; }
+    }
+
+    // ----- ПАНЕЛЬ КУРЬЕРА -----
+
+    async function claimOrderByCourier(orderId) {
+        const key = String(orderId).trim();
+        try {
+            const res = await apiFetch(`/api/courier/claim_order`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: key, courier_id: Number(currentUserId), courier_name: currentUserName })
+            });
+            if (res.ok) loadCourierOrders();
+        } catch (e) {
+            alert("Не удалось взять заказ (возможно, его уже забрал другой курьер).");
+            loadCourierOrders();
+        }
+    }
+
+    async function notifyClientCourierArrived(orderId) {
+        const key = String(orderId).trim();
+        try {
+            await apiFetch(`/api/courier/arrived`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: key, courier_id: Number(currentUserId), courier_name: currentUserName })
+            });
+            alert("📍 Клиенту отправлено уведомление, что вы на месте!");
+        } catch (e) { alert("Ошибка отправки уведомления."); }
+    }
+
+    function renderCourierCards(orders) {
+        const container = document.getElementById('courier-orders-list');
+        if (!container) return;
+        cachedCourierOrders = deduplicateOrdersList(orders || []);
+        const visibleOrders = cachedCourierOrders.filter(o => {
+            if (hiddenCourierOrderIds.includes(String(o.id).trim()) || o.hidden_by_courier) return false;
+            const cId = Number(o.claimed_by_id || 0);
+            if (cId !== 0 && cId !== Number(currentUserId)) return false;
+            return true;
+        });
+        const activeCourierList = visibleOrders.filter(o => o.status === 'active');
+        const pastCourierList = visibleOrders.filter(o => o.status === 'completed' || o.status === 'cancelled');
+
+        const aEl = document.getElementById('courier-active-count'), pEl = document.getElementById('courier-past-count');
+        if (aEl) aEl.innerText = activeCourierList.length;
+        if (pEl) pEl.innerText = pastCourierList.length;
+
+        const listToRender = currentCourierSubTab === 'active' ? activeCourierList : pastCourierList;
+        if (listToRender.length === 0) {
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${currentCourierSubTab === 'active' ? '✅' : '🗂️'}</div><p>${currentCourierSubTab === 'active' ? 'Нет активных заказов для доставки' : 'Прошедших заказов пока нет'}</p></div>`;
+            return;
+        }
+
+        let html = '';
+        listToRender.forEach(ord => {
+            const oid = String(ord.id).trim();
+            const claimedId = Number(ord.claimed_by_id || 0);
+            const isClaimedByMe = claimedId && claimedId === Number(currentUserId);
+            const isClaimedByOther = claimedId && claimedId !== Number(currentUserId);
+
+            let itemsList = ord.items.map(i => `<div>• ${i.title} × ${i.qty} (${(i.price * i.qty).toFixed(2)} р.)</div>`).join('');
+            let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+            let statusHtml = `<span class="order-status-pill active">Активен</span>`;
+            if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
+            else if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
+
+            let claimedBanner = claimedId
+                ? `<div style="font-size:11.5px; font-weight:700; color:${isClaimedByMe ? 'var(--accent-green)' : '#ffaa00'}; background:rgba(255,255,255,0.04); padding:5px 8px; border-radius:8px;">🛵 ${isClaimedByMe ? 'Вы ведёте этот заказ' : `Взял курьер: ${ord.claimed_by_name}`}</div>`
+                : '';
+
+            let deleteBtn = (ord.status === 'completed' || ord.status === 'cancelled') ? `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${oid}')">✕</button>` : '';
+            
+            const cleanUsername = (ord.user_name || '').startsWith('@') ? ord.user_name.slice(1) : '';
+            const chatHref = cleanUsername ? `https://t.me/${cleanUsername}` : `tg://user?id=${ord.user_id}`;
+
+            let courierActions = '';
+            if (ord.status === 'active') {
+                const claimBtn = !claimedId
+                    ? `<button onclick="claimOrderByCourier('${oid}')" style="width:100%; background:rgba(0,229,255,0.14); border:1px solid #00e5ff; color:#00e5ff; padding:10px; border-radius:11px; font-size:12px; font-weight:700; cursor:pointer;">🙋‍♂️ Взять заказ в работу</button>`
+                    : '';
+                courierActions = `
+                    ${claimBtn}
+                    <div class="order-actions-row">
+                        <button class="order-btn-secondary" onclick="notifyClientCourierArrived('${oid}')">📍 Я на месте</button>
+                        <a class="order-btn-secondary" href="${chatHref}" target="_blank">💬 Написать</a>
+                    </div>
+                    <div class="order-actions-row">
+                        <button onclick="updateOrderStatusByCourier('${oid}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:11px; border-radius:12px; font-weight:700; cursor:pointer; ${isClaimedByOther ? 'opacity:0.65;' : ''}">✅ Выдан</button>
+                        <button onclick="updateOrderStatusByCourier('${oid}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
+                    </div>
+                `;
+            }
+
+            let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
+            let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${ord.created_at}</b></div>` : '';
+
+            html += `
+                <div class="order-card">
+                    <div class="order-card-header">
+                        <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
+                            <span class="order-id-label">Заказ #${oid}</span>
+                            <span style="color:var(--text-secondary); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">👤 ${ord.user_name || 'User'}</span>
+                            <span style="display:inline-flex; align-items:center; gap:4px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; width:fit-content; white-space:nowrap; user-select:all;">🆔 ${ord.user_id || '0'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">${statusHtml}${deleteBtn}</div>
+                    </div>
+                    ${claimedBanner}
+                    <div class="order-meta-grid">${createdAtHtml}<div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${ord.station}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${ord.time}</b> ${timeNoteCourier}</div></div>
+                    <div class="order-items-box">${itemsList}${promoBadgeCourier}</div>
+                    <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">Итого к оплате:</span><span class="order-total-price">${ord.total.toFixed(2)} р.</span></div>
+                    ${courierActions}
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    async function loadCourierOrders() {
+        try { renderCourierCards(await (await apiFetch(`/api/orders?courier_id=${Number(currentUserId || 0)}`)).json()); }
+        catch (e) { renderCourierCards(cachedCourierOrders); }
+    }
+
+    async function updateOrderStatusByCourier(orderId, status) {
+        const key = String(orderId).trim(), cancelledBy = status === 'cancelled' ? 'courier' : '';
+        cachedCourierOrders = cachedCourierOrders.map(o => String(o.id).trim() === key ? { ...o, id: key, status, cancelled_by: cancelledBy || o.cancelled_by || '' } : o);
+        renderCourierCards(cachedCourierOrders);
+        activeOrders = activeOrders.map(o => String(o.id).trim() === key ? { ...o, id: key, status, cancelled_by: cancelledBy || o.cancelled_by || '' } : o);
+        localStorage.setItem('monkey_orders', JSON.stringify(activeOrders)); renderOrders();
+        try {
+            await apiFetch(`/api/update_order_status`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: key, status, cancelled_by: cancelledBy,
+                    courier_id: Number(currentUserId), courier_name: currentUserName
+                })
+            });
+        } catch (e) {}
+        loadCourierOrders();
+    }
+    setInterval(() => { if (document.getElementById('screen-courier').classList.contains('active')) loadCourierOrders(); }, 3500);
+
+    function switchScreen(screenName) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(`screen-${screenName}`)?.classList.add('active');
+        const navItems = document.querySelectorAll('.nav-item');
+        const mapIdx = { catalog: 0, cart: 1, orders: 2, profile: 3, courier: 4 };
+        if (navItems[mapIdx[screenName]]) navItems[mapIdx[screenName]].classList.add('active');
+        syncShopConfig();
+        if (screenName === 'orders') { syncClientOrdersStatus(); renderOrders(); }
+        if (screenName === 'profile') {
+            updateProfileAvatarUI();
+            if (isCurrentUserOwner()) { loadAdminStats(); loadBroadcastHistory(); }
+        }
+        if (screenName === 'courier') loadCourierOrders();
+    }
+
+    ensureValidSelectedStationAndTime();
+    renderProducts(products);
+    renderStations('green');
+    renderCheckoutTimeSlots();
+    saveCart();
+    renderCart();
+    renderOrders();
+</script>
+</body>
+</html>
