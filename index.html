@@ -651,7 +651,8 @@
                             <button class="toggle-pill" id="season-btn-winter" onclick="adminSetSeason('winter')">❄️ Зима (Снег)</button>
                             <button class="toggle-pill" id="season-btn-autumn" onclick="adminSetSeason('autumn')">🍂 Осень (Листья)</button>
                             <button class="toggle-pill" id="season-btn-spring" onclick="adminSetSeason('spring')">🌸 Весна (Лепестки)</button>
-                            <button class="toggle-pill" style="grid-column: span 2;" id="season-btn-summer" onclick="adminSetSeason('summer')">✨ Лето (Тёплые искры)</button>
+                            <button class="toggle-pill" id="season-btn-summer" onclick="adminSetSeason('summer')">✨ Лето (Искры)</button>
+                            <button class="toggle-pill" id="season-btn-rain" onclick="adminSetSeason('rain')">🌧 Дождь</button>
                         </div>
                     </div>
                     <div class="shop-master-box">
@@ -688,6 +689,14 @@
                 </div>
 
                 <div id="admin-tab-roles" style="display: none;">
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">👑 Админы / Владельцы (Telegram ID)</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="number" id="admin-owner-id-input" class="promo-input" style="text-transform:none;" placeholder="ID второго админа">
+                            <button type="button" class="promo-apply-btn" onclick="adminManageRole('add_owner')">+</button>
+                        </div>
+                        <div id="admin-owners-list"></div>
+                    </div>
                     <div style="margin-bottom:14px;">
                         <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">🛵 Курьеры (Telegram ID)</div>
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
@@ -804,7 +813,7 @@
         canvas.width = rect.width; canvas.height = rect.height;
 
         // Спокойное количество и медленная скорость, чтобы не отвлекать
-        const count = currentSeasonEffect === 'winter' ? 14 : 9;
+        const count = currentSeasonEffect === 'rain' ? 22 : (currentSeasonEffect === 'winter' ? 14 : 9);
         const autumnColors = ['#ff7b00', '#e64a19', '#ffb300', '#d84315'];
         const springColors = ['#ffb7c5', '#ff8da1', '#ffd1dc', '#ffffff'];
 
@@ -812,8 +821,9 @@
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
             r: currentSeasonEffect === 'winter' ? (1.3 + Math.random() * 1.6) : (2.6 + Math.random() * 2.4),
-            speedY: currentSeasonEffect === 'summer' ? -(0.16 + Math.random() * 0.25) : (0.24 + Math.random() * 0.36),
-            speedX: (Math.random() - 0.5) * 0.25,
+            len: 9 + Math.random() * 6,
+            speedY: currentSeasonEffect === 'rain' ? (3.0 + Math.random() * 1.6) : (currentSeasonEffect === 'summer' ? -(0.16 + Math.random() * 0.25) : (0.24 + Math.random() * 0.36)),
+            speedX: currentSeasonEffect === 'rain' ? -0.5 : ((Math.random() - 0.5) * 0.25),
             angle: Math.random() * Math.PI * 2,
             spin: (Math.random() - 0.5) * 0.015,
             color: currentSeasonEffect === 'autumn' ? autumnColors[Math.floor(Math.random() * autumnColors.length)]
@@ -831,7 +841,13 @@
                 if (p.x > canvas.width + 10) p.x = -8;
                 if (p.x < -10) p.x = canvas.width + 8;
 
-                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+                ctx.save();
+                if (currentSeasonEffect === 'rain') {
+                    ctx.strokeStyle = 'rgba(135, 206, 250, 0.36)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 2, p.y + p.len); ctx.stroke();
+                    ctx.restore(); return;
+                }
+                ctx.translate(p.x, p.y); ctx.rotate(p.angle);
                 if (currentSeasonEffect === 'winter') {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
                     ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
@@ -853,7 +869,7 @@
     const apiFromUrl = urlParamsGlobal.get('api');
     if (apiFromUrl) localStorage.setItem('monkey_backend_url', apiFromUrl);
 
-    const DEFAULT_TUNNEL_URL = "https://relax-indoor-claims-iso.trycloudflare.com";
+    const DEFAULT_TUNNEL_URL = "https://ntwdj-2a09-bac1-13a0-8--420-1c.free.pinggy.net";
     let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
     const CANDIDATE_BACKENDS = Array.from(new Set([
         apiFromUrl, DEFAULT_TUNNEL_URL, localStorage.getItem('monkey_backend_url'), "http://127.0.0.1:8000", "http://localhost:8000"
@@ -884,10 +900,13 @@
         throw new Error("Server unreachable");
     }
 
-    const OWNER_IDS = [7280921605];
+    const PRIMARY_OWNER_IDS = [7280921605];
+    let DYNAMIC_OWNER_IDS = [7280921605];
     let DYNAMIC_COURIER_IDS = [7280921605, 6658906694, 1335426710];
+    function isCurrentUserOwner() { return DYNAMIC_isCurrentUserOwner(); }
+    function isCurrentUserCourier() { return DYNAMIC_COURIER_IDS.includes(Number(currentUserId)) || isCurrentUserOwner(); }
     let BANNED_USER_IDS = [];
-    let isShopOpen = true, shopClosedMessage = "Магазин временно закрыт. Попробуйте оформить заказ позже.";
+    let isShopOpen = true, shopClosedMessage = "Магазин сейчас не работает, попробуйте позже.";
     let hitHighlightColor = localStorage.getItem('monkey_hit_color') || "#ffcc00";
 
     const HIT_COLOR_PALETTE = [
@@ -1014,14 +1033,22 @@
     }
 
     function showRoleTabsIfAllowed() {
-        const uidNum = Number(currentUserId);
         const courierNavBtn = document.getElementById('nav-courier-btn');
         const ownerAdminPanel = document.getElementById('owner-admin-panel');
-        if (courierNavBtn) courierNavBtn.style.display = DYNAMIC_COURIER_IDS.includes(uidNum) ? 'flex' : 'none';
-        if (ownerAdminPanel && OWNER_IDS.includes(uidNum)) {
-            ownerAdminPanel.style.display = 'block';
-            renderAdminShopMaster(); renderAdminAppearance(); renderAdminPromos();
-            renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles();
+        const useridElem = document.getElementById('profile-userid-text');
+        if (courierNavBtn) courierNavBtn.style.display = isCurrentUserCourier() ? 'flex' : 'none';
+        if (ownerAdminPanel) {
+            if (isCurrentUserOwner()) {
+                ownerAdminPanel.style.display = 'block';
+                renderAdminShopMaster(); renderAdminAppearance(); renderAdminPromos();
+                renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles();
+            } else {
+                ownerAdminPanel.style.display = 'none';
+            }
+        }
+        if (useridElem) {
+            const roleText = isCurrentUserOwner() ? 'Владелец (Админ)' : (isCurrentUserCourier() ? 'Курьер' : 'Покупатель');
+            useridElem.innerText = currentUserId ? `ID: ${currentUserId} • ${roleText}` : 'Telegram User';
         }
     }
 
@@ -1042,11 +1069,11 @@
         }
         if (!currentUserId && uidFromUrl) currentUserId = Number(uidFromUrl);
         if (currentUserName === "User" && unameFromUrl) currentUserName = unameFromUrl;
-        if (roleFromUrl === 'owner' || roleFromUrl === 'courier') {
-            const btn = document.getElementById('nav-courier-btn'); if (btn) btn.style.display = 'flex';
+        if (roleFromUrl === 'owner' && currentUserId && !DYNAMIC_OWNER_IDS.includes(Number(currentUserId))) {
+            DYNAMIC_OWNER_IDS.push(Number(currentUserId));
         }
-        if (roleFromUrl === 'owner') {
-            const pnl = document.getElementById('owner-admin-panel'); if (pnl) pnl.style.display = 'block';
+        if ((roleFromUrl === 'owner' || roleFromUrl === 'courier') && currentUserId && !DYNAMIC_COURIER_IDS.includes(Number(currentUserId))) {
+            DYNAMIC_COURIER_IDS.push(Number(currentUserId));
         }
 
         const usernameElem = document.getElementById('profile-username');
@@ -1054,7 +1081,7 @@
         if (usernameElem) usernameElem.innerText = currentUserName;
         updateProfileAvatarUI();
         if (useridElem) {
-            const isOwner = OWNER_IDS.includes(Number(currentUserId));
+            const isOwner = isCurrentUserOwner();
             const isCourier = DYNAMIC_COURIER_IDS.includes(Number(currentUserId));
             const roleText = isOwner ? 'Владелец (Админ)' : (isCourier ? 'Курьер' : 'Покупатель');
             useridElem.innerText = currentUserId ? `ID: ${currentUserId} • ${roleText}` : 'Telegram User';
@@ -1131,6 +1158,7 @@
                 if (cfg.metro_stations) { metroStations = cfg.metro_stations; localStorage.setItem('monkey_metro_map', JSON.stringify(metroStations)); }
                 if (Array.isArray(cfg.products) && cfg.products.length > 0) products = cfg.products;
                 if (Array.isArray(cfg.banned_users)) BANNED_USER_IDS = cfg.banned_users.map(Number);
+                if (Array.isArray(cfg.owner_ids)) DYNAMIC_OWNER_IDS = cfg.owner_ids.map(Number);
                 if (Array.isArray(cfg.courier_ids)) DYNAMIC_COURIER_IDS = cfg.courier_ids.map(Number);
 
                 localStorage.setItem('monkey_disabled_stations', JSON.stringify(disabledStations));
@@ -1463,7 +1491,7 @@
         const discountRowHtml = actualDiscount > 0 ? `<div class="summary-row"><span style="color:var(--accent-green);">Скидка (${appliedPromoCode}):</span><span style="color:var(--accent-green); font-weight:700;">-${actualDiscount.toFixed(2)} р.</span></div>` : '';
         let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>`;
         if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
-        else if (!isShopOpen && !OWNER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${shopClosedMessage}</div>`;
+        else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${shopClosedMessage}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:rgba(0,255,102,0.16); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
 
         container.innerHTML = itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
@@ -1509,7 +1537,7 @@
     function proceedToCheckout() {
         if (Object.keys(cart).length === 0) { switchScreen('cart'); return; }
         if (BANNED_USER_IDS.includes(Number(currentUserId))) { alert("Ваш аккаунт заблокирован в магазине."); return; }
-        if (!isShopOpen && !OWNER_IDS.includes(Number(currentUserId))) { alert(shopClosedMessage); return; }
+        if (!isShopOpen) { alert(`🔴 ${shopClosedMessage}`); return; }
         syncShopConfig(); ensureValidSelectedStationAndTime(); switchScreen('checkout'); renderStations(currentLine); renderCheckoutTimeSlots();
     }
 
@@ -1570,7 +1598,19 @@
         });
     }
 
+    async function subscribeShopOpenNotify() {
+        if (!currentUserId) { alert("Откройте магазин внутри Telegram, чтобы получить уведомление."); return; }
+        try {
+            await apiFetch(`/api/subscribe_shop_open`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId) })
+            });
+            alert("🔔 Готово! Как только магазин снова откроется, бот пришлёт вам уведомление в личку.");
+        } catch (e) { alert("Не удалось подписаться. Проверьте соединение."); }
+    }
+
     async function confirmOrderFinal() {
+        if (!isShopOpen) { alert(`🔴 ${shopClosedMessage}`); switchScreen('cart'); return; }
         const items = Object.values(cart);
         if (items.length === 0) { switchScreen('cart'); return; }
         if (!selectedStation || disabledStations.includes(selectedStation)) { alert("Выбранная станция метро недоступна."); return; }
@@ -1839,7 +1879,7 @@
     }
 
     function renderAdminAppearance() {
-        ['none', 'winter', 'autumn', 'spring', 'summer'].forEach(s => {
+        ['none', 'winter', 'autumn', 'spring', 'summer', 'rain'].forEach(s => {
             const btn = document.getElementById(`season-btn-${s}`);
             if (btn) {
                 btn.className = `toggle-pill ${currentSeasonEffect === s ? 'on' : ''}`;
@@ -1907,7 +1947,7 @@
 
     async function loadAdminStats() {
         const box = document.getElementById('admin-stats-content');
-        if (!box || !OWNER_IDS.includes(Number(currentUserId))) return;
+        if (!box || !isCurrentUserOwner()) return;
         try {
             const st = await (await apiFetch(`/api/admin/stats/${currentUserId}`)).json();
             const topItemsHtml = st.top_items?.length ? st.top_items.map((it, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. ${it.title}</span><b style="color:var(--accent-green);">${it.qty} шт.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Пока нет выданных заказов</div>';
@@ -2292,11 +2332,18 @@
     }
 
     function renderAdminRoles() {
+        const oBox = document.getElementById('admin-owners-list');
         const cBox = document.getElementById('admin-couriers-list'), bBox = document.getElementById('admin-banned-list');
+        if (oBox) {
+            oBox.innerHTML = DYNAMIC_OWNER_IDS.map(oid => {
+                const isPrimary = PRIMARY_OWNER_IDS.includes(oid);
+                return `<div class="admin-toggle-row"><span>ID: <b>${oid}</b> ${isPrimary ? '<span style="color:var(--accent-green); font-size:11px;">(Главный)</span>' : '<span style="color:var(--accent-green); font-size:11px;">(Админ)</span>'}</span>${!isPrimary ? `<button class="toggle-pill off" onclick="adminManageRole('remove_owner', ${oid})">Убрать</button>` : ''}</div>`;
+            }).join('');
+        }
         if (cBox) {
             cBox.innerHTML = DYNAMIC_COURIER_IDS.map(cid => {
-                const isOwner = OWNER_IDS.includes(cid);
-                return `<div class="admin-toggle-row"><span>ID: <b>${cid}</b> ${isOwner ? '<span style="color:var(--accent-green); font-size:11px;">(Владелец)</span>' : ''}</span>${!isOwner ? `<button class="toggle-pill off" onclick="adminManageRole('remove_courier', ${cid})">Убрать</button>` : ''}</div>`;
+                const isOwner = DYNAMIC_OWNER_IDS.includes(cid);
+                return `<div class="admin-toggle-row"><span>ID: <b>${cid}</b> ${isOwner ? '<span style="color:var(--accent-green); font-size:11px;">(Админ)</span>' : ''}</span>${!isOwner ? `<button class="toggle-pill off" onclick="adminManageRole('remove_courier', ${cid})">Убрать</button>` : ''}</div>`;
             }).join('');
         }
         if (bBox) {
@@ -2307,7 +2354,8 @@
     async function adminManageRole(action, explicitId = null) {
         let targetId = explicitId;
         if (!targetId) {
-            const el = document.getElementById(action === 'add_courier' ? 'admin-courier-id-input' : 'admin-ban-id-input');
+            const mapInp = { add_owner: 'admin-owner-id-input', add_courier: 'admin-courier-id-input', ban_user: 'admin-ban-id-input' };
+            const el = document.getElementById(mapInp[action]);
             targetId = parseInt(el?.value || '0', 10);
             if (!targetId || targetId <= 0) { alert("Введите корректный цифровой Telegram ID"); return; }
             if (el) el.value = '';
@@ -2322,7 +2370,7 @@
     }
 
     async function loadBroadcastHistory() {
-        if (!OWNER_IDS.includes(Number(currentUserId))) return;
+        if (!isCurrentUserOwner()) return;
         try {
             const data = await (await apiFetch(`/api/admin/broadcast_history/${currentUserId}`)).json();
             const countEl = document.getElementById('admin-subscribers-count'), listEl = document.getElementById('admin-broadcast-history');
@@ -2374,7 +2422,7 @@
         try {
             await apiFetch(`/api/courier/arrived`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: key, courier_name: currentUserName })
+                body: JSON.stringify({ order_id: key, courier_id: Number(currentUserId), courier_name: currentUserName })
             });
             alert("📍 Клиенту отправлено уведомление, что вы на месте!");
         } catch (e) { alert("Ошибка отправки уведомления."); }
@@ -2384,7 +2432,12 @@
         const container = document.getElementById('courier-orders-list');
         if (!container) return;
         cachedCourierOrders = deduplicateOrdersList(orders || []);
-        const visibleOrders = cachedCourierOrders.filter(o => !hiddenCourierOrderIds.includes(String(o.id).trim()) && !o.hidden_by_courier);
+        const visibleOrders = cachedCourierOrders.filter(o => {
+            if (hiddenCourierOrderIds.includes(String(o.id).trim()) || o.hidden_by_courier) return false;
+            const cId = Number(o.claimed_by_id || 0);
+            if (cId !== 0 && cId !== Number(currentUserId)) return false;
+            return true;
+        });
         const activeCourierList = visibleOrders.filter(o => o.status === 'active');
         const pastCourierList = visibleOrders.filter(o => o.status === 'completed' || o.status === 'cancelled');
 
@@ -2463,7 +2516,7 @@
     }
 
     async function loadCourierOrders() {
-        try { renderCourierCards(await (await apiFetch(`/api/orders`)).json()); }
+        try { renderCourierCards(await (await apiFetch(`/api/orders?courier_id=${Number(currentUserId || 0)}`)).json()); }
         catch (e) { renderCourierCards(cachedCourierOrders); }
     }
 
@@ -2497,7 +2550,7 @@
         if (screenName === 'orders') { syncClientOrdersStatus(); renderOrders(); }
         if (screenName === 'profile') {
             updateProfileAvatarUI();
-            if (OWNER_IDS.includes(Number(currentUserId))) { loadAdminStats(); loadBroadcastHistory(); }
+            if (isCurrentUserOwner()) { loadAdminStats(); loadBroadcastHistory(); }
         }
         if (screenName === 'courier') loadCourierOrders();
     }
