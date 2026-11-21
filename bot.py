@@ -33,7 +33,7 @@ def load_token_from_env():
             pass
     return None
 
-FALLBACK_TOKEN = "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
+FALLBACK_TOKEN = "ВСТАВЬ_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 TUNNEL_FILE = "tunnel_url.txt"
@@ -54,6 +54,21 @@ PUBLIC_TUNNEL_URL = load_tunnel_url()
 PRIMARY_OWNER_IDS = [7280921605]
 DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
 DB_FILE = "database.db"
+
+DEFAULT_UI_THEME = {
+    "bg_color": "#0b0f0c",
+    "topbar_bg": "#0b0f0c",
+    "bottomnav_bg": "#0b0f0c",
+    "card_bg": "#131b14",
+    "banner_bg": "#132b17",
+    "border_color": "#223525",
+    "accent_color": "#00ff66",
+    "icon_color": "#00ff66",
+    "logo_color_1": "#ffffff",
+    "logo_color_2": "#00ff66",
+    "text_main": "#ffffff",
+    "text_secondary": "#9ca3af"
+}
 
 DEFAULT_CATEGORIES = [
     {"id": "liquid", "name": "Жидкости"},
@@ -167,6 +182,20 @@ async def get_setting_list(db, key: str, default_list=None) -> list:
 async def set_setting_list(db, key: str, values: list):
     await set_setting_raw(db, key, json.dumps(values, ensure_ascii=False))
 
+async def get_ui_theme_dict(db) -> dict:
+    raw = await get_setting_raw(db, "ui_theme", "")
+    theme = dict(DEFAULT_UI_THEME)
+    if raw:
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                for k in DEFAULT_UI_THEME:
+                    if k in parsed and str(parsed[k]).strip():
+                        theme[k] = str(parsed[k]).strip()
+        except Exception:
+            pass
+    return theme
+
 async def get_shop_brand_name(db) -> str:
     p1 = (await get_setting_raw(db, "logo_part1", "MONKEY")).strip()
     p2 = (await get_setting_raw(db, "logo_part2", "VAPE")).strip()
@@ -207,8 +236,15 @@ async def get_all_owner_ids(db) -> list[int]:
 
 async def get_all_courier_ids(db) -> list[int]:
     extra = await get_setting_list(db, "extra_couriers")
+    removed_defaults = set()
+    for x in await get_setting_list(db, "removed_default_couriers"):
+        try:
+            removed_defaults.add(int(x))
+        except Exception:
+            pass
     owners = await get_all_owner_ids(db)
-    combined = set(DEFAULT_COURIER_IDS + owners)
+    base_defaults = [cid for cid in DEFAULT_COURIER_IDS if cid not in removed_defaults]
+    combined = set(base_defaults + owners)
     for x in extra:
         try:
             combined.add(int(x))
@@ -226,7 +262,7 @@ def build_personal_url(uid: int, uname: str = "User", is_owner: bool = False, is
     role = "client"
     if uid in PRIMARY_OWNER_IDS or is_owner:
         role = "owner"
-    elif uid in DEFAULT_COURIER_IDS or is_courier:
+    elif is_courier:
         role = "courier"
     url = f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}"
     if PUBLIC_TUNNEL_URL:
@@ -477,6 +513,11 @@ class AdminBrandingSchema(BaseModel):
     logo_part1: str
     logo_part2: str = ""
 
+class AdminUiThemeSchema(BaseModel):
+    user_id: int
+    theme: dict = {}
+    reset: bool = False
+
 class AdminChannelsSchema(BaseModel):
     user_id: int
     news_channel_url: str = ""
@@ -609,6 +650,7 @@ async def get_shop_config():
         time_slots = await get_setting_list(db, "time_slots", DEFAULT_TIME_SLOTS)
         metro_stations = await get_metro_map(db)
         categories = await get_categories_list(db)
+        ui_theme = await get_ui_theme_dict(db)
         shop_open_raw = await get_setting_raw(db, "shop_open", "1")
         closed_message = await get_setting_raw(db, "closed_message", "Магазин сейчас не работает, попробуйте позже.")
         season_effect = await get_setting_raw(db, "season_effect", "none")
@@ -663,6 +705,7 @@ async def get_shop_config():
             "closed_message": closed_message,
             "season_effect": season_effect,
             "hit_color": hit_color,
+            "ui_theme": ui_theme,
             "logo_part1": logo_part1,
             "logo_part2": logo_part2,
             "news_channel_url": news_channel_url,
@@ -685,6 +728,22 @@ async def get_shop_config():
             "owner_ids": owner_ids,
             "courier_ids": courier_ids
         }
+
+@app.post("/api/admin/ui_theme")
+async def update_admin_ui_theme(data: AdminUiThemeSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        if data.reset:
+            new_theme = dict(DEFAULT_UI_THEME)
+        else:
+            new_theme = await get_ui_theme_dict(db)
+            for k, v in (data.theme or {}).items():
+                if k in DEFAULT_UI_THEME and str(v).strip():
+                    new_theme[k] = str(v).strip()
+        await set_setting_raw(db, "ui_theme", json.dumps(new_theme, ensure_ascii=False))
+        await db.commit()
+    return {"success": True, "ui_theme": new_theme}
 
 @app.post("/api/admin/branding")
 async def update_admin_branding(data: AdminBrandingSchema):
@@ -1028,6 +1087,8 @@ async def admin_manage_role(data: AdminRoleManageSchema):
             owners = [int(x) for x in await get_setting_list(db, "extra_owners") if int(x) != tid]
             await set_setting_list(db, "extra_owners", owners)
         elif data.action == "add_courier":
+            removed_defs = [int(x) for x in await get_setting_list(db, "removed_default_couriers") if int(x) != tid]
+            await set_setting_list(db, "removed_default_couriers", removed_defs)
             couriers = [int(x) for x in await get_setting_list(db, "extra_couriers")]
             if tid not in couriers and tid not in DEFAULT_COURIER_IDS:
                 couriers.append(tid)
@@ -1035,6 +1096,11 @@ async def admin_manage_role(data: AdminRoleManageSchema):
         elif data.action == "remove_courier":
             couriers = [int(x) for x in await get_setting_list(db, "extra_couriers") if int(x) != tid]
             await set_setting_list(db, "extra_couriers", couriers)
+            if tid in DEFAULT_COURIER_IDS:
+                removed_defs = [int(x) for x in await get_setting_list(db, "removed_default_couriers")]
+                if tid not in removed_defs:
+                    removed_defs.append(tid)
+                    await set_setting_list(db, "removed_default_couriers", removed_defs)
         elif data.action == "ban_user":
             if await check_is_owner(db, tid):
                 raise HTTPException(status_code=400, detail="Cannot ban owner")
@@ -1200,8 +1266,6 @@ async def create_order(order: OrderSchema):
         )
         all_couriers = await get_all_courier_ids(db)
         all_owners = await get_all_owner_ids(db)
-        news_url = await get_setting_raw(db, "news_channel_url", "")
-        reviews_url = await get_setting_raw(db, "reviews_channel_url", "")
         await db.commit()
 
     safe_user = html.escape(order.user_name or "User")
@@ -1231,15 +1295,7 @@ async def create_order(order: OrderSchema):
         except Exception as e:
             print(f"[ERR] Курьер {cid}: {e}")
 
-    channels_text_block = ""
-    user_kb_rows = []
-    if news_url:
-        channels_text_block += f"\n\n✈️ <b>Наш Telegram-канал (Новости):</b> {html.escape(news_url)}"
-        user_kb_rows.append([InlineKeyboardButton(text="✈️ Telegram-канал новости", url=news_url)])
-    if reviews_url:
-        channels_text_block += f"\n⭐ <b>Отзывы наших покупателей:</b> {html.escape(reviews_url)}"
-        user_kb_rows.append([InlineKeyboardButton(text="✅ Отзывы покупателей", url=reviews_url)])
-
+    # При оформлении заказа отправляем покупателю только детали заказа (ссылки на отзывы и новости приходят после выдачи)
     user_text = (
         f"✅ <b>Спасибо за заказ #{html.escape(order_id)}!</b>\n"
         f"📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n"
@@ -1248,13 +1304,11 @@ async def create_order(order: OrderSchema):
         f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}\n\n"
         f"💰 <b>Итого к оплате:</b> {order.total:.2f} р.\n\n"
         f"Ожидайте курьера. Статус заказа можно отслеживать во вкладке <b>«Заказы»</b>."
-        f"{channels_text_block}"
     )
 
     if order.user_id:
         try:
-            user_markup = InlineKeyboardMarkup(inline_keyboard=user_kb_rows) if user_kb_rows else None
-            await bot.send_message(order.user_id, user_text, parse_mode="HTML", reply_markup=user_markup)
+            await bot.send_message(order.user_id, user_text, parse_mode="HTML")
         except Exception as e:
             print(f"[ERR] Покупатель {order.user_id}: {e}")
 
@@ -1494,6 +1548,89 @@ async def cmd_set_tunnel_url(message: Message):
     except Exception:
         pass
     await message.answer(f"✅ Новый адрес сервера сохранён:\n<code>{html.escape(new_url)}</code>\n\nНажми /start, чтобы обновить кнопку.", parse_mode="HTML")
+
+@dp.message(F.text == "/stats")
+async def cmd_owner_stats(message: Message):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, message.from_user.id):
+            return
+        now = datetime.now()
+        today_prefix = now.strftime("%d.%m.%Y")
+        week_ago = now - timedelta(days=7)
+        today_rev = week_rev = total_rev = 0.0
+        today_cnt = week_cnt = total_cnt = active_cnt = 0
+        async with db.execute("SELECT total, status, created_at FROM orders") as cursor:
+            for total, status, created_at in await cursor.fetchall():
+                val = float(total or 0)
+                c_str = created_at or ""
+                if status == "completed":
+                    total_rev += val
+                    total_cnt += 1
+                    if c_str.startswith(today_prefix):
+                        today_rev += val
+                        today_cnt += 1
+                    try:
+                        dt = datetime.strptime(c_str[:10], "%d.%m.%Y")
+                        if dt >= week_ago.replace(hour=0, minute=0, second=0, microsecond=0):
+                            week_rev += val
+                            week_cnt += 1
+                    except Exception:
+                        pass
+                elif status == "active":
+                    active_cnt += 1
+        async with db.execute("SELECT COUNT(*) FROM users WHERE user_id > 0") as cur:
+            u_row = await cur.fetchone()
+            subs_cnt = u_row[0] if u_row else 0
+
+    await message.answer(
+        f"📊 <b>Сводка магазина:</b>\n\n"
+        f"📅 <b>Сегодня:</b> {today_rev:.2f} р. ({today_cnt} зак.)\n"
+        f"🗓 <b>За 7 дней:</b> {week_rev:.2f} р. ({week_cnt} зак.)\n"
+        f"💰 <b>Всего выручка:</b> {total_rev:.2f} р. ({total_cnt} зак.)\n"
+        f"🛵 <b>Активных заказов:</b> {active_cnt}\n"
+        f"👥 <b>Пользователей в базе:</b> {subs_cnt}",
+        parse_mode="HTML"
+    )
+
+@dp.message(F.text == "/open")
+async def cmd_owner_open_shop(message: Message):
+    notify_uids = []
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, message.from_user.id):
+            return
+        brand_name = await get_shop_brand_name(db)
+        was_open = (await get_setting_raw(db, "shop_open", "1")) == "1"
+        await set_setting_raw(db, "shop_open", "1")
+        if not was_open:
+            notify_uids = [int(x) for x in await get_setting_list(db, "shop_open_subscribers")]
+            if notify_uids:
+                await set_setting_list(db, "shop_open_subscribers", [])
+        await db.commit()
+
+    for uid in notify_uids:
+        try:
+            await bot.send_message(
+                uid,
+                f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>\n\nТеперь вы можете оформить свой заказ в мини-приложении.",
+                parse_mode="HTML"
+            )
+            await asyncio.sleep(0.05)
+        except Exception:
+            pass
+    await message.answer("🟢 <b>Магазин открыт!</b> Приём заказов включён.", parse_mode="HTML")
+
+@dp.message(F.text.startswith("/close"))
+async def cmd_owner_close_shop(message: Message):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, message.from_user.id):
+            return
+        await set_setting_raw(db, "shop_open", "0")
+        reason = message.text[6:].strip()
+        if reason:
+            await set_setting_raw(db, "closed_message", reason)
+        cur_msg = await get_setting_raw(db, "closed_message", "Магазин сейчас не работает, попробуйте позже.")
+        await db.commit()
+    await message.answer(f"🔴 <b>Магазин закрыт!</b>\nСообщение для клиентов: <i>{html.escape(cur_msg)}</i>", parse_mode="HTML")
 
 @dp.message(F.text.startswith("/post"))
 async def cmd_post_broadcast(message: Message):
