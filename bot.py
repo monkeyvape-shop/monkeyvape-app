@@ -2,6 +2,7 @@ import asyncio
 import html
 import json
 import os
+import time
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 from urllib.parse import quote
@@ -53,6 +54,13 @@ PUBLIC_TUNNEL_URL = load_tunnel_url()
 PRIMARY_OWNER_IDS = [7280921605]
 DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
 DB_FILE = "database.db"
+
+DEFAULT_CATEGORIES = [
+    {"id": "liquid", "name": "Жидкости"},
+    {"id": "pod", "name": "Поды и Вейпы"},
+    {"id": "disposable", "name": "Одноразки"},
+    {"id": "accessory", "name": "Расходники"}
+]
 
 DEFAULT_OPTIONS_BY_CAT = {
     "liquid": ["Кола", "Клубника", "Skittles", "Малина", "Манго"],
@@ -125,6 +133,18 @@ DEFAULT_METRO_STATIONS = {
 
 LINE_NAMES = {"green": "Зеленая ветка", "blue": "Синяя ветка", "red": "Красная ветка"}
 
+def normalize_tg_link(raw: str) -> str:
+    val = (raw or "").strip()
+    if not val:
+        return ""
+    if val.startswith("@"):
+        return f"https://t.me/{val[1:]}"
+    if val.startswith("t.me/"):
+        return f"https://{val}"
+    if val.startswith("http://") or val.startswith("https://"):
+        return val
+    return f"https://t.me/{val}"
+
 async def get_setting_raw(db, key: str, default: str = "") -> str:
     async with db.execute("SELECT value FROM shop_settings WHERE key = ?", (key,)) as cursor:
         row = await cursor.fetchone()
@@ -146,6 +166,23 @@ async def get_setting_list(db, key: str, default_list=None) -> list:
 
 async def set_setting_list(db, key: str, values: list):
     await set_setting_raw(db, key, json.dumps(values, ensure_ascii=False))
+
+async def get_shop_brand_name(db) -> str:
+    p1 = (await get_setting_raw(db, "logo_part1", "MONKEY")).strip()
+    p2 = (await get_setting_raw(db, "logo_part2", "VAPE")).strip()
+    full = f"{p1} {p2}".strip()
+    return full if full else "Monkey Vape"
+
+async def get_categories_list(db) -> list:
+    raw = await get_setting_raw(db, "categories", "")
+    if raw:
+        try:
+            data = json.loads(raw)
+            if isinstance(data, list) and len(data) > 0:
+                return [{"id": str(c.get("id", "")), "name": str(c.get("name", ""))} for c in data if c.get("id") and c.get("name")]
+        except Exception:
+            pass
+    return json.loads(json.dumps(DEFAULT_CATEGORIES, ensure_ascii=False))
 
 async def get_metro_map(db) -> dict:
     raw = await get_setting_raw(db, "metro_stations", "")
@@ -207,6 +244,7 @@ def parse_product_options(raw_json: str, category: str) -> list:
     return [{"name": o, "available": True} for o in DEFAULT_OPTIONS_BY_CAT.get(category, ["Стандарт"])]
 
 async def notify_stock_subscribers(db, product_id: int, product_title: str, available_options: list[str] = None, all_restocked: bool = False):
+    brand_name = await get_shop_brand_name(db)
     async with db.execute("SELECT id, user_id, option_name FROM stock_notifications WHERE product_id = ?", (product_id,)) as cur:
         rows = await cur.fetchall()
 
@@ -227,7 +265,7 @@ async def notify_stock_subscribers(db, product_id: int, product_title: str, avai
                 await bot.send_message(
                     uid,
                     f"🔔 <b>Товар снова в наличии!</b>\n\n"
-                    f"✨ <b>{html.escape(product_title)}{opt_part}</b> уже доступен для заказа в <b>Monkey Vape</b>!",
+                    f"✨ <b>{html.escape(product_title)}{opt_part}</b> уже доступен для заказа в <b>{html.escape(brand_name)}</b>!",
                     parse_mode="HTML"
                 )
             except Exception:
@@ -434,6 +472,23 @@ class CourierBannerSchema(BaseModel):
     desc: str
     badge: str
 
+class AdminBrandingSchema(BaseModel):
+    user_id: int
+    logo_part1: str
+    logo_part2: str = ""
+
+class AdminChannelsSchema(BaseModel):
+    user_id: int
+    news_channel_url: str = ""
+    reviews_channel_url: str = ""
+    support_username: str = "@warat_24"
+
+class AdminCategoryManageSchema(BaseModel):
+    user_id: int
+    action: str
+    id: str = ""
+    name: str = ""
+
 class TimeUpdateSchema(BaseModel):
     order_id: str
     time: str
@@ -553,10 +608,16 @@ async def get_shop_config():
         disabled_times = await get_setting_list(db, "disabled_times")
         time_slots = await get_setting_list(db, "time_slots", DEFAULT_TIME_SLOTS)
         metro_stations = await get_metro_map(db)
+        categories = await get_categories_list(db)
         shop_open_raw = await get_setting_raw(db, "shop_open", "1")
         closed_message = await get_setting_raw(db, "closed_message", "Магазин сейчас не работает, попробуйте позже.")
         season_effect = await get_setting_raw(db, "season_effect", "none")
         hit_color = await get_setting_raw(db, "hit_color", "#ffcc00")
+        logo_part1 = await get_setting_raw(db, "logo_part1", "MONKEY")
+        logo_part2 = await get_setting_raw(db, "logo_part2", "VAPE")
+        news_channel_url = await get_setting_raw(db, "news_channel_url", "")
+        reviews_channel_url = await get_setting_raw(db, "reviews_channel_url", "")
+        support_username = await get_setting_raw(db, "support_username", "@warat_24")
         banner_enabled = await get_setting_raw(db, "banner_enabled", "1") == "1"
         banner_title = await get_setting_raw(db, "banner_title", "AKCIJA - 20%")
         banner_desc = await get_setting_raw(db, "banner_desc", "Топовые жижи и устройства недели")
@@ -602,6 +663,12 @@ async def get_shop_config():
             "closed_message": closed_message,
             "season_effect": season_effect,
             "hit_color": hit_color,
+            "logo_part1": logo_part1,
+            "logo_part2": logo_part2,
+            "news_channel_url": news_channel_url,
+            "reviews_channel_url": reviews_channel_url,
+            "support_username": support_username,
+            "categories": categories,
             "banner": {
                 "enabled": banner_enabled,
                 "title": banner_title,
@@ -618,6 +685,76 @@ async def get_shop_config():
             "owner_ids": owner_ids,
             "courier_ids": courier_ids
         }
+
+@app.post("/api/admin/branding")
+async def update_admin_branding(data: AdminBrandingSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        p1 = data.logo_part1.strip()
+        p2 = data.logo_part2.strip()
+        if not p1 and not p2:
+            raise HTTPException(status_code=400, detail="Logo cannot be empty")
+        await set_setting_raw(db, "logo_part1", p1)
+        await set_setting_raw(db, "logo_part2", p2)
+        await db.commit()
+    return {"success": True}
+
+@app.post("/api/admin/channels")
+async def update_admin_channels(data: AdminChannelsSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        news_url = normalize_tg_link(data.news_channel_url)
+        reviews_url = normalize_tg_link(data.reviews_channel_url)
+        supp = data.support_username.strip() or "@warat_24"
+        if not supp.startswith("@") and not supp.startswith("http"):
+            supp = "@" + supp
+        await set_setting_raw(db, "news_channel_url", news_url)
+        await set_setting_raw(db, "reviews_channel_url", reviews_url)
+        await set_setting_raw(db, "support_username", supp)
+        await db.commit()
+    return {"success": True, "news_channel_url": news_url, "reviews_channel_url": reviews_url, "support_username": supp}
+
+@app.post("/api/admin/manage_category")
+async def admin_manage_category(data: AdminCategoryManageSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        cats = await get_categories_list(db)
+        if data.action == "add":
+            c_name = data.name.strip()
+            if not c_name:
+                raise HTTPException(status_code=400, detail="Empty category name")
+            if not any(c["name"].lower() == c_name.lower() for c in cats):
+                new_id = f"cat_{int(time.time() * 1000)}"
+                cats.append({"id": new_id, "name": c_name})
+        elif data.action == "rename":
+            c_id = data.id.strip()
+            c_name = data.name.strip()
+            if not c_id or not c_name:
+                raise HTTPException(status_code=400, detail="Invalid category rename")
+            for c in cats:
+                if c["id"] == c_id:
+                    c["name"] = c_name
+        elif data.action == "delete":
+            c_id = data.id.strip()
+            cats = [c for c in cats if c["id"] != c_id]
+        await set_setting_raw(db, "categories", json.dumps(cats, ensure_ascii=False))
+        await db.commit()
+    return {"success": True, "categories": cats}
+
+@app.post("/api/admin/banner")
+async def update_admin_banner(data: CourierBannerSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        await set_setting_raw(db, "banner_enabled", "1" if data.enabled else "0")
+        await set_setting_raw(db, "banner_title", data.title.strip())
+        await set_setting_raw(db, "banner_desc", data.desc.strip())
+        await set_setting_raw(db, "banner_badge", data.badge.strip())
+        await db.commit()
+    return {"success": True}
 
 @app.post("/api/courier/banner")
 async def update_courier_banner(data: CourierBannerSchema):
@@ -663,15 +800,16 @@ async def subscribe_shop_open(data: ShopOpenNotifySchema):
 @app.post("/api/admin/shop_status")
 async def admin_shop_status(data: AdminShopStatusSchema):
     notify_uids = []
+    brand_name = "Monkey Vape"
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, data.user_id):
             raise HTTPException(status_code=403, detail="Only owner")
+        brand_name = await get_shop_brand_name(db)
         was_open = (await get_setting_raw(db, "shop_open", "1")) == "1"
         await set_setting_raw(db, "shop_open", "1" if data.is_open else "0")
         if data.closed_message.strip():
             await set_setting_raw(db, "closed_message", data.closed_message.strip())
 
-        # Если магазин открыли после закрытия — оповещаем подписавшихся клиентов
         if data.is_open and not was_open:
             notify_uids = [int(x) for x in await get_setting_list(db, "shop_open_subscribers")]
             if notify_uids:
@@ -682,7 +820,7 @@ async def admin_shop_status(data: AdminShopStatusSchema):
         try:
             await bot.send_message(
                 uid,
-                "🟢 <b>Магазин Monkey Vape снова открыт!</b>\n\nТеперь вы можете оформить свой заказ в мини-приложении.",
+                f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>\n\nТеперь вы можете оформить свой заказ в мини-приложении.",
                 parse_mode="HTML"
             )
             await asyncio.sleep(0.05)
@@ -1062,6 +1200,8 @@ async def create_order(order: OrderSchema):
         )
         all_couriers = await get_all_courier_ids(db)
         all_owners = await get_all_owner_ids(db)
+        news_url = await get_setting_raw(db, "news_channel_url", "")
+        reviews_url = await get_setting_raw(db, "reviews_channel_url", "")
         await db.commit()
 
     safe_user = html.escape(order.user_name or "User")
@@ -1091,6 +1231,15 @@ async def create_order(order: OrderSchema):
         except Exception as e:
             print(f"[ERR] Курьер {cid}: {e}")
 
+    channels_text_block = ""
+    user_kb_rows = []
+    if news_url:
+        channels_text_block += f"\n\n✈️ <b>Наш Telegram-канал (Новости):</b> {html.escape(news_url)}"
+        user_kb_rows.append([InlineKeyboardButton(text="✈️ Telegram-канал новости", url=news_url)])
+    if reviews_url:
+        channels_text_block += f"\n⭐ <b>Отзывы наших покупателей:</b> {html.escape(reviews_url)}"
+        user_kb_rows.append([InlineKeyboardButton(text="✅ Отзывы покупателей", url=reviews_url)])
+
     user_text = (
         f"✅ <b>Спасибо за заказ #{html.escape(order_id)}!</b>\n"
         f"📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n"
@@ -1099,11 +1248,13 @@ async def create_order(order: OrderSchema):
         f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}\n\n"
         f"💰 <b>Итого к оплате:</b> {order.total:.2f} р.\n\n"
         f"Ожидайте курьера. Статус заказа можно отслеживать во вкладке <b>«Заказы»</b>."
+        f"{channels_text_block}"
     )
 
     if order.user_id:
         try:
-            await bot.send_message(order.user_id, user_text, parse_mode="HTML")
+            user_markup = InlineKeyboardMarkup(inline_keyboard=user_kb_rows) if user_kb_rows else None
+            await bot.send_message(order.user_id, user_text, parse_mode="HTML", reply_markup=user_markup)
         except Exception as e:
             print(f"[ERR] Покупатель {order.user_id}: {e}")
 
@@ -1177,7 +1328,6 @@ async def get_orders(courier_id: int = 0):
             result = []
             for row in rows:
                 c_id = int(row["claimed_by_id"] or 0)
-                # Если заказ уже взял другой курьер — полностью скрываем его
                 if courier_id and c_id != 0 and c_id != int(courier_id):
                     continue
                 result.append({
@@ -1215,9 +1365,8 @@ async def update_order_status(data: StatusUpdateSchema):
         if not row:
             raise HTTPException(status_code=404, detail="Order not found")
 
-        user_id, user_name, station, time, existing_claimed_id = row[0], row[1], row[2], row[3], int(row[4] or 0)
+        user_id, user_name, station, time_val, existing_claimed_id = row[0], row[1], row[2], row[3], int(row[4] or 0)
 
-        # Защита: если заказ взял один курьер, другой курьер не может его выдать или отменить
         if cancelled_by != 'client' and existing_claimed_id != 0 and data.courier_id and existing_claimed_id != int(data.courier_id):
             raise HTTPException(status_code=403, detail="Этот заказ закреплён за другим курьером")
 
@@ -1232,6 +1381,8 @@ async def update_order_status(data: StatusUpdateSchema):
         else:
             await db.execute("UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?", (data.status, cancelled_by, str(data.order_id)))
         all_couriers = await get_all_courier_ids(db)
+        news_url = await get_setting_raw(db, "news_channel_url", "")
+        reviews_url = await get_setting_raw(db, "reviews_channel_url", "")
         await db.commit()
 
         safe_user = html.escape(user_name or "User")
@@ -1253,7 +1404,16 @@ async def update_order_status(data: StatusUpdateSchema):
         elif data.status == 'completed':
             if user_id:
                 try:
-                    await bot.send_message(user_id, f"✅ Ваш заказ #{html.escape(str(data.order_id))} выдан! Спасибо за покупку.")
+                    completed_msg = f"✅ <b>Ваш заказ #{html.escape(str(data.order_id))} выдан! Спасибо за покупку.</b>"
+                    kb_rows = []
+                    if reviews_url:
+                        completed_msg += f"\n\n⭐ <b>Оставьте, пожалуйста, отзыв о заказе:</b>\n{html.escape(reviews_url)}"
+                        kb_rows.append([InlineKeyboardButton(text="⭐ Оставить отзыв", url=reviews_url)])
+                    if news_url:
+                        completed_msg += f"\n\n✈️ <b>Канал с нашими новостями:</b>\n{html.escape(news_url)}"
+                        kb_rows.append([InlineKeyboardButton(text="✈️ Telegram-канал новости", url=news_url)])
+                    markup = InlineKeyboardMarkup(inline_keyboard=kb_rows) if kb_rows else None
+                    await bot.send_message(user_id, completed_msg, parse_mode="HTML", reply_markup=markup)
                 except Exception:
                     pass
     return {"success": True}
@@ -1312,7 +1472,7 @@ async def handle_owner_photo_upload(message: Message):
     photo_url = f"{base}/api/tg_photo/{file_id}"
     await message.answer(
         f"🖼 <b>Ссылка на фото для товара готова!</b>\n\n"
-        f"Нажми на ссылку ниже, чтобы скопировать её, и вставь в настройках товара в мини-приложении:\n"
+        f"Также вы можете выбрать фото прямо из галереи в админ-панели без ссылок, либо вставить эту ссылку:\n"
         f"<code>{html.escape(photo_url)}</code>",
         parse_mode="HTML"
     )
@@ -1398,6 +1558,7 @@ async def cmd_start(message: Message):
         )
         is_own = await check_is_owner(db, uid)
         is_cour = await check_is_courier(db, uid)
+        brand_name = await get_shop_brand_name(db)
         await db.commit()
 
     personal_url = build_personal_url(uid, uname, is_owner=is_own, is_courier=is_cour)
@@ -1410,11 +1571,11 @@ async def cmd_start(message: Message):
         pass
 
     kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="🛒 Открыть Monkey Vape", web_app=WebAppInfo(url=personal_url))]],
+        keyboard=[[KeyboardButton(text=f"🛒 Открыть {brand_name}", web_app=WebAppInfo(url=personal_url))]],
         resize_keyboard=True
     )
     await message.answer(
-        "👋 Добро пожаловать в <b>Monkey Vape</b>!\n\nНажми кнопку ниже, чтобы открыть каталог и сделать заказ.",
+        f"👋 Добро пожаловать в <b>{html.escape(brand_name)}</b>!\n\nНажми кнопку ниже, чтобы открыть каталог и сделать заказ.",
         reply_markup=kb,
         parse_mode="HTML"
     )
