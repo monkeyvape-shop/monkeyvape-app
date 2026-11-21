@@ -46,7 +46,7 @@ def load_tunnel_url() -> str:
                     return saved
         except Exception:
             pass
-    return "https://ntwdj-2a09-bac1-13a0-8--420-1c.free.pinggy.net"
+    return "https://nemeses-july-concrete.ngrok-free.dev"
 
 PUBLIC_TUNNEL_URL = load_tunnel_url()
 
