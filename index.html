@@ -25,6 +25,8 @@
             --danger: #ff3333;
             --img-box-bg: #080d09;
             --items-text: #d1d5db;
+            --glass-highlight: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
         }
 
         [data-theme="light"] {
@@ -46,13 +48,15 @@
             --danger: #e52525;
             --img-box-bg: #e9f0ec;
             --items-text: #27332b;
+            --glass-highlight: rgba(255, 255, 255, 0.9);
+            --glass-shadow: 0 8px 24px rgba(17, 24, 19, 0.07);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -64,7 +68,8 @@
             align-items: center;
             min-height: 100vh;
             overflow: hidden;
-            transition: background-color 0.25s, color 0.25s;
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .app-container {
@@ -72,18 +77,20 @@
             max-width: 480px;
             height: 100vh;
             max-height: 850px;
-            background-color: var(--bg-color);
+            background:
+                radial-gradient(120% 55% at 50% 0%, var(--accent-green-glow) 0%, transparent 62%),
+                var(--bg-color);
             display: flex;
             flex-direction: column;
             position: relative;
-            box-shadow: 0 0 40px var(--accent-green-glow);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 36px var(--accent-green-glow);
             overflow: hidden;
             border: 1px solid var(--border-color);
-            transition: background-color 0.25s, border-color 0.25s;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         @media (min-width: 481px) {
-            .app-container { border-radius: 24px; }
+            .app-container { border-radius: 28px; }
         }
 
         #season-canvas {
@@ -95,110 +102,356 @@
             z-index: 900;
         }
 
+        /* Современный минималистичный Splash Screen */
         #splash-screen {
             position: absolute;
             inset: 0;
-            background: radial-gradient(circle at 50% 38%, var(--banner-bg) 0%, var(--bg-color) 75%);
+            background:
+                radial-gradient(circle at 50% 36%, var(--banner-bg) 0%, transparent 65%),
+                radial-gradient(circle at 50% 75%, var(--accent-green-glow) 0%, transparent 70%),
+                var(--bg-color);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            transition: opacity 0.55s ease, transform 0.55s ease;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .splash-orbit {
+        .splash-badge-wrap {
             position: relative;
-            width: 96px;
-            height: 96px;
+            width: 84px;
+            height: 84px;
+            border-radius: 26px;
+            background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 45%, var(--border-color));
+            box-shadow:
+                inset 0 1px 0 var(--glass-highlight),
+                0 16px 40px rgba(0, 0, 0, 0.35),
+                0 0 28px var(--accent-green-glow);
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 22px;
-        }
-
-        .splash-ring-outer {
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            border-top-color: var(--accent-green);
-            border-right-color: var(--accent-green-glow);
-            animation: spinClockwise 1.2s linear infinite;
-            box-shadow: 0 0 22px var(--accent-green-glow);
-        }
-
-        .splash-ring-inner {
-            position: absolute;
-            inset: 12px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            border-bottom-color: var(--icon-color);
-            border-left-color: var(--icon-glow);
-            animation: spinCounter 1.7s linear infinite;
+            animation: splashBadgeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         .splash-emblem {
-            font-size: 36px;
-            animation: pulseGlow 1.6s ease-in-out infinite;
+            font-size: 38px;
+            line-height: 1;
+            animation: splashFloat 2.4s ease-in-out infinite;
         }
 
-        @keyframes spinClockwise { to { transform: rotate(360deg); } }
-        @keyframes spinCounter { to { transform: rotate(-360deg); } }
-        @keyframes pulseGlow {
-            0%, 100% { transform: scale(0.95); filter: drop-shadow(0 0 8px var(--accent-green-glow)); }
-            50% { transform: scale(1.08); filter: drop-shadow(0 0 18px var(--accent-green)); }
+        @keyframes splashBadgeIn {
+            0% { opacity: 0; transform: translateY(14px) scale(0.88); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        .splash-logo { font-size: 30px; font-weight: 900; color: var(--logo-color-1); text-shadow: 0 0 22px var(--accent-green-glow); margin-bottom: 8px; letter-spacing: 2px; text-align: center; padding: 0 16px; }
+        @keyframes splashFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-3px) scale(1.04); }
+        }
+
+        @keyframes splashTextIn {
+            0% { opacity: 0; transform: translateY(10px); filter: blur(4px); }
+            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        .splash-logo {
+            font-size: 29px;
+            font-weight: 900;
+            color: var(--logo-color-1);
+            text-shadow: 0 0 24px var(--accent-green-glow);
+            margin-bottom: 7px;
+            letter-spacing: 2.5px;
+            text-align: center;
+            padding: 0 18px;
+            animation: splashTextIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+        }
         .splash-logo span { color: var(--logo-color-2); }
-        .splash-sub { color: var(--text-secondary); font-size: 13px; margin-bottom: 26px; letter-spacing: 0.4px; }
-        .progress-bar { width: 210px; height: 6px; background-color: rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
-        .progress-fill { width: 0%; height: 100%; background: var(--accent-green); box-shadow: 0 0 14px var(--accent-green); transition: width 1.15s cubic-bezier(0.22, 1, 0.36, 1); }
 
-        .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 14px 16px; background-color: var(--topbar-bg); border-bottom: 1px solid var(--border-color); z-index: 10; transition: background-color 0.25s; }
-        .brand-title { font-size: 17px; font-weight: 800; color: var(--logo-color-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .splash-sub {
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            font-weight: 500;
+            margin-bottom: 26px;
+            letter-spacing: 0.4px;
+            animation: splashTextIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+        }
+
+        .progress-bar {
+            width: 164px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--accent-green), var(--icon-color));
+            box-shadow: 0 0 12px var(--accent-green);
+            transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Верхняя стеклянная панель */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 16px;
+            background-color: color-mix(in srgb, var(--topbar-bg) 82%, transparent);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid color-mix(in srgb, var(--border-color) 85%, rgba(255,255,255,0.08));
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+            z-index: 10;
+            transition: background-color 0.25s;
+        }
+        .brand-title {
+            font-size: 17px;
+            font-weight: 900;
+            letter-spacing: 0.8px;
+            color: var(--logo-color-1);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         .brand-title span { color: var(--logo-color-2); }
         .top-bar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-        .theme-toggle-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 34px; height: 34px; border-radius: 11px; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-        .metro-selector-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 7px 12px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 7px; cursor: pointer; }
-        .metro-icon { background-color: var(--icon-color); color: #000; width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; }
 
-        .content-area { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
+        .theme-toggle-btn {
+            background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            color: var(--text-main);
+            width: 35px;
+            height: 35px;
+            border-radius: 12px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: transform 0.16s ease, border-color 0.2s ease;
+        }
+        .theme-toggle-btn:active { transform: scale(0.92); }
+
+        .metro-selector-btn {
+            background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            color: var(--text-main);
+            padding: 7px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: transform 0.16s ease, border-color 0.2s ease;
+        }
+        .metro-selector-btn:active { transform: scale(0.95); }
+
+        .metro-icon {
+            background-color: var(--icon-color);
+            color: #070b08;
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 11px;
+            box-shadow: 0 0 8px var(--icon-glow);
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 18px 18px 102px 18px;
+            scroll-behavior: smooth;
+        }
+
         .screen { display: none; }
-        .screen.active { display: block; }
+        .screen.active {
+            display: block;
+            animation: screenReveal 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes screenReveal {
+            from { opacity: 0; transform: translateY(7px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        .closed-shop-banner { background: rgba(255, 51, 51, 0.12); border: 1px solid var(--danger); color: var(--danger); padding: 12px 14px; border-radius: 14px; font-size: 12.5px; margin-bottom: 16px; line-height: 1.4; }
-        .search-box { position: relative; margin-bottom: 20px; }
-        .search-input { width: 100%; padding: 14px 16px 14px 44px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; color: var(--text-main); font-size: 14px; outline: none; user-select: text; -webkit-user-select: text; }
-        .search-input:focus { border-color: var(--accent-green); box-shadow: 0 0 12px var(--accent-green-glow); }
+        .closed-shop-banner {
+            background: rgba(255, 51, 51, 0.12);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 51, 51, 0.55);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            color: var(--danger);
+            padding: 13px 15px;
+            border-radius: 16px;
+            font-size: 12.5px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            line-height: 1.45;
+        }
+
+        .search-box { position: relative; margin-bottom: 16px; }
+        .search-input {
+            width: 100%;
+            padding: 13px 16px 13px 44px;
+            background-color: color-mix(in srgb, var(--card-bg) 80%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            border-radius: 16px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+            user-select: text;
+            -webkit-user-select: text;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 0 16px var(--accent-green-glow);
+        }
         .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--icon-color); font-size: 16px; pointer-events: none; }
 
-        .categories-scroll { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--accent-green) var(--card-bg); }
+        .categories-scroll { display: flex; gap: 9px; overflow-x: auto; margin-bottom: 18px; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--accent-green) transparent; }
         .categories-scroll::-webkit-scrollbar { height: 4px; }
         .categories-scroll::-webkit-scrollbar-thumb { background: var(--accent-green); border-radius: 4px; }
-        .cat-chip { background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 14px; font-size: 13px; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
-        .cat-chip.active { background-color: var(--accent-green); color: #0b0f0c; border-color: var(--accent-green); font-weight: 600; box-shadow: 0 0 15px var(--accent-green-glow); }
 
-        .promo-banner { background: linear-gradient(135deg, var(--banner-bg) 0%, var(--card-bg) 100%); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .promo-banner h3 { font-size: 16px; font-weight: 700; color: var(--accent-green); margin-bottom: 6px; word-break: break-word; }
-        .promo-banner p { font-size: 12px; color: var(--text-secondary); word-break: break-word; }
-        .promo-badge { background-color: var(--accent-green); color: #000; font-size: 12px; font-weight: bold; padding: 6px 10px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+        .cat-chip {
+            background-color: color-mix(in srgb, var(--card-bg) 80%, transparent);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            color: var(--text-secondary);
+            padding: 9px 16px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .cat-chip:active { transform: scale(0.95); }
+        .cat-chip.active {
+            background-color: var(--accent-green);
+            color: #080c09;
+            border-color: var(--accent-green);
+            font-weight: 700;
+            box-shadow: 0 4px 16px var(--accent-green-glow);
+        }
 
-        .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .product-card { background-color: var(--card-bg); border: 1.5px solid var(--border-color); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; cursor: pointer; position: relative; }
-        .product-card:hover { border-color: var(--accent-green); transform: translateY(-2px); }
-        .product-card.out-of-stock { opacity: 0.72; }
+        .promo-banner {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--banner-bg) 88%, transparent) 0%, color-mix(in srgb, var(--card-bg) 84%, transparent) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 35%, var(--border-color));
+            box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+            border-radius: 20px;
+            padding: 17px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        .promo-banner::after {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -10%;
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, var(--accent-green-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .promo-banner h3 { font-size: 16px; font-weight: 800; letter-spacing: 0.3px; color: var(--accent-green); margin-bottom: 5px; word-break: break-word; }
+        .promo-banner p { font-size: 12px; color: var(--text-secondary); word-break: break-word; line-height: 1.35; }
+        .promo-badge {
+            background-color: var(--accent-green);
+            color: #080c09;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 7px 11px;
+            border-radius: 11px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px var(--accent-green-glow);
+            position: relative;
+            z-index: 1;
+        }
 
-        .product-img-container { width: 100%; height: 122px; background-color: var(--img-box-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 9px; font-size: 40px; position: relative; overflow: hidden; }
-        .product-img-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+        .product-card {
+            background: linear-gradient(165deg, color-mix(in srgb, var(--card-bg) 86%, rgba(255,255,255,0.03)) 0%, color-mix(in srgb, var(--card-bg) 76%, transparent) 100%);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1.5px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(0, 0, 0, 0.16);
+            border-radius: 20px;
+            padding: 11px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .product-card:hover {
+            border-color: var(--accent-green);
+            transform: translateY(-2px);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 24px rgba(0, 0, 0, 0.24), 0 0 14px var(--accent-green-glow);
+        }
+        .product-card:active { transform: scale(0.97); }
+        .product-card.out-of-stock { opacity: 0.68; }
+
+        .product-img-container {
+            width: 100%;
+            height: 122px;
+            background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--card-hover) 60%, var(--img-box-bg)) 0%, var(--img-box-bg) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 9px;
+            font-size: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        .product-img-container img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.25s ease; }
+        .product-card:hover .product-img-container img { transform: scale(1.03); }
         .product-badges-stack { position: absolute; top: 7px; left: 7px; right: 7px; display: flex; flex-wrap: wrap; gap: 4px; z-index: 2; pointer-events: none; }
-        .product-tag { background-color: rgba(11, 15, 12, 0.78); backdrop-filter: blur(4px); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 6px; }
-        .product-tag.soldout { background-color: rgba(255, 51, 51, 0.88); color: #ffffff; }
+        .product-tag { background-color: rgba(11, 15, 12, 0.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 7px; }
+        .product-tag.soldout { background-color: rgba(255, 51, 51, 0.9); color: #ffffff; }
 
         .product-title {
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
+            line-height: 1.3;
             margin-bottom: 5px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -243,20 +496,69 @@
         .product-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; gap: 4px; }
         .price-block { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
         .product-old-price { font-size: 11.5px; color: var(--text-secondary); text-decoration: line-through; }
-        .product-price { font-size: 14px; font-weight: 700; color: var(--accent-green); }
-        .add-btn { background-color: var(--accent-green); color: #0b0f0c; border: none; width: 32px; height: 32px; border-radius: 10px; font-weight: bold; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .product-price { font-size: 14.5px; font-weight: 800; color: var(--accent-green); }
+        .add-btn {
+            background-color: var(--accent-green);
+            color: #080c09;
+            border: none;
+            width: 33px;
+            height: 33px;
+            border-radius: 11px;
+            font-weight: 800;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px var(--accent-green-glow);
+            transition: transform 0.14s ease, filter 0.15s ease;
+        }
+        .add-btn:active { transform: scale(0.88); }
         .notify-btn { background: rgba(255, 170, 0, 0.16); border: 1px solid #ffaa00; color: #ffaa00; padding: 6px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
-        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.75); display: none; justify-content: center; align-items: flex-end; z-index: 2000; backdrop-filter: blur(4px); }
+        /* Стеклянные модальные окна */
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.72); display: none; justify-content: center; align-items: flex-end; z-index: 2000; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
         .modal-overlay.active { display: flex; }
-        .modal-card { width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; background-color: var(--card-bg); border: 1.5px solid var(--border-color); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 20px 24px 24px 24px; animation: slideUp 0.3s ease; }
-        .sheet-handle { width: 44px; height: 5px; background-color: var(--border-color); border-radius: 3px; margin: 0 auto 16px auto; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
-        .modal-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .modal-card {
+            width: 100%;
+            max-width: 480px;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border: 1.5px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 -14px 40px rgba(0, 0, 0, 0.45);
+            border-top-left-radius: 26px;
+            border-top-right-radius: 26px;
+            padding: 18px 22px 24px 22px;
+            animation: slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .sheet-handle { width: 42px; height: 4px; background-color: var(--border-color); border-radius: 999px; margin: 0 auto 16px auto; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+        .modal-title { font-size: 17px; font-weight: 800; letter-spacing: 0.2px; margin-bottom: 6px; }
+        .modal-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.4; }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .option-btn { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 10px; border-radius: 14px; font-size: 13px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .option-btn.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 600; }
+        .option-btn {
+            background-color: color-mix(in srgb, var(--bg-color) 82%, transparent);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            color: var(--text-main);
+            padding: 12px 10px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: transform 0.14s ease, border-color 0.18s ease, background-color 0.18s ease;
+        }
+        .option-btn:active { transform: scale(0.96); }
+        .option-btn.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 700; box-shadow: 0 0 14px var(--accent-green-glow); }
         .option-btn.opt-unavail { opacity: 0.55; border-style: dashed; }
 
         .hit-colors-modal-grid {
@@ -267,8 +569,9 @@
         }
 
         .hit-color-tile {
-            background: var(--bg-color);
+            background: color-mix(in srgb, var(--bg-color) 84%, transparent);
             border: 1.5px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
             border-radius: 14px;
             padding: 12px 8px;
             display: flex;
@@ -278,6 +581,7 @@
             cursor: pointer;
             transition: transform 0.15s, border-color 0.15s;
         }
+        .hit-color-tile:active { transform: scale(0.95); }
 
         .hit-color-tile.selected {
             border-color: var(--accent-green);
@@ -314,14 +618,16 @@
             justify-content: center;
             gap: 8px;
             margin-bottom: 6px;
+            transition: transform 0.14s ease;
         }
+        .img-upload-btn:active { transform: scale(0.98); }
 
         .img-preview-strip {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            background: var(--card-bg);
+            background: color-mix(in srgb, var(--card-bg) 85%, transparent);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 8px 10px;
@@ -337,81 +643,183 @@
             flex-shrink: 0;
         }
 
-        .cart-empty { text-align: center; padding: 50px 20px; color: var(--text-secondary); }
+        .cart-empty { text-align: center; padding: 54px 20px; color: var(--text-secondary); }
         .cart-empty-icon { font-size: 48px; margin-bottom: 14px; }
-        .cart-items-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
-        .cart-item { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; display: flex; align-items: center; gap: 14px; }
-        .cart-item-img { width: 54px; height: 54px; background-color: var(--img-box-bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; overflow: hidden; flex-shrink: 0; }
+        .cart-empty p { font-size: 14px; line-height: 1.45; }
+        .cart-items-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+        .cart-item {
+            background-color: color-mix(in srgb, var(--card-bg) 82%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            border-radius: 18px;
+            padding: 13px 14px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+        }
+        .cart-item-img { width: 54px; height: 54px; background-color: var(--img-box-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; overflow: hidden; flex-shrink: 0; }
         .cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
         .cart-item-info { flex: 1; min-width: 0; }
-        .cart-item-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-        .cart-item-sub { font-size: 11px; color: var(--accent-green); margin-bottom: 6px; }
-        .cart-item-price { font-size: 14px; color: var(--accent-green); font-weight: 700; }
-        .qty-controls { display: flex; align-items: center; gap: 10px; background-color: var(--bg-color); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border-color); }
-        .qty-btn { background: none; border: none; color: var(--text-main); font-size: 16px; cursor: pointer; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
-        .qty-val { font-size: 14px; font-weight: 600; min-width: 18px; text-align: center; }
+        .cart-item-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+        .cart-item-sub { font-size: 11px; color: var(--accent-green); margin-bottom: 5px; }
+        .cart-item-price { font-size: 14px; color: var(--accent-green); font-weight: 800; }
+        .qty-controls { display: flex; align-items: center; gap: 10px; background-color: color-mix(in srgb, var(--bg-color) 85%, transparent); padding: 6px 10px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .qty-btn { background: none; border: none; color: var(--text-main); font-size: 16px; font-weight: 700; cursor: pointer; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; transition: transform 0.12s; }
+        .qty-btn:active { transform: scale(0.85); }
+        .qty-val { font-size: 14px; font-weight: 700; min-width: 18px; text-align: center; }
 
-        .promo-box { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; margin-bottom: 16px; position: relative; z-index: 2; }
+        .promo-box {
+            background-color: color-mix(in srgb, var(--card-bg) 82%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            border-radius: 18px;
+            padding: 14px;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
+        }
         .promo-input-row { display: flex; gap: 8px; align-items: center; }
-        .promo-input { flex: 1; min-width: 0; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; color: var(--text-main); font-size: 13px; outline: none; text-transform: uppercase; user-select: text; -webkit-user-select: text; pointer-events: auto; position: relative; z-index: 3; }
+        .promo-input { flex: 1; min-width: 0; background-color: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; color: var(--text-main); font-size: 13px; outline: none; text-transform: uppercase; user-select: text; -webkit-user-select: text; pointer-events: auto; position: relative; z-index: 3; transition: border-color 0.2s, box-shadow 0.2s; }
         .promo-input:focus { border-color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green-glow); }
-        .admin-select { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 10px; color: var(--text-main); font-size: 12.5px; outline: none; }
-        .promo-apply-btn { background-color: var(--accent-green); color: #0b0f0c; border: none; border-radius: 12px; padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; position: relative; z-index: 3; }
+        .admin-select { background-color: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 10px; color: var(--text-main); font-size: 12.5px; outline: none; }
+        .promo-apply-btn { background-color: var(--accent-green); color: #080c09; border: none; border-radius: 12px; padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; position: relative; z-index: 3; transition: transform 0.14s ease; }
+        .promo-apply-btn:active { transform: scale(0.95); }
 
-        .cart-summary { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; }
+        .cart-summary {
+            background-color: color-mix(in srgb, var(--card-bg) 82%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 22px;
+        }
         .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: var(--text-secondary); }
-        .summary-row.total { font-size: 16px; font-weight: 700; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; }
+        .summary-row.total { font-size: 16.5px; font-weight: 800; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; }
         .summary-row.total span:last-child { color: var(--accent-green); }
 
-        .primary-btn { width: 100%; background-color: var(--accent-green); color: #0b0f0c; border: none; padding: 16px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px var(--accent-green-glow); }
-        .section-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+        .primary-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-green) 0%, color-mix(in srgb, var(--accent-green) 82%, #ffffff) 100%);
+            color: #080c09;
+            border: none;
+            padding: 15px 16px;
+            border-radius: 16px;
+            font-size: 14.5px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 22px var(--accent-green-glow);
+            transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, opacity 0.2s ease;
+        }
+        .primary-btn:active { transform: scale(0.97); }
+        .primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .orders-tabs { display: flex; gap: 8px; background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 5px; border-radius: 14px; margin-bottom: 18px; }
-        .orders-tab-btn { flex: 1; background: none; border: none; color: var(--text-secondary); padding: 10px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .orders-tab-btn.active { background-color: var(--accent-green); color: #0b0f0c; font-weight: 700; box-shadow: 0 0 12px var(--accent-green-glow); }
-        .tab-count-badge { background: rgba(0, 0, 0, 0.15); padding: 1px 7px; border-radius: 8px; font-size: 11px; }
+        .section-title { font-size: 18px; font-weight: 800; letter-spacing: 0.2px; margin-bottom: 16px; }
 
-        .order-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 13px 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 9px; }
-        .order-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
-        .order-id-label { font-size: 14px; font-weight: 800; color: var(--text-main); white-space: nowrap; }
-        .order-status-pill { font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; line-height: 1.2; }
+        .orders-tabs {
+            display: flex;
+            gap: 6px;
+            background-color: color-mix(in srgb, var(--card-bg) 82%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            padding: 5px;
+            border-radius: 15px;
+            margin-bottom: 18px;
+        }
+        .orders-tab-btn { flex: 1; background: none; border: none; color: var(--text-secondary); padding: 10px 12px; border-radius: 11px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease; }
+        .orders-tab-btn.active { background-color: var(--accent-green); color: #080c09; font-weight: 700; box-shadow: 0 3px 14px var(--accent-green-glow); }
+        .tab-count-badge { background: rgba(0, 0, 0, 0.16); padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+
+        .order-card {
+            background-color: color-mix(in srgb, var(--card-bg) 84%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+            border-radius: 18px;
+            padding: 14px 15px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .order-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding-bottom: 9px; border-bottom: 1px solid var(--border-color); }
+        .order-id-label { font-size: 14.5px; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+        .order-status-pill { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 9px; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; line-height: 1.2; }
         .order-status-pill.active { background: var(--accent-green-glow); color: var(--accent-green); border: 1px solid var(--accent-green); }
         .order-status-pill.completed { background: rgba(0, 204, 68, 0.14); color: #00b84a; border: 1px solid rgba(0, 204, 68, 0.4); }
         .order-status-pill.cancelled { background: rgba(255, 51, 51, 0.12); color: var(--danger); border: 1px solid rgba(255, 51, 51, 0.35); }
         .order-meta-grid { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); line-height: 1.35; }
         .order-meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .order-meta-row b { color: var(--text-main); font-weight: 600; }
-        .order-items-box { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 9px 11px; font-size: 12px; color: var(--items-text); line-height: 1.45; }
+        .order-items-box { background-color: color-mix(in srgb, var(--bg-color) 82%, transparent); border: 1px solid var(--border-color); border-radius: 13px; padding: 10px 12px; font-size: 12px; color: var(--items-text); line-height: 1.5; }
         .order-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 2px; }
-        .order-total-price { font-size: 15px; font-weight: 700; color: var(--accent-green); }
+        .order-total-price { font-size: 15.5px; font-weight: 800; color: var(--accent-green); }
         .order-actions-row { display: flex; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
-        .order-btn-secondary { flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 10px; border-radius: 11px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
-        .order-btn-danger { flex: 1; background: rgba(255, 51, 51, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 10px 10px; border-radius: 11px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+        .order-btn-secondary { flex: 1; background: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: transform 0.14s ease, border-color 0.18s ease; }
+        .order-btn-secondary:active { transform: scale(0.96); }
+        .order-btn-danger { flex: 1; background: rgba(255, 51, 51, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 10px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; transition: transform 0.14s ease; }
+        .order-btn-danger:active { transform: scale(0.96); }
 
-        .method-card { background-color: var(--card-bg); border: 1px solid var(--accent-green); border-radius: 16px; padding: 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
-        .method-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .method-card {
+            background-color: color-mix(in srgb, var(--card-bg) 82%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--accent-green);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .method-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
         .method-info p { font-size: 12px; color: var(--text-secondary); }
 
-        .metro-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
-        .metro-tab { flex: 1; padding: 10px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-align: center; cursor: pointer; }
+        .metro-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .metro-tab { flex: 1; padding: 10px; background-color: color-mix(in srgb, var(--card-bg) 82%, transparent); border: 1px solid var(--border-color); border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-align: center; cursor: pointer; transition: transform 0.14s ease, border-color 0.2s ease; }
+        .metro-tab:active { transform: scale(0.96); }
         .metro-tab.active-green { border-color: #00b84a; color: #00b84a; background: rgba(0,204,68,0.12); }
         .metro-tab.active-blue { border-color: #0088ff; color: #0088ff; background: rgba(0,136,255,0.12); }
         .metro-tab.active-red { border-color: #ff3333; color: #ff3333; background: rgba(255,51,51,0.12); }
 
-        .stations-list { display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; margin-bottom: 18px; padding-right: 4px; }
-        .station-item { position: relative; overflow: hidden; background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 12px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .station-item.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 600; }
+        .stations-list { display: flex; flex-direction: column; gap: 9px; max-height: 240px; overflow-y: auto; margin-bottom: 18px; padding-right: 4px; }
+        .station-item { position: relative; overflow: hidden; background-color: color-mix(in srgb, var(--card-bg) 82%, transparent); border: 1px solid var(--border-color); box-shadow: inset 0 1px 0 var(--glass-highlight); padding: 12px 16px; border-radius: 13px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.14s ease, border-color 0.18s ease, background-color 0.18s ease; }
+        .station-item:active { transform: scale(0.98); }
+        .station-item.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 700; }
         .station-item.disabled-item, .time-slot.disabled-item { cursor: not-allowed; opacity: 0.55; }
         .unavail-pill { background: rgba(156, 163, 175, 0.22); border: 1px solid rgba(156, 163, 175, 0.45); color: var(--text-secondary); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
 
         .time-slots { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 24px; }
-        .time-slot { background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 12px 8px; border-radius: 12px; text-align: center; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-        .time-slot.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 600; }
+        .time-slot { background-color: color-mix(in srgb, var(--card-bg) 82%, transparent); border: 1px solid var(--border-color); box-shadow: inset 0 1px 0 var(--glass-highlight); padding: 12px 8px; border-radius: 13px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: transform 0.14s ease, border-color 0.18s ease; }
+        .time-slot:active { transform: scale(0.95); }
+        .time-slot.selected { border-color: var(--accent-green); background-color: var(--accent-green-glow); color: var(--accent-green); font-weight: 700; }
 
-        .profile-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-        .profile-avatar { width: 64px; height: 64px; min-width: 64px; background-color: var(--accent-green); color: #0b0f0c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 0 18px var(--accent-green-glow); overflow: hidden; border: 2px solid var(--accent-green); }
+        .profile-card {
+            background: linear-gradient(145deg, color-mix(in srgb, var(--card-bg) 88%, rgba(255,255,255,0.03)) 0%, color-mix(in srgb, var(--card-bg) 76%, transparent) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+            border-radius: 22px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+        .profile-avatar { width: 64px; height: 64px; min-width: 64px; background-color: var(--accent-green); color: #080c09; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; box-shadow: 0 0 22px var(--accent-green-glow); overflow: hidden; border: 2px solid var(--accent-green); }
         .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .profile-info h3 { font-size: 16.5px; font-weight: 800; margin-bottom: 4px; }
+        .profile-info h3 { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
         .profile-info p { font-size: 12px; color: var(--text-secondary); }
 
         /* Современные карточки каналов и поддержки в профиле */
@@ -425,8 +833,11 @@
             grid-template-columns: 1fr;
         }
         .profile-bento-card {
-            background: linear-gradient(145deg, var(--card-bg) 0%, var(--icon-glow) 100%);
+            background: linear-gradient(145deg, color-mix(in srgb, var(--card-bg) 86%, transparent) 0%, var(--icon-glow) 100%);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
             border-radius: 18px;
             padding: 14px;
             text-decoration: none;
@@ -440,10 +851,10 @@
         .profile-bento-card:hover {
             border-color: var(--icon-color);
             transform: translateY(-2px);
-            box-shadow: 0 6px 18px var(--icon-glow);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 20px var(--icon-glow);
         }
         .profile-bento-card:active {
-            transform: scale(0.98);
+            transform: scale(0.97);
         }
         .profile-bento-top {
             display: flex;
@@ -487,8 +898,11 @@
         }
 
         .profile-support-card {
-            background: var(--card-bg);
+            background: color-mix(in srgb, var(--card-bg) 84%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
             border-radius: 18px;
             padding: 13px 15px;
             margin-bottom: 14px;
@@ -503,6 +917,9 @@
         .profile-support-card:hover {
             border-color: var(--icon-color);
             transform: translateY(-1px);
+        }
+        .profile-support-card:active {
+            transform: scale(0.98);
         }
         .profile-support-left {
             display: flex;
@@ -537,24 +954,61 @@
         /* Палитра цветов интерфейса в админке */
         .theme-presets-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 7px;
             margin-bottom: 4px;
+            width: 100%;
         }
         .theme-preset-btn {
-            background: var(--card-bg);
+            background: color-mix(in srgb, var(--card-bg) 88%, transparent);
             border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
             color: var(--text-main);
             border-radius: 11px;
-            padding: 8px 10px;
+            padding: 8px 9px;
             font-size: 11.5px;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
             text-align: left;
+            min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
             transition: border-color 0.15s, transform 0.12s;
+        }
+        .theme-preset-btn:active { transform: scale(0.96); }
+        .app-toast {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-16px);
+            max-width: calc(100% - 32px);
+            width: max-content;
+            background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+            border: 1.5px solid var(--accent-green);
+            color: var(--text-main);
+            padding: 11px 16px;
+            border-radius: 14px;
+            font-size: 12.5px;
+            font-weight: 700;
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 16px var(--accent-green-glow);
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            text-align: center;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+        .app-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .app-toast.error {
+            border-color: var(--danger);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 51, 51, 0.25);
         }
         .theme-preset-btn:hover {
             border-color: var(--accent-green);
@@ -576,8 +1030,9 @@
         }
 
         .palette-control-card {
-            background: var(--bg-color);
+            background: color-mix(in srgb, var(--bg-color) 85%, transparent);
             border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
             border-radius: 12px;
             padding: 9px 10px;
             margin-bottom: 8px;
@@ -647,8 +1102,9 @@
 
         /* Карточки команд во вкладке "Команды" */
         .cmd-card {
-            background: var(--bg-color);
+            background: color-mix(in srgb, var(--bg-color) 85%, transparent);
             border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
             border-radius: 12px;
             padding: 10px 12px;
             margin-bottom: 8px;
@@ -676,49 +1132,139 @@
             line-height: 1.4;
         }
 
-        .admin-section { background-color: var(--card-bg); border: 1px solid var(--accent-green); border-radius: 18px; padding: 16px; margin-top: 14px; }
-        .admin-title { font-size: 15px; font-weight: 700; color: var(--accent-green); margin-bottom: 8px; }
+        .admin-section {
+            background-color: color-mix(in srgb, var(--card-bg) 86%, transparent);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--accent-green);
+            box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+            border-radius: 20px;
+            padding: 16px;
+            margin-top: 14px;
+        }
+        .admin-title { font-size: 15.5px; font-weight: 800; color: var(--accent-green); margin-bottom: 8px; }
         .server-status-bar { font-size: 11px; padding: 7px 10px; border-radius: 10px; margin-bottom: 10px; line-height: 1.4; }
         .server-status-bar.ok { background: var(--accent-green-glow); border: 1px solid var(--accent-green); color: var(--accent-green); }
         .server-status-bar.err { background: rgba(255, 51, 51, 0.1); border: 1px solid rgba(255, 51, 51, 0.4); color: var(--danger); }
-        .shop-master-box { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+        .shop-master-box { background: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); box-shadow: inset 0 1px 0 var(--glass-highlight); border-radius: 13px; padding: 11px 12px; margin-bottom: 12px; }
         .admin-sub-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 14px; }
-        .admin-sub-tab { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 4px; border-radius: 10px; font-size: 11px; font-weight: 600; text-align: center; cursor: pointer; white-space: nowrap; }
-        .admin-sub-tab.active { border-color: var(--accent-green); color: var(--accent-green); background: var(--accent-green-glow); }
-        .admin-toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; background: var(--bg-color); border: 1px solid var(--border-color); padding: 9px 10px; border-radius: 10px; margin-bottom: 8px; font-size: 12.5px; }
+        .admin-sub-tab { background-color: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 4px; border-radius: 10px; font-size: 11px; font-weight: 600; text-align: center; cursor: pointer; white-space: nowrap; transition: all 0.16s ease; }
+        .admin-sub-tab:active { transform: scale(0.95); }
+        .admin-sub-tab.active { border-color: var(--accent-green); color: var(--accent-green); background: var(--accent-green-glow); font-weight: 700; }
+        .admin-toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; background: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); padding: 9px 10px; border-radius: 11px; margin-bottom: 8px; font-size: 12.5px; }
 
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .stat-card { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; }
+        .stat-card { background: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); box-shadow: inset 0 1px 0 var(--glass-highlight); border-radius: 13px; padding: 10px; }
         .stat-card-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
         .stat-card-val { font-size: 15px; font-weight: 800; color: var(--accent-green); }
         .stat-card-sub { font-size: 10.5px; color: var(--text-secondary); margin-top: 2px; }
 
-        .broadcast-textarea { width: 100%; min-height: 82px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; color: var(--text-main); font-size: 13px; outline: none; resize: vertical; margin-bottom: 10px; user-select: text; -webkit-user-select: text; }
-        .toggle-pill { padding: 5px 8px; border-radius: 8px; font-size: 10.5px; font-weight: 700; border: none; cursor: pointer; white-space: nowrap; }
+        .broadcast-textarea { width: 100%; min-height: 82px; background-color: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; color: var(--text-main); font-size: 13px; outline: none; resize: vertical; margin-bottom: 10px; user-select: text; -webkit-user-select: text; transition: border-color 0.2s, box-shadow 0.2s; }
+        .broadcast-textarea:focus { border-color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green-glow); }
+        .toggle-pill { padding: 5px 8px; border-radius: 8px; font-size: 10.5px; font-weight: 700; border: none; cursor: pointer; white-space: nowrap; transition: transform 0.13s ease; }
+        .toggle-pill:active { transform: scale(0.94); }
         .toggle-pill.on { background: var(--accent-green-glow); color: var(--accent-green); border: 1px solid var(--accent-green); }
         .toggle-pill.off { background: rgba(255, 51, 51, 0.15); color: var(--danger); border: 1px solid var(--danger); }
         .delete-order-x { background: rgba(255, 51, 51, 0.12); border: 1px solid var(--danger); color: var(--danger); width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
 
-        .bottom-nav { position: absolute; bottom: 0; left: 0; width: 100%; height: 75px; background-color: var(--bottomnav-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 10; transition: background-color 0.25s; }
-        .nav-item { background: none; border: none; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; position: relative; }
-        .nav-item.active { color: var(--icon-color); }
-        .nav-icon { font-size: 22px; }
-        .cart-badge { position: absolute; top: -2px; right: 4px; background-color: var(--icon-color); color: #0b0f0c; font-size: 10px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        /* Нижняя стеклянная навигация */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 76px;
+            background-color: color-mix(in srgb, var(--bottomnav-bg) 84%, transparent);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid color-mix(in srgb, var(--border-color) 85%, rgba(255,255,255,0.08));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 10;
+            transition: background-color 0.25s;
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            padding: 6px 10px;
+            border-radius: 14px;
+            transition: transform 0.15s ease, color 0.2s ease, background-color 0.2s ease;
+        }
+        .nav-item:active { transform: scale(0.92); }
+        .nav-item.active {
+            color: var(--icon-color);
+            background: var(--icon-glow);
+        }
+        .nav-icon { font-size: 21px; line-height: 1; }
+        .cart-badge {
+            position: absolute;
+            top: 1px;
+            right: 4px;
+            background-color: var(--icon-color);
+            color: #080c09;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 17px;
+            height: 17px;
+            padding: 0 4px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px var(--icon-glow);
+        }
     </style>
 </head>
 <body>
 
 <div class="app-container">
+    <div id="app-toast" class="app-toast"></div>
     <canvas id="season-canvas"></canvas>
 
+    <!-- Неблокирующее окно подтверждения (вместо системного confirm) -->
+    <div class="modal-overlay" id="custom-confirm-modal" onclick="if(event.target.id==='custom-confirm-modal') closeCustomConfirmModal(false)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="modal-title" id="custom-confirm-title">Подтверждение</div>
+            <div class="modal-subtitle" id="custom-confirm-text" style="margin-bottom:18px;">Вы уверены?</div>
+            <div style="display:flex; gap:8px;">
+                <button type="button" onclick="closeCustomConfirmModal(false)" style="flex:1; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-secondary); padding:13px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;">Отмена</button>
+                <button type="button" id="custom-confirm-ok-btn" onclick="closeCustomConfirmModal(true)" class="primary-btn" style="flex:1; padding:13px; font-size:13px;">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Неблокирующее окно ввода значения (вместо системного prompt) -->
+    <div class="modal-overlay" id="custom-prompt-modal" onclick="if(event.target.id==='custom-prompt-modal') closeCustomPromptModal(null)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="modal-title" id="custom-prompt-title">Введите значение</div>
+            <div class="modal-subtitle" id="custom-prompt-subtitle" style="margin-bottom:12px;"></div>
+            <input type="text" id="custom-prompt-input" class="promo-input" style="text-transform:none; width:100%; margin-bottom:16px;" onkeydown="if(event.key==='Enter'){event.preventDefault(); closeCustomPromptModal(document.getElementById('custom-prompt-input').value);}">
+            <div style="display:flex; gap:8px;">
+                <button type="button" onclick="closeCustomPromptModal(null)" style="flex:1; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-secondary); padding:13px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;">Отмена</button>
+                <button type="button" onclick="closeCustomPromptModal(document.getElementById('custom-prompt-input').value)" class="primary-btn" style="flex:1; padding:13px; font-size:13px;">Готово</button>
+            </div>
+        </div>
+    </div>
+
     <div id="splash-screen">
-        <div class="splash-orbit">
-            <div class="splash-ring-outer"></div>
-            <div class="splash-ring-inner"></div>
-            <div class="splash-emblem">🐵</div>
+        <div class="splash-badge-wrap">
+            <div class="splash-emblem" id="splash-emblem">🐵</div>
         </div>
         <div class="splash-logo" id="splash-logo">MONKEY <span>VAPE</span></div>
-        <div class="splash-sub">Подключение к витрине...</div>
+        <div class="splash-sub" id="splash-sub">Загружаем актуальный дроп...</div>
         <div class="progress-bar">
             <div class="progress-fill" id="progress-fill"></div>
         </div>
@@ -728,15 +1274,15 @@
     <div class="modal-overlay" id="metro-modal" onclick="closeMetroModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
-            <div class="modal-title">Выберите станцию метро 🚇</div>
-            <div class="modal-subtitle">Минский метрополитен — место доставки и встречи</div>
+            <div class="modal-title">Локация встречи 🚇</div>
+            <div class="modal-subtitle">Минский метрополитен — удобная передача заказа</div>
             <div class="metro-tabs" id="modal-metro-tabs">
                 <div class="metro-tab active-green" onclick="switchModalMetroLine('green', this)">Зеленая ветка</div>
                 <div class="metro-tab" onclick="switchModalMetroLine('blue', this)">Синяя ветка</div>
                 <div class="metro-tab" onclick="switchModalMetroLine('red', this)">Красная ветка</div>
             </div>
             <div class="stations-list" id="modal-stations-list-container"></div>
-            <button class="primary-btn" onclick="closeMetroModalDirect()">Подтвердить станцию</button>
+            <button class="primary-btn" onclick="closeMetroModalDirect()">Выбрать эту станцию</button>
         </div>
     </div>
 
@@ -749,7 +1295,7 @@
             <div class="modal-subtitle" id="modal-subtitle-text">Выберите параметр:</div>
             <div class="options-grid" id="modal-options-grid"></div>
             <button class="primary-btn" id="modal-add-cart-btn" onclick="confirmAddToCart()">Добавить в корзину</button>
-            <button id="modal-notify-btn" onclick="subscribeToSelectedOption()" style="display:none; width:100%; background:rgba(255,170,0,0.16); border:1px solid #ffaa00; color:#ffaa00; padding:14px; border-radius:16px; font-size:14px; font-weight:700; cursor:pointer;">🔔 Сообщить, когда появится</button>
+            <button id="modal-notify-btn" onclick="subscribeToSelectedOption()" style="display:none; width:100%; background:rgba(255,170,0,0.16); border:1px solid #ffaa00; color:#ffaa00; padding:14px; border-radius:16px; font-size:14px; font-weight:700; cursor:pointer;">🔔 Узнать о поступлении</button>
             <button onclick="closeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Отмена</button>
         </div>
     </div>
@@ -815,10 +1361,10 @@
     <div class="modal-overlay" id="time-modal" onclick="closeTimeModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
-            <div class="modal-title">Изменить время встречи</div>
-            <div class="modal-subtitle">Выберите новое время для заказа #<span id="time-modal-order-id"></span></div>
+            <div class="modal-title">Перенос времени встречи</div>
+            <div class="modal-subtitle">Выбери новое удобное время для заказа #<span id="time-modal-order-id"></span></div>
             <div class="time-slots" id="change-time-slots-container"></div>
-            <button class="primary-btn" onclick="confirmTimeChangeFinal()">Сохранить новое время</button>
+            <button class="primary-btn" onclick="confirmTimeChangeFinal()">Обновить время</button>
             <button onclick="closeTimeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Назад</button>
         </div>
     </div>
@@ -840,15 +1386,15 @@
             <div id="catalog-closed-banner" class="closed-shop-banner" style="display: none;"></div>
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров..." oninput="filterProducts()">
+                <input type="text" class="search-input" id="search-input" placeholder="Найти вкус, девайс или линейку..." oninput="filterProducts()">
             </div>
             <div class="categories-scroll" id="categories-scroll"></div>
             <div class="promo-banner" id="promo-banner">
                 <div>
-                    <h3 id="promo-banner-title">AKCIJA - 20%</h3>
-                    <p id="promo-banner-desc">Топовые жижи и устройства недели</p>
+                    <h3 id="promo-banner-title">WEEKEND DROP — -20%</h3>
+                    <p id="promo-banner-desc">Свежие линейки и топовые девайсы уже на витрине</p>
                 </div>
-                <div class="promo-badge" id="promo-banner-badge">-20%</div>
+                <div class="promo-badge" id="promo-banner-badge">HOT -20%</div>
             </div>
             <div class="products-grid" id="products-grid"></div>
         </div>
@@ -865,7 +1411,7 @@
                     Активные <span class="tab-count-badge" id="active-orders-count">0</span>
                 </button>
                 <button class="orders-tab-btn" id="orders-tab-past" onclick="switchOrdersSubTab('past')">
-                    Прошедшие <span class="tab-count-badge" id="past-orders-count">0</span>
+                    История <span class="tab-count-badge" id="past-orders-count">0</span>
                 </button>
             </div>
             <div id="orders-list"></div>
@@ -975,12 +1521,21 @@
 
                 <div id="admin-tab-appearance" style="display: none;">
                     <div class="shop-master-box">
-                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🏷 Название логотипа магазина:</div>
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🏷 Брендинг, экран загрузки и старт бота:</div>
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
                             <input type="text" id="admin-logo-part1" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 1 (напр. MONKEY)">
                             <input type="text" id="admin-logo-part2" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 2 (напр. VAPE)">
                         </div>
-                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBranding()">💾 Сохранить логотип</button>
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">✨ Эмодзи загрузки:</span>
+                            <input type="text" id="admin-splash-emoji" class="promo-input" style="text-transform:none; font-size:15px; width:68px; text-align:center;" maxlength="8" placeholder="🐵">
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">💬 Приветствие бота по команде /start:</div>
+                            <textarea id="admin-welcome-text" class="broadcast-textarea" style="min-height:68px; margin-bottom:4px; font-size:12px;" placeholder="Привет, {user}! Добро пожаловать в {brand} — актуальное наличие и быстрый заказ..."></textarea>
+                            <div style="font-size:10.5px; color:var(--text-secondary);">Переменные: <b>{user}</b> — имя клиента, <b>{brand}</b> — название магазина</div>
+                        </div>
+                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBranding()">💾 Сохранить бренд и приветствие</button>
                     </div>
 
                     <div class="shop-master-box">
@@ -1131,7 +1686,7 @@
                     Активные <span class="tab-count-badge" id="courier-active-count">0</span>
                 </button>
                 <button class="orders-tab-btn" id="courier-tab-past" onclick="switchCourierSubTab('past')">
-                    Прошедшие <span class="tab-count-badge" id="courier-past-count">0</span>
+                    История <span class="tab-count-badge" id="courier-past-count">0</span>
                 </button>
             </div>
             <div id="courier-orders-list">
@@ -1142,17 +1697,17 @@
         <div id="screen-checkout" class="screen">
             <div class="section-title">Оформление заказа</div>
             <div style="margin-bottom: 18px;">
-                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Способ получения</p>
+                <p style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Формат получения</p>
                 <div class="method-card">
                     <div class="method-info">
-                        <h4>Самовывоз из метро (Минск)</h4>
-                        <p>Оплата при встрече наличными или переводом</p>
+                        <h4>Встреча в метро • Минск</h4>
+                        <p>Передача из рук в руки • Наличные или перевод</p>
                     </div>
                     <div style="color: var(--accent-green); font-size: 18px;">✓</div>
                 </div>
             </div>
             <div style="margin-bottom: 18px;">
-                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Выберите ветку и станцию</p>
+                <p style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Ветка и станция встречи</p>
                 <div class="metro-tabs" id="checkout-metro-tabs">
                     <div class="metro-tab active-green" onclick="switchMetroLine('green', this)">Зеленая ветка</div>
                     <div class="metro-tab" onclick="switchMetroLine('blue', this)">Синяя ветка</div>
@@ -1161,11 +1716,11 @@
                 <div class="stations-list" id="stations-list-container"></div>
             </div>
             <div style="margin-bottom: 24px;">
-                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Время получения</p>
+                <p style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Удобное время</p>
                 <div class="time-slots" id="checkout-time-slots-container"></div>
             </div>
-            <button class="primary-btn" onclick="confirmOrderFinal()">Подтвердить заказ</button>
-            <button onclick="switchScreen('cart')" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Назад в корзину</button>
+            <button class="primary-btn" onclick="confirmOrderFinal()">Подтвердить и отправить заказ</button>
+            <button onclick="switchScreen('cart')" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">← Вернуться в корзину</button>
         </div>
     </div>
 
@@ -1279,8 +1834,79 @@
     ];
 
     let customUiTheme = JSON.parse(localStorage.getItem('monkey_custom_ui_theme')) || { ...DEFAULT_UI_THEME };
+    let isUiThemeDirty = false;
     let isCustomThemeModified = localStorage.getItem('monkey_custom_ui_active') === '1';
     let currentAppTheme = localStorage.getItem('monkey_theme') || 'dark';
+
+    let toastTimerId = null;
+    function showToast(message, isError = false) {
+        const el = document.getElementById('app-toast');
+        if (!el) return;
+        if (toastTimerId) {
+            clearTimeout(toastTimerId);
+            toastTimerId = null;
+        }
+        el.textContent = String(message || '');
+        el.className = 'app-toast show' + (isError ? ' error' : '');
+        toastTimerId = setTimeout(() => {
+            el.classList.remove('show');
+            toastTimerId = null;
+        }, 2500);
+    }
+
+    let customConfirmResolver = null;
+    function showCustomConfirm(text, title = 'Подтверждение', isDanger = false) {
+        document.activeElement?.blur();
+        return new Promise((resolve) => {
+            customConfirmResolver = resolve;
+            const titleEl = document.getElementById('custom-confirm-title');
+            const textEl = document.getElementById('custom-confirm-text');
+            const okBtn = document.getElementById('custom-confirm-ok-btn');
+            if (titleEl) titleEl.innerText = title;
+            if (textEl) textEl.innerText = text;
+            if (okBtn) {
+                okBtn.style.background = isDanger ? 'var(--danger)' : 'var(--accent-green)';
+                okBtn.style.color = isDanger ? '#ffffff' : '#0b0f0c';
+            }
+            document.getElementById('custom-confirm-modal')?.classList.add('active');
+        });
+    }
+    function closeCustomConfirmModal(result) {
+        document.getElementById('custom-confirm-modal')?.classList.remove('active');
+        if (customConfirmResolver) {
+            const fn = customConfirmResolver;
+            customConfirmResolver = null;
+            fn(Boolean(result));
+        }
+    }
+
+    let customPromptResolver = null;
+    function showCustomPrompt(subtitle, defaultVal = '', title = 'Введите значение', inputType = 'text') {
+        document.activeElement?.blur();
+        return new Promise((resolve) => {
+            customPromptResolver = resolve;
+            const titleEl = document.getElementById('custom-prompt-title');
+            const subEl = document.getElementById('custom-prompt-subtitle');
+            const inpEl = document.getElementById('custom-prompt-input');
+            if (titleEl) titleEl.innerText = title;
+            if (subEl) subEl.innerText = subtitle;
+            if (inpEl) {
+                inpEl.type = inputType;
+                inpEl.value = defaultVal;
+            }
+            document.getElementById('custom-prompt-modal')?.classList.add('active');
+            setTimeout(() => { inpEl?.focus(); inpEl?.select(); }, 60);
+        });
+    }
+    function closeCustomPromptModal(val) {
+        document.activeElement?.blur();
+        document.getElementById('custom-prompt-modal')?.classList.remove('active');
+        if (customPromptResolver) {
+            const fn = customPromptResolver;
+            customPromptResolver = null;
+            fn(val);
+        }
+    }
 
     function applyCustomUiCssVars(themeObj) {
         const root = document.documentElement;
@@ -1328,6 +1954,8 @@
 
     let logoPart1 = localStorage.getItem('monkey_logo_part1') ?? 'MONKEY';
     let logoPart2 = localStorage.getItem('monkey_logo_part2') ?? 'VAPE';
+    let splashEmoji = localStorage.getItem('monkey_splash_emoji') || '🐵';
+    let welcomeText = localStorage.getItem('monkey_welcome_text') || '';
 
     function escapeHtml(str) {
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -1336,26 +1964,33 @@
     function applyLogoBranding() {
         const p1 = (logoPart1 || '').trim();
         const p2 = (logoPart2 || '').trim();
+        const em = (splashEmoji || '🐵').trim() || '🐵';
         const htmlLogo = `${escapeHtml(p1)}${p2 ? ` <span>${escapeHtml(p2)}</span>` : ''}` || 'MONKEY <span>VAPE</span>';
         const topEl = document.getElementById('brand-title');
         const splashEl = document.getElementById('splash-logo');
+        const splashEmbEl = document.getElementById('splash-emblem');
         if (topEl) topEl.innerHTML = htmlLogo;
         if (splashEl) splashEl.innerHTML = htmlLogo;
+        if (splashEmbEl) splashEmbEl.innerText = em;
         const fullTitle = `${p1} ${p2}`.trim() || 'Monkey Vape';
         document.title = `${fullTitle} — Online Shop`;
 
         const inp1 = document.getElementById('admin-logo-part1');
         const inp2 = document.getElementById('admin-logo-part2');
+        const inpEm = document.getElementById('admin-splash-emoji');
+        const inpWel = document.getElementById('admin-welcome-text');
         if (inp1 && document.activeElement !== inp1) inp1.value = p1;
         if (inp2 && document.activeElement !== inp2) inp2.value = p2;
+        if (inpEm && document.activeElement !== inpEm) inpEm.value = em;
+        if (inpWel && document.activeElement !== inpWel) inpWel.value = welcomeText;
     }
     applyLogoBranding();
 
     let promoBanner = JSON.parse(localStorage.getItem('monkey_promo_banner')) || {
         enabled: true,
-        title: 'AKCIJA - 20%',
-        desc: 'Топовые жижи и устройства недели',
-        badge: '-20%'
+        title: 'WEEKEND DROP — -20%',
+        desc: 'Свежие линейки и топовые девайсы уже на витрине',
+        badge: 'HOT -20%'
     };
 
     function applyPromoBannerUI() {
@@ -1425,8 +2060,8 @@
                             <span class="profile-bento-arrow">↗</span>
                         </div>
                         <div>
-                            <div class="profile-bento-title">Новости</div>
-                            <div class="profile-bento-sub">Telegram-канал</div>
+                            <div class="profile-bento-title">Наш канал</div>
+                            <div class="profile-bento-sub">Анонсы, дропы и наличие</div>
                         </div>
                     </a>
                 `;
@@ -1446,7 +2081,7 @@
                         </div>
                         <div>
                             <div class="profile-bento-title">Отзывы</div>
-                            <div class="profile-bento-sub">Мнения клиентов</div>
+                            <div class="profile-bento-sub">Реальные фидбэки клиентов</div>
                         </div>
                     </a>
                 `;
@@ -1466,8 +2101,8 @@
                         </svg>
                     </div>
                     <div style="min-width:0;">
-                        <div class="profile-bento-title">Менеджер поддержки</div>
-                        <div class="profile-bento-sub">Помощь по заказам и вопросам</div>
+                        <div class="profile-bento-title">Поддержка 24/7</div>
+                        <div class="profile-bento-sub">Поможем с выбором и заказом</div>
                     </div>
                 </div>
                 <span class="profile-support-pill">${escapeHtml(suppLabel)} ↗</span>
@@ -1754,19 +2389,35 @@
         if (!avatarLoadedForId) avatarBox.innerHTML = `<span>${fallbackLetter}</span>`;
     }
 
-    function showRoleTabsIfAllowed() {
+    let adminTabsInitialized = false;
+    let currentAdminSubTab = 'stats';
+
+    function showRoleTabsIfAllowed(forceRender = false) {
         const courierNavBtn = document.getElementById('nav-courier-btn');
         const ownerAdminPanel = document.getElementById('owner-admin-panel');
         const useridElem = document.getElementById('profile-userid-text');
         if (courierNavBtn) courierNavBtn.style.display = isCurrentUserCourier() ? 'flex' : 'none';
         if (ownerAdminPanel) {
             if (isCurrentUserOwner()) {
+                const wasHidden = ownerAdminPanel.style.display === 'none';
                 ownerAdminPanel.style.display = 'block';
-                renderAdminShopMaster(); renderAdminAppearance(); renderAdminInterfaceTab(); renderAdminPromos();
-                renderAdminCategories(); populateCategorySelects();
-                renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles(); renderAdminCommands();
+                if (!adminTabsInitialized || wasHidden || forceRender) {
+                    adminTabsInitialized = true;
+                    renderAdminShopMaster();
+                    renderAdminAppearance();
+                    if (!isUiThemeDirty) renderAdminInterfaceTab();
+                    renderAdminPromos();
+                    renderAdminCategories();
+                    populateCategorySelects();
+                    renderAdminMetro();
+                    renderAdminTimes();
+                    renderAdminProducts();
+                    renderAdminRoles();
+                    renderAdminCommands();
+                }
             } else {
                 ownerAdminPanel.style.display = 'none';
+                adminTabsInitialized = false;
             }
         }
         if (useridElem) {
@@ -1905,24 +2556,31 @@
                 disabledTimes = cfg.disabled_times || [];
                 promoCodes = cfg.promocodes || {};
 
-                if (cfg.ui_theme && typeof cfg.ui_theme === 'object') {
+                if (!isUiThemeDirty && cfg.ui_theme && typeof cfg.ui_theme === 'object') {
                     const prevJson = JSON.stringify(customUiTheme);
                     const nextTheme = { ...DEFAULT_UI_THEME, ...cfg.ui_theme };
                     if (JSON.stringify(nextTheme) !== prevJson) {
                         customUiTheme = nextTheme;
                         localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme));
                         if (currentAppTheme !== 'light') applyCustomUiCssVars(customUiTheme);
-                        if (document.getElementById('admin-tab-interface')?.style.display !== 'none') {
+                        const isInterfaceTabOpen = document.getElementById('screen-profile')?.classList.contains('active')
+                            && document.getElementById('admin-tab-interface')?.style.display !== 'none';
+                        if (!isInterfaceTabOpen) {
                             renderAdminInterfaceTab();
                         }
                     }
                 }
 
-                if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined) {
-                    logoPart1 = cfg.logo_part1 ?? 'MONKEY';
-                    logoPart2 = cfg.logo_part2 ?? 'VAPE';
+                if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined || cfg.splash_emoji !== undefined || cfg.welcome_text !== undefined || cfg.welcome_message !== undefined) {
+                    if (cfg.logo_part1 !== undefined) logoPart1 = cfg.logo_part1 ?? 'MONKEY';
+                    if (cfg.logo_part2 !== undefined) logoPart2 = cfg.logo_part2 ?? 'VAPE';
+                    if (cfg.splash_emoji !== undefined) splashEmoji = (cfg.splash_emoji || '🐵').trim() || '🐵';
+                    const srvWelcome = cfg.welcome_text !== undefined ? cfg.welcome_text : cfg.welcome_message;
+                    if (srvWelcome !== undefined) welcomeText = srvWelcome || '';
                     localStorage.setItem('monkey_logo_part1', logoPart1);
                     localStorage.setItem('monkey_logo_part2', logoPart2);
+                    localStorage.setItem('monkey_splash_emoji', splashEmoji);
+                    localStorage.setItem('monkey_welcome_text', welcomeText);
                     applyLogoBranding();
                 }
 
@@ -1955,7 +2613,12 @@
                     shopCategories = cfg.categories;
                     localStorage.setItem('monkey_categories', JSON.stringify(shopCategories));
                     renderCatalogCategories();
-                    populateCategorySelects();
+                    const isProductsTabOpen = document.getElementById('screen-profile')?.classList.contains('active')
+                        && document.getElementById('admin-tab-products')?.style.display !== 'none';
+                    const isEditModalOpen = document.getElementById('admin-edit-prod-modal')?.classList.contains('active');
+                    if (!isProductsTabOpen && !isEditModalOpen) {
+                        populateCategorySelects();
+                    }
                 }
 
                 if (cfg.hit_color) { hitHighlightColor = cfg.hit_color; localStorage.setItem('monkey_hit_color', hitHighlightColor); }
@@ -1985,9 +2648,9 @@
                 renderCheckoutTimeSlots(); renderChangeTimeSlots();
 
                 const activeEl = document.activeElement;
-                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input'].includes(activeEl.id);
+                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-splash-emoji', 'admin-welcome-text', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input'].includes(activeEl.id);
                 if (!skipCartRender) renderCart();
-                showRoleTabsIfAllowed(); updateProfileAvatarUI();
+                showRoleTabsIfAllowed(false); updateProfileAvatarUI();
             }
         } catch (e) {}
     }
@@ -1998,7 +2661,7 @@
         if (!grid) return;
         grid.innerHTML = '';
         if (items.length === 0) {
-            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 30px;">Товары не найдены</div>';
+            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 34px 16px;">По этому запросу пока пусто — попробуй другое название</div>';
             return;
         }
         items.forEach(p => {
@@ -2093,10 +2756,10 @@
         grid.innerHTML = '';
 
         subtitle.innerText = prod.category === 'pod'
-            ? 'Выберите цвет устройства:'
+            ? 'Выбери расцветку девайса:'
             : (prod.category === 'accessory'
-                ? 'Выберите сопротивление (ом):'
-                : ((prod.category === 'liquid' || prod.category === 'disposable') ? 'Выберите вкус:' : 'Выберите вариант:'));
+                ? 'Выбери сопротивление:'
+                : ((prod.category === 'liquid' || prod.category === 'disposable') ? 'Выбери свой вкус:' : 'Выбери вариант:'));
 
         const opts = (Array.isArray(prod.options) && prod.options.length > 0)
             ? prod.options
@@ -2243,7 +2906,7 @@
         if (!container) return;
         const items = Object.values(cart);
         if (items.length === 0) {
-            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>Корзина пуста</p><button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">В каталог</button></div>`;
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>В корзине пока пусто — время выбрать что-нибудь топовое</p><button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">Перейти к дропу</button></div>`;
             return;
         }
 
@@ -2280,7 +2943,7 @@
 
         const promoBlockHtml = `
             <div class="promo-box">
-                <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">🎟 Промокод на скидку</div>
+                <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">🎟 Есть промокод?</div>
                 ${appliedPromoCode ? `
                     <div style="display:flex; justify-content:space-between; align-items:center; background:var(--accent-green-glow); border:1px solid var(--accent-green); padding:10px 12px; border-radius:12px;">
                         <span style="font-size:13px; color:var(--accent-green); font-weight:700;">${promoBadgeLabel}</span>
@@ -2288,7 +2951,7 @@
                     </div>
                 ` : `
                     <div class="promo-input-row">
-                        <input type="text" id="promo-input" class="promo-input" value="${escapeHtml(promoInputDraft)}" placeholder="Введите промокод..." oninput="handlePromoInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); applyPromoCode();}">
+                        <input type="text" id="promo-input" class="promo-input" value="${escapeHtml(promoInputDraft)}" placeholder="Введи промокод..." oninput="handlePromoInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); applyPromoCode();}">
                         <button type="button" class="promo-apply-btn" onclick="applyPromoCode()">Применить</button>
                     </div>
                 `}
@@ -2297,16 +2960,16 @@
         `;
 
         const discountRowHtml = actualDiscount > 0 ? `<div class="summary-row"><span style="color:var(--accent-green);">Скидка (${appliedPromoCode}):</span><span style="color:var(--accent-green); font-weight:700;">-${actualDiscount.toFixed(2)} р.</span></div>` : '';
-        let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>`;
+        let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Перейти к оформлению</button>`;
         if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
         else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${escapeHtml(shopClosedMessage)}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
 
         container.innerHTML = itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
-                <div class="summary-row"><span>Станция доставки:</span><span style="color:var(--accent-green); font-weight:600;">${selectedStation ? 'м. ' + escapeHtml(selectedStation) : 'Не выбрана'}</span></div>
-                <div class="summary-row"><span>Товары (${items.reduce((s,i)=>s+i.qty,0)})</span><span>${subtotal.toFixed(2)} р.</span></div>
+                <div class="summary-row"><span>Точка встречи:</span><span style="color:var(--accent-green); font-weight:700;">${selectedStation ? 'м. ' + escapeHtml(selectedStation) : 'Не выбрана'}</span></div>
+                <div class="summary-row"><span>Позиций (${items.reduce((s,i)=>s+i.qty,0)})</span><span>${subtotal.toFixed(2)} р.</span></div>
                 ${discountRowHtml}
-                <div class="summary-row total"><span>Итого к оплате:</span><span>${finalTotal.toFixed(2)} р.</span></div>
+                <div class="summary-row total"><span>К оплате:</span><span>${finalTotal.toFixed(2)} р.</span></div>
             </div>
             ${checkoutActionHtml}
         `;
@@ -2580,13 +3243,13 @@
 
         const listToRender = currentOrdersSubTab === 'active' ? activeList : pastList;
         if (listToRender.length === 0) {
-            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${currentOrdersSubTab === 'active' ? '📦' : '🗂️'}</div><p>${currentOrdersSubTab === 'active' ? 'Нет активных заказов' : 'Прошедших заказов пока нет'}</p></div>`;
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${currentOrdersSubTab === 'active' ? '📦' : '🗂️'}</div><p>${currentOrdersSubTab === 'active' ? 'Активных заказов сейчас нет' : 'История заказов пока пуста'}</p></div>`;
             return;
         }
 
         let html = '';
         listToRender.forEach(ord => {
-            let statusHtml = `<span class="order-status-pill active">Активен</span>`;
+            let statusHtml = `<span class="order-status-pill active">В работе ⚡</span>`;
             if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
             else if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
 
@@ -2684,7 +3347,7 @@
             if (textInp) textInp.value = dataUrl;
             syncImagePreviewFromInput(mode);
         } catch (e) {
-            alert("Не удалось обработать картинку. Попробуйте другой файл.");
+            showToast("Не удалось обработать картинку", true);
         }
         inputEl.value = '';
     }
@@ -2722,7 +3385,7 @@
                         <span class="preset-dot" style="background:${p.dots[0]};"></span>
                         <span class="preset-dot" style="background:${p.dots[1]};"></span>
                     </span>
-                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.name}</span>
+                    <span style="min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.name}</span>
                 </button>
             `).join('');
         }
@@ -2733,7 +3396,7 @@
             const curVal = (customUiTheme[field.key] || DEFAULT_UI_THEME[field.key]).toLowerCase();
             const swatchesHtml = field.swatches.map(hex => {
                 const isAct = curVal === hex.toLowerCase();
-                return `<span class="swatch-circle ${isAct ? 'active' : ''}" style="background:${hex};" title="${hex}" onclick="updateSingleUiColor('${field.key}', '${hex}')"></span>`;
+                return `<span class="swatch-circle ${isAct ? 'active' : ''}" data-swatch-key="${field.key}" data-swatch-hex="${hex.toLowerCase()}" style="background:${hex};" title="${hex}" onclick="updateSingleUiColor('${field.key}', '${hex}', false)"></span>`;
             }).join('');
             return `
                 <div class="palette-control-card">
@@ -2744,7 +3407,7 @@
                     <div class="palette-swatches-row">
                         ${swatchesHtml}
                         <label class="color-wheel-label" title="Выбрать любой цвет на палитре">
-                            <input type="color" value="${curVal}" oninput="updateSingleUiColor('${field.key}', this.value)">
+                            <input type="color" id="color-input-${field.key}" value="${curVal}" oninput="updateSingleUiColor('${field.key}', this.value, true)" onchange="updateSingleUiColor('${field.key}', this.value, true)">
                         </label>
                     </div>
                 </div>
@@ -2752,7 +3415,8 @@
         }).join('');
     }
 
-    function updateSingleUiColor(key, hexVal) {
+    function updateSingleUiColor(key, hexVal, fromWheel = false) {
+        isUiThemeDirty = true;
         customUiTheme[key] = hexVal;
         localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme));
         if (currentAppTheme === 'light') {
@@ -2763,12 +3427,24 @@
             if (btn) btn.innerText = '☀️';
         }
         applyCustomUiCssVars(customUiTheme);
-        renderAdminInterfaceTab();
+
+        // Обновляем бейдж и активный кружок точечно без перерисовки DOM, чтобы не закрывать <input type="color">
+        const normHex = String(hexVal || '').toLowerCase();
+        const badgeEl = document.getElementById(`hex-badge-${key}`);
+        if (badgeEl) badgeEl.textContent = normHex.toUpperCase();
+        document.querySelectorAll(`.swatch-circle[data-swatch-key="${key}"]`).forEach(sw => {
+            sw.classList.toggle('active', sw.getAttribute('data-swatch-hex') === normHex);
+        });
+        if (!fromWheel) {
+            const colorInp = document.getElementById(`color-input-${key}`);
+            if (colorInp && colorInp.value.toLowerCase() !== normHex) colorInp.value = normHex;
+        }
     }
 
     function applyPresetTheme(idx) {
         const preset = UI_THEME_PRESETS[idx];
         if (!preset) return;
+        isUiThemeDirty = true;
         customUiTheme = { ...DEFAULT_UI_THEME, ...preset.theme };
         localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme));
         if (currentAppTheme === 'light') {
@@ -2783,17 +3459,24 @@
     }
 
     async function adminSaveUiTheme() {
+        document.activeElement?.blur();
         try {
             await apiFetch(`/api/admin/ui_theme`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), theme: customUiTheme, reset: false })
             });
-            alert("✅ Цвета интерфейса сохранены и применены для всех пользователей!");
-        } catch (e) { alert("Ошибка сохранения цветов на сервере."); }
+            isUiThemeDirty = false;
+            showToast("✅ Цвета интерфейса сохранены для всех!");
+        } catch (e) {
+            showToast("Ошибка сохранения цветов на сервере", true);
+        }
     }
 
     async function adminResetUiTheme() {
-        if (!confirm("Сбросить все цвета интерфейса на стандартные?")) return;
+        document.activeElement?.blur();
+        const ok = await showCustomConfirm("Сбросить все цвета интерфейса на стандартные?", "Сброс цветов", true);
+        if (!ok) return;
+        isUiThemeDirty = false;
         customUiTheme = { ...DEFAULT_UI_THEME };
         localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme));
         applyCustomUiCssVars(customUiTheme);
@@ -2803,8 +3486,10 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), theme: customUiTheme, reset: true })
             });
-            alert("🔄 Стандартные цвета восстановлены!");
-        } catch (e) {}
+            showToast("🔄 Стандартные цвета восстановлены!");
+        } catch (e) {
+            showToast("Ошибка сброса цветов на сервере", true);
+        }
     }
 
     // ----- ВКЛАДКА "КОМАНДЫ" — СПРАВОЧНИК КОМАНД БОТА -----
@@ -2891,6 +3576,7 @@
     }
 
     async function adminToggleShopOpen() {
+        document.activeElement?.blur();
         isShopOpen = !isShopOpen; updateShopClosedUI(); renderAdminShopMaster(); renderCart();
         const msg = (document.getElementById('admin-closed-msg-input')?.value || shopClosedMessage).trim();
         try {
@@ -2898,10 +3584,12 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), is_open: isShopOpen, closed_message: msg })
             });
-        } catch (e) { alert("Ошибка связи с сервером!"); }
+            showToast(isShopOpen ? "🟢 Магазин открыт!" : "🔴 Приём заказов приостановлен");
+        } catch (e) { showToast("Ошибка связи с сервером!", true); }
     }
 
     async function adminSaveClosedMsg() {
+        document.activeElement?.blur();
         const msg = (document.getElementById('admin-closed-msg-input')?.value || '').trim();
         if (!msg) return;
         shopClosedMessage = msg; updateShopClosedUI(); renderCart();
@@ -2910,11 +3598,13 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), is_open: isShopOpen, closed_message: msg })
             });
-            alert("Текст закрытия сохранён!");
-        } catch (e) { alert("Ошибка связи с сервером!"); }
+            showToast("✅ Текст закрытия сохранён!");
+        } catch (e) { showToast("Ошибка связи с сервером!", true); }
     }
 
     function switchAdminTab(tab, el) {
+        document.activeElement?.blur();
+        currentAdminSubTab = tab;
         document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
         ['stats', 'products', 'promos', 'appearance', 'interface', 'channels', 'metro', 'time', 'roles', 'broadcast', 'commands'].forEach(t => {
@@ -2931,30 +3621,45 @@
     }
 
     async function adminSaveBranding() {
+        document.activeElement?.blur();
         const p1 = (document.getElementById('admin-logo-part1')?.value || '').trim();
         const p2 = (document.getElementById('admin-logo-part2')?.value || '').trim();
-        if (!p1 && !p2) { alert("Введите хотя бы первую часть названия логотипа."); return; }
+        const em = (document.getElementById('admin-splash-emoji')?.value || '🐵').trim() || '🐵';
+        const wText = (document.getElementById('admin-welcome-text')?.value || '').trim();
+        if (!p1 && !p2) { showToast("Введите хотя бы первую часть названия логотипа", true); return; }
         logoPart1 = p1;
         logoPart2 = p2;
+        splashEmoji = em;
+        welcomeText = wText;
         localStorage.setItem('monkey_logo_part1', logoPart1);
         localStorage.setItem('monkey_logo_part2', logoPart2);
+        localStorage.setItem('monkey_splash_emoji', splashEmoji);
+        localStorage.setItem('monkey_welcome_text', welcomeText);
         applyLogoBranding();
         try {
             await apiFetch(`/api/admin/branding`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: Number(currentUserId), logo_part1: p1, logo_part2: p2 })
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    logo_part1: p1,
+                    logo_part2: p2,
+                    splash_emoji: em,
+                    welcome_text: wText
+                })
             });
-            alert("✅ Название логотипа обновлено!");
-        } catch (e) { alert("Ошибка сохранения логотипа на сервере."); }
+            showToast("✅ Брендинг и приветствие обновлены!");
+        } catch (e) { showToast("Ошибка сохранения настроек на сервере", true); }
     }
 
     async function adminToggleBannerEnabled() {
+        document.activeElement?.blur();
         promoBanner.enabled = !promoBanner.enabled;
         applyPromoBannerUI();
         await adminSaveBanner(true);
     }
 
     async function adminSaveBanner(silent = false) {
+        document.activeElement?.blur();
         const title = (document.getElementById('admin-banner-title')?.value || '').trim();
         const desc = (document.getElementById('admin-banner-desc')?.value || '').trim();
         const badge = (document.getElementById('admin-banner-badge')?.value || '').trim();
@@ -2972,11 +3677,12 @@
                     title, desc, badge
                 })
             });
-            if (!silent) alert("✅ Баннер на витрине обновлён!");
-        } catch (e) { if (!silent) alert("Ошибка сохранения баннера."); }
+            if (!silent) showToast("✅ Баннер на витрине обновлён!");
+        } catch (e) { if (!silent) showToast("Ошибка сохранения баннера", true); }
     }
 
     async function adminSaveChannels() {
+        document.activeElement?.blur();
         const newsRaw = (document.getElementById('admin-news-channel-input')?.value || '').trim();
         const revRaw = (document.getElementById('admin-reviews-channel-input')?.value || '').trim();
         const suppRaw = (document.getElementById('admin-support-input')?.value || '').trim() || '@warat_24';
@@ -2998,8 +3704,8 @@
             localStorage.setItem('monkey_reviews_channel', reviewsChannelUrl);
             localStorage.setItem('monkey_support_username', supportUsername);
             renderProfileLinks();
-            alert("✅ Ссылки сохранены и добавлены в профиль!");
-        } catch (e) { alert("Ошибка сохранения ссылок."); }
+            showToast("✅ Ссылки сохранены и добавлены в профиль!");
+        } catch (e) { showToast("Ошибка сохранения ссылок", true); }
     }
 
     function renderAdminCategories() {
@@ -3015,6 +3721,7 @@
     }
 
     async function adminAddCategory() {
+        document.activeElement?.blur();
         const inp = document.getElementById('admin-new-cat-input');
         const name = (inp?.value || '').trim();
         if (!name) return;
@@ -3032,13 +3739,14 @@
             renderCatalogCategories();
             renderAdminCategories();
             populateCategorySelects();
-        } catch (e) { alert("Ошибка добавления категории."); }
+            showToast("✅ Вкладка добавлена");
+        } catch (e) { showToast("Ошибка добавления категории", true); }
     }
 
     async function adminRenameCategory(catId) {
         const found = shopCategories.find(c => c.id === catId);
         if (!found) return;
-        const newName = prompt("Введите новое название вкладки:", found.name);
+        const newName = await showCustomPrompt("Введите новое название вкладки:", found.name, "Переименовать вкладку", "text");
         if (newName === null || !newName.trim()) return;
         try {
             const res = await apiFetch(`/api/admin/manage_category`, {
@@ -3053,12 +3761,14 @@
             renderCatalogCategories();
             renderAdminCategories();
             populateCategorySelects();
-        } catch (e) { alert("Ошибка переименования вкладки."); }
+            showToast("✅ Вкладка переименована");
+        } catch (e) { showToast("Ошибка переименования вкладки", true); }
     }
 
     async function adminDeleteCategory(catId) {
-        if (shopCategories.length <= 1) { alert("Должна остаться хотя бы одна категория."); return; }
-        if (!confirm("Удалить эту вкладку из каталога?")) return;
+        if (shopCategories.length <= 1) { showToast("Должна остаться хотя бы одна категория", true); return; }
+        const ok = await showCustomConfirm("Удалить эту вкладку из каталога?", "Удаление вкладки", true);
+        if (!ok) return;
         try {
             const res = await apiFetch(`/api/admin/manage_category`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3073,7 +3783,8 @@
             renderAdminCategories();
             populateCategorySelects();
             filterProducts();
-        } catch (e) { alert("Ошибка удаления категории."); }
+            showToast("🗑 Вкладка удалена");
+        } catch (e) { showToast("Ошибка удаления категории", true); }
     }
 
     function renderAdminAppearance() {
@@ -3126,6 +3837,7 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), season_effect: season, hit_color: hitHighlightColor })
             });
+            showToast("✅ Эффект обновлён");
         } catch (e) {}
     }
 
@@ -3140,6 +3852,7 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), season_effect: currentSeasonEffect, hit_color: hexColor })
             });
+            showToast("✅ Цвет подсветки «ХИТ» обновлён");
         } catch (e) {}
     }
 
@@ -3214,19 +3927,21 @@
                     })
                 });
                 await syncShopConfig();
+                renderAdminProducts();
+                showToast("✅ Скидка снята");
             } catch (e) {}
             return;
         }
 
-        const oldRaw = prompt(`Введите СТАРУЮ цену (до скидки, например 17):`, String(prod.price));
+        const oldRaw = await showCustomPrompt(`Введите СТАРУЮ цену (до скидки, например 17):`, String(prod.price), "Скидка на товар", "number");
         if (oldRaw === null) return;
         const oldPrice = parseFloat(oldRaw.replace(',', '.'));
-        if (isNaN(oldPrice) || oldPrice <= 0) { alert("Некорректная старая цена"); return; }
+        if (isNaN(oldPrice) || oldPrice <= 0) { showToast("Некорректная старая цена", true); return; }
 
-        const newRaw = prompt(`Введите НОВУЮ цену со скидкой (например 15):`, String(Math.max(1, oldPrice - 2)));
+        const newRaw = await showCustomPrompt(`Введите НОВУЮ цену со скидкой (например 15):`, String(Math.max(1, oldPrice - 2)), "Цена со скидкой", "number");
         if (newRaw === null) return;
         const newPrice = parseFloat(newRaw.replace(',', '.'));
-        if (isNaN(newPrice) || newPrice <= 0) { alert("Некорректная новая цена"); return; }
+        if (isNaN(newPrice) || newPrice <= 0) { showToast("Некорректная новая цена", true); return; }
 
         try {
             await apiFetch(`/api/admin/save_product`, {
@@ -3239,17 +3954,20 @@
                 })
             });
             await syncShopConfig();
-        } catch (e) { alert("Ошибка применения скидки."); }
+            renderAdminProducts();
+            showToast("✅ Скидка применена!");
+        } catch (e) { showToast("Ошибка применения скидки", true); }
     }
 
     async function adminAddProduct() {
+        document.activeElement?.blur();
         const title = document.getElementById('admin-prod-title').value.trim();
         const image_url = document.getElementById('admin-prod-img').value.trim();
         const optsRaw = document.getElementById('admin-prod-opts').value.trim();
         const category = document.getElementById('admin-prod-cat').value;
         const price = parseFloat(document.getElementById('admin-prod-price').value);
         const icon = document.getElementById('admin-prod-icon').value.trim() || '🧪';
-        if (!title || isNaN(price) || price <= 0) { alert("Введите название и корректную цену."); return; }
+        if (!title || isNaN(price) || price <= 0) { showToast("Введите название и корректную цену", true); return; }
 
         const options = optsRaw
             ? optsRaw.split(',').map(s => s.trim()).filter(Boolean).map(name => ({ name, available: true }))
@@ -3269,7 +3987,9 @@
             document.getElementById('admin-prod-opts').value = '';
             document.getElementById('admin-prod-price').value = '';
             await syncShopConfig();
-        } catch (e) { alert("Ошибка сохранения товара."); }
+            renderAdminProducts();
+            showToast("✅ Товар добавлен в каталог!");
+        } catch (e) { showToast("Ошибка сохранения товара", true); }
     }
 
     async function adminToggleProduct(productId, field) {
@@ -3279,6 +3999,7 @@
                 body: JSON.stringify({ user_id: Number(currentUserId), product_id: productId, field })
             });
             await syncShopConfig();
+            renderAdminProducts();
         } catch (e) {}
     }
 
@@ -3312,6 +4033,7 @@
     }
 
     function closeAdminEditProductModal() {
+        document.activeElement?.blur();
         document.getElementById('admin-edit-prod-modal').classList.remove('active');
     }
 
@@ -3349,6 +4071,7 @@
     }
 
     async function adminSaveEditedProduct() {
+        document.activeElement?.blur();
         const id = parseInt(document.getElementById('edit-prod-id').value, 10);
         const prod = products.find(p => p.id === id);
         if (!prod) return;
@@ -3360,7 +4083,7 @@
         const old_price = parseFloat(document.getElementById('edit-prod-old-price').value) || 0;
         const image_url = document.getElementById('edit-prod-img').value.trim();
 
-        if (!title || isNaN(price) || price <= 0) { alert("Укажите название и цену"); return; }
+        if (!title || isNaN(price) || price <= 0) { showToast("Укажите название и цену", true); return; }
         const autoDiscount = old_price > price ? true : Boolean(prod.has_discount && old_price > 0);
 
         try {
@@ -3375,18 +4098,23 @@
             });
             closeAdminEditProductModal();
             await syncShopConfig();
-        } catch (e) { alert("Ошибка сохранения."); }
+            renderAdminProducts();
+            showToast("✅ Товар сохранён!");
+        } catch (e) { showToast("Ошибка сохранения товара", true); }
     }
 
     async function adminDeleteProduct(productId) {
-        if (!confirm("Удалить этот товар из каталога?")) return;
+        const ok = await showCustomConfirm("Удалить этот товар из каталога?", "Удаление товара", true);
+        if (!ok) return;
         try {
             await apiFetch(`/api/admin/delete_product`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), product_id: productId })
             });
             await syncShopConfig();
-        } catch (e) {}
+            renderAdminProducts();
+            showToast("🗑 Товар удалён");
+        } catch (e) { showToast("Ошибка удаления товара", true); }
     }
 
     function renderAdminPromos() {
@@ -3403,11 +4131,12 @@
     }
 
     async function adminSavePromo() {
+        document.activeElement?.blur();
         const code = document.getElementById('admin-promo-code').value.trim().toUpperCase();
         const discount = parseFloat(document.getElementById('admin-promo-discount').value);
         const discount_type = document.getElementById('admin-promo-type')?.value || 'rub';
         const max_uses = parseInt(document.getElementById('admin-promo-limit')?.value || '0', 10) || 0;
-        if (!code || isNaN(discount) || discount <= 0) { alert("Укажите корректный код и размер скидки"); return; }
+        if (!code || isNaN(discount) || discount <= 0) { showToast("Укажите корректный код и размер скидки", true); return; }
         promoCodes[code] = { discount, type: discount_type, max_uses, used_count: 0 };
         localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
         document.getElementById('admin-promo-code').value = ''; document.getElementById('admin-promo-discount').value = ''; document.getElementById('admin-promo-limit').value = '';
@@ -3418,7 +4147,9 @@
                 body: JSON.stringify({ user_id: Number(currentUserId), code, discount, discount_type, max_uses })
             });
             await syncShopConfig();
-        } catch (e) { alert("Промокод сохранён только локально! Нет связи с сервером."); }
+            renderAdminPromos();
+            showToast("✅ Промокод сохранён!");
+        } catch (e) { showToast("Промокод сохранён только локально", true); }
     }
 
     async function adminDeletePromo(code) {
@@ -3427,6 +4158,7 @@
             await apiFetch(`/api/admin/delete_promo`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: Number(currentUserId), code })
             });
+            showToast("🗑 Промокод удалён");
         } catch (e) {}
     }
 
@@ -3442,7 +4174,7 @@
         if (!container) return;
         container.innerHTML = (metroStations[adminMetroLine] || []).map(st => {
             const isDisabled = disabledStations.includes(st.name);
-            const esc = st.name.replace(/'/g, "'");
+            const esc = st.name.replace(/'/g, "\'");
             return `
                 <div class="admin-toggle-row">
                     <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">${escapeHtml(st.name)}</span>
@@ -3454,6 +4186,7 @@
     }
 
     async function adminAddStation() {
+        document.activeElement?.blur();
         const input = document.getElementById('admin-new-station-input');
         const stName = (input?.value || '').trim();
         if (!stName) return;
@@ -3464,17 +4197,22 @@
                 body: JSON.stringify({ user_id: Number(currentUserId), line: adminMetroLine, station: stName, action: 'add' })
             });
             await syncShopConfig();
-        } catch (e) { alert("Ошибка добавления станции."); }
+            renderAdminMetro();
+            showToast("✅ Станция добавлена");
+        } catch (e) { showToast("Ошибка добавления станции", true); }
     }
 
     async function adminDeleteStation(stationName) {
-        if (!confirm(`Удалить станцию "${stationName}" со списка?`)) return;
+        const ok = await showCustomConfirm(`Удалить станцию "${stationName}" со списка?`, "Удаление станции", true);
+        if (!ok) return;
         try {
             await apiFetch(`/api/admin/manage_metro`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), line: adminMetroLine, station: stationName, action: 'delete' })
             });
             await syncShopConfig();
+            renderAdminMetro();
+            showToast("🗑 Станция удалена");
         } catch (e) {}
     }
 
@@ -3505,6 +4243,7 @@
     }
 
     async function adminAddTimeSlot() {
+        document.activeElement?.blur();
         const input = document.getElementById('admin-new-time-input');
         const tVal = (input?.value || '').trim();
         if (!tVal) return;
@@ -3515,17 +4254,22 @@
                 body: JSON.stringify({ user_id: Number(currentUserId), time: tVal, action: 'add' })
             });
             await syncShopConfig();
-        } catch (e) { alert("Ошибка добавления времени."); }
+            renderAdminTimes();
+            showToast("✅ Слот времени добавлен");
+        } catch (e) { showToast("Ошибка добавления времени", true); }
     }
 
     async function adminDeleteTimeSlot(timeStr) {
-        if (!confirm(`Удалить слот времени "${timeStr}"?`)) return;
+        const ok = await showCustomConfirm(`Удалить слот времени "${timeStr}"?`, "Удаление слота", true);
+        if (!ok) return;
         try {
             await apiFetch(`/api/admin/manage_time`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), time: timeStr, action: 'delete' })
             });
             await syncShopConfig();
+            renderAdminTimes();
+            showToast("🗑 Слот удалён");
         } catch (e) {}
     }
 
@@ -3561,12 +4305,13 @@
     }
 
     async function adminManageRole(action, explicitId = null) {
+        document.activeElement?.blur();
         let targetId = explicitId;
         if (!targetId) {
             const mapInp = { add_owner: 'admin-owner-id-input', add_courier: 'admin-courier-id-input', ban_user: 'admin-ban-id-input' };
             const el = document.getElementById(mapInp[action]);
             targetId = parseInt(el?.value || '0', 10);
-            if (!targetId || targetId <= 0) { alert("Введите корректный цифровой Telegram ID"); return; }
+            if (!targetId || targetId <= 0) { showToast("Введите корректный цифровой Telegram ID", true); return; }
             if (el) el.value = '';
         }
         if (action === 'remove_courier') {
@@ -3579,7 +4324,9 @@
                 body: JSON.stringify({ user_id: Number(currentUserId), target_id: Number(targetId), action })
             });
             await syncShopConfig();
-        } catch (e) { alert("Не удалось выполнить действие."); }
+            renderAdminRoles();
+            showToast("✅ Права доступа обновлены");
+        } catch (e) { showToast("Не удалось выполнить действие", true); }
     }
 
     async function loadBroadcastHistory() {
@@ -3596,10 +4343,12 @@
     }
 
     async function adminSendBroadcast() {
+        document.activeElement?.blur();
         const textArea = document.getElementById('admin-broadcast-text'), btn = document.getElementById('admin-broadcast-btn'), resBox = document.getElementById('admin-broadcast-result');
         const text = (textArea?.value || '').trim();
-        if (!text) { alert("Введите текст объявления."); return; }
-        if (!confirm("Отправить это сообщение всем пользователям бота?")) return;
+        if (!text) { showToast("Введите текст объявления", true); return; }
+        const ok = await showCustomConfirm("Отправить это сообщение всем пользователям бота?", "Рассылка", false);
+        if (!ok) return;
         btn.disabled = true; btn.innerText = "⏳ Отправка..."; resBox.innerText = "";
         try {
             const data = await (await apiFetch(`/api/admin/broadcast`, {
@@ -3608,9 +4357,11 @@
             })).json();
             textArea.value = ""; resBox.style.color = "var(--accent-green)";
             resBox.innerText = `✅ Доставлено: ${data.sent} из ${data.total} (недоступны: ${data.failed})`;
+            showToast(`✅ Рассылка отправлена (${data.sent}/${data.total})`);
             loadBroadcastHistory();
         } catch (e) {
             resBox.style.color = "var(--danger)"; resBox.innerText = "🔴 Ошибка отправки! Проверь связь с сервером.";
+            showToast("Ошибка отправки рассылки", true);
         } finally { btn.disabled = false; btn.innerText = "📢 Отправить всем"; }
     }
 
@@ -3625,7 +4376,7 @@
             });
             if (res.ok) loadCourierOrders();
         } catch (e) {
-            alert("Не удалось взять заказ (возможно, его уже забрал другой курьер).");
+            showToast("Заказ уже взял другой курьер", true);
             loadCourierOrders();
         }
     }
@@ -3637,8 +4388,8 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: key, courier_id: Number(currentUserId), courier_name: currentUserName })
             });
-            alert("📍 Клиенту отправлено уведомление, что вы на месте!");
-        } catch (e) { alert("Ошибка отправки уведомления."); }
+            showToast("📍 Клиенту отправлено уведомление!");
+        } catch (e) { showToast("Ошибка отправки уведомления", true); }
     }
 
     function renderCourierCards(orders) {
@@ -3781,3 +4532,4 @@
     renderOrders();
 </script>
 </body>
+</html>
