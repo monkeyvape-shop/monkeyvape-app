@@ -138,16 +138,16 @@
             50% { transform: scale(1.08); filter: drop-shadow(0 0 18px rgba(0, 255, 102, 0.85)); }
         }
 
-        .splash-logo { font-size: 30px; font-weight: 900; color: #ffffff; text-shadow: 0 0 22px rgba(0, 255, 102, 0.55); margin-bottom: 8px; letter-spacing: 2px; }
+        .splash-logo { font-size: 30px; font-weight: 900; color: #ffffff; text-shadow: 0 0 22px rgba(0, 255, 102, 0.55); margin-bottom: 8px; letter-spacing: 2px; text-align: center; padding: 0 16px; }
         .splash-logo span { color: #00ff66; }
         .splash-sub { color: #9ca3af; font-size: 13px; margin-bottom: 26px; letter-spacing: 0.4px; }
         .progress-bar { width: 210px; height: 6px; background-color: rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden; border: 1px solid rgba(0, 255, 102, 0.25); }
         .progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #00b84a, #00ff66, #7affb2); box-shadow: 0 0 14px #00ff66; transition: width 1.15s cubic-bezier(0.22, 1, 0.36, 1); }
 
         .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 14px 16px; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); z-index: 10; }
-        .brand-title { font-size: 17px; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+        .brand-title { font-size: 17px; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .brand-title span { color: var(--accent-green); }
-        .top-bar-actions { display: flex; align-items: center; gap: 8px; }
+        .top-bar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .theme-toggle-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 34px; height: 34px; border-radius: 11px; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .metro-selector-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 7px 12px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 7px; cursor: pointer; }
         .metro-icon { background-color: var(--accent-green); color: #000; width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; }
@@ -168,10 +168,10 @@
         .cat-chip { background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 18px; border-radius: 14px; font-size: 13px; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
         .cat-chip.active { background-color: var(--accent-green); color: #0b0f0c; border-color: var(--accent-green); font-weight: 600; box-shadow: 0 0 15px var(--accent-green-glow); }
 
-        .promo-banner { background: var(--promo-grad); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
-        .promo-banner h3 { font-size: 16px; font-weight: 700; color: var(--accent-green); margin-bottom: 6px; }
-        .promo-banner p { font-size: 12px; color: var(--text-secondary); }
-        .promo-badge { background-color: var(--accent-green); color: #000; font-size: 12px; font-weight: bold; padding: 6px 10px; border-radius: 10px; }
+        .promo-banner { background: var(--promo-grad); border: 1px solid var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .promo-banner h3 { font-size: 16px; font-weight: 700; color: var(--accent-green); margin-bottom: 6px; word-break: break-word; }
+        .promo-banner p { font-size: 12px; color: var(--text-secondary); word-break: break-word; }
+        .promo-badge { background-color: var(--accent-green); color: #000; font-size: 12px; font-weight: bold; padding: 6px 10px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
 
         .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .product-card { background-color: var(--card-bg); border: 1.5px solid var(--border-color); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; cursor: pointer; position: relative; }
@@ -287,6 +287,44 @@
             text-align: center;
         }
 
+        .img-upload-btn {
+            width: 100%;
+            background: rgba(0, 255, 102, 0.12);
+            border: 1.5px dashed var(--accent-green);
+            color: var(--accent-green);
+            padding: 11px 12px;
+            border-radius: 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .img-preview-strip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+        }
+
+        .img-preview-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--accent-green);
+            flex-shrink: 0;
+        }
+
         .cart-empty { text-align: center; padding: 50px 20px; color: var(--text-secondary); }
         .cart-empty-icon { font-size: 48px; margin-bottom: 14px; }
         .cart-items-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
@@ -363,8 +401,10 @@
         .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .profile-info h3 { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
         .profile-info p { font-size: 12px; color: var(--text-secondary); }
-        .profile-menu-item { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; text-decoration: none; color: var(--text-main); font-size: 14px; }
-        .profile-menu-item span { color: var(--accent-green); font-weight: 600; }
+        .profile-menu-item { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; text-decoration: none; color: var(--text-main); font-size: 14px; transition: border-color 0.2s; }
+        .profile-menu-item:hover { border-color: var(--accent-green); }
+        .profile-menu-item span:first-child { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .profile-menu-item span:last-child { color: var(--accent-green); font-weight: 600; font-size: 13px; white-space: nowrap; }
 
         .admin-section { background-color: var(--card-bg); border: 1px solid var(--accent-green); border-radius: 18px; padding: 16px; margin-top: 16px; }
         .admin-title { font-size: 15px; font-weight: 700; color: var(--accent-green); margin-bottom: 8px; }
@@ -372,8 +412,8 @@
         .server-status-bar.ok { background: rgba(0, 255, 102, 0.1); border: 1px solid rgba(0, 255, 102, 0.35); color: var(--accent-green); }
         .server-status-bar.err { background: rgba(255, 51, 51, 0.1); border: 1px solid rgba(255, 51, 51, 0.4); color: var(--danger); }
         .shop-master-box { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
-        .admin-sub-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
-        .admin-sub-tab { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 3px; border-radius: 10px; font-size: 10.5px; font-weight: 600; text-align: center; cursor: pointer; white-space: nowrap; }
+        .admin-sub-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 14px; }
+        .admin-sub-tab { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 4px; border-radius: 10px; font-size: 11px; font-weight: 600; text-align: center; cursor: pointer; white-space: nowrap; }
         .admin-sub-tab.active { border-color: var(--accent-green); color: var(--accent-green); background: var(--accent-green-glow); }
         .admin-toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; background: var(--bg-color); border: 1px solid var(--border-color); padding: 9px 10px; border-radius: 10px; margin-bottom: 8px; font-size: 12.5px; }
 
@@ -407,7 +447,7 @@
             <div class="splash-ring-inner"></div>
             <div class="splash-emblem">🐵</div>
         </div>
-        <div class="splash-logo">MONKEY <span>VAPE</span></div>
+        <div class="splash-logo" id="splash-logo">MONKEY <span>VAPE</span></div>
         <div class="splash-sub">Подключение к витрине...</div>
         <div class="progress-bar">
             <div class="progress-fill" id="progress-fill"></div>
@@ -466,24 +506,32 @@
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
                 <input type="text" id="edit-prod-title" class="promo-input" style="text-transform:none;" placeholder="Название товара">
                 <div style="display:flex; gap:6px;">
-                    <select id="edit-prod-cat" class="admin-select" style="flex:1;">
-                        <option value="liquid">Жидкость</option>
-                        <option value="pod">Под / Вейп</option>
-                        <option value="disposable">Одноразка</option>
-                        <option value="accessory">Расходник</option>
-                    </select>
+                    <select id="edit-prod-cat" class="admin-select" style="flex:1;"></select>
                     <input type="text" id="edit-prod-icon" class="promo-input" style="text-transform:none; width:50px; text-align:center;" placeholder="🧪">
                 </div>
                 <div style="display:flex; gap:6px;">
                     <input type="number" id="edit-prod-old-price" class="promo-input" style="text-transform:none;" placeholder="Старая цена (напр. 17)" step="0.5">
                     <input type="number" id="edit-prod-price" class="promo-input" style="text-transform:none;" placeholder="Цена сейчас (напр. 15)" step="0.5">
                 </div>
-                <input type="text" id="edit-prod-img" class="promo-input" style="text-transform:none;" placeholder="Ссылка на фото (или отправь фото боту)">
+
+                <!-- Прямой выбор фото с устройства без ссылок -->
+                <input type="file" id="edit-prod-file" accept="image/*" style="display:none;" onchange="handleProductImageFileSelect(this, 'edit')">
+                <button type="button" class="img-upload-btn" onclick="document.getElementById('edit-prod-file').click()">
+                    📷 Выбрать фото из галереи / с ПК
+                </button>
+                <div id="edit-prod-img-preview-box" class="img-preview-strip" style="display:none;">
+                    <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                        <img id="edit-prod-img-preview" class="img-preview-thumb" src="" alt="Preview">
+                        <span style="font-size:12px; color:var(--accent-green); font-weight:600;">✅ Картинка выбрана</span>
+                    </div>
+                    <button type="button" class="toggle-pill off" onclick="clearProductImage('edit')">✕ Убрать</button>
+                </div>
+                <input type="text" id="edit-prod-img" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Или вставьте ссылку на фото (необязательно)" oninput="syncImagePreviewFromInput('edit')">
             </div>
 
             <div style="font-size:12px; font-weight:700; margin-bottom:6px;">🍓 Вкусы / варианты в наличии:</div>
             <div style="display:flex; gap:6px; margin-bottom:8px;">
-                <input type="text" id="edit-prod-new-opt" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Добавить вкус (напр. Арбуз)">
+                <input type="text" id="edit-prod-new-opt" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Добавить вариант (напр. Арбуз)">
                 <button type="button" class="promo-apply-btn" style="padding:8px 12px;" onclick="adminAddOptionToEditModal()">+</button>
             </div>
             <div id="edit-prod-options-list" style="max-height:150px; overflow-y:auto; margin-bottom:14px;"></div>
@@ -506,7 +554,7 @@
     </div>
 
     <div class="top-bar">
-        <div class="brand-title">MONKEY <span>VAPE</span></div>
+        <div class="brand-title" id="brand-title">MONKEY <span>VAPE</span></div>
         <div class="top-bar-actions">
             <button class="theme-toggle-btn" id="theme-toggle-btn" title="Сменить тему" onclick="toggleAppTheme()">☀️</button>
             <button class="metro-selector-btn" onclick="openMetroPicker()">
@@ -524,19 +572,13 @@
                 <span class="search-icon">🔍</span>
                 <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров..." oninput="filterProducts()">
             </div>
-            <div class="categories-scroll" id="categories-scroll">
-                <button class="cat-chip active" onclick="setCategory('all', this)">Все товары</button>
-                <button class="cat-chip" onclick="setCategory('liquid', this)">Жидкости</button>
-                <button class="cat-chip" onclick="setCategory('pod', this)">Поды и Вейпы</button>
-                <button class="cat-chip" onclick="setCategory('disposable', this)">Одноразки</button>
-                <button class="cat-chip" onclick="setCategory('accessory', this)">Расходники</button>
-            </div>
-            <div class="promo-banner">
+            <div class="categories-scroll" id="categories-scroll"></div>
+            <div class="promo-banner" id="promo-banner">
                 <div>
-                    <h3>AKCIJA - 20%</h3>
-                    <p>Топовые жижи и устройства недели</p>
+                    <h3 id="promo-banner-title">AKCIJA - 20%</h3>
+                    <p id="promo-banner-desc">Топовые жижи и устройства недели</p>
                 </div>
-                <div class="promo-badge">-20%</div>
+                <div class="promo-badge" id="promo-banner-badge">-20%</div>
             </div>
             <div class="products-grid" id="products-grid"></div>
         </div>
@@ -571,10 +613,8 @@
                 </div>
             </div>
 
-            <a href="https://t.me/warat_24" target="_blank" class="profile-menu-item">
-                <span>Менеджер поддержки</span>
-                <span>@warat_24</span>
-            </a>
+            <!-- Динамические кнопки каналов (Новости, Отзывы, Поддержка) для всех пользователей -->
+            <div id="profile-links-container"></div>
 
             <div id="owner-admin-panel" class="admin-section" style="display: none;">
                 <div class="admin-title"><span>👑 Управление магазином</span></div>
@@ -596,6 +636,7 @@
                     <div class="admin-sub-tab" onclick="switchAdminTab('products', this)">🛍️ Товары</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('promos', this)">🎟 Промо</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('appearance', this)">🎨 Вид</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('channels', this)">🔗 Каналы</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('roles', this)">👥 Доступ</div>
@@ -607,18 +648,38 @@
                 </div>
 
                 <div id="admin-tab-products" style="display: none;">
+                    <!-- Управление вкладками категорий в каталоге -->
                     <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:12px;">
-                        <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">➕ Новый товар (отправь фото боту в чат, чтобы получить ссылку)</div>
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">📂 Вкладки категорий в каталоге</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="text" id="admin-new-cat-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Новая вкладка (напр. Снюс)">
+                            <button type="button" class="promo-apply-btn" style="padding:8px 13px;" onclick="adminAddCategory()">+</button>
+                        </div>
+                        <div id="admin-categories-list" style="max-height:170px; overflow-y:auto;"></div>
+                    </div>
+
+                    <!-- Добавление нового товара -->
+                    <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:12px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">➕ Добавить новый товар</div>
                         <input type="text" id="admin-prod-title" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Название (напр. Brusko 20mg)">
-                        <input type="text" id="admin-prod-img" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Ссылка на картинку (необязательно)">
-                        <input type="text" id="admin-prod-opts" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Вкусы через запятую (необязательно)">
+
+                        <!-- Прямая загрузка фото без ссылок -->
+                        <input type="file" id="admin-prod-file" accept="image/*" style="display:none;" onchange="handleProductImageFileSelect(this, 'add')">
+                        <button type="button" class="img-upload-btn" onclick="document.getElementById('admin-prod-file').click()">
+                            📷 Выбрать фото из галереи / с ПК (без ссылок)
+                        </button>
+                        <div id="admin-prod-img-preview-box" class="img-preview-strip" style="display:none;">
+                            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                <img id="admin-prod-img-preview" class="img-preview-thumb" src="" alt="Preview">
+                                <span style="font-size:12px; color:var(--accent-green); font-weight:600;">✅ Картинка загружена</span>
+                            </div>
+                            <button type="button" class="toggle-pill off" onclick="clearProductImage('add')">✕ Убрать</button>
+                        </div>
+                        <input type="text" id="admin-prod-img" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px; font-size:12px;" placeholder="Или вставьте ссылку на картинку (необязательно)" oninput="syncImagePreviewFromInput('add')">
+
+                        <input type="text" id="admin-prod-opts" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Вкусы / варианты через запятую (необязательно)">
                         <div style="display:flex; gap:6px; margin-bottom:6px;">
-                            <select id="admin-prod-cat" class="admin-select" style="flex:1;">
-                                <option value="liquid">Жидкость</option>
-                                <option value="pod">Под / Вейп</option>
-                                <option value="disposable">Одноразка</option>
-                                <option value="accessory">Расходник</option>
-                            </select>
+                            <select id="admin-prod-cat" class="admin-select" style="flex:1;"></select>
                             <input type="number" id="admin-prod-price" class="promo-input" style="text-transform:none; width:82px;" placeholder="Цена р." step="0.5">
                             <input type="text" id="admin-prod-icon" class="promo-input" style="text-transform:none; width:44px; text-align:center;" value="🧪">
                         </div>
@@ -644,6 +705,30 @@
                 </div>
 
                 <div id="admin-tab-appearance" style="display: none;">
+                    <!-- Настройка названия логотипа -->
+                    <div class="shop-master-box">
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🏷 Название логотипа магазина:</div>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="text" id="admin-logo-part1" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 1 (напр. MONKEY)">
+                            <input type="text" id="admin-logo-part2" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 2 зелёным (напр. VAPE)">
+                        </div>
+                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBranding()">💾 Сохранить логотип</button>
+                    </div>
+
+                    <!-- Настройка промо-баннера в каталоге -->
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">🎯 Промо-баннер в каталоге:</span>
+                            <button type="button" id="admin-banner-toggle-btn" class="toggle-pill on" onclick="adminToggleBannerEnabled()">🟢 Показан</button>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+                            <input type="text" id="admin-banner-title" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Заголовок (напр. AKCIJA - 20%)">
+                            <input type="text" id="admin-banner-desc" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Описание (напр. Топовые жижи недели)">
+                            <input type="text" id="admin-banner-badge" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Бейдж справа (напр. -20% или HOT)">
+                        </div>
+                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBanner()">💾 Сохранить баннер</button>
+                    </div>
+
                     <div class="shop-master-box">
                         <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🌦 Сезонный эффект на экране:</div>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
@@ -664,6 +749,28 @@
                             </span>
                             <span style="color:var(--accent-green); font-size:12px;">Выбрать цвет ▸</span>
                         </button>
+                    </div>
+                </div>
+
+                <!-- Вкладка управления Telegram-каналами (Новости, Отзывы, Поддержка) -->
+                <div id="admin-tab-channels" style="display: none;">
+                    <div class="shop-master-box">
+                        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px; line-height:1.4;">
+                            Эти кнопки появятся у всех покупателей во вкладке <b>«Профиль»</b>, а также будут автоматически присылаться в личку после оформления и выдачи заказа.
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:12px; font-weight:700; margin-bottom:4px;">✈️ Telegram-канал (Новости):</div>
+                            <input type="text" id="admin-news-channel-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="https://t.me/ваш_канал или @канал">
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:12px; font-weight:700; margin-bottom:4px;">✅ Канал / чат с отзывами:</div>
+                            <input type="text" id="admin-reviews-channel-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="https://t.me/ваши_отзывы или @отзывы">
+                        </div>
+                        <div style="margin-bottom:10px;">
+                            <div style="font-size:12px; font-weight:700; margin-bottom:4px;">💬 Менеджер поддержки (@username):</div>
+                            <input type="text" id="admin-support-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="@warat_24">
+                        </div>
+                        <button type="button" class="primary-btn" style="padding:10px; font-size:13px;" onclick="adminSaveChannels()">💾 Сохранить ссылки</button>
                     </div>
                 </div>
 
@@ -796,6 +903,129 @@
     function toggleAppTheme() { applyAppTheme(currentAppTheme === 'light' ? 'dark' : 'light'); }
     applyAppTheme(currentAppTheme);
 
+    let logoPart1 = localStorage.getItem('monkey_logo_part1') ?? 'MONKEY';
+    let logoPart2 = localStorage.getItem('monkey_logo_part2') ?? 'VAPE';
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function applyLogoBranding() {
+        const p1 = (logoPart1 || '').trim();
+        const p2 = (logoPart2 || '').trim();
+        const htmlLogo = `${escapeHtml(p1)}${p2 ? ` <span>${escapeHtml(p2)}</span>` : ''}` || 'MONKEY <span>VAPE</span>';
+        const topEl = document.getElementById('brand-title');
+        const splashEl = document.getElementById('splash-logo');
+        if (topEl) topEl.innerHTML = htmlLogo;
+        if (splashEl) splashEl.innerHTML = htmlLogo;
+        const fullTitle = `${p1} ${p2}`.trim() || 'Monkey Vape';
+        document.title = `${fullTitle} — Online Shop`;
+
+        const inp1 = document.getElementById('admin-logo-part1');
+        const inp2 = document.getElementById('admin-logo-part2');
+        if (inp1 && document.activeElement !== inp1) inp1.value = p1;
+        if (inp2 && document.activeElement !== inp2) inp2.value = p2;
+    }
+    applyLogoBranding();
+
+    let promoBanner = JSON.parse(localStorage.getItem('monkey_promo_banner')) || {
+        enabled: true,
+        title: 'AKCIJA - 20%',
+        desc: 'Топовые жижи и устройства недели',
+        badge: '-20%'
+    };
+
+    function applyPromoBannerUI() {
+        const bannerEl = document.getElementById('promo-banner');
+        if (bannerEl) {
+            bannerEl.style.display = promoBanner.enabled ? 'flex' : 'none';
+            const tEl = document.getElementById('promo-banner-title');
+            const dEl = document.getElementById('promo-banner-desc');
+            const bEl = document.getElementById('promo-banner-badge');
+            if (tEl) tEl.innerText = promoBanner.title || '';
+            if (dEl) dEl.innerText = promoBanner.desc || '';
+            if (bEl) {
+                bEl.style.display = (promoBanner.badge || '').trim() ? 'block' : 'none';
+                bEl.innerText = promoBanner.badge || '';
+            }
+        }
+        const toggleBtn = document.getElementById('admin-banner-toggle-btn');
+        if (toggleBtn) {
+            toggleBtn.className = `toggle-pill ${promoBanner.enabled ? 'on' : 'off'}`;
+            toggleBtn.innerText = promoBanner.enabled ? '🟢 Показан' : '🔴 Скрыт';
+        }
+        const tInp = document.getElementById('admin-banner-title');
+        const dInp = document.getElementById('admin-banner-desc');
+        const bInp = document.getElementById('admin-banner-badge');
+        if (tInp && document.activeElement !== tInp) tInp.value = promoBanner.title || '';
+        if (dInp && document.activeElement !== dInp) dInp.value = promoBanner.desc || '';
+        if (bInp && document.activeElement !== bInp) bInp.value = promoBanner.badge || '';
+    }
+    applyPromoBannerUI();
+
+    let newsChannelUrl = localStorage.getItem('monkey_news_channel') || '';
+    let reviewsChannelUrl = localStorage.getItem('monkey_reviews_channel') || '';
+    let supportUsername = localStorage.getItem('monkey_support_username') || '@warat_24';
+
+    function normalizeTelegramUrl(raw) {
+        const v = (raw || '').trim();
+        if (!v) return '';
+        if (v.startsWith('@')) return `https://t.me/${v.slice(1)}`;
+        if (v.startsWith('t.me/')) return `https://${v}`;
+        if (v.startsWith('http://') || v.startsWith('https://')) return v;
+        return `https://t.me/${v}`;
+    }
+
+    function renderProfileLinks() {
+        const container = document.getElementById('profile-links-container');
+        if (!container) return;
+        let html = '';
+
+        if (newsChannelUrl) {
+            const href = normalizeTelegramUrl(newsChannelUrl);
+            html += `
+                <a href="${escapeHtml(href)}" target="_blank" class="profile-menu-item">
+                    <span>✈️ Telegram-канал новости</span>
+                    <span>Перейти ↗</span>
+                </a>
+            `;
+        }
+
+        if (reviewsChannelUrl) {
+            const href = normalizeTelegramUrl(reviewsChannelUrl);
+            html += `
+                <a href="${escapeHtml(href)}" target="_blank" class="profile-menu-item">
+                    <span>✅ Отзывы покупателей</span>
+                    <span>Перейти ↗</span>
+                </a>
+            `;
+        }
+
+        const suppHref = normalizeTelegramUrl(supportUsername || '@warat_24');
+        const suppLabel = supportUsername || '@warat_24';
+        html += `
+            <a href="${escapeHtml(suppHref)}" target="_blank" class="profile-menu-item">
+                <span>💬 Менеджер поддержки</span>
+                <span>${escapeHtml(suppLabel)}</span>
+            </a>
+        `;
+        container.innerHTML = html;
+
+        const nInp = document.getElementById('admin-news-channel-input');
+        const rInp = document.getElementById('admin-reviews-channel-input');
+        const sInp = document.getElementById('admin-support-input');
+        if (nInp && document.activeElement !== nInp) nInp.value = newsChannelUrl;
+        if (rInp && document.activeElement !== rInp) rInp.value = reviewsChannelUrl;
+        if (sInp && document.activeElement !== sInp) sInp.value = supportUsername;
+    }
+
+    let shopCategories = JSON.parse(localStorage.getItem('monkey_categories')) || [
+        { id: 'liquid', name: 'Жидкости' },
+        { id: 'pod', name: 'Поды и Вейпы' },
+        { id: 'disposable', name: 'Одноразки' },
+        { id: 'accessory', name: 'Расходники' }
+    ];
+
     let currentSeasonEffect = localStorage.getItem('monkey_season_effect') || 'none';
     let seasonAnimId = null, seasonParticles = [];
 
@@ -812,7 +1042,6 @@
         const rect = canvas.parentElement.getBoundingClientRect();
         canvas.width = rect.width; canvas.height = rect.height;
 
-        // Спокойное количество и медленная скорость, чтобы не отвлекать
         const count = currentSeasonEffect === 'rain' ? 22 : (currentSeasonEffect === 'winter' ? 14 : 9);
         const autumnColors = ['#ff7b00', '#e64a19', '#ffb300', '#d84315'];
         const springColors = ['#ffb7c5', '#ff8da1', '#ffd1dc', '#ffffff'];
@@ -879,7 +1108,7 @@
         const bar = document.getElementById('admin-server-status');
         if (!bar) return;
         bar.className = connected ? "server-status-bar ok" : "server-status-bar err";
-        bar.innerText = connected ? `🟢 Сервер подключен (${activeUrl})` : "🔴 Нет связи с сервером! Проверь туннель и python bot.py.";
+        bar.innerText = connected ? `🟢 Сервер подключен (${activeUrl})` : "🔴 Нет связи с сервером! Проверь туннель и бота.";
     }
 
     async function apiFetch(path, options = {}, expectJson = true) {
@@ -898,6 +1127,41 @@
         }
         updateServerStatusBadge(false);
         throw new Error("Server unreachable");
+    }
+
+    const protectedBlobCache = {};
+    async function hydrateProtectedImages() {
+        const imgs = document.querySelectorAll('img[data-protected-src]');
+        for (const img of imgs) {
+            const rawUrl = img.getAttribute('data-protected-src');
+            if (!rawUrl || img.dataset.hydrated === '1') continue;
+            img.dataset.hydrated = '1';
+            if (protectedBlobCache[rawUrl]) {
+                img.src = protectedBlobCache[rawUrl];
+                continue;
+            }
+            try {
+                const res = await fetch(rawUrl, {
+                    headers: { 'ngrok-skip-browser-warning': 'true', 'Bypass-Tunnel-Reminder': 'true' }
+                });
+                if (res.ok && (res.headers.get('content-type') || '').startsWith('image/')) {
+                    const blobUrl = URL.createObjectURL(await res.blob());
+                    protectedBlobCache[rawUrl] = blobUrl;
+                    img.src = blobUrl;
+                }
+            } catch (e) {}
+        }
+    }
+
+    function buildProductImgTag(url, altText, fallbackHtml) {
+        if (!url) return fallbackHtml;
+        if (url.startsWith('data:image/')) {
+            return `<img src="${url}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${fallbackHtml}'">`;
+        }
+        if (url.includes('ngrok') || url.includes('/api/tg_photo/')) {
+            return `<img data-protected-src="${escapeHtml(url)}" src="${escapeHtml(url)}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${fallbackHtml}'">`;
+        }
+        return `<img src="${escapeHtml(url)}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${fallbackHtml}'">`;
     }
 
     const PRIMARY_OWNER_IDS = [7280921605];
@@ -1041,6 +1305,7 @@
             if (isCurrentUserOwner()) {
                 ownerAdminPanel.style.display = 'block';
                 renderAdminShopMaster(); renderAdminAppearance(); renderAdminPromos();
+                renderAdminCategories(); populateCategorySelects();
                 renderAdminMetro(); renderAdminTimes(); renderAdminProducts(); renderAdminRoles();
             } else {
                 ownerAdminPanel.style.display = 'none';
@@ -1080,6 +1345,7 @@
         const useridElem = document.getElementById('profile-userid-text');
         if (usernameElem) usernameElem.innerText = currentUserName;
         updateProfileAvatarUI();
+        renderProfileLinks();
         if (useridElem) {
             const isOwner = isCurrentUserOwner();
             const isCourier = DYNAMIC_COURIER_IDS.includes(Number(currentUserId));
@@ -1119,6 +1385,35 @@
     let changingOrderId = null, newSelectedTime = ALL_TIME_SLOTS[0] || '12:00';
     let editingProductOptions = [];
 
+    function renderCatalogCategories() {
+        const scroll = document.getElementById('categories-scroll');
+        if (!scroll) return;
+        if (activeCategory !== 'all' && !shopCategories.some(c => c.id === activeCategory)) {
+            activeCategory = 'all';
+        }
+        let html = `<button class="cat-chip ${activeCategory === 'all' ? 'active' : ''}" onclick="setCategory('all', this)">Все товары</button>`;
+        shopCategories.forEach(c => {
+            html += `<button class="cat-chip ${activeCategory === c.id ? 'active' : ''}" onclick="setCategory('${escapeHtml(c.id)}', this)">${escapeHtml(c.name)}</button>`;
+        });
+        scroll.innerHTML = html;
+    }
+
+    function populateCategorySelects() {
+        const addSel = document.getElementById('admin-prod-cat');
+        const editSel = document.getElementById('edit-prod-cat');
+        const optsHtml = shopCategories.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+        if (addSel) {
+            const prev = addSel.value;
+            addSel.innerHTML = optsHtml;
+            if (prev && shopCategories.some(c => c.id === prev)) addSel.value = prev;
+        }
+        if (editSel) {
+            const prev = editSel.value;
+            editSel.innerHTML = optsHtml;
+            if (prev && shopCategories.some(c => c.id === prev)) editSel.value = prev;
+        }
+    }
+
     function ensureValidSelectedStationAndTime() {
         const allSt = [...(metroStations.green || []), ...(metroStations.blue || []), ...(metroStations.red || [])];
         if (!allSt.some(s => s.name === selectedStation) || disabledStations.includes(selectedStation)) {
@@ -1152,6 +1447,46 @@
                 disabledTimes = cfg.disabled_times || [];
                 promoCodes = cfg.promocodes || {};
 
+                if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined) {
+                    logoPart1 = cfg.logo_part1 ?? 'MONKEY';
+                    logoPart2 = cfg.logo_part2 ?? 'VAPE';
+                    localStorage.setItem('monkey_logo_part1', logoPart1);
+                    localStorage.setItem('monkey_logo_part2', logoPart2);
+                    applyLogoBranding();
+                }
+
+                if (cfg.banner) {
+                    promoBanner = {
+                        enabled: Boolean(cfg.banner.enabled),
+                        title: cfg.banner.title || '',
+                        desc: cfg.banner.desc || '',
+                        badge: cfg.banner.badge || ''
+                    };
+                    localStorage.setItem('monkey_promo_banner', JSON.stringify(promoBanner));
+                    applyPromoBannerUI();
+                }
+
+                if (cfg.news_channel_url !== undefined) {
+                    newsChannelUrl = cfg.news_channel_url || '';
+                    localStorage.setItem('monkey_news_channel', newsChannelUrl);
+                }
+                if (cfg.reviews_channel_url !== undefined) {
+                    reviewsChannelUrl = cfg.reviews_channel_url || '';
+                    localStorage.setItem('monkey_reviews_channel', reviewsChannelUrl);
+                }
+                if (cfg.support_username !== undefined) {
+                    supportUsername = cfg.support_username || '@warat_24';
+                    localStorage.setItem('monkey_support_username', supportUsername);
+                }
+                renderProfileLinks();
+
+                if (Array.isArray(cfg.categories) && cfg.categories.length > 0) {
+                    shopCategories = cfg.categories;
+                    localStorage.setItem('monkey_categories', JSON.stringify(shopCategories));
+                    renderCatalogCategories();
+                    populateCategorySelects();
+                }
+
                 if (cfg.hit_color) { hitHighlightColor = cfg.hit_color; localStorage.setItem('monkey_hit_color', hitHighlightColor); }
                 if (cfg.season_effect && cfg.season_effect !== currentSeasonEffect) startSeasonCanvas(cfg.season_effect);
                 if (Array.isArray(cfg.time_slots) && cfg.time_slots.length > 0) { ALL_TIME_SLOTS = cfg.time_slots; localStorage.setItem('monkey_time_slots', JSON.stringify(ALL_TIME_SLOTS)); }
@@ -1179,7 +1514,8 @@
                 renderCheckoutTimeSlots(); renderChangeTimeSlots();
 
                 const activeEl = document.activeElement;
-                if (!activeEl || (activeEl.id !== 'promo-input' && activeEl.id !== 'admin-closed-msg-input')) renderCart();
+                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input'].includes(activeEl.id);
+                if (!skipCartRender) renderCart();
                 showRoleTabsIfAllowed(); updateProfileAvatarUI();
             }
         } catch (e) {}
@@ -1210,7 +1546,6 @@
                 card.style.boxShadow = `0 0 16px ${hexToRgba(hitHighlightColor, 0.35)}`;
             }
 
-            // На картинке оставляем ТОЛЬКО надпись "хит" (или "нет в наличии")
             let imageBadges = '';
             if (!isAvail) {
                 imageBadges = `<div class="product-tag soldout">нет в наличии</div>`;
@@ -1218,7 +1553,6 @@
                 imageBadges = `<div class="product-tag" style="color:${hitHighlightColor}; border:1px solid ${hexToRgba(hitHighlightColor, 0.55)};">🔥 хит</div>`;
             }
 
-            // Под названием товара: слева красная СКИДКА, справа Мало
             let underTitleBadges = '';
             if (isAvail && (hasDisc || isLow)) {
                 underTitleBadges = `
@@ -1229,11 +1563,9 @@
                 `;
             }
 
-            const mediaHtml = p.image_url
-                ? `<img src="${p.image_url}" alt="${p.title}" onerror="this.outerHTML='<span>${p.icon || '🧪'}</span>'">`
-                : `<span>${p.icon || '🧪'}</span>`;
+            const fallbackSpan = `<span>${escapeHtml(p.icon || '🧪')}</span>`;
+            const mediaHtml = buildProductImgTag(p.image_url, p.title, fallbackSpan);
 
-            // Старая цена зачёркнута, рядом стоит новая цена
             const priceHtml = `
                 <div class="price-block">
                     ${oldPrice > Number(p.price) ? `<span class="product-old-price">${oldPrice.toFixed(2)} р.</span>` : ''}
@@ -1243,16 +1575,17 @@
 
             const rightBtnHtml = isAvail
                 ? `<button class="add-btn" onclick="event.stopPropagation(); openProductModal(${p.id})">+</button>`
-                : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "\\'")}')">🔔 Жду</button>`;
+                : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "\'")}')">🔔 Жду</button>`;
 
             card.innerHTML = `
                 <div class="product-img-container"><div class="product-badges-stack">${imageBadges}</div>${mediaHtml}</div>
-                <div class="product-title">${p.title}</div>
+                <div class="product-title">${escapeHtml(p.title)}</div>
                 ${underTitleBadges}
                 <div class="product-footer">${priceHtml}${rightBtnHtml}</div>
             `;
             grid.appendChild(card);
         });
+        hydrateProtectedImages();
     }
 
     async function subscribeWholeProduct(productId, title) {
@@ -1288,7 +1621,11 @@
         const subtitle = document.getElementById('modal-subtitle-text');
         grid.innerHTML = '';
 
-        subtitle.innerText = prod.category === 'pod' ? 'Выберите цвет устройства:' : (prod.category === 'accessory' ? 'Выберите сопротивление (ом):' : 'Выберите вкус:');
+        subtitle.innerText = prod.category === 'pod'
+            ? 'Выберите цвет устройства:'
+            : (prod.category === 'accessory'
+                ? 'Выберите сопротивление (ом):'
+                : ((prod.category === 'liquid' || prod.category === 'disposable') ? 'Выберите вкус:' : 'Выберите вариант:'));
 
         const opts = (Array.isArray(prod.options) && prod.options.length > 0)
             ? prod.options
@@ -1306,8 +1643,8 @@
             const btn = document.createElement('div');
             btn.className = `option-btn ${index === defaultIdx ? 'selected' : ''} ${!isOptAvail ? 'opt-unavail' : ''}`;
             btn.innerHTML = isOptAvail
-                ? `<span>${optObj.name}</span>`
-                : `<span>${optObj.name}</span><span style="font-size:10px; color:#ffaa00;">нет в наличии</span>`;
+                ? `<span>${escapeHtml(optObj.name)}</span>`
+                : `<span>${escapeHtml(optObj.name)}</span><span style="font-size:10px; color:#ffaa00;">нет в наличии</span>`;
             btn.onclick = () => {
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
@@ -1334,7 +1671,7 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: Number(currentUserId), product_id: currentSelectedProduct.id, option_name: chosenOptionValue })
             });
-            alert(`🔔 Вы подписались на вкус "${chosenOptionValue}" (${currentSelectedProduct.title}). Бот сообщит, когда он появится!`);
+            alert(`🔔 Вы подписались на вариант "${chosenOptionValue}" (${currentSelectedProduct.title}). Бот сообщит, когда он появится!`);
             closeModalDirect();
         } catch (e) { alert("Ошибка подписки."); }
     }
@@ -1443,13 +1780,13 @@
         for (const [key, item] of Object.entries(cart)) {
             subtotal += item.price * item.qty;
             const itemDisc = isCartItemDiscounted(item);
-            const thumbHtml = item.image_url ? `<img src="${item.image_url}" alt="" onerror="this.outerHTML='${item.icon || '🧪'}'">` : `${item.icon || '🧪'}`;
+            const thumbHtml = buildProductImgTag(item.image_url, item.title, escapeHtml(item.icon || '🧪'));
             itemsHtml += `
                 <div class="cart-item">
                     <div class="cart-item-img">${thumbHtml}</div>
                     <div class="cart-item-info">
-                        <div class="cart-item-title">${item.title} ${itemDisc ? '<span style="color:#ff3333; font-size:10px; font-weight:800;">[СКИДКА]</span>' : ''}</div>
-                        <div class="cart-item-sub">Параметр: ${item.optionName}</div>
+                        <div class="cart-item-title">${escapeHtml(item.title)} ${itemDisc ? '<span style="color:#ff3333; font-size:10px; font-weight:800;">[СКИДКА]</span>' : ''}</div>
+                        <div class="cart-item-sub">Параметр: ${escapeHtml(item.optionName)}</div>
                         <div class="cart-item-price">${(item.price * item.qty).toFixed(2)} р.</div>
                     </div>
                     <div class="qty-controls">
@@ -1480,7 +1817,7 @@
                     </div>
                 ` : `
                     <div class="promo-input-row">
-                        <input type="text" id="promo-input" class="promo-input" value="${promoInputDraft}" placeholder="Введите промокод..." oninput="handlePromoInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); applyPromoCode();}">
+                        <input type="text" id="promo-input" class="promo-input" value="${escapeHtml(promoInputDraft)}" placeholder="Введите промокод..." oninput="handlePromoInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); applyPromoCode();}">
                         <button type="button" class="promo-apply-btn" onclick="applyPromoCode()">Применить</button>
                     </div>
                 `}
@@ -1491,17 +1828,18 @@
         const discountRowHtml = actualDiscount > 0 ? `<div class="summary-row"><span style="color:var(--accent-green);">Скидка (${appliedPromoCode}):</span><span style="color:var(--accent-green); font-weight:700;">-${actualDiscount.toFixed(2)} р.</span></div>` : '';
         let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Оформить заказ</button>`;
         if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
-        else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${shopClosedMessage}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:rgba(0,255,102,0.16); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
+        else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${escapeHtml(shopClosedMessage)}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:rgba(0,255,102,0.16); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
 
         container.innerHTML = itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
-                <div class="summary-row"><span>Станция доставки:</span><span style="color:var(--accent-green); font-weight:600;">${selectedStation ? 'м. ' + selectedStation : 'Не выбрана'}</span></div>
+                <div class="summary-row"><span>Станция доставки:</span><span style="color:var(--accent-green); font-weight:600;">${selectedStation ? 'м. ' + escapeHtml(selectedStation) : 'Не выбрана'}</span></div>
                 <div class="summary-row"><span>Товары (${items.reduce((s,i)=>s+i.qty,0)})</span><span>${subtotal.toFixed(2)} р.</span></div>
                 ${discountRowHtml}
                 <div class="summary-row total"><span>Итого к оплате:</span><span>${finalTotal.toFixed(2)} р.</span></div>
             </div>
             ${checkoutActionHtml}
         `;
+        hydrateProtectedImages();
     }
 
     function openMetroPicker() { syncShopConfig(); document.getElementById('metro-modal').classList.add('active'); renderModalStations(modalCurrentLine); }
@@ -1523,7 +1861,7 @@
             const isSel = !isDisabled && st.name === selectedStation;
             const div = document.createElement('div');
             div.className = `station-item ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
-            div.innerHTML = `<span>${st.name}</span>${isDisabled ? `<span class="unavail-pill">Недоступно</span>` : `<span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>`}`;
+            div.innerHTML = `<span>${escapeHtml(st.name)}</span>${isDisabled ? `<span class="unavail-pill">Недоступно</span>` : `<span style="font-size:11px; color:var(--text-secondary);">${escapeHtml(st.line)}</span>`}`;
             if (!isDisabled) {
                 div.onclick = () => {
                     selectedStation = st.name; localStorage.setItem('monkey_selected_station', selectedStation);
@@ -1557,7 +1895,7 @@
             const isSel = !isDisabled && st.name === selectedStation;
             const div = document.createElement('div');
             div.className = `station-item ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
-            div.innerHTML = `<span>${st.name}</span>${isDisabled ? `<span class="unavail-pill">Недоступно</span>` : `<span style="font-size:11px; color:var(--text-secondary);">${st.line}</span>`}`;
+            div.innerHTML = `<span>${escapeHtml(st.name)}</span>${isDisabled ? `<span class="unavail-pill">Недоступно</span>` : `<span style="font-size:11px; color:var(--text-secondary);">${escapeHtml(st.line)}</span>`}`;
             if (!isDisabled) {
                 div.onclick = () => {
                     selectedStation = st.name; localStorage.setItem('monkey_selected_station', selectedStation);
@@ -1577,7 +1915,7 @@
             const isSel = !isDisabled && selectedTime === t;
             const div = document.createElement('div');
             div.className = `time-slot ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
-            div.innerHTML = isDisabled ? `<span>${t}</span><span class="unavail-pill" style="font-size:9px; padding:1px 5px;">Недоступно</span>` : `<span>${t}</span>`;
+            div.innerHTML = isDisabled ? `<span>${escapeHtml(t)}</span><span class="unavail-pill" style="font-size:9px; padding:1px 5px;">Недоступно</span>` : `<span>${escapeHtml(t)}</span>`;
             if (!isDisabled) div.onclick = () => { selectedTime = t; renderCheckoutTimeSlots(); };
             container.appendChild(div);
         });
@@ -1592,7 +1930,7 @@
             const isSel = !isDisabled && newSelectedTime === t;
             const div = document.createElement('div');
             div.className = `time-slot ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled-item' : ''}`;
-            div.innerHTML = isDisabled ? `<span>${t}</span><span class="unavail-pill" style="font-size:9px; padding:1px 5px;">Недоступно</span>` : `<span>${t}</span>`;
+            div.innerHTML = isDisabled ? `<span>${escapeHtml(t)}</span><span class="unavail-pill" style="font-size:9px; padding:1px 5px;">Недоступно</span>` : `<span>${escapeHtml(t)}</span>`;
             if (!isDisabled) div.onclick = () => { newSelectedTime = t; renderChangeTimeSlots(); };
             container.appendChild(div);
         });
@@ -1781,19 +2119,19 @@
             if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
             else if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
 
-            let itemsList = ord.items.map(i => `<div>• ${i.title} × ${i.qty}</div>`).join('');
-            let promoNote = ord.promo_code ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+            let itemsList = ord.items.map(i => `<div>• ${escapeHtml(i.title)} × ${i.qty}</div>`).join('');
+            let promoNote = ord.promo_code ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${escapeHtml(ord.promo_code)} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
             let actionButtons = ord.status === 'active'
                 ? `<div class="order-actions-row"><button class="order-btn-secondary" onclick="openTimeModal('${ord.id}')">⏰ Изменить время</button><button class="order-btn-danger" onclick="cancelOrderByClient('${ord.id}')">✕ Отменить</button></div>`
                 : `<div class="order-actions-row"><button class="order-btn-secondary" style="border-color:var(--accent-green); color:var(--accent-green);" onclick="repeatPastOrder('${ord.id}')">🔄 Повторить заказ</button></div>`;
             let timeNote = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
-            let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${ord.created_at}</b></div>` : '';
-            let courierInfoHtml = ord.claimed_by_name ? `<div class="order-meta-row"><span>🛵 Курьер:</span> <b style="color:var(--accent-green);">${ord.claimed_by_name}</b></div>` : '';
+            let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${escapeHtml(ord.created_at)}</b></div>` : '';
+            let courierInfoHtml = ord.claimed_by_name ? `<div class="order-meta-row"><span>🛵 Курьер:</span> <b style="color:var(--accent-green);">${escapeHtml(ord.claimed_by_name)}</b></div>` : '';
 
             html += `
                 <div class="order-card">
-                    <div class="order-card-header"><span class="order-id-label">Заказ #${ord.id}</span>${statusHtml}</div>
-                    <div class="order-meta-grid">${createdAtHtml}${courierInfoHtml}<div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${ord.station}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${ord.time}</b> ${timeNote}</div></div>
+                    <div class="order-card-header"><span class="order-id-label">Заказ #${escapeHtml(ord.id)}</span>${statusHtml}</div>
+                    <div class="order-meta-grid">${createdAtHtml}${courierInfoHtml}<div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${escapeHtml(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNote}</div></div>
                     <div class="order-items-box">${itemsList}${promoNote}</div>
                     <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">К оплате:</span><span class="order-total-price">${ord.total.toFixed(2)} р.</span></div>
                     ${actionButtons}
@@ -1833,6 +2171,75 @@
         } catch (e) {}
     }
 
+    // ----- ПРЯМАЯ ЗАГРУЗКА КАРТИНОК ИЗ ГАЛЕРЕИ / С ПК (БЕЗ ССЫЛОК) -----
+
+    function compressImageFileToDataUrl(file, maxSize = 480, quality = 0.82) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width, h = img.height;
+                    if (w > maxSize || h > maxSize) {
+                        if (w > h) {
+                            h = Math.round((h * maxSize) / w);
+                            w = maxSize;
+                        } else {
+                            w = Math.round((w * maxSize) / h);
+                            h = maxSize;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = reject;
+                img.src = ev.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function handleProductImageFileSelect(inputEl, mode) {
+        const file = inputEl.files && inputEl.files[0];
+        if (!file) return;
+        try {
+            const dataUrl = await compressImageFileToDataUrl(file, 480, 0.82);
+            const textInp = document.getElementById(mode === 'add' ? 'admin-prod-img' : 'edit-prod-img');
+            if (textInp) textInp.value = dataUrl;
+            syncImagePreviewFromInput(mode);
+        } catch (e) {
+            alert("Не удалось обработать картинку. Попробуйте другой файл.");
+        }
+        inputEl.value = '';
+    }
+
+    function syncImagePreviewFromInput(mode) {
+        const textInp = document.getElementById(mode === 'add' ? 'admin-prod-img' : 'edit-prod-img');
+        const box = document.getElementById(mode === 'add' ? 'admin-prod-img-preview-box' : 'edit-prod-img-preview-box');
+        const previewImg = document.getElementById(mode === 'add' ? 'admin-prod-img-preview' : 'edit-prod-img-preview');
+        const val = (textInp?.value || '').trim();
+        if (box && previewImg) {
+            if (val) {
+                box.style.display = 'flex';
+                previewImg.src = val;
+            } else {
+                box.style.display = 'none';
+                previewImg.src = '';
+            }
+        }
+    }
+
+    function clearProductImage(mode) {
+        const textInp = document.getElementById(mode === 'add' ? 'admin-prod-img' : 'edit-prod-img');
+        if (textInp) textInp.value = '';
+        syncImagePreviewFromInput(mode);
+    }
+
     // ----- АДМИН-ПАНЕЛЬ ВЛАДЕЛЬЦА -----
 
     function renderAdminShopMaster() {
@@ -1869,13 +2276,161 @@
     function switchAdminTab(tab, el) {
         document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
-        ['stats', 'products', 'promos', 'appearance', 'metro', 'time', 'roles', 'broadcast'].forEach(t => {
+        ['stats', 'products', 'promos', 'appearance', 'channels', 'metro', 'time', 'roles', 'broadcast'].forEach(t => {
             const box = document.getElementById(`admin-tab-${t}`);
             if (box) box.style.display = t === tab ? 'block' : 'none';
         });
         if (tab === 'stats') loadAdminStats();
-        if (tab === 'appearance') renderAdminAppearance();
+        if (tab === 'appearance') { renderAdminAppearance(); applyLogoBranding(); applyPromoBannerUI(); }
+        if (tab === 'products') { renderAdminCategories(); populateCategorySelects(); renderAdminProducts(); }
+        if (tab === 'channels') renderProfileLinks();
         if (tab === 'broadcast') loadBroadcastHistory();
+    }
+
+    async function adminSaveBranding() {
+        const p1 = (document.getElementById('admin-logo-part1')?.value || '').trim();
+        const p2 = (document.getElementById('admin-logo-part2')?.value || '').trim();
+        if (!p1 && !p2) { alert("Введите хотя бы первую часть названия логотипа."); return; }
+        logoPart1 = p1;
+        logoPart2 = p2;
+        localStorage.setItem('monkey_logo_part1', logoPart1);
+        localStorage.setItem('monkey_logo_part2', logoPart2);
+        applyLogoBranding();
+        try {
+            await apiFetch(`/api/admin/branding`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), logo_part1: p1, logo_part2: p2 })
+            });
+            alert("✅ Название логотипа обновлено!");
+        } catch (e) { alert("Ошибка сохранения логотипа на сервере."); }
+    }
+
+    async function adminToggleBannerEnabled() {
+        promoBanner.enabled = !promoBanner.enabled;
+        applyPromoBannerUI();
+        await adminSaveBanner(true);
+    }
+
+    async function adminSaveBanner(silent = false) {
+        const title = (document.getElementById('admin-banner-title')?.value || '').trim();
+        const desc = (document.getElementById('admin-banner-desc')?.value || '').trim();
+        const badge = (document.getElementById('admin-banner-badge')?.value || '').trim();
+        promoBanner.title = title;
+        promoBanner.desc = desc;
+        promoBanner.badge = badge;
+        localStorage.setItem('monkey_promo_banner', JSON.stringify(promoBanner));
+        applyPromoBannerUI();
+        try {
+            await apiFetch(`/api/admin/banner`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    enabled: promoBanner.enabled,
+                    title, desc, badge
+                })
+            });
+            if (!silent) alert("✅ Баннер на витрине обновлён!");
+        } catch (e) { if (!silent) alert("Ошибка сохранения баннера."); }
+    }
+
+    async function adminSaveChannels() {
+        const newsRaw = (document.getElementById('admin-news-channel-input')?.value || '').trim();
+        const revRaw = (document.getElementById('admin-reviews-channel-input')?.value || '').trim();
+        const suppRaw = (document.getElementById('admin-support-input')?.value || '').trim() || '@warat_24';
+        try {
+            const res = await apiFetch(`/api/admin/channels`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    news_channel_url: newsRaw,
+                    reviews_channel_url: revRaw,
+                    support_username: suppRaw
+                })
+            });
+            const data = await res.json();
+            newsChannelUrl = data.news_channel_url || '';
+            reviewsChannelUrl = data.reviews_channel_url || '';
+            supportUsername = data.support_username || '@warat_24';
+            localStorage.setItem('monkey_news_channel', newsChannelUrl);
+            localStorage.setItem('monkey_reviews_channel', reviewsChannelUrl);
+            localStorage.setItem('monkey_support_username', supportUsername);
+            renderProfileLinks();
+            alert("✅ Ссылки сохранены и добавлены в профиль!");
+        } catch (e) { alert("Ошибка сохранения ссылок."); }
+    }
+
+    function renderAdminCategories() {
+        const box = document.getElementById('admin-categories-list');
+        if (!box) return;
+        box.innerHTML = shopCategories.map(c => `
+            <div class="admin-toggle-row">
+                <span style="flex:1; font-weight:600;">${escapeHtml(c.name)}</span>
+                <button class="toggle-pill on" onclick="adminRenameCategory('${escapeHtml(c.id)}')">✏️ Изменить</button>
+                <button class="toggle-pill off" onclick="adminDeleteCategory('${escapeHtml(c.id)}')">✕</button>
+            </div>
+        `).join('');
+    }
+
+    async function adminAddCategory() {
+        const inp = document.getElementById('admin-new-cat-input');
+        const name = (inp?.value || '').trim();
+        if (!name) return;
+        inp.value = '';
+        try {
+            const res = await apiFetch(`/api/admin/manage_category`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), action: 'add', name })
+            });
+            const data = await res.json();
+            if (Array.isArray(data.categories)) {
+                shopCategories = data.categories;
+                localStorage.setItem('monkey_categories', JSON.stringify(shopCategories));
+            }
+            renderCatalogCategories();
+            renderAdminCategories();
+            populateCategorySelects();
+        } catch (e) { alert("Ошибка добавления категории."); }
+    }
+
+    async function adminRenameCategory(catId) {
+        const found = shopCategories.find(c => c.id === catId);
+        if (!found) return;
+        const newName = prompt("Введите новое название вкладки:", found.name);
+        if (newName === null || !newName.trim()) return;
+        try {
+            const res = await apiFetch(`/api/admin/manage_category`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), action: 'rename', id: catId, name: newName.trim() })
+            });
+            const data = await res.json();
+            if (Array.isArray(data.categories)) {
+                shopCategories = data.categories;
+                localStorage.setItem('monkey_categories', JSON.stringify(shopCategories));
+            }
+            renderCatalogCategories();
+            renderAdminCategories();
+            populateCategorySelects();
+        } catch (e) { alert("Ошибка переименования вкладки."); }
+    }
+
+    async function adminDeleteCategory(catId) {
+        if (shopCategories.length <= 1) { alert("Должна остаться хотя бы одна категория."); return; }
+        if (!confirm("Удалить эту вкладку из каталога?")) return;
+        try {
+            const res = await apiFetch(`/api/admin/manage_category`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), action: 'delete', id: catId })
+            });
+            const data = await res.json();
+            if (Array.isArray(data.categories)) {
+                shopCategories = data.categories;
+                localStorage.setItem('monkey_categories', JSON.stringify(shopCategories));
+            }
+            renderCatalogCategories();
+            renderAdminCategories();
+            populateCategorySelects();
+            filterProducts();
+        } catch (e) { alert("Ошибка удаления категории."); }
     }
 
     function renderAdminAppearance() {
@@ -1950,9 +2505,9 @@
         if (!box || !isCurrentUserOwner()) return;
         try {
             const st = await (await apiFetch(`/api/admin/stats/${currentUserId}`)).json();
-            const topItemsHtml = st.top_items?.length ? st.top_items.map((it, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. ${it.title}</span><b style="color:var(--accent-green);">${it.qty} шт.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Пока нет выданных заказов</div>';
-            const topStationsHtml = st.top_stations?.length ? st.top_stations.map((s, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. м. ${s.station}</span><b>${s.count} зак.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
-            const couriersHtml = st.courier_stats?.length ? st.courier_stats.map(c => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>🛵 ${c.name} (${c.count} зак.)</span><b style="color:var(--accent-green);">${Number(c.revenue).toFixed(2)} р.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
+            const topItemsHtml = st.top_items?.length ? st.top_items.map((it, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. ${escapeHtml(it.title)}</span><b style="color:var(--accent-green);">${it.qty} шт.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Пока нет выданных заказов</div>';
+            const topStationsHtml = st.top_stations?.length ? st.top_stations.map((s, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. м. ${escapeHtml(s.station)}</span><b>${s.count} зак.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
+            const couriersHtml = st.courier_stats?.length ? st.courier_stats.map(c => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>🛵 ${escapeHtml(c.name)} (${c.count} зак.)</span><b style="color:var(--accent-green);">${Number(c.revenue).toFixed(2)} р.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
 
             box.innerHTML = `
                 <div class="stat-grid">
@@ -1982,7 +2537,7 @@
             return `
                 <div class="admin-toggle-row" style="flex-direction:column; align-items:stretch; gap:6px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-                        <span style="font-weight:600; ${!isAvail ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${p.image_url ? '🖼' : p.icon} ${p.title}</span>
+                        <span style="font-weight:600; ${!isAvail ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${p.image_url ? '🖼' : escapeHtml(p.icon)} ${escapeHtml(p.title)}</span>
                         <span style="color:var(--accent-green); font-weight:700; white-space:nowrap;">${priceLabel}</span>
                     </div>
                     <div style="display:flex; gap:5px; justify-content:flex-end; flex-wrap:wrap;">
@@ -2004,7 +2559,6 @@
         const currentlyDiscounted = Boolean(prod.has_discount) || Number(prod.old_price || 0) > Number(prod.price);
 
         if (currentlyDiscounted) {
-            // Снимаем скидку и возвращаем старую цену, если она была указана
             const restoredPrice = Number(prod.old_price || 0) > Number(prod.price) ? Number(prod.old_price) : Number(prod.price);
             try {
                 await apiFetch(`/api/admin/save_product`, {
@@ -2068,6 +2622,7 @@
             });
             document.getElementById('admin-prod-title').value = '';
             document.getElementById('admin-prod-img').value = '';
+            syncImagePreviewFromInput('add');
             document.getElementById('admin-prod-opts').value = '';
             document.getElementById('admin-prod-price').value = '';
             await syncShopConfig();
@@ -2087,13 +2642,24 @@
     function openAdminEditProductModal(productId) {
         const prod = products.find(p => p.id === productId);
         if (!prod) return;
+        populateCategorySelects();
         document.getElementById('edit-prod-id').value = prod.id;
         document.getElementById('edit-prod-title').value = prod.title;
-        document.getElementById('edit-prod-cat').value = prod.category;
+        const editCatSel = document.getElementById('edit-prod-cat');
+        if (editCatSel) {
+            if (!Array.from(editCatSel.options).some(o => o.value === prod.category) && prod.category) {
+                const extraOpt = document.createElement('option');
+                extraOpt.value = prod.category;
+                extraOpt.text = prod.category;
+                editCatSel.appendChild(extraOpt);
+            }
+            editCatSel.value = prod.category;
+        }
         document.getElementById('edit-prod-icon').value = prod.icon || '🧪';
         document.getElementById('edit-prod-price').value = prod.price;
         document.getElementById('edit-prod-old-price').value = prod.old_price || 0;
         document.getElementById('edit-prod-img').value = prod.image_url || '';
+        syncImagePreviewFromInput('edit');
 
         editingProductOptions = JSON.parse(JSON.stringify(
             (Array.isArray(prod.options) && prod.options.length > 0) ? prod.options : (DEFAULT_OPTS[prod.category] || [{ name: 'Стандарт', available: true }])
@@ -2111,7 +2677,7 @@
         if (!box) return;
         box.innerHTML = editingProductOptions.map((opt, idx) => `
             <div class="admin-toggle-row">
-                <span style="flex:1; ${opt.available === false ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${opt.name}</span>
+                <span style="flex:1; ${opt.available === false ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${escapeHtml(opt.name)}</span>
                 <button class="toggle-pill ${opt.available !== false ? 'on' : 'off'}" onclick="adminToggleEditOptAvail(${idx})">${opt.available !== false ? 'Есть' : 'Нет'}</button>
                 <button class="toggle-pill off" onclick="adminRemoveEditOpt(${idx})">✕</button>
             </div>
@@ -2189,7 +2755,7 @@
             const p = normalizePromoObj(raw);
             const discStr = p.type === 'percent' ? `${p.discount}%` : `${p.discount.toFixed(2)} р.`;
             const limitStr = p.max_uses > 0 ? ` • исп. ${p.used_count}/${p.max_uses}` : ` • исп. ${p.used_count}/∞`;
-            return `<div class="admin-toggle-row"><span><b style="color:var(--accent-green);">${code}</b> (-${discStr})<span style="font-size:11px; color:var(--text-secondary);">${limitStr}</span></span><button class="toggle-pill off" onclick="adminDeletePromo('${code}')">Удалить</button></div>`;
+            return `<div class="admin-toggle-row"><span><b style="color:var(--accent-green);">${escapeHtml(code)}</b> (-${discStr})<span style="font-size:11px; color:var(--text-secondary);">${limitStr}</span></span><button class="toggle-pill off" onclick="adminDeletePromo('${escapeHtml(code)}')">Удалить</button></div>`;
         }).join('');
     }
 
@@ -2233,10 +2799,10 @@
         if (!container) return;
         container.innerHTML = (metroStations[adminMetroLine] || []).map(st => {
             const isDisabled = disabledStations.includes(st.name);
-            const esc = st.name.replace(/'/g, "\\'");
+            const esc = st.name.replace(/'/g, "\'");
             return `
                 <div class="admin-toggle-row">
-                    <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">${st.name}</span>
+                    <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">${escapeHtml(st.name)}</span>
                     <button class="toggle-pill ${isDisabled ? 'off' : 'on'}" onclick="adminToggleStation('${esc}')">${isDisabled ? 'Отключена' : 'Работает'}</button>
                     <button class="toggle-pill off" onclick="adminDeleteStation('${esc}')">✕</button>
                 </div>
@@ -2287,9 +2853,9 @@
             const isDisabled = disabledTimes.includes(t);
             return `
                 <div class="admin-toggle-row">
-                    <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">⏰ ${t}</span>
-                    <button class="toggle-pill ${isDisabled ? 'off' : 'on'}" onclick="adminToggleTime('${t}')">${isDisabled ? 'Отключено' : 'Доступно'}</button>
-                    <button class="toggle-pill off" onclick="adminDeleteTimeSlot('${t}')">✕</button>
+                    <span style="flex:1; ${isDisabled ? 'color:var(--text-secondary); text-decoration:line-through;' : ''}">⏰ ${escapeHtml(t)}</span>
+                    <button class="toggle-pill ${isDisabled ? 'off' : 'on'}" onclick="adminToggleTime('${escapeHtml(t)}')">${isDisabled ? 'Отключено' : 'Доступно'}</button>
+                    <button class="toggle-pill off" onclick="adminDeleteTimeSlot('${escapeHtml(t)}')">✕</button>
                 </div>
             `;
         }).join('');
@@ -2377,7 +2943,7 @@
             if (countEl) countEl.innerText = `${data.subscribers_count || 0} чел.`;
             if (listEl) {
                 const hist = data.history || [];
-                listEl.innerHTML = hist.length === 0 ? '<div style="font-size:11.5px; color:var(--text-secondary);">Рассылок ещё не было</div>' : hist.map(h => `<div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:10px; padding:9px 10px; margin-bottom:7px; font-size:11.5px;"><div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--text-secondary);"><span>📅 ${h.created_at}</span><span style="color:var(--accent-green); font-weight:700;">✅ ${h.sent} / ❌ ${h.failed}</span></div><div style="color:var(--text-main); word-break:break-word;">${h.text}</div></div>`).join('');
+                listEl.innerHTML = hist.length === 0 ? '<div style="font-size:11.5px; color:var(--text-secondary);">Рассылок ещё не было</div>' : hist.map(h => `<div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:10px; padding:9px 10px; margin-bottom:7px; font-size:11.5px;"><div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--text-secondary);"><span>📅 ${escapeHtml(h.created_at)}</span><span style="color:var(--accent-green); font-weight:700;">✅ ${h.sent} / ❌ ${h.failed}</span></div><div style="color:var(--text-main); word-break:break-word;">${escapeHtml(h.text)}</div></div>`).join('');
             }
         } catch (e) {}
     }
@@ -2458,14 +3024,14 @@
             const isClaimedByMe = claimedId && claimedId === Number(currentUserId);
             const isClaimedByOther = claimedId && claimedId !== Number(currentUserId);
 
-            let itemsList = ord.items.map(i => `<div>• ${i.title} × ${i.qty} (${(i.price * i.qty).toFixed(2)} р.)</div>`).join('');
-            let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${ord.promo_code} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+            let itemsList = ord.items.map(i => `<div>• ${escapeHtml(i.title)} × ${i.qty} (${(i.price * i.qty).toFixed(2)} р.)</div>`).join('');
+            let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${escapeHtml(ord.promo_code)} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
             let statusHtml = `<span class="order-status-pill active">Активен</span>`;
             if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
             else if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
 
             let claimedBanner = claimedId
-                ? `<div style="font-size:11.5px; font-weight:700; color:${isClaimedByMe ? 'var(--accent-green)' : '#ffaa00'}; background:rgba(255,255,255,0.04); padding:5px 8px; border-radius:8px;">🛵 ${isClaimedByMe ? 'Вы ведёте этот заказ' : `Взял курьер: ${ord.claimed_by_name}`}</div>`
+                ? `<div style="font-size:11.5px; font-weight:700; color:${isClaimedByMe ? 'var(--accent-green)' : '#ffaa00'}; background:rgba(255,255,255,0.04); padding:5px 8px; border-radius:8px;">🛵 ${isClaimedByMe ? 'Вы ведёте этот заказ' : `Взял курьер: ${escapeHtml(ord.claimed_by_name)}`}</div>`
                 : '';
 
             let deleteBtn = (ord.status === 'completed' || ord.status === 'cancelled') ? `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${oid}')">✕</button>` : '';
@@ -2492,20 +3058,20 @@
             }
 
             let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
-            let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${ord.created_at}</b></div>` : '';
+            let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${escapeHtml(ord.created_at)}</b></div>` : '';
 
             html += `
                 <div class="order-card">
                     <div class="order-card-header">
                         <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
-                            <span class="order-id-label">Заказ #${oid}</span>
-                            <span style="color:var(--text-secondary); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">👤 ${ord.user_name || 'User'}</span>
+                            <span class="order-id-label">Заказ #${escapeHtml(oid)}</span>
+                            <span style="color:var(--text-secondary); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">👤 ${escapeHtml(ord.user_name || 'User')}</span>
                             <span style="display:inline-flex; align-items:center; gap:4px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; width:fit-content; white-space:nowrap; user-select:all;">🆔 ${ord.user_id || '0'}</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">${statusHtml}${deleteBtn}</div>
                     </div>
                     ${claimedBanner}
-                    <div class="order-meta-grid">${createdAtHtml}<div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${ord.station}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${ord.time}</b> ${timeNoteCourier}</div></div>
+                    <div class="order-meta-grid">${createdAtHtml}<div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${escapeHtml(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNoteCourier}</div></div>
                     <div class="order-items-box">${itemsList}${promoBadgeCourier}</div>
                     <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">Итого к оплате:</span><span class="order-total-price">${ord.total.toFixed(2)} р.</span></div>
                     ${courierActions}
@@ -2550,11 +3116,15 @@
         if (screenName === 'orders') { syncClientOrdersStatus(); renderOrders(); }
         if (screenName === 'profile') {
             updateProfileAvatarUI();
+            renderProfileLinks();
             if (isCurrentUserOwner()) { loadAdminStats(); loadBroadcastHistory(); }
         }
         if (screenName === 'courier') loadCourierOrders();
     }
 
+    renderCatalogCategories();
+    populateCategorySelects();
+    renderProfileLinks();
     ensureValidSelectedStationAndTime();
     renderProducts(products);
     renderStations('green');
