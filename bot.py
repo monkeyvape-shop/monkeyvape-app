@@ -591,13 +591,12 @@ async def apply_auto_schedule_tick():
         should_be_open = is_within_schedule(datetime.now(), open_time_str, close_time_str)
         currently_open = (await get_setting_raw(db, "shop_open", "1")) == "1"
 
-        if should_be_open != currently_open:
-            await set_setting_raw(db, "shop_open", "1" if should_be_open else "0")
-            if should_be_open and not currently_open:
-                brand_name = await get_shop_brand_name(db)
-                notify_uids = [int(x) for x in await get_setting_list(db, "shop_open_subscribers")]
-                if notify_uids:
-                    await set_setting_list(db, "shop_open_subscribers", [])
+        if should_be_open and not currently_open:
+            await set_setting_raw(db, "shop_open", "1")
+            brand_name = await get_shop_brand_name(db)
+            notify_uids = [int(x) for x in await get_setting_list(db, "shop_open_subscribers")]
+            if notify_uids:
+                await set_setting_list(db, "shop_open_subscribers", [])
             await db.commit()
 
     for uid in notify_uids:
@@ -1495,11 +1494,14 @@ async def update_admin_schedule(data: AdminScheduleSchema):
         await db.commit()
     if data.auto_schedule_enabled:
         await apply_auto_schedule_tick()
+    async with aiosqlite.connect(DB_FILE) as db:
+        cur_open = (await get_setting_raw(db, "shop_open", "1")) == "1"
     return {
         "success": True,
         "auto_schedule_enabled": bool(data.auto_schedule_enabled),
         "open_time": open_t,
-        "close_time": close_t
+        "close_time": close_t,
+        "shop_open": cur_open
     }
 
 async def build_orders_report_csv_bytes() -> bytes:
