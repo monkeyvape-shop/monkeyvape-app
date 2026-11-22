@@ -2754,19 +2754,51 @@
     function handleMusicFileSelect(inputEl) {
         const file = inputEl.files && inputEl.files[0];
         if (!file) return;
+        const cleanName = file.name.replace(/\.[^/.]+$/, '') || 'Фоновый трек';
         const reader = new FileReader();
-        reader.onload = (ev) => {
-            isMusicDirty = true;
-            musicUrl = String(ev.target.result || '');
-            const cleanName = file.name.replace(/\.[^/.]+$/, '');
-            if (cleanName) musicTitle = cleanName;
+        reader.onload = async (ev) => {
+            const rawDataUrl = String(ev.target.result || '');
+            const base64Part = rawDataUrl.includes(',') ? rawDataUrl.split(',')[1] : rawDataUrl;
             const titleInp = document.getElementById('admin-music-title-input');
             const urlInp = document.getElementById('admin-music-url-input');
+            const typedTitle = (titleInp?.value || '').trim() || cleanName;
+            musicTitle = typedTitle;
             if (titleInp) titleInp.value = musicTitle;
-            if (urlInp) urlInp.value = musicUrl;
-            userMusicPaused = false;
-            applyMusicPlayerUI();
-            showToast("🎧 Трек загружен! Нажмите «Сохранить музыку»");
+            showToast("⏳ Загружаем трек на сервер...");
+            try {
+                const res = await apiFetch(`/api/admin/upload_music`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: Number(currentUserId),
+                        filename: file.name || 'track.mp3',
+                        data_base64: base64Part,
+                        music_title: musicTitle,
+                        music_enabled: musicEnabled,
+                        music_volume: musicVolume
+                    })
+                });
+                const upData = await res.json();
+                const resolvedUrl = (upData?.music_url || '').trim();
+                const finalTrackUrl = (resolvedUrl && resolvedUrl.startsWith('/'))
+                    ? `${BACKEND_URL.replace(/\/+$/, '')}${resolvedUrl}`
+                    : resolvedUrl;
+                if (finalTrackUrl) {
+                    musicUrl = finalTrackUrl;
+                    if (urlInp) urlInp.value = musicUrl;
+                    try { localStorage.setItem('monkey_music_url', musicUrl); } catch (_) {}
+                }
+                isMusicDirty = false;
+                userMusicPaused = false;
+                applyMusicPlayerUI();
+                showToast("✅ Трек загружен на сервер и доступен всем!");
+            } catch (e) {
+                isMusicDirty = true;
+                musicUrl = rawDataUrl;
+                if (urlInp) urlInp.value = musicUrl;
+                userMusicPaused = false;
+                applyMusicPlayerUI();
+                showToast(e?.detail ? `⚠️ ${e.detail}` : "⚠️ Не удалось загрузить файл на сервер", true);
+            }
         };
         reader.readAsDataURL(file);
         inputEl.value = '';
