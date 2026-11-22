@@ -336,9 +336,18 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            min-width: 0;
+            flex: 1 1 auto;
         }
         .brand-title span { color: var(--logo-color-2); }
-        .top-bar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .top-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 0;
+            max-width: 64%;
+        }
 
         .theme-toggle-btn {
             background: color-mix(in srgb, var(--card-bg) 82%, transparent);
@@ -367,17 +376,27 @@
             border: 1px solid var(--border-color);
             box-shadow: inset 0 1px 0 var(--glass-highlight);
             color: var(--text-main);
-            padding: 7px 12px;
+            padding: 7px 11px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
+            max-width: 175px;
+            min-width: 0;
+            overflow: hidden;
             cursor: pointer;
             transition: transform 0.16s ease, border-color 0.2s ease;
         }
         .metro-selector-btn:active { transform: scale(0.95); }
+        #current-metro-label {
+            display: block;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
         .metro-icon {
             background-color: var(--icon-color);
@@ -390,6 +409,7 @@
             justify-content: center;
             font-weight: 800;
             font-size: 11px;
+            flex-shrink: 0;
             box-shadow: 0 0 8px var(--icon-glow);
         }
 
@@ -1374,6 +1394,19 @@
         </div>
     </div>
 
+    <!-- Окно обязательной подписки на канал перед заказом -->
+    <div class="modal-overlay" id="channel-sub-modal" onclick="if(event.target.id==='channel-sub-modal') closeChannelSubModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div style="width:46px; height:46px; border-radius:14px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:12px;">📢</div>
+            <div class="modal-title">Подпишитесь на канал</div>
+            <div class="modal-subtitle" id="channel-sub-modal-text" style="margin-bottom:16px; color:var(--text-main);">Для оформления заказа необходимо подписаться на наш Telegram-канал.</div>
+            <a id="channel-sub-modal-link" href="https://t.me/" target="_blank" onclick="openRequiredChannelLink(event)" class="primary-btn" style="display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; margin-bottom:10px;">✈️ Перейти в канал</a>
+            <button type="button" onclick="retryOrderAfterSubscribe()" style="width:100%; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); padding:13px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;">✅ Я подписался, оформить заказ</button>
+            <button type="button" onclick="closeChannelSubModal()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Закрыть</button>
+        </div>
+    </div>
+
     <div id="splash-screen">
         <div class="splash-orb orb-1"></div>
         <div class="splash-orb orb-2"></div>
@@ -1394,7 +1427,7 @@
     <div class="modal-overlay" id="metro-modal" onclick="closeMetroModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
-            <div class="modal-title" id="metro-modal-title">Локация встречи 🚇</div>
+            <div class="modal-title" id="metro-modal-title">Выбрать локацию</div>
             <div class="modal-subtitle" id="metro-modal-subtitle">Выберите удобное место для получения заказа</div>
             <div class="metro-tabs" id="modal-metro-tabs">
                 <div class="metro-tab active-green" onclick="switchModalMetroLine('green', this)">Зеленая ветка</div>
@@ -1498,8 +1531,8 @@
             <button class="theme-toggle-btn" id="theme-toggle-btn" title="Сменить тему" onclick="toggleAppTheme()">☀️</button>
             <button class="metro-selector-btn" id="topbar-metro-btn" onclick="openMetroPicker()">
                 <div class="metro-icon" id="topbar-loc-badge">M</div>
-                <span id="current-metro-label">Партизанская</span>
-                <span style="font-size: 10px; color: var(--icon-color);">▼</span>
+                <span id="current-metro-label">Выбрать локацию</span>
+                <span style="font-size: 10px; color: var(--icon-color); flex-shrink: 0;">▼</span>
             </button>
         </div>
     </div>
@@ -1568,6 +1601,20 @@
                         <input type="text" id="admin-closed-msg-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Текст при закрытии (напр. Откроемся в 16:00)">
                         <button type="button" class="promo-apply-btn" style="padding:8px 12px; font-size:12px;" onclick="adminSaveClosedMsg()">Ок</button>
                     </div>
+
+                    <div style="border-top:1px solid var(--border-color); margin-top:10px; padding-top:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">⏰ Автоматический график работы:</span>
+                            <button type="button" id="admin-schedule-toggle-btn" class="toggle-pill off" onclick="adminToggleAutoSchedule()">⚪ Выключен</button>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:11.5px; color:var(--text-secondary);">С</span>
+                            <input type="time" id="admin-open-time-input" class="promo-input" style="text-transform:none; font-size:12px; padding:8px 8px;" value="10:00" oninput="isScheduleDirty=true">
+                            <span style="font-size:11.5px; color:var(--text-secondary);">до</span>
+                            <input type="time" id="admin-close-time-input" class="promo-input" style="text-transform:none; font-size:12px; padding:8px 8px;" value="22:00" oninput="isScheduleDirty=true">
+                            <button type="button" class="promo-apply-btn" style="padding:8px 12px; font-size:12px;" onclick="adminSaveSchedule()">Ок</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="admin-sub-tabs">
@@ -1587,6 +1634,10 @@
 
                 <div id="admin-tab-stats">
                     <div id="admin-stats-content" style="font-size:12px; color:var(--text-secondary);">Загрузка статистики...</div>
+                    <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                        <button type="button" id="admin-send-backup-btn" class="primary-btn" style="padding:11px 12px; font-size:12.5px;" onclick="adminSendBackup()">📥 Скачать бэкап и отчёт в Telegram</button>
+                        <button type="button" id="admin-clear-orders-btn" onclick="adminClearTestOrders()" style="width:100%; background:rgba(255,51,51,0.12); border:1px solid var(--danger); color:var(--danger); padding:11px 12px; border-radius:14px; font-size:12.5px; font-weight:700; cursor:pointer;">🧹 Очистить тестовые заказы и статистику</button>
+                    </div>
                 </div>
 
                 <div id="admin-tab-products" style="display: none;">
@@ -1724,7 +1775,7 @@
                     <button type="button" onclick="adminResetUiTheme()" style="width:100%; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-secondary); padding:10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer;">🔄 Сбросить стандартные цвета</button>
                 </div>
 
-                <!-- Вкладка "Локация и доставка" — валюта, формат получения, районы/ПВЗ, минимальный заказ и тариф доставки -->
+                <!-- Вкладка "Локация и доставка" — валюта, формат получения, пункты выдачи, минимальный заказ и тариф доставки -->
                 <div id="admin-tab-region" style="display: none;">
                     <div style="font-size:13.5px; font-weight:800; color:var(--accent-green); margin-bottom:10px;">🌍 Локация и доставка</div>
 
@@ -1738,9 +1789,9 @@
                         <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; margin-bottom:10px;" id="admin-delivery-mode-grid"></div>
 
                         <div id="admin-delivery-locs-wrapper">
-                            <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;" id="admin-delivery-locs-title">📍 Районы города / пункты выдачи:</div>
+                            <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;" id="admin-delivery-locs-title">📦 Список пунктов выдачи:</div>
                             <div style="display:flex; gap:6px; margin-bottom:8px;">
-                                <input type="text" id="admin-new-delivery-loc-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Добавить район или пункт выдачи..." onkeydown="if(event.key==='Enter'){event.preventDefault(); adminAddDeliveryLocation();}">
+                                <input type="text" id="admin-new-delivery-loc-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Новый пункт выдачи (напр. ТЦ Призма)..." onkeydown="if(event.key==='Enter'){event.preventDefault(); adminAddDeliveryLocation();}">
                                 <button type="button" class="promo-apply-btn" style="padding:8px 13px;" onclick="adminAddDeliveryLocation()">+</button>
                             </div>
                             <div id="admin-delivery-locs-list" style="max-height:190px; overflow-y:auto;"></div>
@@ -1777,17 +1828,30 @@
                         </div>
                         <div style="margin-bottom:8px;">
                             <div style="font-size:12px; font-weight:700; margin-bottom:4px;">✈️ Telegram-канал (Новости):</div>
-                            <input type="text" id="admin-news-channel-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="https://t.me/ваш_канал или @канал">
+                            <input type="text" id="admin-news-channel-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="https://t.me/ваш_канал или @канал" oninput="isChannelsDirty=true">
                         </div>
                         <div style="margin-bottom:8px;">
                             <div style="font-size:12px; font-weight:700; margin-bottom:4px;">✅ Канал / чат с отзывами:</div>
-                            <input type="text" id="admin-reviews-channel-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="https://t.me/ваши_отзывы или @отзывы">
+                            <input type="text" id="admin-reviews-channel-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="https://t.me/ваши_отзывы или @отзывы" oninput="isChannelsDirty=true">
                         </div>
                         <div style="margin-bottom:10px;">
                             <div style="font-size:12px; font-weight:700; margin-bottom:4px;">💬 Менеджер поддержки (@username):</div>
-                            <input type="text" id="admin-support-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="@warat_24">
+                            <input type="text" id="admin-support-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="@warat_24" oninput="isChannelsDirty=true">
                         </div>
-                        <button type="button" class="primary-btn" style="padding:10px; font-size:13px;" onclick="adminSaveChannels()">💾 Сохранить ссылки</button>
+
+                        <div style="border-top:1px solid var(--border-color); margin:10px 0; padding-top:10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                                <span style="font-size:12px; font-weight:700; line-height:1.3;">🔒 Проверять подписку на канал новостей перед заказом:</span>
+                                <button type="button" id="admin-channel-check-toggle-btn" class="toggle-pill off" onclick="adminToggleChannelCheck()">⚪ Выключено</button>
+                            </div>
+                            <div style="margin-bottom:10px;">
+                                <div style="font-size:12px; font-weight:700; margin-bottom:4px;">📢 Канал для подписки (@username или ID):</div>
+                                <input type="text" id="admin-required-channel-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="@ваш_канал или -100..." oninput="isChannelsDirty=true">
+                                <div style="font-size:10.5px; color:var(--text-secondary); margin-top:4px;">Бот должен быть администратором этого канала, чтобы проверять подписку.</div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="primary-btn" style="padding:10px; font-size:13px;" onclick="adminSaveChannels()">💾 Сохранить настройки каналов</button>
                     </div>
                 </div>
 
@@ -2424,16 +2488,33 @@
         options.headers = Object.assign({
             'Bypass-Tunnel-Reminder': 'true', 'X-Pinggy-No-Screen': 'true', 'ngrok-skip-browser-warning': 'true'
         }, options.headers || {});
+        let lastHttpError = null;
         for (const base of CANDIDATE_BACKENDS) {
             if (!base) continue;
             try {
                 const res = await fetch(`${base}${path}`, options);
+                const ctype = res.headers.get("content-type") || "";
                 if (res.ok) {
-                    if (expectJson && !(res.headers.get("content-type") || "").includes("application/json")) continue;
+                    if (expectJson && !ctype.includes("application/json")) continue;
                     BACKEND_URL = base; updateServerStatusBadge(true, base); return res;
+                }
+                if (ctype.includes("application/json")) {
+                    BACKEND_URL = base;
+                    updateServerStatusBadge(true, base);
+                    let detailText = "";
+                    try {
+                        const errJson = await res.json();
+                        detailText = String(errJson?.detail || "");
+                    } catch (_) {}
+                    const httpErr = new Error(detailText || `HTTP ${res.status}`);
+                    httpErr.status = res.status;
+                    httpErr.detail = detailText;
+                    lastHttpError = httpErr;
+                    break;
                 }
             } catch (e) {}
         }
+        if (lastHttpError) throw lastHttpError;
         updateServerStatusBadge(false);
         throw new Error("Server unreachable");
     }
@@ -2605,19 +2686,29 @@
     const CURRENCY_OPTIONS = ['р.', '₽', '₸', '$', '₴'];
     const DELIVERY_MODE_OPTIONS = [
         { id: 'metro', label: '🚇 Станции метро' },
-        { id: 'districts', label: '🏙 Районы города' },
-        { id: 'pickup', label: '📦 Пункты выдачи' },
+        { id: 'pickup', label: '📦 Пункт выдачи' },
         { id: 'free_address', label: '✍️ Свободный ввод адреса' }
     ];
 
     let shopCurrency = localStorage.getItem('monkey_currency') || 'р.';
     let deliveryMode = localStorage.getItem('monkey_delivery_mode') || 'metro';
-    let deliveryLocations = JSON.parse(localStorage.getItem('monkey_delivery_locations')) || ['Центральный район', 'Советский район', 'Первомайский район'];
+    if (deliveryMode === 'districts') deliveryMode = 'pickup';
+    let deliveryLocations = JSON.parse(localStorage.getItem('monkey_delivery_locations')) || ['ТЦ Призма'];
     let minOrderAmount = Number(localStorage.getItem('monkey_min_order_amount') || 0);
     let deliveryFee = Number(localStorage.getItem('monkey_delivery_fee') || 0);
     let freeDeliveryThreshold = Number(localStorage.getItem('monkey_free_delivery_threshold') || 0);
     let freeAddressDraft = localStorage.getItem('monkey_free_address_draft') || '';
     let isRegionSettingsDirty = false;
+
+    let autoScheduleEnabled = localStorage.getItem('monkey_auto_schedule_enabled') === '1';
+    let shopOpenTime = localStorage.getItem('monkey_open_time') || '10:00';
+    let shopCloseTime = localStorage.getItem('monkey_close_time') || '22:00';
+    let isScheduleDirty = false;
+
+    let channelCheckEnabled = localStorage.getItem('monkey_channel_check_enabled') === '1';
+    let requiredChannel = localStorage.getItem('monkey_required_channel') || '';
+    let isChannelsDirty = false;
+    let activeChannelSubUrl = '';
 
     function formatMoney(amount) {
         return `${Number(amount || 0).toFixed(2)} ${escapeHtml(shopCurrency)}`;
@@ -2630,40 +2721,25 @@
     }
 
     function getDeliveryMeta(mode = deliveryMode) {
-        if (mode === 'districts') {
-            return {
-                badge: '📍',
-                modalTitle: 'Выберите район города 📍',
-                modalSubtitle: 'Укажите удобный район для доставки заказа',
-                modalConfirmText: 'Подтвердить район',
-                checkoutTitle: 'Доставка по району города',
-                checkoutDesc: 'Курьер доставит заказ в выбранный район',
-                checkoutHeading: 'Район доставки',
-                cartRowLabel: 'Район доставки:',
-                orderRowLabel: '📍 Район:',
-                emptyFallback: 'Не выбран',
-                formatLocation: (val) => val ? escapeHtml(val) : 'Не выбран'
-            };
-        }
-        if (mode === 'pickup') {
+        if (mode === 'pickup' || mode === 'districts') {
             return {
                 badge: '📦',
-                modalTitle: 'Выберите пункт выдачи 📦',
-                modalSubtitle: 'Укажите удобную точку для самовывоза заказа',
+                modalTitle: 'Выбрать локацию',
+                modalSubtitle: 'Выберите пункт выдачи для получения заказа',
                 modalConfirmText: 'Подтвердить пункт выдачи',
                 checkoutTitle: 'Самовывоз из пункта выдачи',
                 checkoutDesc: 'Получение заказа в выбранной точке',
                 checkoutHeading: 'Пункт выдачи',
                 cartRowLabel: 'Пункт выдачи:',
                 orderRowLabel: '📦 Пункт выдачи:',
-                emptyFallback: 'Не выбран',
-                formatLocation: (val) => val ? escapeHtml(val) : 'Не выбран'
+                emptyFallback: 'Выбрать локацию',
+                formatLocation: (val) => val ? escapeHtml(val) : 'Выбрать локацию'
             };
         }
         if (mode === 'free_address') {
             return {
                 badge: '🏠',
-                modalTitle: 'Адрес доставки 🏠',
+                modalTitle: 'Выбрать локацию',
                 modalSubtitle: 'Укажите улицу, дом, подъезд или ориентир',
                 modalConfirmText: 'Сохранить адрес',
                 checkoutTitle: 'Доставка по адресу',
@@ -2671,13 +2747,13 @@
                 checkoutHeading: 'Адрес доставки',
                 cartRowLabel: 'Адрес доставки:',
                 orderRowLabel: '📍 Адрес:',
-                emptyFallback: 'Указывается при оформлении',
+                emptyFallback: 'Выбрать локацию',
                 formatLocation: (val) => val ? escapeHtml(val) : 'Указывается при оформлении'
             };
         }
         return {
             badge: 'M',
-            modalTitle: 'Локация встречи 🚇',
+            modalTitle: 'Выбрать локацию',
             modalSubtitle: 'Выберите ветку и станцию метро для передачи заказа',
             modalConfirmText: 'Выбрать эту станцию',
             checkoutTitle: 'Встреча в метро',
@@ -2685,8 +2761,8 @@
             checkoutHeading: 'Ветка и станция встречи',
             cartRowLabel: 'Станция встречи:',
             orderRowLabel: '🚇 Станция:',
-            emptyFallback: 'Не выбрана',
-            formatLocation: (val) => val ? (String(val).startsWith('м.') ? escapeHtml(val) : 'м. ' + escapeHtml(val)) : 'Не выбрана'
+            emptyFallback: 'Выбрать локацию',
+            formatLocation: (val) => val ? (String(val).startsWith('м.') ? escapeHtml(val) : 'м. ' + escapeHtml(val)) : 'Выбрать локацию'
         };
     }
 
@@ -2701,13 +2777,14 @@
         const topBadge = document.getElementById('topbar-loc-badge');
         const topLabel = document.getElementById('current-metro-label');
         if (topBtn) {
-            topBtn.style.display = deliveryMode === 'free_address' ? 'none' : 'flex';
+            topBtn.style.display = 'flex';
         }
         if (topBadge) topBadge.textContent = meta.badge;
         if (topLabel) {
-            topLabel.innerText = deliveryMode === 'free_address'
-                ? (freeAddressDraft || 'Адрес')
-                : (selectedStation || meta.emptyFallback);
+            const rawLoc = deliveryMode === 'free_address'
+                ? (freeAddressDraft || '').trim()
+                : (selectedStation || '').trim();
+            topLabel.innerText = rawLoc || 'Выбрать локацию';
         }
 
         const metroAdminTab = document.getElementById('admin-subtab-metro');
@@ -2753,6 +2830,10 @@
         const mInp = document.getElementById('modal-free-address-input');
         if (cInp && document.activeElement !== cInp) cInp.value = freeAddressDraft;
         if (mInp && document.activeElement !== mInp) mInp.value = freeAddressDraft;
+        const topLabel = document.getElementById('current-metro-label');
+        if (topLabel && deliveryMode === 'free_address') {
+            topLabel.innerText = freeAddressDraft.trim() || 'Выбрать локацию';
+        }
     }
 
     function showRoleTabsIfAllowed(forceRender = false) {
@@ -2990,19 +3071,46 @@
                     applyPromoBannerUI();
                 }
 
-                if (cfg.news_channel_url !== undefined) {
-                    newsChannelUrl = cfg.news_channel_url || '';
-                    localStorage.setItem('monkey_news_channel', newsChannelUrl);
-                }
-                if (cfg.reviews_channel_url !== undefined) {
-                    reviewsChannelUrl = cfg.reviews_channel_url || '';
-                    localStorage.setItem('monkey_reviews_channel', reviewsChannelUrl);
-                }
-                if (cfg.support_username !== undefined) {
-                    supportUsername = cfg.support_username || '@warat_24';
-                    localStorage.setItem('monkey_support_username', supportUsername);
+                if (!isChannelsDirty) {
+                    if (cfg.news_channel_url !== undefined) {
+                        newsChannelUrl = cfg.news_channel_url || '';
+                        localStorage.setItem('monkey_news_channel', newsChannelUrl);
+                    }
+                    if (cfg.reviews_channel_url !== undefined) {
+                        reviewsChannelUrl = cfg.reviews_channel_url || '';
+                        localStorage.setItem('monkey_reviews_channel', reviewsChannelUrl);
+                    }
+                    if (cfg.support_username !== undefined) {
+                        supportUsername = cfg.support_username || '@warat_24';
+                        localStorage.setItem('monkey_support_username', supportUsername);
+                    }
+                    if (cfg.channel_check_enabled !== undefined) {
+                        channelCheckEnabled = Boolean(cfg.channel_check_enabled);
+                        localStorage.setItem('monkey_channel_check_enabled', channelCheckEnabled ? '1' : '0');
+                    }
+                    if (cfg.required_channel !== undefined) {
+                        requiredChannel = cfg.required_channel || '';
+                        localStorage.setItem('monkey_required_channel', requiredChannel);
+                    }
+                    renderAdminChannelsTab();
                 }
                 renderProfileLinks();
+
+                if (!isScheduleDirty) {
+                    if (cfg.auto_schedule_enabled !== undefined) {
+                        autoScheduleEnabled = Boolean(cfg.auto_schedule_enabled);
+                        localStorage.setItem('monkey_auto_schedule_enabled', autoScheduleEnabled ? '1' : '0');
+                    }
+                    if (cfg.open_time) {
+                        shopOpenTime = cfg.open_time;
+                        localStorage.setItem('monkey_open_time', shopOpenTime);
+                    }
+                    if (cfg.close_time) {
+                        shopCloseTime = cfg.close_time;
+                        localStorage.setItem('monkey_close_time', shopCloseTime);
+                    }
+                    renderAdminShopMaster();
+                }
 
                 if (Array.isArray(cfg.categories) && cfg.categories.length > 0) {
                     shopCategories = cfg.categories;
@@ -3022,7 +3130,7 @@
                         localStorage.setItem('monkey_currency', shopCurrency);
                     }
                     if (cfg.delivery_mode && ['metro', 'districts', 'pickup', 'free_address'].includes(cfg.delivery_mode)) {
-                        deliveryMode = cfg.delivery_mode;
+                        deliveryMode = cfg.delivery_mode === 'districts' ? 'pickup' : cfg.delivery_mode;
                         localStorage.setItem('monkey_delivery_mode', deliveryMode);
                     }
                     if (Array.isArray(cfg.delivery_locations)) {
@@ -3076,7 +3184,7 @@
                 renderCheckoutTimeSlots(); renderChangeTimeSlots();
 
                 const activeEl = document.activeElement;
-                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-splash-emoji', 'admin-welcome-text', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input', 'admin-new-delivery-loc-input', 'admin-min-order-input', 'admin-delivery-fee-input', 'admin-free-delivery-input', 'checkout-free-address-input'].includes(activeEl.id);
+                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-open-time-input', 'admin-close-time-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-splash-emoji', 'admin-welcome-text', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input', 'admin-required-channel-input', 'admin-new-delivery-loc-input', 'admin-min-order-input', 'admin-delivery-fee-input', 'admin-free-delivery-input', 'checkout-free-address-input'].includes(activeEl.id);
                 if (!skipCartRender) renderCart();
                 showRoleTabsIfAllowed(false); updateProfileAvatarUI();
             }
@@ -3423,7 +3531,7 @@
 
         container.innerHTML = itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
-                <div class="summary-row"><span>${meta.cartRowLabel}</span><span style="color:var(--accent-green); font-weight:700;">${locValueDisplay}</span></div>
+                <div class="summary-row" style="gap:10px;"><span style="flex-shrink:0;">${meta.cartRowLabel}</span><span style="color:var(--accent-green); font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right;">${locValueDisplay}</span></div>
                 <div class="summary-row"><span>Позиций (${items.reduce((s,i)=>s+i.qty,0)})</span><span>${formatMoney(subtotal)}</span></div>
                 ${discountRowHtml}
                 ${deliveryRowHtml}
@@ -3436,7 +3544,6 @@
     }
 
     function openMetroPicker() {
-        if (deliveryMode === 'free_address') return;
         syncShopConfig();
         updateLocationModeUI();
         document.getElementById('metro-modal').classList.add('active');
@@ -3459,7 +3566,7 @@
         if (deliveryMode === 'free_address') return;
 
         if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
-            const subLabel = deliveryMode === 'districts' ? 'Район' : 'Пункт выдачи';
+            const subLabel = 'Пункт выдачи';
             if (!deliveryLocations.length) {
                 container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:16px;">Список локаций пока пуст</div>';
                 return;
@@ -3527,7 +3634,7 @@
         if (deliveryMode === 'free_address') return;
 
         if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
-            const subLabel = deliveryMode === 'districts' ? 'Район' : 'Пункт выдачи';
+            const subLabel = 'Пункт выдачи';
             if (!deliveryLocations.length) {
                 container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:16px;">Список локаций пока пуст</div>';
                 return;
@@ -3625,7 +3732,7 @@
             finalLocation = addrVal;
         } else if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
             if (!finalLocation || !deliveryLocations.includes(finalLocation)) {
-                showToast(deliveryMode === 'districts' ? "Выберите район доставки" : "Выберите пункт выдачи", true);
+                showToast("Выберите пункт выдачи", true);
                 return;
             }
         } else {
@@ -3668,7 +3775,16 @@
             if (resData?.total !== undefined) orderData.total = Number(resData.total);
             if (resData?.delivery_fee !== undefined) orderData.delivery_fee = Number(resData.delivery_fee);
         } catch (e) {
-            showToast("⚠️ Заказ не отправлен! Проверьте связь или сумму заказа.", true);
+            const detail = String(e?.detail || '');
+            const isSubError = (e?.status === 403 && (/подпиш/i.test(detail) || /канал/i.test(detail) || channelCheckEnabled))
+                || /подпиш/i.test(detail);
+            if (isSubError) {
+                const urlMatch = detail.match(/https?:\/\/[^\s"'<>]+/i);
+                const chUrl = urlMatch ? urlMatch[0] : normalizeTelegramUrl(requiredChannel || newsChannelUrl);
+                openChannelSubModal(detail, chUrl);
+                return;
+            }
+            showToast(detail ? `⚠️ ${detail}` : "⚠️ Заказ не отправлен! Проверьте связь или сумму заказа.", true);
             return;
         }
 
@@ -4183,11 +4299,101 @@
 
     // ----- АДМИН-ПАНЕЛЬ ВЛАДЕЛЬЦА -----
 
+    function openChannelSubModal(rawDetail, channelUrl) {
+        activeChannelSubUrl = channelUrl || normalizeTelegramUrl(requiredChannel || newsChannelUrl);
+        const textEl = document.getElementById('channel-sub-modal-text');
+        const linkEl = document.getElementById('channel-sub-modal-link');
+        if (textEl) {
+            const cleanText = (rawDetail || '')
+                .replace(/https?:\/\/[^\s"'<>]+/gi, '')
+                .replace(/^📢\s*/, '')
+                .trim();
+            textEl.innerText = cleanText || 'Для оформления заказа необходимо подписаться на наш Telegram-канал. После подписки нажмите кнопку ниже.';
+        }
+        if (linkEl) {
+            linkEl.href = activeChannelSubUrl || 'https://t.me/';
+            linkEl.style.display = activeChannelSubUrl ? 'flex' : 'none';
+        }
+        document.getElementById('channel-sub-modal')?.classList.add('active');
+    }
+
+    function closeChannelSubModal() {
+        document.getElementById('channel-sub-modal')?.classList.remove('active');
+    }
+
+    function openRequiredChannelLink(e) {
+        if (!activeChannelSubUrl) return;
+        if (window.Telegram?.WebApp?.openTelegramLink && activeChannelSubUrl.startsWith('https://t.me/')) {
+            e.preventDefault();
+            try {
+                window.Telegram.WebApp.openTelegramLink(activeChannelSubUrl);
+            } catch (_) {
+                window.open(activeChannelSubUrl, '_blank');
+            }
+        }
+    }
+
+    function retryOrderAfterSubscribe() {
+        closeChannelSubModal();
+        confirmOrderFinal();
+    }
+
     function renderAdminShopMaster() {
         const btn = document.getElementById('admin-shop-toggle-btn');
         const input = document.getElementById('admin-closed-msg-input');
         if (btn) { btn.className = `toggle-pill ${isShopOpen ? 'on' : 'off'}`; btn.innerText = isShopOpen ? '🟢 Открыт' : '🔴 Закрыт'; }
         if (input && document.activeElement !== input && !input.value) input.value = shopClosedMessage;
+
+        const schedBtn = document.getElementById('admin-schedule-toggle-btn');
+        const openInp = document.getElementById('admin-open-time-input');
+        const closeInp = document.getElementById('admin-close-time-input');
+        if (schedBtn) {
+            schedBtn.className = `toggle-pill ${autoScheduleEnabled ? 'on' : 'off'}`;
+            schedBtn.innerText = autoScheduleEnabled ? '🟢 Включён' : '⚪ Выключен';
+        }
+        if (openInp && document.activeElement !== openInp) openInp.value = shopOpenTime || '10:00';
+        if (closeInp && document.activeElement !== closeInp) closeInp.value = shopCloseTime || '22:00';
+    }
+
+    async function adminToggleAutoSchedule() {
+        document.activeElement?.blur();
+        isScheduleDirty = true;
+        autoScheduleEnabled = !autoScheduleEnabled;
+        localStorage.setItem('monkey_auto_schedule_enabled', autoScheduleEnabled ? '1' : '0');
+        renderAdminShopMaster();
+        await adminSaveSchedule(true);
+    }
+
+    async function adminSaveSchedule(fromToggle = false) {
+        document.activeElement?.blur();
+        const openVal = (document.getElementById('admin-open-time-input')?.value || shopOpenTime || '10:00').trim();
+        const closeVal = (document.getElementById('admin-close-time-input')?.value || shopCloseTime || '22:00').trim();
+        shopOpenTime = openVal;
+        shopCloseTime = closeVal;
+        localStorage.setItem('monkey_open_time', shopOpenTime);
+        localStorage.setItem('monkey_close_time', shopCloseTime);
+        renderAdminShopMaster();
+        try {
+            const res = await apiFetch(`/api/admin/schedule`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    auto_schedule_enabled: autoScheduleEnabled,
+                    open_time: openVal,
+                    close_time: closeVal
+                })
+            });
+            const data = await res.json();
+            if (data?.open_time) shopOpenTime = data.open_time;
+            if (data?.close_time) shopCloseTime = data.close_time;
+            isScheduleDirty = false;
+            await syncShopConfig();
+            showToast(fromToggle
+                ? (autoScheduleEnabled ? `⏰ Автографик включён (${shopOpenTime} – ${shopCloseTime})` : "⚪ Автографик выключен")
+                : `✅ График работы сохранён (${shopOpenTime} – ${shopCloseTime})`);
+        } catch (e) {
+            showToast("Ошибка сохранения графика на сервере", true);
+        }
     }
 
     async function adminToggleShopOpen() {
@@ -4231,7 +4437,7 @@
         if (tab === 'interface') renderAdminInterfaceTab();
         if (tab === 'region') renderAdminRegionTab();
         if (tab === 'products') { renderAdminCategories(); populateCategorySelects(); renderAdminProducts(); }
-        if (tab === 'channels') renderProfileLinks();
+        if (tab === 'channels') { renderAdminChannelsTab(); renderProfileLinks(); }
         if (tab === 'broadcast') loadBroadcastHistory();
         if (tab === 'commands') renderAdminCommands();
     }
@@ -4249,7 +4455,8 @@
         if (modeGrid) {
             modeGrid.innerHTML = DELIVERY_MODE_OPTIONS.map(m => {
                 const isAct = deliveryMode === m.id;
-                return `<button type="button" class="toggle-pill ${isAct ? 'on' : ''}" style="padding:9px 6px; font-size:11px; text-align:center; ${!isAct ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="selectAdminDeliveryMode('${m.id}')">${m.label}</button>`;
+                const spanFull = m.id === 'free_address' ? 'grid-column: span 2;' : '';
+                return `<button type="button" class="toggle-pill ${isAct ? 'on' : ''}" style="${spanFull} min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:9px 8px; font-size:11px; text-align:center; ${!isAct ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="selectAdminDeliveryMode('${m.id}')">${m.label}</button>`;
             }).join('');
         }
 
@@ -4260,10 +4467,10 @@
             locsWrapper.style.display = (deliveryMode === 'districts' || deliveryMode === 'pickup') ? 'block' : 'none';
         }
         if (locsTitle) {
-            locsTitle.innerText = deliveryMode === 'pickup' ? '📦 Список пунктов выдачи:' : '🏙 Список районов города:';
+            locsTitle.innerText = '📦 Список пунктов выдачи:';
         }
         if (locsInp) {
-            locsInp.placeholder = deliveryMode === 'pickup' ? 'Новый пункт выдачи (напр. ТЦ Галилео)...' : 'Новый район (напр. Центральный)...';
+            locsInp.placeholder = 'Новый пункт выдачи (напр. ТЦ Призма)...';
         }
 
         const locsList = document.getElementById('admin-delivery-locs-list');
@@ -4456,11 +4663,31 @@
         } catch (e) { if (!silent) showToast("Ошибка сохранения баннера", true); }
     }
 
+    function renderAdminChannelsTab() {
+        const chkBtn = document.getElementById('admin-channel-check-toggle-btn');
+        const reqInp = document.getElementById('admin-required-channel-input');
+        if (chkBtn) {
+            chkBtn.className = `toggle-pill ${channelCheckEnabled ? 'on' : 'off'}`;
+            chkBtn.innerText = channelCheckEnabled ? '🟢 Включено' : '⚪ Выключено';
+        }
+        if (reqInp && document.activeElement !== reqInp) {
+            reqInp.value = requiredChannel || '';
+        }
+    }
+
+    function adminToggleChannelCheck() {
+        isChannelsDirty = true;
+        channelCheckEnabled = !channelCheckEnabled;
+        localStorage.setItem('monkey_channel_check_enabled', channelCheckEnabled ? '1' : '0');
+        renderAdminChannelsTab();
+    }
+
     async function adminSaveChannels() {
         document.activeElement?.blur();
         const newsRaw = (document.getElementById('admin-news-channel-input')?.value || '').trim();
         const revRaw = (document.getElementById('admin-reviews-channel-input')?.value || '').trim();
         const suppRaw = (document.getElementById('admin-support-input')?.value || '').trim() || '@warat_24';
+        const reqRaw = (document.getElementById('admin-required-channel-input')?.value || '').trim();
         try {
             const res = await apiFetch(`/api/admin/channels`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -4468,19 +4695,98 @@
                     user_id: Number(currentUserId),
                     news_channel_url: newsRaw,
                     reviews_channel_url: revRaw,
-                    support_username: suppRaw
+                    support_username: suppRaw,
+                    channel_check_enabled: channelCheckEnabled,
+                    required_channel: reqRaw
                 })
             });
             const data = await res.json();
+            try {
+                const chkRes = await apiFetch(`/api/admin/channel_check`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: Number(currentUserId),
+                        channel_check_enabled: channelCheckEnabled,
+                        required_channel: reqRaw
+                    })
+                });
+                const chkData = await chkRes.json();
+                if (chkData?.required_channel !== undefined) requiredChannel = chkData.required_channel;
+            } catch (_) {
+                requiredChannel = reqRaw;
+            }
             newsChannelUrl = data.news_channel_url || '';
             reviewsChannelUrl = data.reviews_channel_url || '';
             supportUsername = data.support_username || '@warat_24';
             localStorage.setItem('monkey_news_channel', newsChannelUrl);
             localStorage.setItem('monkey_reviews_channel', reviewsChannelUrl);
             localStorage.setItem('monkey_support_username', supportUsername);
+            localStorage.setItem('monkey_channel_check_enabled', channelCheckEnabled ? '1' : '0');
+            localStorage.setItem('monkey_required_channel', requiredChannel);
+            isChannelsDirty = false;
+            renderAdminChannelsTab();
             renderProfileLinks();
-            showToast("✅ Ссылки сохранены и добавлены в профиль!");
-        } catch (e) { showToast("Ошибка сохранения ссылок", true); }
+            showToast("✅ Настройки каналов и подписки сохранены!");
+        } catch (e) { showToast("Ошибка сохранения настроек каналов", true); }
+    }
+
+    async function adminSendBackup() {
+        document.activeElement?.blur();
+        const btn = document.getElementById('admin-send-backup-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "⏳ Отправка файлов в Telegram...";
+        }
+        try {
+            await apiFetch(`/api/admin/send_backup`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId) })
+            });
+            showToast("✅ Бэкап базы и CSV-отчёт отправлены вам в Telegram!");
+        } catch (e) {
+            showToast(e?.detail ? `⚠️ ${e.detail}` : "Ошибка при отправке бэкапа в Telegram", true);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = "📥 Скачать бэкап и отчёт в Telegram";
+            }
+        }
+    }
+
+    async function adminClearTestOrders() {
+        document.activeElement?.blur();
+        const ok = await showCustomConfirm(
+            "Удалить все заказы, обнулить счётчики промокодов и очистить историю рассылок? Товары, категории и настройки магазина останутся нетронутыми.",
+            "Очистка тестовых данных",
+            true
+        );
+        if (!ok) return;
+        const btn = document.getElementById('admin-clear-orders-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "⏳ Очистка...";
+        }
+        try {
+            await apiFetch(`/api/admin/clear_test_orders`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId) })
+            });
+            activeOrders = [];
+            cachedCourierOrders = [];
+            localStorage.setItem('monkey_orders', '[]');
+            renderOrders();
+            await syncShopConfig();
+            await loadAdminStats();
+            if (document.getElementById('admin-tab-promos')?.style.display !== 'none') renderAdminPromos();
+            showToast("🧹 Тестовые заказы и статистика очищены!");
+        } catch (e) {
+            showToast(e?.detail ? `⚠️ ${e.detail}` : "Ошибка очистки тестовых заказов", true);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = "🧹 Очистить тестовые заказы и статистику";
+            }
+        }
     }
 
     function renderAdminCategories() {
