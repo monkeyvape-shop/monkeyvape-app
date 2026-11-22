@@ -1390,19 +1390,22 @@
         </div>
     </div>
 
-    <!-- Выбор станции метро -->
+    <!-- Выбор локации / адреса доставки -->
     <div class="modal-overlay" id="metro-modal" onclick="closeMetroModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
-            <div class="modal-title">Локация встречи 🚇</div>
-            <div class="modal-subtitle">Минский метрополитен — удобная передача заказа</div>
+            <div class="modal-title" id="metro-modal-title">Локация встречи 🚇</div>
+            <div class="modal-subtitle" id="metro-modal-subtitle">Выберите удобное место для получения заказа</div>
             <div class="metro-tabs" id="modal-metro-tabs">
                 <div class="metro-tab active-green" onclick="switchModalMetroLine('green', this)">Зеленая ветка</div>
                 <div class="metro-tab" onclick="switchModalMetroLine('blue', this)">Синяя ветка</div>
                 <div class="metro-tab" onclick="switchModalMetroLine('red', this)">Красная ветка</div>
             </div>
             <div class="stations-list" id="modal-stations-list-container"></div>
-            <button class="primary-btn" onclick="closeMetroModalDirect()">Выбрать эту станцию</button>
+            <div id="modal-free-address-box" style="display:none; margin-bottom:18px;">
+                <input type="text" id="modal-free-address-input" class="promo-input" style="text-transform:none; width:100%;" placeholder="Улица, дом, подъезд или ориентир..." oninput="handleFreeAddressInput(this.value)">
+            </div>
+            <button class="primary-btn" id="metro-modal-confirm-btn" onclick="closeMetroModalDirect()">Подтвердить локацию</button>
         </div>
     </div>
 
@@ -1493,8 +1496,8 @@
         <div class="brand-title" id="brand-title">MONKEY <span>VAPE</span></div>
         <div class="top-bar-actions">
             <button class="theme-toggle-btn" id="theme-toggle-btn" title="Сменить тему" onclick="toggleAppTheme()">☀️</button>
-            <button class="metro-selector-btn" onclick="openMetroPicker()">
-                <div class="metro-icon">M</div>
+            <button class="metro-selector-btn" id="topbar-metro-btn" onclick="openMetroPicker()">
+                <div class="metro-icon" id="topbar-loc-badge">M</div>
                 <span id="current-metro-label">Партизанская</span>
                 <span style="font-size: 10px; color: var(--icon-color);">▼</span>
             </button>
@@ -1573,8 +1576,9 @@
                     <div class="admin-sub-tab" onclick="switchAdminTab('promos', this)">🎟 Промо</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('appearance', this)">🎨 Вид</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('interface', this)">🖌 Интерфейс</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('region', this)">🌍 Локация</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('channels', this)">🔗 Каналы</div>
-                    <div class="admin-sub-tab" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
+                    <div class="admin-sub-tab" id="admin-subtab-metro" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('roles', this)">👥 Доступ</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('broadcast', this)">📢 Пост</div>
@@ -1615,7 +1619,7 @@
                         <input type="text" id="admin-prod-opts" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Вкусы / варианты через запятую (необязательно)">
                         <div style="display:flex; gap:6px; margin-bottom:6px;">
                             <select id="admin-prod-cat" class="admin-select" style="flex:1;"></select>
-                            <input type="number" id="admin-prod-price" class="promo-input" style="text-transform:none; width:82px;" placeholder="Цена р." step="0.5">
+                            <input type="number" id="admin-prod-price" class="promo-input" style="text-transform:none; width:82px;" placeholder="Цена" step="0.5">
                             <input type="text" id="admin-prod-icon" class="promo-input" style="text-transform:none; width:44px; text-align:center;" value="🧪">
                         </div>
                         <button class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminAddProduct()">Добавить в каталог</button>
@@ -1628,7 +1632,7 @@
                         <input type="text" id="admin-promo-code" class="promo-input" placeholder="Код (LOL123)" style="flex:1;">
                         <input type="number" id="admin-promo-discount" class="promo-input" placeholder="Скидка" step="0.5" style="width:78px; text-transform:none;">
                         <select id="admin-promo-type" class="admin-select">
-                            <option value="rub">р.</option>
+                            <option value="rub" id="admin-promo-rub-opt">р.</option>
                             <option value="percent">%</option>
                         </select>
                     </div>
@@ -1718,6 +1722,51 @@
 
                     <button type="button" class="primary-btn" style="padding:11px; font-size:13px; margin-bottom:8px;" onclick="adminSaveUiTheme()">💾 Сохранить цвета для всех</button>
                     <button type="button" onclick="adminResetUiTheme()" style="width:100%; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-secondary); padding:10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer;">🔄 Сбросить стандартные цвета</button>
+                </div>
+
+                <!-- Вкладка "Локация и доставка" — валюта, формат получения, районы/ПВЗ, минимальный заказ и тариф доставки -->
+                <div id="admin-tab-region" style="display: none;">
+                    <div style="font-size:13.5px; font-weight:800; color:var(--accent-green); margin-bottom:10px;">🌍 Локация и доставка</div>
+
+                    <div class="shop-master-box">
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">💱 Валюта магазина:</div>
+                        <div style="display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:6px;" id="admin-currency-grid"></div>
+                    </div>
+
+                    <div class="shop-master-box">
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🚚 Формат получения заказа:</div>
+                        <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; margin-bottom:10px;" id="admin-delivery-mode-grid"></div>
+
+                        <div id="admin-delivery-locs-wrapper">
+                            <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;" id="admin-delivery-locs-title">📍 Районы города / пункты выдачи:</div>
+                            <div style="display:flex; gap:6px; margin-bottom:8px;">
+                                <input type="text" id="admin-new-delivery-loc-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Добавить район или пункт выдачи..." onkeydown="if(event.key==='Enter'){event.preventDefault(); adminAddDeliveryLocation();}">
+                                <button type="button" class="promo-apply-btn" style="padding:8px 13px;" onclick="adminAddDeliveryLocation()">+</button>
+                            </div>
+                            <div id="admin-delivery-locs-list" style="max-height:190px; overflow-y:auto;"></div>
+                        </div>
+
+                        <button type="button" class="primary-btn" style="padding:10px; font-size:12.5px; margin-top:8px;" onclick="adminSaveLocalization()">💾 Сохранить валюту и локации</button>
+                    </div>
+
+                    <div class="shop-master-box">
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">💳 Минимальный заказ и стоимость доставки:</div>
+                        <div style="display:flex; flex-direction:column; gap:7px; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:3px;">Минимальная сумма заказа (0 = без ограничений):</div>
+                                <input type="number" id="admin-min-order-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" min="0" step="0.5" placeholder="Напр. 15" oninput="isRegionSettingsDirty=true">
+                            </div>
+                            <div>
+                                <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:3px;">Стоимость доставки (0 = бесплатно):</div>
+                                <input type="number" id="admin-delivery-fee-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" min="0" step="0.5" placeholder="Напр. 5" oninput="isRegionSettingsDirty=true">
+                            </div>
+                            <div>
+                                <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:3px;">Бесплатная доставка при заказе от (0 = выкл.):</div>
+                                <input type="number" id="admin-free-delivery-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" min="0" step="0.5" placeholder="Напр. 50" oninput="isRegionSettingsDirty=true">
+                            </div>
+                        </div>
+                        <button type="button" class="primary-btn" style="padding:10px; font-size:12.5px;" onclick="adminSaveDeliveryPricing()">💾 Сохранить тарифы доставки</button>
+                    </div>
                 </div>
 
                 <!-- Вкладка управления Telegram-каналами (Новости, Отзывы, Поддержка) -->
@@ -1833,20 +1882,23 @@
                 <p style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Формат получения</p>
                 <div class="method-card">
                     <div class="method-info">
-                        <h4>Встреча в метро • Минск</h4>
-                        <p>Передача из рук в руки • Наличные или перевод</p>
+                        <h4 id="checkout-method-title">Встреча в метро</h4>
+                        <p id="checkout-method-desc">Передача из рук в руки • Наличные или перевод</p>
                     </div>
                     <div style="color: var(--accent-green); font-size: 18px;">✓</div>
                 </div>
             </div>
             <div style="margin-bottom: 18px;">
-                <p style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Ветка и станция встречи</p>
+                <p style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;" id="checkout-location-heading">Ветка и станция встречи</p>
                 <div class="metro-tabs" id="checkout-metro-tabs">
                     <div class="metro-tab active-green" onclick="switchMetroLine('green', this)">Зеленая ветка</div>
                     <div class="metro-tab" onclick="switchMetroLine('blue', this)">Синяя ветка</div>
                     <div class="metro-tab" onclick="switchMetroLine('red', this)">Красная ветка</div>
                 </div>
                 <div class="stations-list" id="stations-list-container"></div>
+                <div id="checkout-free-address-box" style="display:none;">
+                    <input type="text" id="checkout-free-address-input" class="promo-input" style="text-transform:none; width:100%;" placeholder="Введите точный адрес доставки (улица, дом, подъезд)..." oninput="handleFreeAddressInput(this.value)">
+                </div>
             </div>
             <div style="margin-bottom: 24px;">
                 <p style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Удобное время</p>
@@ -2550,6 +2602,159 @@
     let adminTabsInitialized = false;
     let currentAdminSubTab = 'stats';
 
+    const CURRENCY_OPTIONS = ['р.', '₽', '₸', '$', '₴'];
+    const DELIVERY_MODE_OPTIONS = [
+        { id: 'metro', label: '🚇 Станции метро' },
+        { id: 'districts', label: '🏙 Районы города' },
+        { id: 'pickup', label: '📦 Пункты выдачи' },
+        { id: 'free_address', label: '✍️ Свободный ввод адреса' }
+    ];
+
+    let shopCurrency = localStorage.getItem('monkey_currency') || 'р.';
+    let deliveryMode = localStorage.getItem('monkey_delivery_mode') || 'metro';
+    let deliveryLocations = JSON.parse(localStorage.getItem('monkey_delivery_locations')) || ['Центральный район', 'Советский район', 'Первомайский район'];
+    let minOrderAmount = Number(localStorage.getItem('monkey_min_order_amount') || 0);
+    let deliveryFee = Number(localStorage.getItem('monkey_delivery_fee') || 0);
+    let freeDeliveryThreshold = Number(localStorage.getItem('monkey_free_delivery_threshold') || 0);
+    let freeAddressDraft = localStorage.getItem('monkey_free_address_draft') || '';
+    let isRegionSettingsDirty = false;
+
+    function formatMoney(amount) {
+        return `${Number(amount || 0).toFixed(2)} ${escapeHtml(shopCurrency)}`;
+    }
+
+    function calcCartDeliveryFee(subtotal) {
+        if (deliveryFee <= 0) return 0;
+        if (freeDeliveryThreshold > 0 && subtotal + 1e-6 >= freeDeliveryThreshold) return 0;
+        return Number(deliveryFee);
+    }
+
+    function getDeliveryMeta(mode = deliveryMode) {
+        if (mode === 'districts') {
+            return {
+                badge: '📍',
+                modalTitle: 'Выберите район города 📍',
+                modalSubtitle: 'Укажите удобный район для доставки заказа',
+                modalConfirmText: 'Подтвердить район',
+                checkoutTitle: 'Доставка по району города',
+                checkoutDesc: 'Курьер доставит заказ в выбранный район',
+                checkoutHeading: 'Район доставки',
+                cartRowLabel: 'Район доставки:',
+                orderRowLabel: '📍 Район:',
+                emptyFallback: 'Не выбран',
+                formatLocation: (val) => val ? escapeHtml(val) : 'Не выбран'
+            };
+        }
+        if (mode === 'pickup') {
+            return {
+                badge: '📦',
+                modalTitle: 'Выберите пункт выдачи 📦',
+                modalSubtitle: 'Укажите удобную точку для самовывоза заказа',
+                modalConfirmText: 'Подтвердить пункт выдачи',
+                checkoutTitle: 'Самовывоз из пункта выдачи',
+                checkoutDesc: 'Получение заказа в выбранной точке',
+                checkoutHeading: 'Пункт выдачи',
+                cartRowLabel: 'Пункт выдачи:',
+                orderRowLabel: '📦 Пункт выдачи:',
+                emptyFallback: 'Не выбран',
+                formatLocation: (val) => val ? escapeHtml(val) : 'Не выбран'
+            };
+        }
+        if (mode === 'free_address') {
+            return {
+                badge: '🏠',
+                modalTitle: 'Адрес доставки 🏠',
+                modalSubtitle: 'Укажите улицу, дом, подъезд или ориентир',
+                modalConfirmText: 'Сохранить адрес',
+                checkoutTitle: 'Доставка по адресу',
+                checkoutDesc: 'Курьер привезёт заказ по указанному адресу',
+                checkoutHeading: 'Адрес доставки',
+                cartRowLabel: 'Адрес доставки:',
+                orderRowLabel: '📍 Адрес:',
+                emptyFallback: 'Указывается при оформлении',
+                formatLocation: (val) => val ? escapeHtml(val) : 'Указывается при оформлении'
+            };
+        }
+        return {
+            badge: 'M',
+            modalTitle: 'Локация встречи 🚇',
+            modalSubtitle: 'Выберите ветку и станцию метро для передачи заказа',
+            modalConfirmText: 'Выбрать эту станцию',
+            checkoutTitle: 'Встреча в метро',
+            checkoutDesc: 'Передача из рук в руки • Наличные или перевод',
+            checkoutHeading: 'Ветка и станция встречи',
+            cartRowLabel: 'Станция встречи:',
+            orderRowLabel: '🚇 Станция:',
+            emptyFallback: 'Не выбрана',
+            formatLocation: (val) => val ? (String(val).startsWith('м.') ? escapeHtml(val) : 'м. ' + escapeHtml(val)) : 'Не выбрана'
+        };
+    }
+
+    function updateCurrencyLabelsUI() {
+        const promoRubOpt = document.getElementById('admin-promo-rub-opt');
+        if (promoRubOpt) promoRubOpt.textContent = shopCurrency;
+    }
+
+    function updateLocationModeUI() {
+        const meta = getDeliveryMeta(deliveryMode);
+        const topBtn = document.getElementById('topbar-metro-btn');
+        const topBadge = document.getElementById('topbar-loc-badge');
+        const topLabel = document.getElementById('current-metro-label');
+        if (topBtn) {
+            topBtn.style.display = deliveryMode === 'free_address' ? 'none' : 'flex';
+        }
+        if (topBadge) topBadge.textContent = meta.badge;
+        if (topLabel) {
+            topLabel.innerText = deliveryMode === 'free_address'
+                ? (freeAddressDraft || 'Адрес')
+                : (selectedStation || meta.emptyFallback);
+        }
+
+        const metroAdminTab = document.getElementById('admin-subtab-metro');
+        if (metroAdminTab) {
+            metroAdminTab.style.display = deliveryMode === 'metro' ? 'block' : 'none';
+        }
+
+        const cTitle = document.getElementById('checkout-method-title');
+        const cDesc = document.getElementById('checkout-method-desc');
+        const cHeading = document.getElementById('checkout-location-heading');
+        const cTabs = document.getElementById('checkout-metro-tabs');
+        const cList = document.getElementById('stations-list-container');
+        const cFreeBox = document.getElementById('checkout-free-address-box');
+        const cFreeInp = document.getElementById('checkout-free-address-input');
+        if (cTitle) cTitle.innerText = meta.checkoutTitle;
+        if (cDesc) cDesc.innerText = meta.checkoutDesc;
+        if (cHeading) cHeading.innerText = meta.checkoutHeading;
+        if (cTabs) cTabs.style.display = deliveryMode === 'metro' ? 'flex' : 'none';
+        if (cList) cList.style.display = deliveryMode === 'free_address' ? 'none' : 'flex';
+        if (cFreeBox) cFreeBox.style.display = deliveryMode === 'free_address' ? 'block' : 'none';
+        if (cFreeInp && document.activeElement !== cFreeInp) cFreeInp.value = freeAddressDraft;
+
+        const mTitle = document.getElementById('metro-modal-title');
+        const mSub = document.getElementById('metro-modal-subtitle');
+        const mTabs = document.getElementById('modal-metro-tabs');
+        const mList = document.getElementById('modal-stations-list-container');
+        const mFreeBox = document.getElementById('modal-free-address-box');
+        const mFreeInp = document.getElementById('modal-free-address-input');
+        const mBtn = document.getElementById('metro-modal-confirm-btn');
+        if (mTitle) mTitle.innerText = meta.modalTitle;
+        if (mSub) mSub.innerText = meta.modalSubtitle;
+        if (mTabs) mTabs.style.display = deliveryMode === 'metro' ? 'flex' : 'none';
+        if (mList) mList.style.display = deliveryMode === 'free_address' ? 'none' : 'flex';
+        if (mFreeBox) mFreeBox.style.display = deliveryMode === 'free_address' ? 'block' : 'none';
+        if (mFreeInp && document.activeElement !== mFreeInp) mFreeInp.value = freeAddressDraft;
+        if (mBtn) mBtn.innerText = meta.modalConfirmText;
+    }
+
+    function handleFreeAddressInput(val) {
+        freeAddressDraft = String(val || '');
+        localStorage.setItem('monkey_free_address_draft', freeAddressDraft);
+        const cInp = document.getElementById('checkout-free-address-input');
+        const mInp = document.getElementById('modal-free-address-input');
+        if (cInp && document.activeElement !== cInp) cInp.value = freeAddressDraft;
+        if (mInp && document.activeElement !== mInp) mInp.value = freeAddressDraft;
+    }
+
     function showRoleTabsIfAllowed(forceRender = false) {
         const courierNavBtn = document.getElementById('nav-courier-btn');
         const ownerAdminPanel = document.getElementById('owner-admin-panel');
@@ -2564,6 +2769,7 @@
                     renderAdminShopMaster();
                     renderAdminAppearance();
                     if (!isUiThemeDirty) renderAdminInterfaceTab();
+                    if (!isRegionSettingsDirty) renderAdminRegionTab();
                     renderAdminPromos();
                     renderAdminCategories();
                     populateCategorySelects();
@@ -2582,6 +2788,7 @@
             const roleText = isCurrentUserOwner() ? 'Владелец (Админ)' : (isCurrentUserCourier() ? 'Курьер' : 'Покупатель');
             useridElem.innerText = currentUserId ? `ID: ${currentUserId} • ${roleText}` : 'Telegram User';
         }
+        updateLocationModeUI();
     }
 
     function initTelegramUser() {
@@ -2702,17 +2909,23 @@
     }
 
     function ensureValidSelectedStationAndTime() {
-        const allSt = [...(metroStations.green || []), ...(metroStations.blue || []), ...(metroStations.red || [])];
-        if (!allSt.some(s => s.name === selectedStation) || disabledStations.includes(selectedStation)) {
-            const firstAvail = allSt.find(s => !disabledStations.includes(s.name));
-            selectedStation = firstAvail ? firstAvail.name : '';
-            localStorage.setItem('monkey_selected_station', selectedStation);
+        if (deliveryMode === 'metro') {
+            const allSt = [...(metroStations.green || []), ...(metroStations.blue || []), ...(metroStations.red || [])];
+            if (!allSt.some(s => s.name === selectedStation) || disabledStations.includes(selectedStation)) {
+                const firstAvail = allSt.find(s => !disabledStations.includes(s.name));
+                selectedStation = firstAvail ? firstAvail.name : '';
+                localStorage.setItem('monkey_selected_station', selectedStation);
+            }
+        } else if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
+            if (!deliveryLocations.includes(selectedStation)) {
+                selectedStation = deliveryLocations[0] || '';
+                localStorage.setItem('monkey_selected_station', selectedStation);
+            }
         }
         if (!ALL_TIME_SLOTS.includes(selectedTime) || disabledTimes.includes(selectedTime)) {
             selectedTime = ALL_TIME_SLOTS.find(t => !disabledTimes.includes(t)) || '';
         }
-        const metroLabel = document.getElementById('current-metro-label');
-        if (metroLabel) metroLabel.innerText = selectedStation || 'Не выбрана';
+        updateLocationModeUI();
     }
 
     function updateShopClosedUI() {
@@ -2803,6 +3016,39 @@
                     }
                 }
 
+                if (!isRegionSettingsDirty) {
+                    if (cfg.currency && CURRENCY_OPTIONS.includes(cfg.currency)) {
+                        shopCurrency = cfg.currency;
+                        localStorage.setItem('monkey_currency', shopCurrency);
+                    }
+                    if (cfg.delivery_mode && ['metro', 'districts', 'pickup', 'free_address'].includes(cfg.delivery_mode)) {
+                        deliveryMode = cfg.delivery_mode;
+                        localStorage.setItem('monkey_delivery_mode', deliveryMode);
+                    }
+                    if (Array.isArray(cfg.delivery_locations)) {
+                        deliveryLocations = cfg.delivery_locations;
+                        localStorage.setItem('monkey_delivery_locations', JSON.stringify(deliveryLocations));
+                    }
+                    if (cfg.min_order_amount !== undefined) {
+                        minOrderAmount = Number(cfg.min_order_amount || 0);
+                        localStorage.setItem('monkey_min_order_amount', String(minOrderAmount));
+                    }
+                    if (cfg.delivery_fee !== undefined) {
+                        deliveryFee = Number(cfg.delivery_fee || 0);
+                        localStorage.setItem('monkey_delivery_fee', String(deliveryFee));
+                    }
+                    if (cfg.free_delivery_threshold !== undefined) {
+                        freeDeliveryThreshold = Number(cfg.free_delivery_threshold || 0);
+                        localStorage.setItem('monkey_free_delivery_threshold', String(freeDeliveryThreshold));
+                    }
+                    const isRegionTabOpen = document.getElementById('screen-profile')?.classList.contains('active')
+                        && document.getElementById('admin-tab-region')?.style.display !== 'none';
+                    if (!isRegionTabOpen) {
+                        renderAdminRegionTab();
+                    }
+                }
+                updateCurrencyLabelsUI();
+
                 if (cfg.hit_color) { hitHighlightColor = cfg.hit_color; localStorage.setItem('monkey_hit_color', hitHighlightColor); }
                 if (cfg.season_effect && cfg.season_effect !== currentSeasonEffect) startSeasonCanvas(cfg.season_effect);
                 if (Array.isArray(cfg.time_slots) && cfg.time_slots.length > 0) { ALL_TIME_SLOTS = cfg.time_slots; localStorage.setItem('monkey_time_slots', JSON.stringify(ALL_TIME_SLOTS)); }
@@ -2830,7 +3076,7 @@
                 renderCheckoutTimeSlots(); renderChangeTimeSlots();
 
                 const activeEl = document.activeElement;
-                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-splash-emoji', 'admin-welcome-text', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input'].includes(activeEl.id);
+                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-splash-emoji', 'admin-welcome-text', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input', 'admin-new-delivery-loc-input', 'admin-min-order-input', 'admin-delivery-fee-input', 'admin-free-delivery-input', 'checkout-free-address-input'].includes(activeEl.id);
                 if (!skipCartRender) renderCart();
                 showRoleTabsIfAllowed(false); updateProfileAvatarUI();
             }
@@ -2884,8 +3130,8 @@
 
             const priceHtml = `
                 <div class="price-block">
-                    ${oldPrice > Number(p.price) ? `<span class="product-old-price">${oldPrice.toFixed(2)} р.</span>` : ''}
-                    <span class="product-price">${Number(p.price).toFixed(2)} р.</span>
+                    ${oldPrice > Number(p.price) ? `<span class="product-old-price">${formatMoney(oldPrice)}</span>` : ''}
+                    <span class="product-price">${formatMoney(p.price)}</span>
                 </div>
             `;
 
@@ -3069,7 +3315,7 @@
                 appliedPromoCode = ""; appliedPromoValue = 0; promoMessage = "Лимит использований промокода исчерпан"; promoError = true;
             } else if (pObj.discount > 0) {
                 appliedPromoCode = code; appliedPromoValue = pObj.discount; appliedPromoType = pObj.type;
-                const discLabel = pObj.type === 'percent' ? `-${pObj.discount}%` : `-${pObj.discount.toFixed(2)} р.`;
+                const discLabel = pObj.type === 'percent' ? `-${pObj.discount}%` : `-${pObj.discount.toFixed(2)} ${shopCurrency}`;
                 promoMessage = items.some(isCartItemDiscounted) ? `Промокод ${code} (${discLabel}) применён только к товарам без скидки` : `Промокод ${code} применён! Скидка ${discLabel}`;
                 promoError = false; promoInputDraft = "";
             }
@@ -3103,7 +3349,7 @@
                     <div class="cart-item-info">
                         <div class="cart-item-title">${escapeHtml(item.title)} ${itemDisc ? '<span style="color:#ff3333; font-size:10px; font-weight:800;">[СКИДКА]</span>' : ''}</div>
                         <div class="cart-item-sub">Параметр: ${escapeHtml(item.optionName)}</div>
-                        <div class="cart-item-price">${(item.price * item.qty).toFixed(2)} р.</div>
+                        <div class="cart-item-price">${formatMoney(item.price * item.qty)}</div>
                     </div>
                     <div class="qty-controls">
                         <button class="qty-btn" onclick="changeQty('${key}', -1)">-</button>
@@ -3120,8 +3366,11 @@
             appliedPromoCode = ""; appliedPromoValue = 0; promoMessage = "Промокод снят: в корзине только товары со скидкой"; promoError = true;
         }
         const actualDiscount = appliedPromoCode ? calcPromoDiscount(eligibleSubtotal, { discount: appliedPromoValue, type: appliedPromoType }) : 0;
-        const finalTotal = Math.max(0, subtotal - actualDiscount);
-        const promoBadgeLabel = appliedPromoType === 'percent' ? `${appliedPromoCode} (-${appliedPromoValue}% / -${actualDiscount.toFixed(2)} р.)` : `${appliedPromoCode} (-${actualDiscount.toFixed(2)} р.)`;
+        const appliedDeliveryFee = calcCartDeliveryFee(subtotal);
+        const finalTotal = Math.max(0, subtotal - actualDiscount) + appliedDeliveryFee;
+        const promoBadgeLabel = appliedPromoType === 'percent'
+            ? `${appliedPromoCode} (-${appliedPromoValue}% / -${formatMoney(actualDiscount)})`
+            : `${appliedPromoCode} (-${formatMoney(actualDiscount)})`;
 
         const promoBlockHtml = `
             <div class="promo-box">
@@ -3141,24 +3390,58 @@
             </div>
         `;
 
-        const discountRowHtml = actualDiscount > 0 ? `<div class="summary-row"><span style="color:var(--accent-green);">Скидка (${appliedPromoCode}):</span><span style="color:var(--accent-green); font-weight:700;">-${actualDiscount.toFixed(2)} р.</span></div>` : '';
-        let checkoutActionHtml = `<button class="primary-btn" onclick="proceedToCheckout()">Перейти к оформлению</button>`;
+        const meta = getDeliveryMeta(deliveryMode);
+        const locValueDisplay = deliveryMode === 'free_address'
+            ? (freeAddressDraft ? escapeHtml(freeAddressDraft) : 'Указывается при оформлении')
+            : meta.formatLocation(selectedStation);
+
+        const discountRowHtml = actualDiscount > 0
+            ? `<div class="summary-row"><span style="color:var(--accent-green);">Скидка (${escapeHtml(appliedPromoCode)}):</span><span style="color:var(--accent-green); font-weight:700;">-${formatMoney(actualDiscount)}</span></div>`
+            : '';
+
+        let deliveryRowHtml = '';
+        if (deliveryFee > 0) {
+            if (appliedDeliveryFee === 0) {
+                deliveryRowHtml = `<div class="summary-row"><span>Доставка:</span><span style="color:var(--accent-green); font-weight:700;">Бесплатно (от ${formatMoney(freeDeliveryThreshold)})</span></div>`;
+            } else {
+                const freeHint = freeDeliveryThreshold > 0
+                    ? ` <span style="font-size:11px; color:var(--text-secondary);">(бесплатно от ${formatMoney(freeDeliveryThreshold)})</span>`
+                    : '';
+                deliveryRowHtml = `<div class="summary-row"><span>Доставка:${freeHint}</span><span style="font-weight:600; color:var(--text-main);">${formatMoney(appliedDeliveryFee)}</span></div>`;
+            }
+        }
+
+        const isBelowMinOrder = minOrderAmount > 0 && subtotal + 1e-6 < minOrderAmount;
+        const missingForMin = Math.max(0, minOrderAmount - subtotal);
+        const minOrderBannerHtml = isBelowMinOrder
+            ? `<div class="closed-shop-banner" style="text-align:center; border-color:#ffaa00; background:rgba(255,170,0,0.12); color:#ffaa00;">⚠️ Минимальная сумма заказа: <b>${formatMoney(minOrderAmount)}</b><br>Добавьте товаров ещё на <b>${formatMoney(missingForMin)}</b></div>`
+            : '';
+
+        let checkoutActionHtml = `<button class="primary-btn" ${isBelowMinOrder ? 'disabled' : ''} onclick="proceedToCheckout()">Перейти к оформлению</button>`;
         if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
         else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${escapeHtml(shopClosedMessage)}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
 
         container.innerHTML = itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
-                <div class="summary-row"><span>Точка встречи:</span><span style="color:var(--accent-green); font-weight:700;">${selectedStation ? 'м. ' + escapeHtml(selectedStation) : 'Не выбрана'}</span></div>
-                <div class="summary-row"><span>Позиций (${items.reduce((s,i)=>s+i.qty,0)})</span><span>${subtotal.toFixed(2)} р.</span></div>
+                <div class="summary-row"><span>${meta.cartRowLabel}</span><span style="color:var(--accent-green); font-weight:700;">${locValueDisplay}</span></div>
+                <div class="summary-row"><span>Позиций (${items.reduce((s,i)=>s+i.qty,0)})</span><span>${formatMoney(subtotal)}</span></div>
                 ${discountRowHtml}
-                <div class="summary-row total"><span>К оплате:</span><span>${finalTotal.toFixed(2)} р.</span></div>
+                ${deliveryRowHtml}
+                <div class="summary-row total"><span>К оплате:</span><span>${formatMoney(finalTotal)}</span></div>
             </div>
+            ${minOrderBannerHtml}
             ${checkoutActionHtml}
         `;
         hydrateProtectedImages();
     }
 
-    function openMetroPicker() { syncShopConfig(); document.getElementById('metro-modal').classList.add('active'); renderModalStations(modalCurrentLine); }
+    function openMetroPicker() {
+        if (deliveryMode === 'free_address') return;
+        syncShopConfig();
+        updateLocationModeUI();
+        document.getElementById('metro-modal').classList.add('active');
+        renderModalStations(modalCurrentLine);
+    }
     function closeMetroModal(e) { if (e.target.id === 'metro-modal') document.getElementById('metro-modal').classList.remove('active'); }
     function closeMetroModalDirect() { document.getElementById('metro-modal').classList.remove('active'); }
     function switchModalMetroLine(line, el) {
@@ -3169,9 +3452,36 @@
     }
 
     function renderModalStations(line) {
+        updateLocationModeUI();
         const container = document.getElementById('modal-stations-list-container');
         if (!container) return;
         container.innerHTML = '';
+        if (deliveryMode === 'free_address') return;
+
+        if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
+            const subLabel = deliveryMode === 'districts' ? 'Район' : 'Пункт выдачи';
+            if (!deliveryLocations.length) {
+                container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:16px;">Список локаций пока пуст</div>';
+                return;
+            }
+            deliveryLocations.forEach(locName => {
+                const isSel = locName === selectedStation;
+                const div = document.createElement('div');
+                div.className = `station-item ${isSel ? 'selected' : ''}`;
+                div.innerHTML = `<span>${escapeHtml(locName)}</span><span style="font-size:11px; color:var(--text-secondary);">${subLabel}</span>`;
+                div.onclick = () => {
+                    selectedStation = locName;
+                    localStorage.setItem('monkey_selected_station', selectedStation);
+                    ensureValidSelectedStationAndTime();
+                    renderModalStations(line);
+                    renderStations(currentLine);
+                    renderCart();
+                };
+                container.appendChild(div);
+            });
+            return;
+        }
+
         (metroStations[line] || []).forEach(st => {
             const isDisabled = disabledStations.includes(st.name);
             const isSel = !isDisabled && st.name === selectedStation;
@@ -3189,10 +3499,17 @@
     }
 
     function proceedToCheckout() {
-        if (Object.keys(cart).length === 0) { switchScreen('cart'); return; }
-        if (BANNED_USER_IDS.includes(Number(currentUserId))) { alert("Ваш аккаунт заблокирован в магазине."); return; }
-        if (!isShopOpen) { alert(`🔴 ${shopClosedMessage}`); return; }
-        syncShopConfig(); ensureValidSelectedStationAndTime(); switchScreen('checkout'); renderStations(currentLine); renderCheckoutTimeSlots();
+        const items = Object.values(cart);
+        if (items.length === 0) { switchScreen('cart'); return; }
+        if (BANNED_USER_IDS.includes(Number(currentUserId))) { showToast("Ваш аккаунт заблокирован в магазине", true); return; }
+        if (!isShopOpen) { showToast(`🔴 ${shopClosedMessage}`, true); return; }
+        const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        if (minOrderAmount > 0 && subtotal + 1e-6 < minOrderAmount) {
+            showToast(`Минимальная сумма заказа: ${minOrderAmount.toFixed(2)} ${shopCurrency}`, true);
+            renderCart();
+            return;
+        }
+        syncShopConfig(); ensureValidSelectedStationAndTime(); updateLocationModeUI(); switchScreen('checkout'); renderStations(currentLine); renderCheckoutTimeSlots();
     }
 
     function switchMetroLine(line, el) {
@@ -3203,9 +3520,35 @@
     }
 
     function renderStations(line) {
+        updateLocationModeUI();
         const container = document.getElementById('stations-list-container');
         if (!container) return;
         container.innerHTML = '';
+        if (deliveryMode === 'free_address') return;
+
+        if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
+            const subLabel = deliveryMode === 'districts' ? 'Район' : 'Пункт выдачи';
+            if (!deliveryLocations.length) {
+                container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:16px;">Список локаций пока пуст</div>';
+                return;
+            }
+            deliveryLocations.forEach(locName => {
+                const isSel = locName === selectedStation;
+                const div = document.createElement('div');
+                div.className = `station-item ${isSel ? 'selected' : ''}`;
+                div.innerHTML = `<span>${escapeHtml(locName)}</span><span style="font-size:11px; color:var(--text-secondary);">${subLabel}</span>`;
+                div.onclick = () => {
+                    selectedStation = locName;
+                    localStorage.setItem('monkey_selected_station', selectedStation);
+                    ensureValidSelectedStationAndTime();
+                    renderStations(line);
+                    renderCart();
+                };
+                container.appendChild(div);
+            });
+            return;
+        }
+
         (metroStations[line] || []).forEach(st => {
             const isDisabled = disabledStations.includes(st.name);
             const isSel = !isDisabled && st.name === selectedStation;
@@ -3264,24 +3607,55 @@
     }
 
     async function confirmOrderFinal() {
-        if (!isShopOpen) { alert(`🔴 ${shopClosedMessage}`); switchScreen('cart'); return; }
+        if (!isShopOpen) { showToast(`🔴 ${shopClosedMessage}`, true); switchScreen('cart'); return; }
         const items = Object.values(cart);
         if (items.length === 0) { switchScreen('cart'); return; }
-        if (!selectedStation || disabledStations.includes(selectedStation)) { alert("Выбранная станция метро недоступна."); return; }
-        if (!selectedTime || disabledTimes.includes(selectedTime)) { alert("Выбранное время недоступно."); return; }
+
+        let finalLocation = selectedStation;
+        if (deliveryMode === 'free_address') {
+            const addrInp = document.getElementById('checkout-free-address-input');
+            const addrVal = (addrInp ? addrInp.value : freeAddressDraft).trim();
+            if (!addrVal) {
+                showToast("Введите адрес доставки", true);
+                addrInp?.focus();
+                return;
+            }
+            freeAddressDraft = addrVal;
+            localStorage.setItem('monkey_free_address_draft', freeAddressDraft);
+            finalLocation = addrVal;
+        } else if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
+            if (!finalLocation || !deliveryLocations.includes(finalLocation)) {
+                showToast(deliveryMode === 'districts' ? "Выберите район доставки" : "Выберите пункт выдачи", true);
+                return;
+            }
+        } else {
+            if (!finalLocation || disabledStations.includes(finalLocation)) {
+                showToast("Выбранная станция метро недоступна", true);
+                return;
+            }
+        }
+
+        if (!selectedTime || disabledTimes.includes(selectedTime)) { showToast("Выбранное время недоступно", true); return; }
 
         const subtotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        if (minOrderAmount > 0 && subtotal + 1e-6 < minOrderAmount) {
+            showToast(`Минимальная сумма заказа: ${minOrderAmount.toFixed(2)} ${shopCurrency}`, true);
+            switchScreen('cart');
+            return;
+        }
         const eligibleSubtotal = getEligiblePromoSubtotal(items);
         const actualDiscount = (appliedPromoCode && eligibleSubtotal > 0) ? calcPromoDiscount(eligibleSubtotal, { discount: appliedPromoValue, type: appliedPromoType }) : 0;
-        const total = Math.max(0, subtotal - actualDiscount);
+        const appliedDeliveryFee = calcCartDeliveryFee(subtotal);
+        const total = Math.max(0, subtotal - actualDiscount) + appliedDeliveryFee;
         const orderId = String(Math.floor(10000 + Math.random() * 90000));
         const createdAt = getFormattedNowDateTime();
 
         const orderData = {
             id: orderId, user_id: currentUserId, user_name: currentUserName,
             items: items.map(i => ({ title: `${i.title} (${i.optionName})`, price: i.price, qty: i.qty })),
-            total, station: selectedStation, time: selectedTime, status: 'active', time_changed: false,
-            promo_code: actualDiscount > 0 ? appliedPromoCode : '', discount: actualDiscount, created_at: createdAt,
+            total, station: finalLocation, time: selectedTime, status: 'active', time_changed: false,
+            promo_code: actualDiscount > 0 ? appliedPromoCode : '', discount: actualDiscount,
+            delivery_fee: appliedDeliveryFee, created_at: createdAt,
             cancelled_by: '', claimed_by_id: 0, claimed_by_name: ''
         };
 
@@ -3291,8 +3665,10 @@
             });
             const resData = await res.json();
             if (resData?.order_id) orderData.id = String(resData.order_id);
+            if (resData?.total !== undefined) orderData.total = Number(resData.total);
+            if (resData?.delivery_fee !== undefined) orderData.delivery_fee = Number(resData.delivery_fee);
         } catch (e) {
-            alert("⚠️ Заказ не отправлен! Проверь связь с сервером или статус магазина.");
+            showToast("⚠️ Заказ не отправлен! Проверьте связь или сумму заказа.", true);
             return;
         }
 
@@ -3435,8 +3811,10 @@
             if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
             else if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
 
+            const meta = getDeliveryMeta(deliveryMode);
             let itemsList = ord.items.map(i => `<div>• ${escapeHtml(i.title)} × ${i.qty}</div>`).join('');
-            let promoNote = ord.promo_code ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${escapeHtml(ord.promo_code)} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+            let promoNote = ord.promo_code ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${escapeHtml(ord.promo_code)} (-${formatMoney(ord.discount || 0)})</div>` : '';
+            let delivNote = Number(ord.delivery_fee || 0) > 0 ? `<div style="font-size:11.5px; color:var(--text-secondary); margin-top:3px;">🚚 Доставка: ${formatMoney(ord.delivery_fee)}</div>` : '';
             let actionButtons = ord.status === 'active'
                 ? `<div class="order-actions-row"><button class="order-btn-secondary" onclick="openTimeModal('${ord.id}')">⏰ Изменить время</button><button class="order-btn-danger" onclick="cancelOrderByClient('${ord.id}')">✕ Отменить</button></div>`
                 : `<div class="order-actions-row"><button class="order-btn-secondary" style="border-color:var(--accent-green); color:var(--accent-green);" onclick="repeatPastOrder('${ord.id}')">🔄 Повторить заказ</button></div>`;
@@ -3447,9 +3825,9 @@
             html += `
                 <div class="order-card">
                     <div class="order-card-header"><span class="order-id-label">Заказ #${escapeHtml(ord.id)}</span>${statusHtml}</div>
-                    <div class="order-meta-grid">${createdAtHtml}${courierInfoHtml}<div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${escapeHtml(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNote}</div></div>
-                    <div class="order-items-box">${itemsList}${promoNote}</div>
-                    <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">К оплате:</span><span class="order-total-price">${ord.total.toFixed(2)} р.</span></div>
+                    <div class="order-meta-grid">${createdAtHtml}${courierInfoHtml}<div class="order-meta-row"><span>${meta.orderRowLabel}</span> <b>${meta.formatLocation(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNote}</div></div>
+                    <div class="order-items-box">${itemsList}${promoNote}${delivNote}</div>
+                    <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">К оплате:</span><span class="order-total-price">${formatMoney(ord.total)}</span></div>
                     ${actionButtons}
                 </div>
             `;
@@ -3844,17 +4222,175 @@
         currentAdminSubTab = tab;
         document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
-        ['stats', 'products', 'promos', 'appearance', 'interface', 'channels', 'metro', 'time', 'roles', 'broadcast', 'commands'].forEach(t => {
+        ['stats', 'products', 'promos', 'appearance', 'interface', 'region', 'channels', 'metro', 'time', 'roles', 'broadcast', 'commands'].forEach(t => {
             const box = document.getElementById(`admin-tab-${t}`);
             if (box) box.style.display = t === tab ? 'block' : 'none';
         });
         if (tab === 'stats') loadAdminStats();
         if (tab === 'appearance') { renderAdminAppearance(); applyLogoBranding(); applyPromoBannerUI(); }
         if (tab === 'interface') renderAdminInterfaceTab();
+        if (tab === 'region') renderAdminRegionTab();
         if (tab === 'products') { renderAdminCategories(); populateCategorySelects(); renderAdminProducts(); }
         if (tab === 'channels') renderProfileLinks();
         if (tab === 'broadcast') loadBroadcastHistory();
         if (tab === 'commands') renderAdminCommands();
+    }
+
+    function renderAdminRegionTab() {
+        const curGrid = document.getElementById('admin-currency-grid');
+        if (curGrid) {
+            curGrid.innerHTML = CURRENCY_OPTIONS.map(c => {
+                const isAct = shopCurrency === c;
+                return `<button type="button" class="toggle-pill ${isAct ? 'on' : ''}" style="padding:8px 4px; font-size:12px; ${!isAct ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="selectAdminCurrency('${escapeHtml(c)}')">${escapeHtml(c)}</button>`;
+            }).join('');
+        }
+
+        const modeGrid = document.getElementById('admin-delivery-mode-grid');
+        if (modeGrid) {
+            modeGrid.innerHTML = DELIVERY_MODE_OPTIONS.map(m => {
+                const isAct = deliveryMode === m.id;
+                return `<button type="button" class="toggle-pill ${isAct ? 'on' : ''}" style="padding:9px 6px; font-size:11px; text-align:center; ${!isAct ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="selectAdminDeliveryMode('${m.id}')">${m.label}</button>`;
+            }).join('');
+        }
+
+        const locsWrapper = document.getElementById('admin-delivery-locs-wrapper');
+        const locsTitle = document.getElementById('admin-delivery-locs-title');
+        const locsInp = document.getElementById('admin-new-delivery-loc-input');
+        if (locsWrapper) {
+            locsWrapper.style.display = (deliveryMode === 'districts' || deliveryMode === 'pickup') ? 'block' : 'none';
+        }
+        if (locsTitle) {
+            locsTitle.innerText = deliveryMode === 'pickup' ? '📦 Список пунктов выдачи:' : '🏙 Список районов города:';
+        }
+        if (locsInp) {
+            locsInp.placeholder = deliveryMode === 'pickup' ? 'Новый пункт выдачи (напр. ТЦ Галилео)...' : 'Новый район (напр. Центральный)...';
+        }
+
+        const locsList = document.getElementById('admin-delivery-locs-list');
+        if (locsList) {
+            if (!deliveryLocations.length) {
+                locsList.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">Список пока пуст — добавьте хотя бы один вариант</div>';
+            } else {
+                locsList.innerHTML = deliveryLocations.map((loc, idx) => `
+                    <div class="admin-toggle-row">
+                        <span style="flex:1; font-weight:600;">${escapeHtml(loc)}</span>
+                        <button type="button" class="toggle-pill off" onclick="adminRemoveDeliveryLocation(${idx})">✕</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        const minInp = document.getElementById('admin-min-order-input');
+        const feeInp = document.getElementById('admin-delivery-fee-input');
+        const freeInp = document.getElementById('admin-free-delivery-input');
+        if (minInp && document.activeElement !== minInp) minInp.value = minOrderAmount || 0;
+        if (feeInp && document.activeElement !== feeInp) feeInp.value = deliveryFee || 0;
+        if (freeInp && document.activeElement !== freeInp) freeInp.value = freeDeliveryThreshold || 0;
+    }
+
+    function selectAdminCurrency(cur) {
+        isRegionSettingsDirty = true;
+        shopCurrency = cur;
+        localStorage.setItem('monkey_currency', shopCurrency);
+        updateCurrencyLabelsUI();
+        renderAdminRegionTab();
+        filterProducts();
+        renderCart();
+        renderOrders();
+        if (document.getElementById('admin-tab-products')?.style.display !== 'none') renderAdminProducts();
+        if (document.getElementById('admin-tab-promos')?.style.display !== 'none') renderAdminPromos();
+    }
+
+    function selectAdminDeliveryMode(mode) {
+        isRegionSettingsDirty = true;
+        deliveryMode = mode;
+        localStorage.setItem('monkey_delivery_mode', deliveryMode);
+        ensureValidSelectedStationAndTime();
+        renderAdminRegionTab();
+        renderCart();
+    }
+
+    function adminAddDeliveryLocation() {
+        const inp = document.getElementById('admin-new-delivery-loc-input');
+        const val = (inp?.value || '').trim();
+        if (!val) return;
+        if (deliveryLocations.some(x => x.toLowerCase() === val.toLowerCase())) {
+            showToast("Такой пункт уже есть в списке", true);
+            return;
+        }
+        isRegionSettingsDirty = true;
+        deliveryLocations.push(val);
+        localStorage.setItem('monkey_delivery_locations', JSON.stringify(deliveryLocations));
+        inp.value = '';
+        ensureValidSelectedStationAndTime();
+        renderAdminRegionTab();
+    }
+
+    function adminRemoveDeliveryLocation(idx) {
+        isRegionSettingsDirty = true;
+        deliveryLocations.splice(idx, 1);
+        localStorage.setItem('monkey_delivery_locations', JSON.stringify(deliveryLocations));
+        ensureValidSelectedStationAndTime();
+        renderAdminRegionTab();
+    }
+
+    async function adminSaveLocalization() {
+        document.activeElement?.blur();
+        try {
+            await apiFetch(`/api/admin/localization`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    currency: shopCurrency,
+                    delivery_mode: deliveryMode,
+                    delivery_locations: deliveryLocations,
+                    splash_emoji: splashEmoji,
+                    welcome_text: welcomeText,
+                    min_order_amount: minOrderAmount,
+                    delivery_fee: deliveryFee,
+                    free_delivery_threshold: freeDeliveryThreshold
+                })
+            });
+            isRegionSettingsDirty = false;
+            ensureValidSelectedStationAndTime();
+            filterProducts();
+            renderCart();
+            renderOrders();
+            showToast("✅ Валюта и настройки доставки сохранены!");
+        } catch (e) {
+            showToast("Ошибка сохранения локализации на сервере", true);
+        }
+    }
+
+    async function adminSaveDeliveryPricing() {
+        document.activeElement?.blur();
+        const minAmt = Math.max(0, parseFloat(document.getElementById('admin-min-order-input')?.value || '0') || 0);
+        const dFee = Math.max(0, parseFloat(document.getElementById('admin-delivery-fee-input')?.value || '0') || 0);
+        const freeThr = Math.max(0, parseFloat(document.getElementById('admin-free-delivery-input')?.value || '0') || 0);
+
+        minOrderAmount = minAmt;
+        deliveryFee = dFee;
+        freeDeliveryThreshold = freeThr;
+        localStorage.setItem('monkey_min_order_amount', String(minOrderAmount));
+        localStorage.setItem('monkey_delivery_fee', String(deliveryFee));
+        localStorage.setItem('monkey_free_delivery_threshold', String(freeDeliveryThreshold));
+        renderCart();
+
+        try {
+            await apiFetch(`/api/admin/delivery_pricing`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    min_order_amount: minAmt,
+                    delivery_fee: dFee,
+                    free_delivery_threshold: freeThr
+                })
+            });
+            isRegionSettingsDirty = false;
+            showToast("✅ Тарифы доставки и минимальный чек сохранены!");
+        } catch (e) {
+            showToast("Ошибка сохранения тарифов на сервере", true);
+        }
     }
 
     async function adminSaveBranding() {
@@ -4101,19 +4637,20 @@
         try {
             const st = await (await apiFetch(`/api/admin/stats/${currentUserId}`)).json();
             const topItemsHtml = st.top_items?.length ? st.top_items.map((it, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. ${escapeHtml(it.title)}</span><b style="color:var(--accent-green);">${it.qty} шт.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Пока нет выданных заказов</div>';
-            const topStationsHtml = st.top_stations?.length ? st.top_stations.map((s, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. м. ${escapeHtml(s.station)}</span><b>${s.count} зак.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
-            const couriersHtml = st.courier_stats?.length ? st.courier_stats.map(c => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>🛵 ${escapeHtml(c.name)} (${c.count} зак.)</span><b style="color:var(--accent-green);">${Number(c.revenue).toFixed(2)} р.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
+            const meta = getDeliveryMeta(deliveryMode);
+            const topStationsHtml = st.top_stations?.length ? st.top_stations.map((s, idx) => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>${idx + 1}. ${meta.formatLocation(s.station)}</span><b>${s.count} зак.</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
+            const couriersHtml = st.courier_stats?.length ? st.courier_stats.map(c => `<div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid var(--border-color);"><span>🛵 ${escapeHtml(c.name)} (${c.count} зак.)</span><b style="color:var(--accent-green);">${formatMoney(c.revenue)}</b></div>`).join('') : '<div style="color:var(--text-secondary);">Нет данных</div>';
 
             box.innerHTML = `
                 <div class="stat-grid">
-                    <div class="stat-card"><div class="stat-card-label">Сегодня</div><div class="stat-card-val">${Number(st.today_rev).toFixed(2)} р.</div><div class="stat-card-sub">Выдано: ${st.today_cnt} зак.</div></div>
-                    <div class="stat-card"><div class="stat-card-label">За 7 дней</div><div class="stat-card-val">${Number(st.week_rev).toFixed(2)} р.</div><div class="stat-card-sub">Выдано: ${st.week_cnt} зак.</div></div>
-                    <div class="stat-card"><div class="stat-card-label">Всего выручка</div><div class="stat-card-val">${Number(st.total_rev).toFixed(2)} р.</div><div class="stat-card-sub">Выдано: ${st.total_cnt} зак.</div></div>
+                    <div class="stat-card"><div class="stat-card-label">Сегодня</div><div class="stat-card-val">${formatMoney(st.today_rev)}</div><div class="stat-card-sub">Выдано: ${st.today_cnt} зак.</div></div>
+                    <div class="stat-card"><div class="stat-card-label">За 7 дней</div><div class="stat-card-val">${formatMoney(st.week_rev)}</div><div class="stat-card-sub">Выдано: ${st.week_cnt} зак.</div></div>
+                    <div class="stat-card"><div class="stat-card-label">Всего выручка</div><div class="stat-card-val">${formatMoney(st.total_rev)}</div><div class="stat-card-sub">Выдано: ${st.total_cnt} зак.</div></div>
                     <div class="stat-card"><div class="stat-card-label">Активные / Отмены</div><div class="stat-card-val" style="color:var(--text-main);">${st.active_cnt} / <span style="color:var(--danger);">${st.cancelled_cnt}</span></div><div class="stat-card-sub">В работе / отменено</div></div>
                 </div>
                 <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:8px;"><div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">🛵 Выручка по курьерам:</div>${couriersHtml}</div>
                 <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px; margin-bottom:8px;"><div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">🔥 Топ товаров:</div>${topItemsHtml}</div>
-                <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px;"><div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">🚇 Топ станций метро:</div>${topStationsHtml}</div>
+                <div style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px; padding:10px;"><div style="font-weight:700; color:var(--text-main); margin-bottom:6px;">📍 Топ точек доставки:</div>${topStationsHtml}</div>
             `;
         } catch (e) { box.innerHTML = '<div style="color:var(--danger);">Не удалось загрузить статистику.</div>'; }
     }
@@ -4126,8 +4663,8 @@
             const oldP = Number(p.old_price || 0);
             const hasDisc = Boolean(p.has_discount) || oldP > Number(p.price);
             const priceLabel = oldP > Number(p.price)
-                ? `<span style="text-decoration:line-through; color:var(--text-secondary); font-size:11px; margin-right:4px;">${oldP.toFixed(2)} р.</span>${Number(p.price).toFixed(2)} р.`
-                : `${Number(p.price).toFixed(2)} р.`;
+                ? `<span style="text-decoration:line-through; color:var(--text-secondary); font-size:11px; margin-right:4px;">${formatMoney(oldP)}</span>${formatMoney(p.price)}`
+                : `${formatMoney(p.price)}`;
 
             return `
                 <div class="admin-toggle-row" style="flex-direction:column; align-items:stretch; gap:6px;">
@@ -4363,7 +4900,7 @@
         if (entries.length === 0) { container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); text-align:center;">Активных промокодов нет</div>'; return; }
         container.innerHTML = entries.map(([code, raw]) => {
             const p = normalizePromoObj(raw);
-            const discStr = p.type === 'percent' ? `${p.discount}%` : `${p.discount.toFixed(2)} р.`;
+            const discStr = p.type === 'percent' ? `${p.discount}%` : `${formatMoney(p.discount)}`;
             const limitStr = p.max_uses > 0 ? ` • исп. ${p.used_count}/${p.max_uses}` : ` • исп. ${p.used_count}/∞`;
             return `<div class="admin-toggle-row"><span><b style="color:var(--accent-green);">${escapeHtml(code)}</b> (-${discStr})<span style="font-size:11px; color:var(--text-secondary);">${limitStr}</span></span><button class="toggle-pill off" onclick="adminDeletePromo('${escapeHtml(code)}')">Удалить</button></div>`;
         }).join('');
@@ -4661,8 +5198,10 @@
             const isClaimedByMe = claimedId && claimedId === Number(currentUserId);
             const isClaimedByOther = claimedId && claimedId !== Number(currentUserId);
 
-            let itemsList = ord.items.map(i => `<div>• ${escapeHtml(i.title)} × ${i.qty} (${(i.price * i.qty).toFixed(2)} р.)</div>`).join('');
-            let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${escapeHtml(ord.promo_code)} (-${Number(ord.discount || 0).toFixed(2)} р.)</div>` : '';
+            const meta = getDeliveryMeta(deliveryMode);
+            let itemsList = ord.items.map(i => `<div>• ${escapeHtml(i.title)} × ${i.qty} (${formatMoney(i.price * i.qty)})</div>`).join('');
+            let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${escapeHtml(ord.promo_code)} (-${formatMoney(ord.discount || 0)})</div>` : '';
+            let delivBadgeCourier = Number(ord.delivery_fee || 0) > 0 ? `<div style="color:var(--text-secondary); margin-top:3px;">🚚 Доставка: ${formatMoney(ord.delivery_fee)}</div>` : '';
             let statusHtml = `<span class="order-status-pill active">Активен</span>`;
             if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
             else if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
@@ -4708,9 +5247,9 @@
                         <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">${statusHtml}${deleteBtn}</div>
                     </div>
                     ${claimedBanner}
-                    <div class="order-meta-grid">${createdAtHtml}<div class="order-meta-row"><span>🚇 Станция:</span> <b>м. ${escapeHtml(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNoteCourier}</div></div>
-                    <div class="order-items-box">${itemsList}${promoBadgeCourier}</div>
-                    <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">Итого к оплате:</span><span class="order-total-price">${ord.total.toFixed(2)} р.</span></div>
+                    <div class="order-meta-grid">${createdAtHtml}<div class="order-meta-row"><span>${meta.orderRowLabel}</span> <b>${meta.formatLocation(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNoteCourier}</div></div>
+                    <div class="order-items-box">${itemsList}${promoBadgeCourier}${delivBadgeCourier}</div>
+                    <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">Итого к оплате:</span><span class="order-total-price">${formatMoney(ord.total)}</span></div>
                     ${courierActions}
                 </div>
             `;
