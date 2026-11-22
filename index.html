@@ -122,6 +122,16 @@
         }
 
         /* Варианты экрана загрузки мини-приложения */
+        #splash-screen.splash-style-neon {
+            background:
+                radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--accent-green) 24%, transparent) 0%, transparent 65%),
+                radial-gradient(circle at 50% 78%, var(--accent-green-glow) 0%, transparent 72%),
+                var(--bg-color);
+        }
+        #splash-screen.splash-style-neon .splash-logo {
+            text-shadow: 0 0 26px var(--accent-green), 0 0 44px var(--accent-green-glow);
+        }
+
         #splash-screen.splash-style-minimal {
             background: var(--bg-color);
             backdrop-filter: none;
@@ -129,40 +139,83 @@
         }
         #splash-screen.splash-style-minimal .splash-orb,
         #splash-screen.splash-style-minimal .splash-badge-wrap::before,
-        #splash-screen.splash-style-minimal .splash-badge-wrap::after {
+        #splash-screen.splash-style-minimal .splash-badge-wrap::after,
+        #splash-screen.splash-style-minimal .progress-fill::after {
             display: none;
         }
         #splash-screen.splash-style-minimal .splash-badge-wrap {
             border-radius: 999px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+            border-color: var(--border-color);
+        }
+        #splash-screen.splash-style-minimal .splash-logo {
+            text-shadow: none;
+            letter-spacing: 1px;
         }
 
+        #splash-screen.splash-style-orbit {
+            background:
+                radial-gradient(circle at 25% 25%, var(--accent-green-glow) 0%, transparent 55%),
+                radial-gradient(circle at 75% 75%, var(--icon-glow) 0%, transparent 55%),
+                var(--bg-color);
+        }
         #splash-screen.splash-style-orbit .splash-badge-wrap::before {
-            inset: -11px;
-            border-radius: 38px;
-            padding: 2.5px;
-            animation-duration: 1.45s;
+            inset: -13px;
+            border-radius: 999px;
+            padding: 3px;
+            background: conic-gradient(from 0deg, var(--accent-green) 0%, transparent 32%, var(--icon-color) 65%, transparent 100%);
+            animation-duration: 1.3s;
+        }
+        #splash-screen.splash-style-orbit .splash-badge-wrap::after {
+            inset: -20px;
+            border-radius: 999px;
+            border: 1.5px dashed var(--icon-color);
+            opacity: 0.55;
+            animation: splashHaloSpin 3.2s linear infinite reverse;
         }
         #splash-screen.splash-style-orbit .splash-orb.orb-1 {
             width: 260px; height: 260px; opacity: 0.72;
         }
 
+        #splash-screen.splash-style-pulse {
+            background:
+                radial-gradient(circle at 50% 42%, var(--accent-green-glow) 0%, transparent 62%),
+                var(--bg-color);
+        }
         #splash-screen.splash-style-pulse .splash-badge-wrap::before {
             display: none;
         }
         #splash-screen.splash-style-pulse .splash-badge-wrap::after {
-            inset: -8px;
-            border-radius: 36px;
-            border-width: 2px;
-            animation: splashPulseRing 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+            inset: -6px;
+            border-radius: 34px;
+            border: 2px solid var(--accent-green);
+            opacity: 0.85;
+            animation: splashPulseExpand 1.2s ease-out infinite;
+        }
+        @keyframes splashPulseExpand {
+            0% { transform: scale(0.98); opacity: 0.9; }
+            100% { transform: scale(1.34); opacity: 0; }
         }
 
+        #splash-screen.splash-style-glass {
+            background:
+                radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent-green) 22%, transparent) 0%, transparent 55%),
+                radial-gradient(circle at 75% 80%, color-mix(in srgb, var(--icon-color) 20%, transparent) 0%, transparent 55%),
+                var(--bg-color);
+        }
         #splash-screen.splash-style-glass .splash-badge-wrap {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(26px);
-            -webkit-backdrop-filter: blur(26px);
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            border-radius: 32px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 34px;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.45), 0 16px 40px rgba(0,0,0,0.35);
+        }
+        #splash-screen.splash-style-glass .progress-bar {
+            width: 210px;
+            height: 8px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         /* Компактная полоса фоновой музыки для пользователя */
@@ -1838,7 +1891,10 @@
                         </div>
 
                         <div style="margin-bottom:8px;">
-                            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:5px;">✨ Вид экрана загрузки мини-приложения:</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-secondary); margin-bottom:5px;">
+                                <span>✨ Вид экрана загрузки: <b id="admin-splash-style-current" style="color:var(--accent-green);">⚡ Неоновый</b></span>
+                                <button type="button" onclick="previewSplashScreenNow()" style="background:none; border:1px solid var(--border-color); color:var(--accent-green); padding:2px 8px; border-radius:7px; font-size:10.5px; font-weight:700; cursor:pointer;">👁 Проверить</button>
+                            </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;" id="admin-splash-style-grid">
                                 <button type="button" class="toggle-pill on" id="splash-style-btn-neon" onclick="selectSplashStyle('neon')">⚡ Неоновый</button>
                                 <button type="button" class="toggle-pill" id="splash-style-btn-minimal" onclick="selectSplashStyle('minimal')">◻️ Минимал</button>
@@ -2375,6 +2431,7 @@
     let logoImage = localStorage.getItem('monkey_logo_image') || '';
     let isLogoImageDirty = false;
     let splashStyle = localStorage.getItem('monkey_splash_style') || 'neon';
+    let isSplashStyleDirty = false;
     let splashEmoji = localStorage.getItem('monkey_splash_emoji') || '🐵';
     let splashImage = localStorage.getItem('monkey_splash_image') || '';
     let isSplashImageDirty = false;
@@ -2429,6 +2486,13 @@
     function applySplashStyleUI() {
         const sp = document.getElementById('splash-screen');
         const styles = ['neon', 'minimal', 'orbit', 'pulse', 'glass'];
+        const styleLabels = {
+            neon: '⚡ Неоновый',
+            minimal: '◻️ Минимал',
+            orbit: '🌀 Орбита',
+            pulse: '💓 Пульс',
+            glass: '🔮 Стекло'
+        };
         const activeSt = styles.includes(splashStyle) ? splashStyle : 'neon';
         if (sp) {
             styles.forEach(s => sp.classList.remove(`splash-style-${s}`));
@@ -2449,12 +2513,61 @@
                 btn.style.border = '';
             }
         });
+        const curLbl = document.getElementById('admin-splash-style-current');
+        if (curLbl) curLbl.innerText = styleLabels[activeSt] || activeSt;
     }
 
     function selectSplashStyle(styleName) {
+        isSplashStyleDirty = true;
         splashStyle = styleName || 'neon';
         localStorage.setItem('monkey_splash_style', splashStyle);
         applySplashStyleUI();
+        if (currentUserId && isCurrentUserOwner()) {
+            apiFetch(`/api/admin/branding`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    logo_part1: logoPart1 || 'MONKEY',
+                    logo_part2: logoPart2 || '',
+                    logo_image: logoImage || '',
+                    splash_emoji: splashEmoji,
+                    splash_image: splashImage || '',
+                    splash_style: splashStyle,
+                    welcome_text: welcomeText || ''
+                })
+            }).then(() => { isSplashStyleDirty = false; }).catch(() => {});
+        }
+    }
+
+    function previewSplashScreenNow() {
+        const container = document.querySelector('.app-container');
+        if (!container) return;
+        document.getElementById('splash-preview-overlay')?.remove();
+        const em = (splashEmoji || '🐵').trim() || '🐵';
+        const imgSrc = (splashImage || '').trim();
+        const p1 = (logoPart1 || '').trim();
+        const p2 = (logoPart2 || '').trim();
+        const textPart = `${escapeHtml(p1)}${p2 ? ` <span>${escapeHtml(p2)}</span>` : ''}` || 'MONKEY <span>VAPE</span>';
+        const styles = ['neon', 'minimal', 'orbit', 'pulse', 'glass'];
+        const activeSt = styles.includes(splashStyle) ? splashStyle : 'neon';
+
+        const ov = document.createElement('div');
+        ov.id = 'splash-preview-overlay';
+        ov.className = `splash-style-${activeSt}`;
+        ov.style.cssText = 'position:absolute; inset:0; z-index:950; display:flex; flex-direction:column; justify-content:center; align-items:center; background:var(--bg-color); cursor:pointer;';
+        ov.onclick = () => ov.remove();
+        ov.innerHTML = `
+            <div class="splash-orb orb-1"></div>
+            <div class="splash-orb orb-2"></div>
+            <div class="splash-badge-wrap">
+                <div class="splash-emblem">${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="Splash">` : escapeHtml(em)}</div>
+            </div>
+            <div class="splash-logo">${textPart}</div>
+            <div class="splash-status-row"><div class="splash-sub">Предпросмотр загрузки (${escapeHtml(activeSt)})</div><span class="splash-percent">100%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:76%;"></div></div>
+            <div style="margin-top:16px; font-size:11px; color:var(--text-secondary);">Нажмите в любом месте, чтобы закрыть</div>
+        `;
+        container.appendChild(ov);
     }
 
     async function handleLogoImageFileSelect(inputEl) {
@@ -2492,9 +2605,7 @@
         const htmlLogo = lImg
             ? `<span style="display:inline-flex; align-items:center; gap:7px; max-width:100%;"><img src="${escapeHtml(lImg)}" alt="Logo" style="height:24px; width:auto; max-width:92px; object-fit:contain; border-radius:6px; flex-shrink:0;">${textPart ? `<span style="overflow:hidden; text-overflow:ellipsis;">${textPart}</span>` : ''}</span>`
             : (textPart || 'MONKEY <span>VAPE</span>');
-        const splashLogoHtml = lImg
-            ? `<span style="display:inline-flex; flex-direction:column; align-items:center; gap:8px;"><img src="${escapeHtml(lImg)}" alt="Logo" style="max-height:54px; max-width:180px; object-fit:contain;">${textPart ? `<span>${textPart}</span>` : ''}</span>`
-            : (textPart || 'MONKEY <span>VAPE</span>');
+        const splashLogoHtml = textPart || 'MONKEY <span>VAPE</span>';
 
         const topEl = document.getElementById('brand-title');
         const splashEl = document.getElementById('splash-logo');
@@ -2670,10 +2781,12 @@
         musicVolume = volNum;
         if (musicEnabled && musicUrl) userMusicPaused = false;
 
-        localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
-        localStorage.setItem('monkey_music_title', musicTitle);
-        localStorage.setItem('monkey_music_url', musicUrl);
-        localStorage.setItem('monkey_music_volume', String(musicVolume));
+        try {
+            localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+            localStorage.setItem('monkey_music_title', musicTitle);
+            localStorage.setItem('monkey_music_url', musicUrl);
+            localStorage.setItem('monkey_music_volume', String(musicVolume));
+        } catch (_) {}
         applyMusicPlayerUI();
 
         try {
@@ -3485,7 +3598,7 @@
                         logoImage = (cfg.logo_image || '').trim();
                         localStorage.setItem('monkey_logo_image', logoImage);
                     }
-                    if (cfg.splash_style) {
+                    if (!isSplashStyleDirty && cfg.splash_style) {
                         splashStyle = String(cfg.splash_style).trim() || 'neon';
                         localStorage.setItem('monkey_splash_style', splashStyle);
                     }
@@ -3506,19 +3619,22 @@
                 if (!isMusicDirty && (cfg.music_enabled !== undefined || cfg.music_url !== undefined || cfg.music_title !== undefined || cfg.music_volume !== undefined)) {
                     if (cfg.music_enabled !== undefined) {
                         musicEnabled = Boolean(cfg.music_enabled);
-                        localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+                        try { localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0'); } catch (_) {}
                     }
                     if (cfg.music_url !== undefined) {
-                        musicUrl = (cfg.music_url || '').trim();
-                        localStorage.setItem('monkey_music_url', musicUrl);
+                        const srvUrl = (cfg.music_url || '').trim();
+                        if (srvUrl || !musicUrl) {
+                            musicUrl = srvUrl;
+                            try { localStorage.setItem('monkey_music_url', musicUrl); } catch (_) {}
+                        }
                     }
                     if (cfg.music_title !== undefined) {
                         musicTitle = (cfg.music_title || 'Фоновый трек').trim() || 'Фоновый трек';
-                        localStorage.setItem('monkey_music_title', musicTitle);
+                        try { localStorage.setItem('monkey_music_title', musicTitle); } catch (_) {}
                     }
                     if (cfg.music_volume !== undefined && !isNaN(Number(cfg.music_volume))) {
                         musicVolume = Math.max(0, Math.min(1, Number(cfg.music_volume)));
-                        localStorage.setItem('monkey_music_volume', String(musicVolume));
+                        try { localStorage.setItem('monkey_music_volume', String(musicVolume)); } catch (_) {}
                     }
                     applyMusicPlayerUI();
                 }
@@ -4836,8 +4952,7 @@
         localStorage.setItem('monkey_open_time', shopOpenTime);
         localStorage.setItem('monkey_close_time', shopCloseTime);
 
-        const wasOpenBeforeSchedule = isShopOpen;
-        if (fromToggle && autoScheduleEnabled && !wasOpenBeforeSchedule) {
+        if (!isShopOpen) {
             isShopOpen = true;
             updateShopClosedUI();
             renderCart();
@@ -4864,18 +4979,7 @@
             const data = await res.json();
             if (data?.open_time) shopOpenTime = data.open_time;
             if (data?.close_time) shopCloseTime = data.close_time;
-            if (fromToggle && autoScheduleEnabled && wasOpenBeforeSchedule && !isShopOpen) {
-                isShopOpen = true;
-                updateShopClosedUI();
-                renderCart();
-                try {
-                    const msg = (document.getElementById('admin-closed-msg-input')?.value || shopClosedMessage).trim();
-                    await apiFetch(`/api/admin/shop_status`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: Number(currentUserId), is_open: true, closed_message: msg })
-                    });
-                } catch (_) {}
-            }
+
             isScheduleDirty = false;
             renderAdminShopMaster();
             showToast(fromToggle
@@ -5125,6 +5229,7 @@
                 })
             });
             isLogoImageDirty = false;
+            isSplashStyleDirty = false;
             isSplashImageDirty = false;
             showToast("✅ Логотип, загрузка и приветствие обновлены!");
         } catch (e) { showToast("Ошибка сохранения настроек на сервере", true); }
