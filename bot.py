@@ -877,6 +877,27 @@ async def get_tg_photo(file_id: str):
     except Exception:
         raise HTTPException(status_code=404, detail="Photo not found")
 
+@app.get("/api/tg_audio/{file_id}")
+async def get_tg_audio(file_id: str):
+    try:
+        tg_file = await bot.get_file(file_id)
+        file_bytes_io = await bot.download_file(tg_file.file_path)
+        raw_bytes = file_bytes_io.read()
+        fp = (tg_file.file_path or "").lower()
+        if fp.endswith(".ogg") or fp.endswith(".oga"):
+            mtype = "audio/ogg"
+        elif fp.endswith(".wav"):
+            mtype = "audio/wav"
+        elif fp.endswith(".m4a") or fp.endswith(".mp4"):
+            mtype = "audio/mp4"
+        elif fp.endswith(".webm"):
+            mtype = "audio/webm"
+        else:
+            mtype = "audio/mpeg"
+        return Response(content=raw_bytes, media_type=mtype, headers={"Accept-Ranges": "bytes"})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Audio not found")
+
 @app.get("/api/shop_config")
 async def get_shop_config():
     async with aiosqlite.connect(DB_FILE) as db:
@@ -2241,6 +2262,31 @@ async def handle_owner_photo_upload(message: Message):
         f"🖼 <b>Прямая ссылка на фото готова!</b>\n\n"
         f"Можешь выбрать фото прямо из галереи в админ-панели или вставить эту ссылку:\n"
         f"<code>{html.escape(photo_url)}</code>",
+        parse_mode="HTML"
+    )
+
+@dp.message(F.audio | F.voice)
+async def handle_owner_audio_upload(message: Message):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, message.from_user.id):
+            return
+        audio_obj = message.audio or message.voice
+        if not audio_obj:
+            return
+        file_id = audio_obj.file_id
+        track_title = getattr(audio_obj, "title", None) or getattr(audio_obj, "file_name", None) or "Трек из Telegram"
+        track_title = re.sub(r"\.[^/.]+$", "", str(track_title)).strip() or "Трек из Telegram"
+        base = PUBLIC_TUNNEL_URL.strip().rstrip("/")
+        audio_url = f"{base}/api/tg_audio/{file_id}" if base else f"/api/tg_audio/{file_id}"
+        await set_setting_raw(db, "music_url", audio_url)
+        await set_setting_raw(db, "music_title", track_title)
+        await set_setting_raw(db, "music_enabled", "1")
+        await db.commit()
+    await message.answer(
+        f"🎵 <b>Аудиофайл из Telegram сохранён для магазина!</b>\n\n"
+        f"Название: <b>{html.escape(track_title)}</b>\n"
+        f"Ссылка: <code>{html.escape(audio_url)}</code>\n\n"
+        f"Фоновая музыка включена — обновите или откройте мини-приложение.",
         parse_mode="HTML"
     )
 
