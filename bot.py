@@ -68,26 +68,29 @@ def load_primary_owner_ids_from_env() -> list[int]:
 FALLBACK_TOKEN = "ВСТАВЬ_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
 CLAIM_SECRET = ENV_CFG.get("CLAIM_SECRET", "").strip()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
-TUNNEL_FILE = "tunnel_url.txt"
+TUNNEL_FILE = os.path.join(BASE_DIR, "tunnel_url.txt")
 
 def load_tunnel_url() -> str:
-    if os.path.exists(TUNNEL_FILE):
-        try:
-            with open(TUNNEL_FILE, "r", encoding="utf-8") as f:
-                saved = f.read().strip()
-                if saved.startswith("http"):
-                    return saved
-        except Exception:
-            pass
+    for candidate in (TUNNEL_FILE, "tunnel_url.txt"):
+        if os.path.exists(candidate):
+            try:
+                with open(candidate, "r", encoding="utf-8") as f:
+                    saved = f.read().strip()
+                    if saved.startswith("http"):
+                        return saved
+            except Exception:
+                pass
     return "https://nemeses-july-concrete.ngrok-free.dev"
 
 PUBLIC_TUNNEL_URL = load_tunnel_url()
 
 PRIMARY_OWNER_IDS = load_primary_owner_ids_from_env()
 DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
-DB_FILE = "database.db"
-AUDIO_DIR = "uploaded_audio"
+DB_FILE = os.path.join(BASE_DIR, "database.db")
+AUDIO_DIR = os.path.join(BASE_DIR, "uploaded_audio")
+IMAGES_DIR = os.path.join(BASE_DIR, "uploaded_images")
 
 ALLOWED_CURRENCIES = ("р.", "₽", "₸", "$", "₴")
 ALLOWED_DELIVERY_MODES = ("metro", "districts", "pickup", "free_address")
@@ -600,6 +603,7 @@ async def init_db():
                 )
         try:
             os.makedirs(AUDIO_DIR, exist_ok=True)
+            os.makedirs(IMAGES_DIR, exist_ok=True)
         except Exception:
             pass
         await db.commit()
@@ -740,6 +744,11 @@ class AdminMusicUploadSchema(BaseModel):
     music_title: str = ""
     music_enabled: bool = True
     music_volume: float | None = None
+
+class AdminImageUploadSchema(BaseModel):
+    user_id: int
+    filename: str = "product.jpg"
+    data_base64: str = ""
 
 class AdminLocalizationSchema(BaseModel):
     user_id: int
@@ -1159,8 +1168,7 @@ async def upload_admin_music(data: AdminMusicUploadSchema):
         with open(disk_path, "wb") as f:
             f.write(audio_bytes)
 
-        base_url = (PUBLIC_TUNNEL_URL or "").strip().rstrip("/")
-        track_url = f"{base_url}/api/music/{stored_name}" if base_url else f"/api/music/{stored_name}"
+        track_url = f"/api/music/{stored_name}"
         clean_title = (data.music_title or "").strip() or os.path.splitext(data.filename or "Фоновый трек")[0] or "Фоновый трек"
 
         await set_setting_raw(db, "music_url", track_url)
@@ -1199,7 +1207,58 @@ async def serve_uploaded_music(filename: str):
     return Response(
         content=content,
         media_type=_detect_audio_media_type(safe_name),
-        headers={"Accept-Ranges": "bytes", "Cache-Control": "public, max-age=3600"}
+        headers={
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(len(content)),
+            "Cache-Control": "public, max-age=3600"
+        }
+    )
+
+@app.post("/api/admin/upload_image")
+async def upload_admin_image(data: AdminImageUploadSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+    raw_payload = (data.data_base64 or "").strip()
+    if not raw_payload:
+        raise HTTPException(status_code=400, detail="Пустой файл изображения")
+    ext = ".jpg"
+    if raw_payload.startswith("data:image/png"):
+        ext = ".png"
+    elif raw_payload.startswith("data:image/webp"):
+        ext = ".webp"
+    if "," in raw_payload and raw_payload.startswith("data:"):
+        raw_payload = raw_payload.split(",", 1)[1]
+    try:
+        img_bytes = base64.b64decode(raw_payload, validate=False)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Некорректный формат изображения")
+    if not img_bytes or len(img_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Размер изображения должен быть до 10 МБ")
+
+    os.makedirs(IMAGES_DIR, exist_ok=True)
+    stored_name = f"prod_{int(time.time() * 1000)}_{os.urandom(3).hex()}{ext}"
+    disk_path = os.path.join(IMAGES_DIR, stored_name)
+    with open(disk_path, "wb") as f:
+        f.write(img_bytes)
+    return {"success": True, "image_url": f"/api/product_image/{stored_name}"}
+
+@app.get("/api/product_image/{filename}")
+async def serve_uploaded_product_image(filename: str):
+    safe_name = os.path.basename(filename or "")
+    if not safe_name or not re.match(r"^[A-Za-z0-9_.-]+$", safe_name):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    file_path = os.path.join(IMAGES_DIR, safe_name)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Image not found")
+    ext = os.path.splitext(safe_name.lower())[1]
+    mtype = "image/png" if ext == ".png" else ("image/webp" if ext == ".webp" else "image/jpeg")
+    with open(file_path, "rb") as f:
+        content = f.read()
+    return Response(
+        content=content,
+        media_type=mtype,
+        headers={"Cache-Control": "public, max-age=86400"}
     )
 
 @app.post("/api/admin/music")
@@ -2318,8 +2377,7 @@ async def handle_owner_audio_upload(message: Message):
         file_id = audio_obj.file_id
         track_title = getattr(audio_obj, "title", None) or getattr(audio_obj, "file_name", None) or "Трек из Telegram"
         track_title = re.sub(r"\.[^/.]+$", "", str(track_title)).strip() or "Трек из Telegram"
-        base = PUBLIC_TUNNEL_URL.strip().rstrip("/")
-        audio_url = f"{base}/api/tg_audio/{file_id}" if base else f"/api/tg_audio/{file_id}"
+        audio_url = f"/api/tg_audio/{file_id}"
         await set_setting_raw(db, "music_url", audio_url)
         await set_setting_raw(db, "music_title", track_title)
         await set_setting_raw(db, "music_enabled", "1")
