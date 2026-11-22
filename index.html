@@ -337,6 +337,7 @@
             padding: 2px;
             background: conic-gradient(from 0deg, transparent 0%, var(--accent-green) 35%, transparent 65%, var(--icon-color) 90%, transparent 100%);
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             animation: splashHaloSpin 2.4s linear infinite;
@@ -3389,10 +3390,25 @@
     }
 
     const protectedBlobCache = {};
+    function normalizeBackendImageUrl(rawUrl) {
+        const clean = (rawUrl || '').trim();
+        if (!clean) return '';
+        if (clean.startsWith('data:') || clean.startsWith('blob:')) return clean;
+        const apiMatch = clean.match(/(\/api\/tg_photo\/[^?#\s]+)/);
+        if (apiMatch) {
+            const activeBase = (typeof BACKEND_URL === 'string' && BACKEND_URL.trim())
+                ? BACKEND_URL.trim().replace(/\/+$/, '')
+                : '';
+            return activeBase ? `${activeBase}${apiMatch[1]}` : apiMatch[1];
+        }
+        return clean;
+    }
+
     async function hydrateProtectedImages() {
         const imgs = document.querySelectorAll('img[data-protected-src]');
         for (const img of imgs) {
-            const rawUrl = img.getAttribute('data-protected-src');
+            const rawAttr = img.getAttribute('data-protected-src');
+            const rawUrl = normalizeBackendImageUrl(rawAttr);
             if (!rawUrl || img.dataset.hydrated === '1') continue;
             img.dataset.hydrated = '1';
             if (protectedBlobCache[rawUrl]) {
@@ -3407,20 +3423,27 @@
                     const blobUrl = URL.createObjectURL(await res.blob());
                     protectedBlobCache[rawUrl] = blobUrl;
                     img.src = blobUrl;
+                    continue;
                 }
             } catch (e) {}
+            const fallback = img.getAttribute('data-fallback-html');
+            if (fallback) img.outerHTML = fallback;
         }
     }
 
     function buildProductImgTag(url, altText, fallbackHtml) {
-        if (!url) return fallbackHtml;
-        if (url.startsWith('data:image/')) {
-            return `<img src="${url}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${fallbackHtml}'">`;
+        const cleanUrl = (url || '').trim();
+        if (!cleanUrl) return fallbackHtml;
+        if (cleanUrl.startsWith('data:image/')) {
+            return `<img src="${cleanUrl}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${escapeHtml(fallbackHtml)}'">`;
         }
-        if (url.includes('ngrok') || url.includes('/api/tg_photo/')) {
-            return `<img data-protected-src="${escapeHtml(url)}" src="${escapeHtml(url)}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${fallbackHtml}'">`;
+        if (cleanUrl.includes('ngrok') || cleanUrl.includes('/api/tg_photo/')) {
+            const normUrl = normalizeBackendImageUrl(cleanUrl);
+            const cached = protectedBlobCache[normUrl];
+            const initialSrc = cached || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            return `<img data-protected-src="${escapeHtml(normUrl)}" data-fallback-html="${escapeHtml(fallbackHtml)}" src="${initialSrc}" alt="${escapeHtml(altText)}">`;
         }
-        return `<img src="${escapeHtml(url)}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${fallbackHtml}'">`;
+        return `<img src="${escapeHtml(cleanUrl)}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${escapeHtml(fallbackHtml)}'">`;
     }
 
     const PRIMARY_OWNER_IDS = [7280921605];
@@ -4202,7 +4225,7 @@
             </div>
         `;
 
-        const safeEscTitle = p.title.replace(/\/g, '\\').replace(/'/g, "\'");
+        const safeEscTitle = p.title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const rightBtnHtml = isAvail
             ? `<button class="add-btn" onclick="event.stopPropagation(); openProductModal(${p.id})">+</button>`
             : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${safeEscTitle}')">🔔 Жду</button>`;
