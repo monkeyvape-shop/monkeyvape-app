@@ -102,56 +102,134 @@
             z-index: 900;
         }
 
-        /* Современный минималистичный Splash Screen */
+        /* Современный анимированный Splash Screen */
         #splash-screen {
             position: absolute;
             inset: 0;
             background:
-                radial-gradient(circle at 50% 36%, var(--banner-bg) 0%, transparent 65%),
-                radial-gradient(circle at 50% 75%, var(--accent-green-glow) 0%, transparent 70%),
+                radial-gradient(circle at 50% 34%, var(--banner-bg) 0%, transparent 65%),
+                radial-gradient(circle at 50% 78%, var(--accent-green-glow) 0%, transparent 72%),
                 var(--bg-color);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow: hidden;
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), filter 0.55s ease;
+        }
+
+        .splash-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(42px);
+            opacity: 0.55;
+            pointer-events: none;
+            animation: splashOrbDrift 4.5s ease-in-out infinite alternate;
+        }
+        .splash-orb.orb-1 {
+            width: 210px;
+            height: 210px;
+            top: 16%;
+            left: 12%;
+            background: var(--accent-green-glow);
+        }
+        .splash-orb.orb-2 {
+            width: 190px;
+            height: 190px;
+            bottom: 18%;
+            right: 10%;
+            background: var(--icon-glow);
+            animation-delay: -2s;
+        }
+
+        @keyframes splashOrbDrift {
+            0% { transform: translate(0, 0) scale(0.95); }
+            100% { transform: translate(16px, -18px) scale(1.12); }
         }
 
         .splash-badge-wrap {
             position: relative;
-            width: 84px;
-            height: 84px;
-            border-radius: 26px;
-            background: color-mix(in srgb, var(--card-bg) 72%, transparent);
-            border: 1px solid color-mix(in srgb, var(--accent-green) 45%, var(--border-color));
+            width: 98px;
+            height: 98px;
+            border-radius: 28px;
+            background: color-mix(in srgb, var(--card-bg) 78%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 48%, var(--border-color));
             box-shadow:
                 inset 0 1px 0 var(--glass-highlight),
-                0 16px 40px rgba(0, 0, 0, 0.35),
-                0 0 28px var(--accent-green-glow);
+                0 18px 44px rgba(0, 0, 0, 0.38),
+                0 0 32px var(--accent-green-glow);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 22px;
+            margin-bottom: 24px;
             animation: splashBadgeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
+        .splash-badge-wrap::before {
+            content: '';
+            position: absolute;
+            inset: -7px;
+            border-radius: 34px;
+            padding: 2px;
+            background: conic-gradient(from 0deg, transparent 0%, var(--accent-green) 35%, transparent 65%, var(--icon-color) 90%, transparent 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: splashHaloSpin 2.4s linear infinite;
+            pointer-events: none;
+        }
+
+        .splash-badge-wrap::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 32px;
+            border: 1.5px solid var(--accent-green);
+            opacity: 0;
+            animation: splashPulseRing 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+            pointer-events: none;
+        }
+
+        @keyframes splashHaloSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes splashPulseRing {
+            0% { transform: scale(0.96); opacity: 0.65; }
+            100% { transform: scale(1.26); opacity: 0; }
+        }
+
         .splash-emblem {
-            font-size: 38px;
+            font-size: 42px;
             line-height: 1;
+            width: 72px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             animation: splashFloat 2.4s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+        .splash-emblem img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
         }
 
         @keyframes splashBadgeIn {
-            0% { opacity: 0; transform: translateY(14px) scale(0.88); }
+            0% { opacity: 0; transform: translateY(16px) scale(0.85); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         @keyframes splashFloat {
             0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-3px) scale(1.04); }
+            50% { transform: translateY(-4px) scale(1.04); }
         }
 
         @keyframes splashTextIn {
@@ -164,38 +242,75 @@
             font-weight: 900;
             color: var(--logo-color-1);
             text-shadow: 0 0 24px var(--accent-green-glow);
-            margin-bottom: 7px;
+            margin-bottom: 8px;
             letter-spacing: 2.5px;
             text-align: center;
             padding: 0 18px;
+            position: relative;
+            z-index: 1;
             animation: splashTextIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
         }
         .splash-logo span { color: var(--logo-color-2); }
+
+        .splash-status-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            position: relative;
+            z-index: 1;
+            animation: splashTextIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+        }
 
         .splash-sub {
             color: var(--text-secondary);
             font-size: 12.5px;
             font-weight: 500;
-            margin-bottom: 26px;
-            letter-spacing: 0.4px;
-            animation: splashTextIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+            letter-spacing: 0.3px;
+        }
+
+        .splash-percent {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: var(--accent-green);
+            font-variant-numeric: tabular-nums;
+            background: var(--accent-green-glow);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 45%, transparent);
+            padding: 2px 7px;
+            border-radius: 999px;
         }
 
         .progress-bar {
-            width: 164px;
-            height: 4px;
-            background-color: rgba(255, 255, 255, 0.08);
+            width: 192px;
+            height: 5px;
+            background-color: rgba(255, 255, 255, 0.09);
             border-radius: 999px;
             overflow: hidden;
             position: relative;
+            z-index: 1;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
         }
         .progress-fill {
             width: 0%;
             height: 100%;
             border-radius: 999px;
             background: linear-gradient(90deg, var(--accent-green), var(--icon-color));
-            box-shadow: 0 0 12px var(--accent-green);
-            transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: 0 0 14px var(--accent-green);
+            position: relative;
+            overflow: hidden;
+            transition: width 0.25s ease-out;
+        }
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.65) 50%, transparent 100%);
+            animation: progressSheen 1.1s ease-in-out infinite;
+        }
+        @keyframes progressSheen {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         /* Верхняя стеклянная панель */
@@ -1260,11 +1375,16 @@
     </div>
 
     <div id="splash-screen">
+        <div class="splash-orb orb-1"></div>
+        <div class="splash-orb orb-2"></div>
         <div class="splash-badge-wrap">
             <div class="splash-emblem" id="splash-emblem">🐵</div>
         </div>
         <div class="splash-logo" id="splash-logo">MONKEY <span>VAPE</span></div>
-        <div class="splash-sub" id="splash-sub">Загружаем актуальный дроп...</div>
+        <div class="splash-status-row">
+            <div class="splash-sub" id="splash-sub">Загружаем каталог...</div>
+            <span class="splash-percent" id="splash-percent">0%</span>
+        </div>
         <div class="progress-bar">
             <div class="progress-fill" id="progress-fill"></div>
         </div>
@@ -1362,7 +1482,7 @@
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="sheet-handle"></div>
             <div class="modal-title">Перенос времени встречи</div>
-            <div class="modal-subtitle">Выбери новое удобное время для заказа #<span id="time-modal-order-id"></span></div>
+            <div class="modal-subtitle">Выберите новое удобное время для заказа #<span id="time-modal-order-id"></span></div>
             <div class="time-slots" id="change-time-slots-container"></div>
             <button class="primary-btn" onclick="confirmTimeChangeFinal()">Обновить время</button>
             <button onclick="closeTimeModalDirect()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:14px; font-size:13px; cursor:pointer;">Назад</button>
@@ -1386,15 +1506,15 @@
             <div id="catalog-closed-banner" class="closed-shop-banner" style="display: none;"></div>
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" id="search-input" placeholder="Найти вкус, девайс или линейку..." oninput="filterProducts()">
+                <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров по названию или вкусу..." oninput="filterProducts()">
             </div>
             <div class="categories-scroll" id="categories-scroll"></div>
             <div class="promo-banner" id="promo-banner">
                 <div>
-                    <h3 id="promo-banner-title">WEEKEND DROP — -20%</h3>
-                    <p id="promo-banner-desc">Свежие линейки и топовые девайсы уже на витрине</p>
+                    <h3 id="promo-banner-title">СКИДКА НЕДЕЛИ -20%</h3>
+                    <p id="promo-banner-desc">Популярные товары и новинки уже в каталоге</p>
                 </div>
-                <div class="promo-badge" id="promo-banner-badge">HOT -20%</div>
+                <div class="promo-badge" id="promo-banner-badge">-20%</div>
             </div>
             <div class="products-grid" id="products-grid"></div>
         </div>
@@ -1526,13 +1646,26 @@
                             <input type="text" id="admin-logo-part1" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 1 (напр. MONKEY)">
                             <input type="text" id="admin-logo-part2" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 2 (напр. VAPE)">
                         </div>
-                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                            <span style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">✨ Эмодзи загрузки:</span>
-                            <input type="text" id="admin-splash-emoji" class="promo-input" style="text-transform:none; font-size:15px; width:68px; text-align:center;" maxlength="8" placeholder="🐵">
+
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:5px;">🖼 Картинка (PNG / логотип) для экрана загрузки:</div>
+                            <input type="file" id="admin-splash-img-file" accept="image/png,image/*" style="display:none;" onchange="handleSplashImageFileSelect(this)">
+                            <input type="hidden" id="admin-splash-image">
+                            <button type="button" class="img-upload-btn" onclick="document.getElementById('admin-splash-img-file').click()">
+                                📷 Выбрать PNG-картинку с устройства
+                            </button>
+                            <div id="admin-splash-img-preview-box" class="img-preview-strip" style="display:none;">
+                                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                    <img id="admin-splash-img-preview" class="img-preview-thumb" style="object-fit:contain; background:rgba(255,255,255,0.06); padding:3px;" src="" alt="Splash Logo">
+                                    <span style="font-size:12px; color:var(--accent-green); font-weight:600;">✅ Картинка установлена</span>
+                                </div>
+                                <button type="button" class="toggle-pill off" onclick="clearSplashImage()">✕ Убрать</button>
+                            </div>
                         </div>
+
                         <div style="margin-bottom:8px;">
                             <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">💬 Приветствие бота по команде /start:</div>
-                            <textarea id="admin-welcome-text" class="broadcast-textarea" style="min-height:68px; margin-bottom:4px; font-size:12px;" placeholder="Привет, {user}! Добро пожаловать в {brand} — актуальное наличие и быстрый заказ..."></textarea>
+                            <textarea id="admin-welcome-text" class="broadcast-textarea" style="min-height:68px; margin-bottom:4px; font-size:12px;" placeholder="Здравствуйте, {user}! Добро пожаловать в {brand}..."></textarea>
                             <div style="font-size:10.5px; color:var(--text-secondary);">Переменные: <b>{user}</b> — имя клиента, <b>{brand}</b> — название магазина</div>
                         </div>
                         <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBranding()">💾 Сохранить бренд и приветствие</button>
@@ -1544,9 +1677,9 @@
                             <button type="button" id="admin-banner-toggle-btn" class="toggle-pill on" onclick="adminToggleBannerEnabled()">🟢 Показан</button>
                         </div>
                         <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
-                            <input type="text" id="admin-banner-title" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Заголовок (напр. AKCIJA - 20%)">
-                            <input type="text" id="admin-banner-desc" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Описание (напр. Топовые жижи недели)">
-                            <input type="text" id="admin-banner-badge" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Бейдж справа (напр. -20% или HOT)">
+                            <input type="text" id="admin-banner-title" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Заголовок (напр. СКИДКА -20%)">
+                            <input type="text" id="admin-banner-desc" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Описание (напр. Популярные товары недели)">
+                            <input type="text" id="admin-banner-badge" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Бейдж справа (напр. -20% или ХИТ)">
                         </div>
                         <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBanner()">💾 Сохранить баннер</button>
                     </div>
@@ -1955,42 +2088,67 @@
     let logoPart1 = localStorage.getItem('monkey_logo_part1') ?? 'MONKEY';
     let logoPart2 = localStorage.getItem('monkey_logo_part2') ?? 'VAPE';
     let splashEmoji = localStorage.getItem('monkey_splash_emoji') || '🐵';
+    let splashImage = localStorage.getItem('monkey_splash_image') || '';
+    let isSplashImageDirty = false;
     let welcomeText = localStorage.getItem('monkey_welcome_text') || '';
 
     function escapeHtml(str) {
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    function syncSplashImagePreview(imgVal) {
+        const hiddenInp = document.getElementById('admin-splash-image');
+        const box = document.getElementById('admin-splash-img-preview-box');
+        const prevImg = document.getElementById('admin-splash-img-preview');
+        const clean = (imgVal || '').trim();
+        if (hiddenInp) hiddenInp.value = clean;
+        if (box && prevImg) {
+            if (clean) {
+                box.style.display = 'flex';
+                prevImg.src = clean;
+            } else {
+                box.style.display = 'none';
+                prevImg.src = '';
+            }
+        }
+    }
+
     function applyLogoBranding() {
         const p1 = (logoPart1 || '').trim();
         const p2 = (logoPart2 || '').trim();
         const em = (splashEmoji || '🐵').trim() || '🐵';
+        const imgSrc = (splashImage || '').trim();
         const htmlLogo = `${escapeHtml(p1)}${p2 ? ` <span>${escapeHtml(p2)}</span>` : ''}` || 'MONKEY <span>VAPE</span>';
         const topEl = document.getElementById('brand-title');
         const splashEl = document.getElementById('splash-logo');
         const splashEmbEl = document.getElementById('splash-emblem');
         if (topEl) topEl.innerHTML = htmlLogo;
         if (splashEl) splashEl.innerHTML = htmlLogo;
-        if (splashEmbEl) splashEmbEl.innerText = em;
+        if (splashEmbEl) {
+            if (imgSrc) {
+                splashEmbEl.innerHTML = `<img src="${escapeHtml(imgSrc)}" alt="Logo" onerror="this.parentElement.textContent='${escapeHtml(em)}'">`;
+            } else {
+                splashEmbEl.textContent = em;
+            }
+        }
         const fullTitle = `${p1} ${p2}`.trim() || 'Monkey Vape';
         document.title = `${fullTitle} — Online Shop`;
 
         const inp1 = document.getElementById('admin-logo-part1');
         const inp2 = document.getElementById('admin-logo-part2');
-        const inpEm = document.getElementById('admin-splash-emoji');
         const inpWel = document.getElementById('admin-welcome-text');
         if (inp1 && document.activeElement !== inp1) inp1.value = p1;
         if (inp2 && document.activeElement !== inp2) inp2.value = p2;
-        if (inpEm && document.activeElement !== inpEm) inpEm.value = em;
+        if (!isSplashImageDirty) syncSplashImagePreview(imgSrc);
         if (inpWel && document.activeElement !== inpWel) inpWel.value = welcomeText;
     }
     applyLogoBranding();
 
     let promoBanner = JSON.parse(localStorage.getItem('monkey_promo_banner')) || {
         enabled: true,
-        title: 'WEEKEND DROP — -20%',
-        desc: 'Свежие линейки и топовые девайсы уже на витрине',
-        badge: 'HOT -20%'
+        title: 'СКИДКА НЕДЕЛИ -20%',
+        desc: 'Популярные товары и новинки уже в каталоге',
+        badge: '-20%'
     };
 
     function applyPromoBannerUI() {
@@ -2061,7 +2219,7 @@
                         </div>
                         <div>
                             <div class="profile-bento-title">Наш канал</div>
-                            <div class="profile-bento-sub">Анонсы, дропы и наличие</div>
+                            <div class="profile-bento-sub">Новости, новинки и наличие</div>
                         </div>
                     </a>
                 `;
@@ -2081,7 +2239,7 @@
                         </div>
                         <div>
                             <div class="profile-bento-title">Отзывы</div>
-                            <div class="profile-bento-sub">Реальные фидбэки клиентов</div>
+                            <div class="profile-bento-sub">Отзывы наших покупателей</div>
                         </div>
                     </a>
                 `;
@@ -2477,11 +2635,31 @@
     window.addEventListener('load', () => {
         initTelegramUser();
         setTimeout(initTelegramUser, 500);
-        setTimeout(() => { const pf = document.getElementById('progress-fill'); if (pf) pf.style.width = '100%'; }, 100);
-        setTimeout(() => {
-            const splash = document.getElementById('splash-screen');
-            if (splash) { splash.style.opacity = '0'; splash.style.transform = 'scale(1.04)'; setTimeout(() => splash.remove(), 550); }
-        }, 1250);
+        const pf = document.getElementById('progress-fill');
+        const pctEl = document.getElementById('splash-percent');
+        const subEl = document.getElementById('splash-sub');
+        let pct = 0;
+        const stepTimer = setInterval(() => {
+            pct = Math.min(100, pct + Math.floor(14 + Math.random() * 18));
+            if (pf) pf.style.width = pct + '%';
+            if (pctEl) pctEl.textContent = pct + '%';
+            if (subEl) {
+                if (pct >= 85) subEl.textContent = 'Почти готово...';
+                else if (pct >= 45) subEl.textContent = 'Проверяем наличие...';
+            }
+            if (pct >= 100) {
+                clearInterval(stepTimer);
+                setTimeout(() => {
+                    const splash = document.getElementById('splash-screen');
+                    if (splash) {
+                        splash.style.opacity = '0';
+                        splash.style.transform = 'scale(1.05)';
+                        splash.style.filter = 'blur(8px)';
+                        setTimeout(() => splash.remove(), 550);
+                    }
+                }, 260);
+            }
+        }, 145);
     });
 
     let cart = JSON.parse(localStorage.getItem('monkey_cart')) || {};
@@ -2571,10 +2749,14 @@
                     }
                 }
 
-                if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined || cfg.splash_emoji !== undefined || cfg.welcome_text !== undefined || cfg.welcome_message !== undefined) {
+                if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined || cfg.splash_emoji !== undefined || cfg.splash_image !== undefined || cfg.welcome_text !== undefined || cfg.welcome_message !== undefined) {
                     if (cfg.logo_part1 !== undefined) logoPart1 = cfg.logo_part1 ?? 'MONKEY';
                     if (cfg.logo_part2 !== undefined) logoPart2 = cfg.logo_part2 ?? 'VAPE';
                     if (cfg.splash_emoji !== undefined) splashEmoji = (cfg.splash_emoji || '🐵').trim() || '🐵';
+                    if (!isSplashImageDirty && cfg.splash_image !== undefined) {
+                        splashImage = (cfg.splash_image || '').trim();
+                        localStorage.setItem('monkey_splash_image', splashImage);
+                    }
                     const srvWelcome = cfg.welcome_text !== undefined ? cfg.welcome_text : cfg.welcome_message;
                     if (srvWelcome !== undefined) welcomeText = srvWelcome || '';
                     localStorage.setItem('monkey_logo_part1', logoPart1);
@@ -2661,7 +2843,7 @@
         if (!grid) return;
         grid.innerHTML = '';
         if (items.length === 0) {
-            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 34px 16px;">По этому запросу пока пусто — попробуй другое название</div>';
+            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 34px 16px;">По этому запросу ничего не найдено — попробуйте другое название</div>';
             return;
         }
         items.forEach(p => {
@@ -2756,10 +2938,10 @@
         grid.innerHTML = '';
 
         subtitle.innerText = prod.category === 'pod'
-            ? 'Выбери расцветку девайса:'
+            ? 'Выберите цвет устройства:'
             : (prod.category === 'accessory'
-                ? 'Выбери сопротивление:'
-                : ((prod.category === 'liquid' || prod.category === 'disposable') ? 'Выбери свой вкус:' : 'Выбери вариант:'));
+                ? 'Выберите сопротивление:'
+                : ((prod.category === 'liquid' || prod.category === 'disposable') ? 'Выберите вкус:' : 'Выберите вариант:'));
 
         const opts = (Array.isArray(prod.options) && prod.options.length > 0)
             ? prod.options
@@ -2906,7 +3088,7 @@
         if (!container) return;
         const items = Object.values(cart);
         if (items.length === 0) {
-            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>В корзине пока пусто — время выбрать что-нибудь топовое</p><button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">Перейти к дропу</button></div>`;
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>В корзине пока пусто</p><button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">Перейти в каталог</button></div>`;
             return;
         }
 
@@ -2951,7 +3133,7 @@
                     </div>
                 ` : `
                     <div class="promo-input-row">
-                        <input type="text" id="promo-input" class="promo-input" value="${escapeHtml(promoInputDraft)}" placeholder="Введи промокод..." oninput="handlePromoInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); applyPromoCode();}">
+                        <input type="text" id="promo-input" class="promo-input" value="${escapeHtml(promoInputDraft)}" placeholder="Введите промокод..." oninput="handlePromoInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); applyPromoCode();}">
                         <button type="button" class="promo-apply-btn" onclick="applyPromoCode()">Применить</button>
                     </div>
                 `}
@@ -3374,6 +3556,61 @@
         syncImagePreviewFromInput(mode);
     }
 
+    function compressSplashLogoToDataUrl(file, maxSize = 256) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width, h = img.height;
+                    if (w > maxSize || h > maxSize) {
+                        if (w > h) {
+                            h = Math.round((h * maxSize) / w);
+                            w = maxSize;
+                        } else {
+                            w = Math.round((w * maxSize) / h);
+                            h = maxSize;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, w, h);
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = reject;
+                img.src = ev.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function handleSplashImageFileSelect(inputEl) {
+        const file = inputEl.files && inputEl.files[0];
+        if (!file) return;
+        try {
+            const pngDataUrl = await compressSplashLogoToDataUrl(file, 256);
+            isSplashImageDirty = true;
+            splashImage = pngDataUrl;
+            localStorage.setItem('monkey_splash_image', splashImage);
+            syncSplashImagePreview(pngDataUrl);
+            showToast("🖼 Картинка выбрана! Нажмите «Сохранить бренд»");
+        } catch (e) {
+            showToast("Не удалось загрузить картинку", true);
+        }
+        inputEl.value = '';
+    }
+
+    function clearSplashImage() {
+        isSplashImageDirty = true;
+        splashImage = '';
+        localStorage.setItem('monkey_splash_image', '');
+        syncSplashImagePreview('');
+    }
+
     // ----- ВКЛАДКА "ИНТЕРФЕЙС" — ПАЛИТРА ЦВЕТОВ ВСЕГО ПРИЛОЖЕНИЯ -----
 
     function renderAdminInterfaceTab() {
@@ -3624,16 +3861,16 @@
         document.activeElement?.blur();
         const p1 = (document.getElementById('admin-logo-part1')?.value || '').trim();
         const p2 = (document.getElementById('admin-logo-part2')?.value || '').trim();
-        const em = (document.getElementById('admin-splash-emoji')?.value || '🐵').trim() || '🐵';
+        const imgVal = (document.getElementById('admin-splash-image')?.value ?? splashImage ?? '').trim();
         const wText = (document.getElementById('admin-welcome-text')?.value || '').trim();
         if (!p1 && !p2) { showToast("Введите хотя бы первую часть названия логотипа", true); return; }
         logoPart1 = p1;
         logoPart2 = p2;
-        splashEmoji = em;
+        splashImage = imgVal;
         welcomeText = wText;
         localStorage.setItem('monkey_logo_part1', logoPart1);
         localStorage.setItem('monkey_logo_part2', logoPart2);
-        localStorage.setItem('monkey_splash_emoji', splashEmoji);
+        localStorage.setItem('monkey_splash_image', splashImage);
         localStorage.setItem('monkey_welcome_text', welcomeText);
         applyLogoBranding();
         try {
@@ -3643,10 +3880,12 @@
                     user_id: Number(currentUserId),
                     logo_part1: p1,
                     logo_part2: p2,
-                    splash_emoji: em,
+                    splash_emoji: splashEmoji,
+                    splash_image: imgVal,
                     welcome_text: wText
                 })
             });
+            isSplashImageDirty = false;
             showToast("✅ Брендинг и приветствие обновлены!");
         } catch (e) { showToast("Ошибка сохранения настроек на сервере", true); }
     }
