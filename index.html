@@ -2774,40 +2774,29 @@
         if (protectedAudioFetchPromises[target]) return protectedAudioFetchPromises[target];
 
         protectedAudioFetchPromises[target] = (async () => {
-            const basesToTry = Array.from(new Set([
-                BACKEND_URL,
-                ...CANDIDATE_BACKENDS
-            ])).filter(Boolean);
-            const apiMatch = target.match(/(\/api\/(?:music|tg_audio)\/[^?#\s]+)/);
-            const urlsToTry = apiMatch
-                ? [target, ...basesToTry.map(b => `${b.replace(/\/+$/, '')}${apiMatch[1]}`)]
-                : [target];
-
-            for (const candidateUrl of Array.from(new Set(urlsToTry))) {
-                try {
-                    const res = await fetch(candidateUrl, {
-                        headers: {
-                            'ngrok-skip-browser-warning': 'true',
-                            'Bypass-Tunnel-Reminder': 'true',
-                            'X-Pinggy-No-Screen': 'true'
-                        }
-                    });
-                    if (res.ok) {
-                        const ctype = (res.headers.get('content-type') || '').toLowerCase();
-                        if (!ctype.includes('text/html')) {
-                            const rawBlob = await res.blob();
-                            if (rawBlob && rawBlob.size > 0) {
-                                const audioBlob = rawBlob.type && rawBlob.type.startsWith('audio/')
-                                    ? rawBlob
-                                    : new Blob([rawBlob], { type: 'audio/mpeg' });
-                                const blobUrl = URL.createObjectURL(audioBlob);
-                                protectedAudioBlobCache[target] = blobUrl;
-                                return blobUrl;
-                            }
+            try {
+                const res = await fetch(target, {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true',
+                        'Bypass-Tunnel-Reminder': 'true',
+                        'X-Pinggy-No-Screen': 'true'
+                    }
+                });
+                if (res.ok) {
+                    const ctype = (res.headers.get('content-type') || '').toLowerCase();
+                    if (!ctype.includes('text/html')) {
+                        const rawBlob = await res.blob();
+                        if (rawBlob && rawBlob.size > 0) {
+                            const audioBlob = rawBlob.type && rawBlob.type.startsWith('audio/')
+                                ? rawBlob
+                                : new Blob([rawBlob], { type: 'audio/mpeg' });
+                            const blobUrl = URL.createObjectURL(audioBlob);
+                            protectedAudioBlobCache[target] = blobUrl;
+                            return blobUrl;
                         }
                     }
-                } catch (_) {}
-            }
+                }
+            } catch (_) {}
             return target;
         })();
 
@@ -3370,54 +3359,46 @@
         drawFrame();
     }
 
-    const urlParamsGlobal = new URLSearchParams(window.location.search);
-    const apiFromUrl = urlParamsGlobal.get('api');
-    if (apiFromUrl) localStorage.setItem('monkey_backend_url', apiFromUrl);
+    try { localStorage.removeItem('monkey_backend_url'); } catch (_) {}
+    const BACKEND_URL = "https://nemeses-july-concrete.ngrok-free.dev";
 
-    const DEFAULT_TUNNEL_URL = "https://nemeses-july-concrete.ngrok-free.dev";
-    let BACKEND_URL = apiFromUrl || DEFAULT_TUNNEL_URL || localStorage.getItem('monkey_backend_url') || "http://127.0.0.1:8000";
-    const CANDIDATE_BACKENDS = Array.from(new Set([
-        apiFromUrl, DEFAULT_TUNNEL_URL, localStorage.getItem('monkey_backend_url'), "http://127.0.0.1:8000", "http://localhost:8000"
-    ])).filter(Boolean);
-
-    function updateServerStatusBadge(connected, activeUrl = "") {
+    function updateServerStatusBadge(connected, activeUrl = BACKEND_URL) {
         const bar = document.getElementById('admin-server-status');
         if (!bar) return;
         bar.className = connected ? "server-status-bar ok" : "server-status-bar err";
-        bar.innerText = connected ? `🟢 Сервер подключен (${activeUrl})` : "🔴 Нет связи с сервером! Проверь туннель и бота.";
+        bar.innerText = connected ? `🟢 Сервер подключен (${activeUrl})` : `🔴 Нет связи с сервером (${activeUrl})`;
     }
 
     async function apiFetch(path, options = {}, expectJson = true) {
         options.headers = Object.assign({
             'Bypass-Tunnel-Reminder': 'true', 'X-Pinggy-No-Screen': 'true', 'ngrok-skip-browser-warning': 'true'
         }, options.headers || {});
-        let lastHttpError = null;
-        for (const base of CANDIDATE_BACKENDS) {
-            if (!base) continue;
-            try {
-                const res = await fetch(`${base}${path}`, options);
-                const ctype = res.headers.get("content-type") || "";
-                if (res.ok) {
-                    if (expectJson && !ctype.includes("application/json")) continue;
-                    BACKEND_URL = base; updateServerStatusBadge(true, base); return res;
+        try {
+            const res = await fetch(`${BACKEND_URL}${path}`, options);
+            const ctype = res.headers.get("content-type") || "";
+            if (res.ok) {
+                if (expectJson && !ctype.includes("application/json")) {
+                    updateServerStatusBadge(false);
+                    throw new Error("Unexpected non-JSON response");
                 }
-                if (ctype.includes("application/json")) {
-                    BACKEND_URL = base;
-                    updateServerStatusBadge(true, base);
-                    let detailText = "";
-                    try {
-                        const errJson = await res.json();
-                        detailText = String(errJson?.detail || "");
-                    } catch (_) {}
-                    const httpErr = new Error(detailText || `HTTP ${res.status}`);
-                    httpErr.status = res.status;
-                    httpErr.detail = detailText;
-                    lastHttpError = httpErr;
-                    break;
-                }
-            } catch (e) {}
+                updateServerStatusBadge(true, BACKEND_URL);
+                return res;
+            }
+            if (ctype.includes("application/json")) {
+                updateServerStatusBadge(true, BACKEND_URL);
+                let detailText = "";
+                try {
+                    const errJson = await res.json();
+                    detailText = String(errJson?.detail || "");
+                } catch (_) {}
+                const httpErr = new Error(detailText || `HTTP ${res.status}`);
+                httpErr.status = res.status;
+                httpErr.detail = detailText;
+                throw httpErr;
+            }
+        } catch (e) {
+            if (e && e.status) throw e;
         }
-        if (lastHttpError) throw lastHttpError;
         updateServerStatusBadge(false);
         throw new Error("Server unreachable");
     }
