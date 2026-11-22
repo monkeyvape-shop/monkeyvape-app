@@ -55,6 +55,21 @@ PRIMARY_OWNER_IDS = [7280921605]
 DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
 DB_FILE = "database.db"
 
+ALLOWED_CURRENCIES = ("р.", "₽", "₸", "$", "₴")
+ALLOWED_DELIVERY_MODES = ("metro", "districts", "pickup", "free_address")
+
+DEFAULT_DELIVERY_LOCATIONS = [
+    "Центральный район",
+    "Советский район",
+    "Первомайский район"
+]
+
+DEFAULT_WELCOME_TEXT = (
+    "Здравствуйте, <b>{user}</b>! Добро пожаловать в <b>{brand}</b> 👋\n\n"
+    "Актуальное наличие и быстрое оформление заказа.\n"
+    "Нажмите кнопку ниже, чтобы открыть каталог:"
+)
+
 DEFAULT_UI_THEME = {
     "bg_color": "#0b0f0c",
     "topbar_bg": "#0b0f0c",
@@ -159,6 +174,29 @@ def normalize_tg_link(raw: str) -> str:
     if val.startswith("http://") or val.startswith("https://"):
         return val
     return f"https://t.me/{val}"
+
+def get_location_label(delivery_mode: str) -> str:
+    mapping = {
+        "metro": "Станция метро",
+        "districts": "Район города",
+        "pickup": "Пункт выдачи",
+        "free_address": "Адрес доставки"
+    }
+    return mapping.get(delivery_mode, "Локация")
+
+def format_location_value(station: str, delivery_mode: str) -> str:
+    st = (station or "").strip()
+    if not st:
+        return ""
+    if delivery_mode == "metro":
+        return st if st.startswith("м.") else f"м. {st}"
+    return st
+
+def render_welcome_message(template_text: str, user_first_name: str, brand_name: str) -> str:
+    tpl = (template_text or "").strip() or DEFAULT_WELCOME_TEXT
+    safe_user = html.escape(user_first_name or "друг")
+    safe_brand = html.escape(brand_name or "Monkey Vape")
+    return tpl.replace("{user}", safe_user).replace("{brand}", safe_brand)
 
 async def get_setting_raw(db, key: str, default: str = "") -> str:
     async with db.execute("SELECT value FROM shop_settings WHERE key = ?", (key,)) as cursor:
@@ -296,12 +334,12 @@ async def notify_stock_subscribers(db, product_id: int, product_title: str, avai
 
         if should_notify:
             to_delete.append(sub_id)
-            opt_part = f" ({html.escape(opt_name)})" if opt_name else ""
+            opt_part = f" • {html.escape(opt_name)}" if opt_name else ""
             try:
                 await bot.send_message(
                     uid,
-                    f"🔔 <b>Товар снова в наличии!</b>\n\n"
-                    f"✨ <b>{html.escape(product_title)}{opt_part}</b> уже доступен для заказа в <b>{html.escape(brand_name)}</b>!",
+                    f"🔔 <b>Пополнение на витрине {html.escape(brand_name)}!</b>\n\n"
+                    f"✨ <b>{html.escape(product_title)}{opt_part}</b> снова в наличии и доступен для заказа.",
                     parse_mode="HTML"
                 )
             except Exception:
@@ -388,6 +426,7 @@ async def init_db():
                 hidden_by_courier INTEGER DEFAULT 0,
                 promo_code TEXT DEFAULT '',
                 discount REAL DEFAULT 0,
+                delivery_fee REAL DEFAULT 0,
                 created_at TEXT DEFAULT '',
                 cancelled_by TEXT DEFAULT '',
                 claimed_by_id INTEGER DEFAULT 0,
@@ -398,6 +437,7 @@ async def init_db():
             "ALTER TABLE orders ADD COLUMN hidden_by_courier INTEGER DEFAULT 0",
             "ALTER TABLE orders ADD COLUMN promo_code TEXT DEFAULT ''",
             "ALTER TABLE orders ADD COLUMN discount REAL DEFAULT 0",
+            "ALTER TABLE orders ADD COLUMN delivery_fee REAL DEFAULT 0",
             "ALTER TABLE orders ADD COLUMN created_at TEXT DEFAULT ''",
             "ALTER TABLE orders ADD COLUMN cancelled_by TEXT DEFAULT ''",
             "ALTER TABLE orders ADD COLUMN claimed_by_id INTEGER DEFAULT 0",
@@ -413,6 +453,21 @@ async def init_db():
             SELECT DISTINCT user_id, user_name, '' FROM orders WHERE user_id > 0
         """)
         await db.execute("CREATE TABLE IF NOT EXISTS shop_settings (key TEXT PRIMARY KEY, value TEXT)")
+
+        default_shop_settings = [
+            ("currency", "р."),
+            ("delivery_mode", "metro"),
+            ("delivery_locations", json.dumps(DEFAULT_DELIVERY_LOCATIONS, ensure_ascii=False)),
+            ("splash_emoji", "🐵"),
+            ("splash_image", ""),
+            ("welcome_text", DEFAULT_WELCOME_TEXT),
+            ("min_order_amount", "0"),
+            ("delivery_fee", "0"),
+            ("free_delivery_threshold", "0"),
+        ]
+        for s_key, s_val in default_shop_settings:
+            await db.execute("INSERT OR IGNORE INTO shop_settings (key, value) VALUES (?, ?)", (s_key, s_val))
+
         await db.execute("""
             CREATE TABLE IF NOT EXISTS promocodes (
                 code TEXT PRIMARY KEY,
@@ -481,6 +536,7 @@ class OrderSchema(BaseModel):
     status: str = "active"
     promo_code: str = ""
     discount: float = 0.0
+    delivery_fee: float = 0.0
     created_at: str = ""
     cancelled_by: str = ""
 
@@ -512,6 +568,27 @@ class AdminBrandingSchema(BaseModel):
     user_id: int
     logo_part1: str
     logo_part2: str = ""
+    splash_emoji: str = ""
+    splash_image: str | None = None
+    welcome_text: str = ""
+
+class AdminLocalizationSchema(BaseModel):
+    user_id: int
+    currency: str = "р."
+    delivery_mode: str = "metro"
+    delivery_locations: list = []
+    splash_emoji: str = "🐵"
+    splash_image: str | None = None
+    welcome_text: str = ""
+    min_order_amount: float | None = None
+    delivery_fee: float | None = None
+    free_delivery_threshold: float | None = None
+
+class AdminDeliveryPricingSchema(BaseModel):
+    user_id: int
+    min_order_amount: float = 0.0
+    delivery_fee: float = 0.0
+    free_delivery_threshold: float = 0.0
 
 class AdminUiThemeSchema(BaseModel):
     user_id: int
@@ -652,17 +729,31 @@ async def get_shop_config():
         categories = await get_categories_list(db)
         ui_theme = await get_ui_theme_dict(db)
         shop_open_raw = await get_setting_raw(db, "shop_open", "1")
-        closed_message = await get_setting_raw(db, "closed_message", "Магазин сейчас не работает, попробуйте позже.")
+        closed_message = await get_setting_raw(db, "closed_message", "Витрина сейчас на паузе, скоро вернёмся в онлайн.")
         season_effect = await get_setting_raw(db, "season_effect", "none")
         hit_color = await get_setting_raw(db, "hit_color", "#ffcc00")
         logo_part1 = await get_setting_raw(db, "logo_part1", "MONKEY")
         logo_part2 = await get_setting_raw(db, "logo_part2", "VAPE")
+        currency = await get_setting_raw(db, "currency", "р.")
+        if currency not in ALLOWED_CURRENCIES:
+            currency = "р."
+        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
+        if delivery_mode not in ALLOWED_DELIVERY_MODES:
+            delivery_mode = "metro"
+        delivery_locations = await get_setting_list(db, "delivery_locations", DEFAULT_DELIVERY_LOCATIONS)
+        splash_emoji = (await get_setting_raw(db, "splash_emoji", "🐵")).strip() or "🐵"
+        splash_image = (await get_setting_raw(db, "splash_image", "")).strip()
+        welcome_text = await get_setting_raw(db, "welcome_text", DEFAULT_WELCOME_TEXT)
+        min_order_amount = float(await get_setting_raw(db, "min_order_amount", "0") or 0)
+        delivery_fee = float(await get_setting_raw(db, "delivery_fee", "0") or 0)
+        free_delivery_threshold = float(await get_setting_raw(db, "free_delivery_threshold", "0") or 0)
+
         news_channel_url = await get_setting_raw(db, "news_channel_url", "")
         reviews_channel_url = await get_setting_raw(db, "reviews_channel_url", "")
         support_username = await get_setting_raw(db, "support_username", "@warat_24")
         banner_enabled = await get_setting_raw(db, "banner_enabled", "1") == "1"
-        banner_title = await get_setting_raw(db, "banner_title", "AKCIJA - 20%")
-        banner_desc = await get_setting_raw(db, "banner_desc", "Топовые жижи и устройства недели")
+        banner_title = await get_setting_raw(db, "banner_title", "СКИДКА НЕДЕЛИ -20%")
+        banner_desc = await get_setting_raw(db, "banner_desc", "Популярные товары и новинки уже в каталоге")
         banner_badge = await get_setting_raw(db, "banner_badge", "-20%")
         banned_users = [int(x) for x in await get_setting_list(db, "banned_users")]
         owner_ids = await get_all_owner_ids(db)
@@ -708,6 +799,15 @@ async def get_shop_config():
             "ui_theme": ui_theme,
             "logo_part1": logo_part1,
             "logo_part2": logo_part2,
+            "currency": currency,
+            "delivery_mode": delivery_mode,
+            "delivery_locations": delivery_locations,
+            "splash_emoji": splash_emoji,
+            "splash_image": splash_image,
+            "welcome_text": welcome_text,
+            "min_order_amount": min_order_amount,
+            "delivery_fee": delivery_fee,
+            "free_delivery_threshold": free_delivery_threshold,
             "news_channel_url": news_channel_url,
             "reviews_channel_url": reviews_channel_url,
             "support_username": support_username,
@@ -756,8 +856,81 @@ async def update_admin_branding(data: AdminBrandingSchema):
             raise HTTPException(status_code=400, detail="Logo cannot be empty")
         await set_setting_raw(db, "logo_part1", p1)
         await set_setting_raw(db, "logo_part2", p2)
+        if data.splash_emoji.strip():
+            await set_setting_raw(db, "splash_emoji", data.splash_emoji.strip())
+        if data.splash_image is not None:
+            await set_setting_raw(db, "splash_image", data.splash_image.strip())
+        if data.welcome_text is not None:
+            w_clean = data.welcome_text.strip()
+            await set_setting_raw(db, "welcome_text", w_clean if w_clean else DEFAULT_WELCOME_TEXT)
         await db.commit()
     return {"success": True}
+
+@app.post("/api/admin/localization")
+async def update_admin_localization(data: AdminLocalizationSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+
+        cur = data.currency.strip() if data.currency.strip() in ALLOWED_CURRENCIES else "р."
+        dmode = data.delivery_mode.strip() if data.delivery_mode.strip() in ALLOWED_DELIVERY_MODES else "metro"
+
+        clean_locs = []
+        seen = set()
+        for item in (data.delivery_locations or []):
+            name = item.get("name", "") if isinstance(item, dict) else str(item or "")
+            name = name.strip()
+            if name and name.lower() not in seen:
+                seen.add(name.lower())
+                clean_locs.append(name)
+
+        emoji = (data.splash_emoji or "").strip() or "🐵"
+        w_text = (data.welcome_text or "").strip() or DEFAULT_WELCOME_TEXT
+
+        await set_setting_raw(db, "currency", cur)
+        await set_setting_raw(db, "delivery_mode", dmode)
+        await set_setting_list(db, "delivery_locations", clean_locs)
+        await set_setting_raw(db, "splash_emoji", emoji)
+        if data.splash_image is not None:
+            await set_setting_raw(db, "splash_image", data.splash_image.strip())
+        await set_setting_raw(db, "welcome_text", w_text)
+
+        if data.min_order_amount is not None:
+            await set_setting_raw(db, "min_order_amount", str(max(0.0, round(float(data.min_order_amount), 2))))
+        if data.delivery_fee is not None:
+            await set_setting_raw(db, "delivery_fee", str(max(0.0, round(float(data.delivery_fee), 2))))
+        if data.free_delivery_threshold is not None:
+            await set_setting_raw(db, "free_delivery_threshold", str(max(0.0, round(float(data.free_delivery_threshold), 2))))
+
+        await db.commit()
+
+    return {
+        "success": True,
+        "currency": cur,
+        "delivery_mode": dmode,
+        "delivery_locations": clean_locs,
+        "splash_emoji": emoji,
+        "welcome_text": w_text
+    }
+
+@app.post("/api/admin/delivery_pricing")
+async def update_admin_delivery_pricing(data: AdminDeliveryPricingSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        min_amt = max(0.0, round(float(data.min_order_amount or 0.0), 2))
+        d_fee = max(0.0, round(float(data.delivery_fee or 0.0), 2))
+        free_thr = max(0.0, round(float(data.free_delivery_threshold or 0.0), 2))
+        await set_setting_raw(db, "min_order_amount", str(min_amt))
+        await set_setting_raw(db, "delivery_fee", str(d_fee))
+        await set_setting_raw(db, "free_delivery_threshold", str(free_thr))
+        await db.commit()
+    return {
+        "success": True,
+        "min_order_amount": min_amt,
+        "delivery_fee": d_fee,
+        "free_delivery_threshold": free_thr
+    }
 
 @app.post("/api/admin/channels")
 async def update_admin_channels(data: AdminChannelsSchema):
@@ -879,7 +1052,7 @@ async def admin_shop_status(data: AdminShopStatusSchema):
         try:
             await bot.send_message(
                 uid,
-                f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>\n\nТеперь вы можете оформить свой заказ в мини-приложении.",
+                f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>\n\nТеперь вы можете оформить заказ в каталоге.",
                 parse_mode="HTML"
             )
             await asyncio.sleep(0.05)
@@ -1232,12 +1405,41 @@ async def create_order(order: OrderSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         shop_open_raw = await get_setting_raw(db, "shop_open", "1")
         if shop_open_raw != "1":
-            closed_msg = await get_setting_raw(db, "closed_message", "Магазин сейчас не работает, попробуйте позже.")
+            closed_msg = await get_setting_raw(db, "closed_message", "Витрина сейчас на паузе, скоро вернёмся в онлайн.")
             raise HTTPException(status_code=403, detail=closed_msg)
 
         banned = [int(x) for x in await get_setting_list(db, "banned_users")]
         if int(order.user_id) in banned:
             raise HTTPException(status_code=403, detail="Ваш аккаунт заблокирован в магазине.")
+
+        currency = await get_setting_raw(db, "currency", "р.")
+        if currency not in ALLOWED_CURRENCIES:
+            currency = "р."
+        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
+        if delivery_mode not in ALLOWED_DELIVERY_MODES:
+            delivery_mode = "metro"
+
+        min_order_amount = float(await get_setting_raw(db, "min_order_amount", "0") or 0)
+        configured_delivery_fee = float(await get_setting_raw(db, "delivery_fee", "0") or 0)
+        free_delivery_threshold = float(await get_setting_raw(db, "free_delivery_threshold", "0") or 0)
+
+        items_subtotal = round(sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in order.items), 2)
+        if min_order_amount > 0 and items_subtotal + 1e-6 < min_order_amount:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Минимальная сумма заказа: {min_order_amount:.2f} {currency}"
+            )
+
+        if configured_delivery_fee > 0:
+            if free_delivery_threshold > 0 and items_subtotal >= free_delivery_threshold:
+                applied_delivery_fee = 0.0
+            else:
+                applied_delivery_fee = round(configured_delivery_fee, 2)
+        else:
+            applied_delivery_fee = 0.0
+
+        net_items_total = max(0.0, round(items_subtotal - float(order.discount or 0.0), 2))
+        final_total = round(net_items_total + applied_delivery_fee, 2)
 
         if order.user_id > 0:
             await db.execute(
@@ -1257,32 +1459,39 @@ async def create_order(order: OrderSchema):
 
         await db.execute(
             """INSERT OR REPLACE INTO orders 
-               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, created_at, cancelled_by, claimed_by_id, claimed_by_name)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, '', 0, '')""",
+               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, delivery_fee, created_at, cancelled_by, claimed_by_id, claimed_by_name)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, '', 0, '')""",
             (
                 order_id, order.user_id, order.user_name, order.station, order.time,
-                order.total, json.dumps(order.items), order.status, order.promo_code, order.discount, created_at
+                final_total, json.dumps(order.items), order.status, order.promo_code, order.discount, applied_delivery_fee, created_at
             )
         )
         all_couriers = await get_all_courier_ids(db)
         all_owners = await get_all_owner_ids(db)
         await db.commit()
 
+    safe_cur = html.escape(currency)
     safe_user = html.escape(order.user_name or "User")
-    safe_station = html.escape(order.station or "")
+    loc_label = html.escape(get_location_label(delivery_mode))
+    loc_value = html.escape(format_location_value(order.station, delivery_mode))
     safe_time = html.escape(order.time or "")
-    items_str = "\n".join([f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} р." for i in order.items])
-    promo_line = f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{order.discount:.2f} р.)" if order.promo_code else ""
+    items_str = "\n".join([f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} {safe_cur}" for i in order.items])
+    promo_line = f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{order.discount:.2f} {safe_cur})" if order.promo_code else ""
+    if applied_delivery_fee > 0:
+        deliv_line = f"\n🚚 <b>Доставка:</b> {applied_delivery_fee:.2f} {safe_cur}"
+    elif configured_delivery_fee > 0 and free_delivery_threshold > 0:
+        deliv_line = f"\n🚚 <b>Доставка:</b> бесплатно (от {free_delivery_threshold:.2f} {safe_cur})"
+    else:
+        deliv_line = ""
 
     courier_text = (
         f"🛵 <b>Новый заказ #{html.escape(order_id)}!</b>\n\n"
-        f"👤 <b>Покупатель:</b> {safe_user}\n"
-        f"🆔 <b>ID покупателя:</b> <code>{order.user_id}</code>\n"
-        f"🚇 <b>Станция:</b> м. {safe_station}\n"
+        f"👤 <b>Покупатель:</b> {safe_user} (<code>{order.user_id}</code>)\n"
+        f"📍 <b>{loc_label}:</b> {loc_value}\n"
         f"⏰ <b>Время встречи:</b> {safe_time}\n"
-        f"💰 <b>Итого:</b> {order.total:.2f} р.\n\n"
-        f"📦 <b>Состав:</b>\n{items_str}{promo_line}\n\n"
-        f"Зайдите в мини-приложение во вкладку <b>«Курьер»</b>, чтобы взять заказ в работу."
+        f"💰 <b>К получению:</b> {final_total:.2f} {safe_cur}\n\n"
+        f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}{deliv_line}\n\n"
+        f"Откройте вкладку <b>«Курьер»</b> в приложении, чтобы взять заказ в работу."
     )
 
     for cid in all_couriers:
@@ -1295,15 +1504,14 @@ async def create_order(order: OrderSchema):
         except Exception as e:
             print(f"[ERR] Курьер {cid}: {e}")
 
-    # При оформлении заказа отправляем покупателю только детали заказа (ссылки на отзывы и новости приходят после выдачи)
     user_text = (
-        f"✅ <b>Спасибо за заказ #{html.escape(order_id)}!</b>\n"
+        f"✨ <b>Заказ #{html.escape(order_id)} принят!</b>\n"
         f"📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n"
-        f"🚇 <b>Станция метро:</b> м. {safe_station}\n"
+        f"📍 <b>{loc_label}:</b> {loc_value}\n"
         f"⏰ <b>Время встречи:</b> {safe_time}\n\n"
-        f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}\n\n"
-        f"💰 <b>Итого к оплате:</b> {order.total:.2f} р.\n\n"
-        f"Ожидайте курьера. Статус заказа можно отслеживать во вкладке <b>«Заказы»</b>."
+        f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}{deliv_line}\n\n"
+        f"💰 <b>Итого к оплате:</b> {final_total:.2f} {safe_cur}\n\n"
+        f"Заказ передан курьеру. Отслеживать статус можно во вкладке <b>«Заказы»</b>."
     )
 
     if order.user_id:
@@ -1312,7 +1520,7 @@ async def create_order(order: OrderSchema):
         except Exception as e:
             print(f"[ERR] Покупатель {order.user_id}: {e}")
 
-    return {"success": True, "order_id": order_id}
+    return {"success": True, "order_id": order_id, "total": final_total, "delivery_fee": applied_delivery_fee}
 
 @app.post("/api/courier/claim_order")
 async def courier_claim_order(data: CourierClaimSchema):
@@ -1320,6 +1528,7 @@ async def courier_claim_order(data: CourierClaimSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_courier(db, data.courier_id):
             raise HTTPException(status_code=403, detail="Нет прав курьера")
+        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
         async with db.execute("SELECT user_id, claimed_by_id, claimed_by_name, station, time, status FROM orders WHERE id = ?", (oid,)) as cur:
             row = await cur.fetchone()
         if not row:
@@ -1336,13 +1545,15 @@ async def courier_claim_order(data: CourierClaimSchema):
         )
         await db.commit()
 
+    loc_label = html.escape(get_location_label(delivery_mode))
+    loc_value = html.escape(format_location_value(station, delivery_mode))
     if buyer_id and current_cid == 0:
         try:
             await bot.send_message(
                 buyer_id,
-                f"🛵 <b>Курьер взял ваш заказ #{html.escape(oid)} в работу!</b>\n"
+                f"🛵 <b>Курьер уже везёт ваш заказ #{html.escape(oid)}!</b>\n"
                 f"👤 Курьер: {html.escape(data.courier_name)}\n"
-                f"🚇 Станция: м. {html.escape(station)} в {html.escape(time_str)}",
+                f"📍 {loc_label}: {loc_value} в {html.escape(time_str)}",
                 parse_mode="HTML"
             )
         except Exception:
@@ -1353,6 +1564,7 @@ async def courier_claim_order(data: CourierClaimSchema):
 async def courier_arrived(data: CourierArrivedSchema):
     oid = str(data.order_id).strip()
     async with aiosqlite.connect(DB_FILE) as db:
+        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
         async with db.execute("SELECT user_id, station, claimed_by_id FROM orders WHERE id = ?", (oid,)) as cur:
             row = await cur.fetchone()
     if not row:
@@ -1361,11 +1573,12 @@ async def courier_arrived(data: CourierArrivedSchema):
     if claimed_id != 0 and data.courier_id and claimed_id != int(data.courier_id):
         raise HTTPException(status_code=403, detail="Этот заказ ведёт другой курьер")
 
+    loc_value = html.escape(format_location_value(station, delivery_mode))
     if buyer_id:
         try:
             await bot.send_message(
                 buyer_id,
-                f"📍 <b>Курьер прибыл на станцию м. {html.escape(station)}!</b>\n"
+                f"📍 <b>Курьер на месте ({loc_value})!</b>\n"
                 f"Заказ #{html.escape(oid)} ожидает вас на месте встречи.",
                 parse_mode="HTML"
             )
@@ -1390,6 +1603,7 @@ async def get_orders(courier_id: int = 0):
                     "items": json.loads(row["items"]), "status": row["status"],
                     "time_changed": bool(row["time_changed"]), "hidden_by_courier": bool(row["hidden_by_courier"]),
                     "promo_code": row["promo_code"] or "", "discount": row["discount"] or 0.0,
+                    "delivery_fee": row["delivery_fee"] or 0.0,
                     "created_at": row["created_at"] or "", "cancelled_by": row["cancelled_by"] or "",
                     "claimed_by_id": c_id, "claimed_by_name": row["claimed_by_name"] or ""
                 })
@@ -1405,7 +1619,8 @@ async def get_user_orders(user_id: int):
                 "station": row["station"], "time": row["time"], "total": row["total"],
                 "items": json.loads(row["items"]), "status": row["status"],
                 "time_changed": bool(row["time_changed"]), "promo_code": row["promo_code"] or "",
-                "discount": row["discount"] or 0.0, "created_at": row["created_at"] or "",
+                "discount": row["discount"] or 0.0, "delivery_fee": row["delivery_fee"] or 0.0,
+                "created_at": row["created_at"] or "",
                 "cancelled_by": row["cancelled_by"] or "",
                 "claimed_by_id": row["claimed_by_id"] or 0, "claimed_by_name": row["claimed_by_name"] or ""
             } for row in await cursor.fetchall()]
@@ -1414,6 +1629,7 @@ async def get_user_orders(user_id: int):
 async def update_order_status(data: StatusUpdateSchema):
     cancelled_by = data.cancelled_by if data.status == 'cancelled' else ''
     async with aiosqlite.connect(DB_FILE) as db:
+        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
         async with db.execute("SELECT user_id, user_name, station, time, claimed_by_id FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
             row = await cursor.fetchone()
         if not row:
@@ -1440,32 +1656,32 @@ async def update_order_status(data: StatusUpdateSchema):
         await db.commit()
 
         safe_user = html.escape(user_name or "User")
-        safe_station = html.escape(station or "")
+        loc_value = html.escape(format_location_value(station, delivery_mode))
         if data.status == 'cancelled':
             who_text = "Отменено клиентом" if cancelled_by == 'client' else ("Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён")
             if user_id:
                 try:
-                    await bot.send_message(user_id, f"❌ Заказ #{html.escape(str(data.order_id))} ({who_text}).")
+                    await bot.send_message(user_id, f"❌ Заказ #{html.escape(str(data.order_id))} — <b>{who_text}</b>.", parse_mode="HTML")
                 except Exception:
                     pass
             notify_targets = [existing_claimed_id] if (existing_claimed_id != 0 and cancelled_by == 'client') else all_couriers
             for cid in notify_targets:
                 if cid:
                     try:
-                        await bot.send_message(cid, f"❌ Заказ #{html.escape(str(data.order_id))} ({safe_user}, м. {safe_station}) — <b>{who_text}</b>.", parse_mode="HTML")
+                        await bot.send_message(cid, f"❌ Заказ #{html.escape(str(data.order_id))} ({safe_user}, {loc_value}) — <b>{who_text}</b>.", parse_mode="HTML")
                     except Exception:
                         pass
         elif data.status == 'completed':
             if user_id:
                 try:
-                    completed_msg = f"✅ <b>Ваш заказ #{html.escape(str(data.order_id))} выдан! Спасибо за покупку.</b>"
+                    completed_msg = f"🎉 <b>Заказ #{html.escape(str(data.order_id))} успешно выдан! Спасибо, что выбираешь нас.</b>"
                     kb_rows = []
                     if reviews_url:
-                        completed_msg += f"\n\n⭐ <b>Оставьте, пожалуйста, отзыв о заказе:</b>\n{html.escape(reviews_url)}"
+                        completed_msg += f"\n\n⭐ <b>Будем рады твоему отзыву о заказе:</b>\n{html.escape(reviews_url)}"
                         kb_rows.append([InlineKeyboardButton(text="⭐ Оставить отзыв", url=reviews_url)])
                     if news_url:
-                        completed_msg += f"\n\n✈️ <b>Канал с нашими новостями:</b>\n{html.escape(news_url)}"
-                        kb_rows.append([InlineKeyboardButton(text="✈️ Telegram-канал новости", url=news_url)])
+                        completed_msg += f"\n\n✈️ <b>Следите за новостями и поступлениями в канале:</b>\n{html.escape(news_url)}"
+                        kb_rows.append([InlineKeyboardButton(text="✈️ Канал с новостями", url=news_url)])
                     markup = InlineKeyboardMarkup(inline_keyboard=kb_rows) if kb_rows else None
                     await bot.send_message(user_id, completed_msg, parse_mode="HTML", reply_markup=markup)
                 except Exception:
@@ -1482,6 +1698,7 @@ async def delete_completed_order(data: DeleteOrderSchema):
 @app.post("/api/update_order_time")
 async def update_order_time(data: TimeUpdateSchema):
     async with aiosqlite.connect(DB_FILE) as db:
+        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
         await db.execute("UPDATE orders SET time = ?, time_changed = 1 WHERE id = ?", (data.time, str(data.order_id)))
         all_couriers = await get_all_courier_ids(db)
         await db.commit()
@@ -1491,15 +1708,16 @@ async def update_order_time(data: TimeUpdateSchema):
             if row:
                 user_id, user_name, station, claimed_id = row[0], row[1], row[2], int(row[3] or 0)
                 safe_user = html.escape(user_name or "User")
-                safe_station = html.escape(station or "")
+                loc_label = html.escape(get_location_label(delivery_mode))
+                loc_value = html.escape(format_location_value(station, delivery_mode))
                 targets = [claimed_id] if claimed_id != 0 else all_couriers
                 for cid in targets:
                     try:
                         await bot.send_message(
                             cid,
-                            f"⏰ <b>Покупатель изменил время заказа #{html.escape(str(data.order_id))}</b>\n"
-                            f"👤 Покупатель: {safe_user} (ID: <code>{user_id}</code>)\n"
-                            f"🚇 Станция: м. {safe_station}\n"
+                            f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n"
+                            f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
+                            f"📍 {loc_label}: {loc_value}\n"
                             f"🕒 Новое время: <b>{html.escape(data.time)}</b>",
                             parse_mode="HTML"
                         )
@@ -1525,8 +1743,8 @@ async def handle_owner_photo_upload(message: Message):
     base = PUBLIC_TUNNEL_URL.strip().rstrip("/")
     photo_url = f"{base}/api/tg_photo/{file_id}"
     await message.answer(
-        f"🖼 <b>Ссылка на фото для товара готова!</b>\n\n"
-        f"Также вы можете выбрать фото прямо из галереи в админ-панели без ссылок, либо вставить эту ссылку:\n"
+        f"🖼 <b>Прямая ссылка на фото готова!</b>\n\n"
+        f"Можешь выбрать фото прямо из галереи в админ-панели или вставить эту ссылку:\n"
         f"<code>{html.escape(photo_url)}</code>",
         parse_mode="HTML"
     )
@@ -1554,6 +1772,7 @@ async def cmd_owner_stats(message: Message):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, message.from_user.id):
             return
+        currency = html.escape(await get_setting_raw(db, "currency", "р."))
         now = datetime.now()
         today_prefix = now.strftime("%d.%m.%Y")
         week_ago = now - timedelta(days=7)
@@ -1583,12 +1802,12 @@ async def cmd_owner_stats(message: Message):
             subs_cnt = u_row[0] if u_row else 0
 
     await message.answer(
-        f"📊 <b>Сводка магазина:</b>\n\n"
-        f"📅 <b>Сегодня:</b> {today_rev:.2f} р. ({today_cnt} зак.)\n"
-        f"🗓 <b>За 7 дней:</b> {week_rev:.2f} р. ({week_cnt} зак.)\n"
-        f"💰 <b>Всего выручка:</b> {total_rev:.2f} р. ({total_cnt} зак.)\n"
+        f"📊 <b>Аналитика витрины:</b>\n\n"
+        f"📅 <b>Сегодня:</b> {today_rev:.2f} {currency} ({today_cnt} зак.)\n"
+        f"🗓 <b>За 7 дней:</b> {week_rev:.2f} {currency} ({week_cnt} зак.)\n"
+        f"💰 <b>Всего выручка:</b> {total_rev:.2f} {currency} ({total_cnt} зак.)\n"
         f"🛵 <b>Активных заказов:</b> {active_cnt}\n"
-        f"👥 <b>Пользователей в базе:</b> {subs_cnt}",
+        f"👥 <b>Аудитория бота:</b> {subs_cnt} чел.",
         parse_mode="HTML"
     )
 
@@ -1611,13 +1830,13 @@ async def cmd_owner_open_shop(message: Message):
         try:
             await bot.send_message(
                 uid,
-                f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>\n\nТеперь вы можете оформить свой заказ в мини-приложении.",
+                f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>\n\nТеперь вы можете оформить заказ в каталоге.",
                 parse_mode="HTML"
             )
             await asyncio.sleep(0.05)
         except Exception:
             pass
-    await message.answer("🟢 <b>Магазин открыт!</b> Приём заказов включён.", parse_mode="HTML")
+    await message.answer("🟢 <b>Витрина открыта!</b> Приём заказов возобновлён.", parse_mode="HTML")
 
 @dp.message(F.text.startswith("/close"))
 async def cmd_owner_close_shop(message: Message):
@@ -1628,9 +1847,9 @@ async def cmd_owner_close_shop(message: Message):
         reason = message.text[6:].strip()
         if reason:
             await set_setting_raw(db, "closed_message", reason)
-        cur_msg = await get_setting_raw(db, "closed_message", "Магазин сейчас не работает, попробуйте позже.")
+        cur_msg = await get_setting_raw(db, "closed_message", "Витрина сейчас на паузе, скоро вернёмся в онлайн.")
         await db.commit()
-    await message.answer(f"🔴 <b>Магазин закрыт!</b>\nСообщение для клиентов: <i>{html.escape(cur_msg)}</i>", parse_mode="HTML")
+    await message.answer(f"🔴 <b>Витрина закрыта!</b>\nСтатус для клиентов: <i>{html.escape(cur_msg)}</i>", parse_mode="HTML")
 
 @dp.message(F.text.startswith("/post"))
 async def cmd_post_broadcast(message: Message):
@@ -1643,16 +1862,16 @@ async def cmd_post_broadcast(message: Message):
     inline_text = message.text[5:].strip()
     if not message.reply_to_message and not inline_text:
         await message.answer(
-            "📢 <b>Как сделать рассылку:</b>\n\n"
+            "📢 <b>Как запустить рассылку:</b>\n\n"
             "1. Отправь боту готовый пост (текст, фото, видео или кружочек).\n"
             "2. Нажми <b>«Ответить» (Reply)</b> на это сообщение и напиши <code>/post</code>.\n\n"
-            "<i>Либо напиши сразу:</i> <code>/post Текст объявления</code>",
+            "<i>Или отправь сразу:</i> <code>/post Текст объявления</code>",
             parse_mode="HTML"
         )
         return
 
     user_ids = [r[0] for r in rows]
-    status_msg = await message.answer(f"⏳ Начинаю рассылку по базе ({len(user_ids)} чел.)...")
+    status_msg = await message.answer(f"⏳ Запускаю рассылку по базе ({len(user_ids)} чел.)...")
 
     sent = failed = 0
     for uid in user_ids:
@@ -1678,14 +1897,15 @@ async def cmd_post_broadcast(message: Message):
     await status_msg.edit_text(
         f"✅ <b>Рассылка завершена!</b>\n\n"
         f"📨 Доставлено: <b>{sent}</b>\n"
-        f"🚫 Заблокировали бота / недоступны: <b>{failed}</b>",
+        f"🚫 Недоступны / заблокировали бота: <b>{failed}</b>",
         parse_mode="HTML"
     )
 
 @dp.message(F.text == "/start")
 async def cmd_start(message: Message):
     uid = message.from_user.id
-    uname = f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "User")
+    first_name = message.from_user.first_name or "друг"
+    uname = f"@{message.from_user.username}" if message.from_user.username else first_name
     now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
 
     async with aiosqlite.connect(DB_FILE) as db:
@@ -1696,6 +1916,7 @@ async def cmd_start(message: Message):
         is_own = await check_is_owner(db, uid)
         is_cour = await check_is_courier(db, uid)
         brand_name = await get_shop_brand_name(db)
+        welcome_tpl = await get_setting_raw(db, "welcome_text", DEFAULT_WELCOME_TEXT)
         await db.commit()
 
     personal_url = build_personal_url(uid, uname, is_owner=is_own, is_courier=is_cour)
@@ -1707,15 +1928,23 @@ async def cmd_start(message: Message):
     except Exception:
         pass
 
+    welcome_rendered = render_welcome_message(welcome_tpl, first_name, brand_name)
     kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=f"🛒 Открыть {brand_name}", web_app=WebAppInfo(url=personal_url))]],
+        keyboard=[[KeyboardButton(text=f"🛍 Открыть {brand_name}", web_app=WebAppInfo(url=personal_url))]],
         resize_keyboard=True
     )
-    await message.answer(
-        f"👋 Добро пожаловать в <b>{html.escape(brand_name)}</b>!\n\nНажми кнопку ниже, чтобы открыть каталог и сделать заказ.",
-        reply_markup=kb,
-        parse_mode="HTML"
-    )
+    try:
+        await message.answer(
+            welcome_rendered,
+            reply_markup=kb,
+            parse_mode="HTML"
+        )
+    except Exception:
+        plain_fallback = (welcome_tpl or DEFAULT_WELCOME_TEXT).replace("{user}", first_name).replace("{brand}", brand_name)
+        await message.answer(
+            plain_fallback,
+            reply_markup=kb
+        )
 
 async def main():
     asyncio.create_task(dp.start_polling(bot))
