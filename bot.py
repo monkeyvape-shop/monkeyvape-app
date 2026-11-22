@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import csv
 import hmac
 import html
@@ -86,6 +87,7 @@ PUBLIC_TUNNEL_URL = load_tunnel_url()
 PRIMARY_OWNER_IDS = load_primary_owner_ids_from_env()
 DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
 DB_FILE = "database.db"
+AUDIO_DIR = "uploaded_audio"
 
 ALLOWED_CURRENCIES = ("р.", "₽", "₸", "$", "₴")
 ALLOWED_DELIVERY_MODES = ("metro", "districts", "pickup", "free_address")
@@ -577,6 +579,10 @@ async def init_db():
                     "INSERT INTO promocodes (code, discount, discount_type, max_uses, used_count) VALUES (?, ?, 'rub', 0, 0)",
                     ("MONKEY3", 3.0)
                 )
+        try:
+            os.makedirs(AUDIO_DIR, exist_ok=True)
+        except Exception:
+            pass
         await db.commit()
 
 async def apply_auto_schedule_tick():
@@ -706,6 +712,14 @@ class AdminMusicSchema(BaseModel):
     music_url: str = ""
     music_title: str = "Фоновый трек"
     music_volume: float = 0.35
+
+class AdminMusicUploadSchema(BaseModel):
+    user_id: int
+    filename: str = "track.mp3"
+    data_base64: str = ""
+    music_title: str = ""
+    music_enabled: bool = True
+    music_volume: float | None = None
 
 class AdminLocalizationSchema(BaseModel):
     user_id: int
@@ -1037,6 +1051,107 @@ async def update_admin_branding(data: AdminBrandingSchema):
             await set_setting_raw(db, "welcome_text", w_clean if w_clean else DEFAULT_WELCOME_TEXT)
         await db.commit()
     return {"success": True}
+
+def _detect_audio_media_type(filename: str) -> str:
+    ext = os.path.splitext((filename or "").lower())[1]
+    return {
+        ".mp3": "audio/mpeg",
+        ".ogg": "audio/ogg",
+        ".oga": "audio/ogg",
+        ".wav": "audio/wav",
+        ".m4a": "audio/mp4",
+        ".aac": "audio/aac",
+        ".webm": "audio/webm",
+        ".flac": "audio/flac",
+    }.get(ext, "audio/mpeg")
+
+def _sanitize_audio_ext(filename: str, raw_b64: str) -> str:
+    ext = os.path.splitext((filename or "").lower())[1]
+    if ext in (".mp3", ".ogg", ".oga", ".wav", ".m4a", ".aac", ".webm", ".flac"):
+        return ".ogg" if ext == ".oga" else ext
+    low = (raw_b64[:80] or "").lower()
+    if "audio/ogg" in low:
+        return ".ogg"
+    if "audio/wav" in low:
+        return ".wav"
+    if "audio/mp4" in low or "audio/m4a" in low:
+        return ".m4a"
+    if "audio/webm" in low:
+        return ".webm"
+    return ".mp3"
+
+@app.post("/api/admin/upload_music")
+async def upload_admin_music(data: AdminMusicUploadSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        raw_payload = (data.data_base64 or "").strip()
+        if not raw_payload:
+            raise HTTPException(status_code=400, detail="Пустой аудиофайл")
+        if "," in raw_payload and raw_payload.startswith("data:"):
+            raw_payload = raw_payload.split(",", 1)[1]
+        try:
+            audio_bytes = base64.b64decode(raw_payload, validate=False)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Некорректный формат аудиоданных")
+        if not audio_bytes or len(audio_bytes) > 25 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Размер аудиофайла должен быть от 1 Б до 25 МБ")
+
+        os.makedirs(AUDIO_DIR, exist_ok=True)
+        for old_f in os.listdir(AUDIO_DIR):
+            old_path = os.path.join(AUDIO_DIR, old_f)
+            if os.path.isfile(old_path):
+                try:
+                    os.remove(old_path)
+                except Exception:
+                    pass
+
+        ext = _sanitize_audio_ext(data.filename, data.data_base64)
+        stored_name = f"track_{int(time.time())}{ext}"
+        disk_path = os.path.join(AUDIO_DIR, stored_name)
+        with open(disk_path, "wb") as f:
+            f.write(audio_bytes)
+
+        base_url = (PUBLIC_TUNNEL_URL or "").strip().rstrip("/")
+        track_url = f"{base_url}/api/music/{stored_name}" if base_url else f"/api/music/{stored_name}"
+        clean_title = (data.music_title or "").strip() or os.path.splitext(data.filename or "Фоновый трек")[0] or "Фоновый трек"
+
+        await set_setting_raw(db, "music_url", track_url)
+        await set_setting_raw(db, "music_title", clean_title)
+        await set_setting_raw(db, "music_enabled", "1" if data.music_enabled else "0")
+        if data.music_volume is not None:
+            m_vol = max(0.0, min(1.0, round(float(data.music_volume), 2)))
+            await set_setting_raw(db, "music_volume", str(m_vol))
+        else:
+            try:
+                m_vol = max(0.0, min(1.0, float(await get_setting_raw(db, "music_volume", "0.35") or 0.35)))
+            except Exception:
+                m_vol = 0.35
+        await db.commit()
+
+    return {
+        "success": True,
+        "music_url": track_url,
+        "music_title": clean_title,
+        "music_enabled": bool(data.music_enabled),
+        "music_volume": m_vol
+    }
+
+@app.get("/api/music/{filename}")
+async def serve_uploaded_music(filename: str):
+    safe_name = os.path.basename(filename or "")
+    if not safe_name or not re.match(r"^[A-Za-z0-9_.-]+$", safe_name):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    file_path = os.path.join(AUDIO_DIR, safe_name)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Audio file not found")
+    with open(file_path, "rb") as f:
+        content = f.read()
+    return Response(
+        content=content,
+        media_type=_detect_audio_media_type(safe_name),
+        headers={"Accept-Ranges": "bytes", "Cache-Control": "public, max-age=3600"}
+    )
 
 @app.post("/api/admin/music")
 async def update_admin_music(data: AdminMusicSchema):
