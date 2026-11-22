@@ -121,6 +121,114 @@
             transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), filter 0.55s ease;
         }
 
+        /* Варианты экрана загрузки мини-приложения */
+        #splash-screen.splash-style-minimal {
+            background: var(--bg-color);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+        #splash-screen.splash-style-minimal .splash-orb,
+        #splash-screen.splash-style-minimal .splash-badge-wrap::before,
+        #splash-screen.splash-style-minimal .splash-badge-wrap::after {
+            display: none;
+        }
+        #splash-screen.splash-style-minimal .splash-badge-wrap {
+            border-radius: 999px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        #splash-screen.splash-style-orbit .splash-badge-wrap::before {
+            inset: -11px;
+            border-radius: 38px;
+            padding: 2.5px;
+            animation-duration: 1.45s;
+        }
+        #splash-screen.splash-style-orbit .splash-orb.orb-1 {
+            width: 260px; height: 260px; opacity: 0.72;
+        }
+
+        #splash-screen.splash-style-pulse .splash-badge-wrap::before {
+            display: none;
+        }
+        #splash-screen.splash-style-pulse .splash-badge-wrap::after {
+            inset: -8px;
+            border-radius: 36px;
+            border-width: 2px;
+            animation: splashPulseRing 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        }
+
+        #splash-screen.splash-style-glass .splash-badge-wrap {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(26px);
+            -webkit-backdrop-filter: blur(26px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 32px;
+        }
+
+        /* Компактная полоса фоновой музыки для пользователя */
+        .user-music-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 12px;
+            margin: 0 16px 8px 16px;
+            background: color-mix(in srgb, var(--card-bg) 86%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            border-radius: 14px;
+            z-index: 9;
+        }
+        .user-music-bar.active {
+            display: flex;
+        }
+        .user-music-play-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 9px;
+            border: 1px solid var(--accent-green);
+            background: var(--accent-green-glow);
+            color: var(--accent-green);
+            font-size: 12px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .user-music-title {
+            flex: 1;
+            min-width: 0;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-music-vol-wrap {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .user-music-slider {
+            width: 72px;
+            accent-color: var(--accent-green);
+            cursor: pointer;
+        }
+        .user-music-pct {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            min-width: 30px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
         .splash-orb {
             position: absolute;
             border-radius: 50%;
@@ -1537,6 +1645,17 @@
         </div>
     </div>
 
+    <audio id="bg-music-audio" loop preload="auto" playsinline></audio>
+    <div id="user-music-bar" class="user-music-bar">
+        <button type="button" class="user-music-play-btn" id="user-music-play-btn" onclick="toggleUserMusicPlayback()">▶</button>
+        <span class="user-music-title" id="user-music-title">🎵 Фоновый трек</span>
+        <div class="user-music-vol-wrap">
+            <span style="font-size:12px;">🔊</span>
+            <input type="range" class="user-music-slider" id="user-music-volume-slider" min="0" max="100" value="35" oninput="setUserMusicVolumePercent(this.value)">
+            <span class="user-music-pct" id="user-music-volume-pct">35%</span>
+        </div>
+    </div>
+
     <div class="content-area">
         <div id="screen-catalog" class="screen active">
             <div id="catalog-closed-banner" class="closed-shop-banner" style="display: none;"></div>
@@ -1696,10 +1815,37 @@
 
                 <div id="admin-tab-appearance" style="display: none;">
                     <div class="shop-master-box">
-                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🏷 Брендинг, экран загрузки и старт бота:</div>
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🏷 Логотип, загрузка и старт бота:</div>
                         <div style="display:flex; gap:6px; margin-bottom:8px;">
                             <input type="text" id="admin-logo-part1" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 1 (напр. MONKEY)">
                             <input type="text" id="admin-logo-part2" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Часть 2 (напр. VAPE)">
+                        </div>
+
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:5px;">🖼 Изображение логотипа (вместо/рядом с текстом):</div>
+                            <input type="file" id="admin-logo-img-file" accept="image/*" style="display:none;" onchange="handleLogoImageFileSelect(this)">
+                            <input type="hidden" id="admin-logo-image">
+                            <button type="button" class="img-upload-btn" onclick="document.getElementById('admin-logo-img-file').click()">
+                                🖼 Выбрать изображение логотипа
+                            </button>
+                            <div id="admin-logo-img-preview-box" class="img-preview-strip" style="display:none;">
+                                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                    <img id="admin-logo-img-preview" class="img-preview-thumb" style="object-fit:contain; background:rgba(255,255,255,0.06); padding:3px;" src="" alt="Brand Logo">
+                                    <span style="font-size:12px; color:var(--accent-green); font-weight:600;">✅ Логотип выбран</span>
+                                </div>
+                                <button type="button" class="toggle-pill off" onclick="clearLogoImage()">✕ Убрать</button>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:5px;">✨ Вид экрана загрузки мини-приложения:</div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;" id="admin-splash-style-grid">
+                                <button type="button" class="toggle-pill on" id="splash-style-btn-neon" onclick="selectSplashStyle('neon')">⚡ Неоновый</button>
+                                <button type="button" class="toggle-pill" id="splash-style-btn-minimal" onclick="selectSplashStyle('minimal')">◻️ Минимал</button>
+                                <button type="button" class="toggle-pill" id="splash-style-btn-orbit" onclick="selectSplashStyle('orbit')">🌀 Орбита</button>
+                                <button type="button" class="toggle-pill" id="splash-style-btn-pulse" onclick="selectSplashStyle('pulse')">💓 Пульс</button>
+                                <button type="button" class="toggle-pill" id="splash-style-btn-glass" style="grid-column:span 2;" onclick="selectSplashStyle('glass')">🔮 Стекло</button>
+                            </div>
                         </div>
 
                         <div style="margin-bottom:8px;">
@@ -1724,6 +1870,29 @@
                             <div style="font-size:10.5px; color:var(--text-secondary);">Переменные: <b>{user}</b> — имя клиента, <b>{brand}</b> — название магазина</div>
                         </div>
                         <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBranding()">💾 Сохранить бренд и приветствие</button>
+                    </div>
+
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">🎵 Фоновая музыка в магазине (24/7):</span>
+                            <button type="button" id="admin-music-toggle-btn" class="toggle-pill off" onclick="adminToggleMusicEnabled()">⚪ Выкл.</button>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:7px; margin-bottom:8px;">
+                            <input type="text" id="admin-music-title-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Название трека (напр. Chill Lounge)" oninput="isMusicDirty=true">
+                            <input type="file" id="admin-music-file" accept="audio/*" style="display:none;" onchange="handleMusicFileSelect(this)">
+                            <button type="button" class="img-upload-btn" onclick="document.getElementById('admin-music-file').click()">
+                                🎧 Выбрать аудиофайл с устройства
+                            </button>
+                            <input type="text" id="admin-music-url-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Или вставьте прямую ссылку на MP3 / аудио..." oninput="isMusicDirty=true">
+                            <div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:var(--text-secondary); margin-bottom:4px;">
+                                    <span>🔊 Громкость для магазина и покупателей:</span>
+                                    <b id="admin-music-vol-label" style="color:var(--accent-green);">35%</b>
+                                </div>
+                                <input type="range" id="admin-music-vol-slider" min="0" max="100" value="35" style="width:100%; accent-color:var(--accent-green); cursor:pointer;" oninput="handleAdminMusicVolumeInput(this.value)">
+                            </div>
+                        </div>
+                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveMusic()">💾 Сохранить музыку и громкость</button>
                     </div>
 
                     <div class="shop-master-box">
@@ -2203,10 +2372,21 @@
 
     let logoPart1 = localStorage.getItem('monkey_logo_part1') ?? 'MONKEY';
     let logoPart2 = localStorage.getItem('monkey_logo_part2') ?? 'VAPE';
+    let logoImage = localStorage.getItem('monkey_logo_image') || '';
+    let isLogoImageDirty = false;
+    let splashStyle = localStorage.getItem('monkey_splash_style') || 'neon';
     let splashEmoji = localStorage.getItem('monkey_splash_emoji') || '🐵';
     let splashImage = localStorage.getItem('monkey_splash_image') || '';
     let isSplashImageDirty = false;
     let welcomeText = localStorage.getItem('monkey_welcome_text') || '';
+
+    let musicEnabled = localStorage.getItem('monkey_music_enabled') === '1';
+    let musicUrl = localStorage.getItem('monkey_music_url') || '';
+    let musicTitle = localStorage.getItem('monkey_music_title') || 'Фоновый трек';
+    let musicVolume = Number(localStorage.getItem('monkey_music_volume') ?? '0.35');
+    if (isNaN(musicVolume) || musicVolume < 0 || musicVolume > 1) musicVolume = 0.35;
+    let isMusicDirty = false;
+    let userMusicPaused = false;
 
     function escapeHtml(str) {
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -2229,17 +2409,98 @@
         }
     }
 
+    function syncLogoImagePreview(imgVal) {
+        const hiddenInp = document.getElementById('admin-logo-image');
+        const box = document.getElementById('admin-logo-img-preview-box');
+        const prevImg = document.getElementById('admin-logo-img-preview');
+        const clean = (imgVal || '').trim();
+        if (hiddenInp) hiddenInp.value = clean;
+        if (box && prevImg) {
+            if (clean) {
+                box.style.display = 'flex';
+                prevImg.src = clean;
+            } else {
+                box.style.display = 'none';
+                prevImg.src = '';
+            }
+        }
+    }
+
+    function applySplashStyleUI() {
+        const sp = document.getElementById('splash-screen');
+        const styles = ['neon', 'minimal', 'orbit', 'pulse', 'glass'];
+        const activeSt = styles.includes(splashStyle) ? splashStyle : 'neon';
+        if (sp) {
+            styles.forEach(s => sp.classList.remove(`splash-style-${s}`));
+            sp.classList.add(`splash-style-${activeSt}`);
+        }
+        styles.forEach(s => {
+            const btn = document.getElementById(`splash-style-btn-${s}`);
+            if (!btn) return;
+            const isAct = activeSt === s;
+            btn.className = `toggle-pill ${isAct ? 'on' : ''}`;
+            if (!isAct) {
+                btn.style.background = 'var(--card-bg)';
+                btn.style.color = 'var(--text-secondary)';
+                btn.style.border = '1px solid var(--border-color)';
+            } else {
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.style.border = '';
+            }
+        });
+    }
+
+    function selectSplashStyle(styleName) {
+        splashStyle = styleName || 'neon';
+        localStorage.setItem('monkey_splash_style', splashStyle);
+        applySplashStyleUI();
+    }
+
+    async function handleLogoImageFileSelect(inputEl) {
+        const file = inputEl.files && inputEl.files[0];
+        if (!file) return;
+        try {
+            const dataUrl = await compressSplashLogoToDataUrl(file, 220);
+            isLogoImageDirty = true;
+            logoImage = dataUrl;
+            localStorage.setItem('monkey_logo_image', logoImage);
+            syncLogoImagePreview(dataUrl);
+            applyLogoBranding();
+            showToast("🖼 Логотип выбран! Нажмите «Сохранить бренд»");
+        } catch (e) {
+            showToast("Не удалось загрузить логотип", true);
+        }
+        inputEl.value = '';
+    }
+
+    function clearLogoImage() {
+        isLogoImageDirty = true;
+        logoImage = '';
+        localStorage.setItem('monkey_logo_image', '');
+        syncLogoImagePreview('');
+        applyLogoBranding();
+    }
+
     function applyLogoBranding() {
         const p1 = (logoPart1 || '').trim();
         const p2 = (logoPart2 || '').trim();
+        const lImg = (logoImage || '').trim();
         const em = (splashEmoji || '🐵').trim() || '🐵';
         const imgSrc = (splashImage || '').trim();
-        const htmlLogo = `${escapeHtml(p1)}${p2 ? ` <span>${escapeHtml(p2)}</span>` : ''}` || 'MONKEY <span>VAPE</span>';
+        const textPart = `${escapeHtml(p1)}${p2 ? ` <span>${escapeHtml(p2)}</span>` : ''}`;
+        const htmlLogo = lImg
+            ? `<span style="display:inline-flex; align-items:center; gap:7px; max-width:100%;"><img src="${escapeHtml(lImg)}" alt="Logo" style="height:24px; width:auto; max-width:92px; object-fit:contain; border-radius:6px; flex-shrink:0;">${textPart ? `<span style="overflow:hidden; text-overflow:ellipsis;">${textPart}</span>` : ''}</span>`
+            : (textPart || 'MONKEY <span>VAPE</span>');
+        const splashLogoHtml = lImg
+            ? `<span style="display:inline-flex; flex-direction:column; align-items:center; gap:8px;"><img src="${escapeHtml(lImg)}" alt="Logo" style="max-height:54px; max-width:180px; object-fit:contain;">${textPart ? `<span>${textPart}</span>` : ''}</span>`
+            : (textPart || 'MONKEY <span>VAPE</span>');
+
         const topEl = document.getElementById('brand-title');
         const splashEl = document.getElementById('splash-logo');
         const splashEmbEl = document.getElementById('splash-emblem');
         if (topEl) topEl.innerHTML = htmlLogo;
-        if (splashEl) splashEl.innerHTML = htmlLogo;
+        if (splashEl) splashEl.innerHTML = splashLogoHtml;
         if (splashEmbEl) {
             if (imgSrc) {
                 splashEmbEl.innerHTML = `<img src="${escapeHtml(imgSrc)}" alt="Logo" onerror="this.parentElement.textContent='${escapeHtml(em)}'">`;
@@ -2255,10 +2516,184 @@
         const inpWel = document.getElementById('admin-welcome-text');
         if (inp1 && document.activeElement !== inp1) inp1.value = p1;
         if (inp2 && document.activeElement !== inp2) inp2.value = p2;
+        if (!isLogoImageDirty) syncLogoImagePreview(lImg);
         if (!isSplashImageDirty) syncSplashImagePreview(imgSrc);
         if (inpWel && document.activeElement !== inpWel) inpWel.value = welcomeText;
+        applySplashStyleUI();
     }
     applyLogoBranding();
+
+    function applyMusicPlayerUI() {
+        const bar = document.getElementById('user-music-bar');
+        const titleEl = document.getElementById('user-music-title');
+        const playBtn = document.getElementById('user-music-play-btn');
+        const slider = document.getElementById('user-music-volume-slider');
+        const pctEl = document.getElementById('user-music-volume-pct');
+        const audio = document.getElementById('bg-music-audio');
+
+        const volPct = Math.round(Math.max(0, Math.min(1, musicVolume)) * 100);
+        if (slider && document.activeElement !== slider) slider.value = volPct;
+        if (pctEl) pctEl.textContent = `${volPct}%`;
+        if (titleEl) titleEl.textContent = `🎵 ${musicTitle || 'Фоновый трек'}`;
+
+        const showPlayer = Boolean(musicEnabled && musicUrl);
+        if (bar) bar.classList.toggle('active', showPlayer);
+
+        const admBtn = document.getElementById('admin-music-toggle-btn');
+        const admTitle = document.getElementById('admin-music-title-input');
+        const admUrl = document.getElementById('admin-music-url-input');
+        const admSlider = document.getElementById('admin-music-vol-slider');
+        const admVolLbl = document.getElementById('admin-music-vol-label');
+        if (admBtn) {
+            admBtn.className = `toggle-pill ${musicEnabled ? 'on' : 'off'}`;
+            admBtn.innerText = musicEnabled ? '🟢 Вкл.' : '⚪ Выкл.';
+        }
+        if (admTitle && document.activeElement !== admTitle) admTitle.value = musicTitle || '';
+        if (admUrl && document.activeElement !== admUrl) admUrl.value = musicUrl || '';
+        if (admSlider && document.activeElement !== admSlider) admSlider.value = volPct;
+        if (admVolLbl) admVolLbl.textContent = `${volPct}%`;
+
+        if (!audio) return;
+        audio.volume = Math.max(0, Math.min(1, musicVolume));
+
+        if (!showPlayer) {
+            audio.pause();
+            if (playBtn) playBtn.textContent = '▶';
+            return;
+        }
+
+        if (audio.src !== musicUrl) {
+            audio.src = musicUrl;
+        }
+        if (!userMusicPaused) {
+            audio.play().then(() => {
+                if (playBtn) playBtn.textContent = '⏸';
+            }).catch(() => {
+                if (playBtn) playBtn.textContent = '▶';
+            });
+        } else {
+            audio.pause();
+            if (playBtn) playBtn.textContent = '▶';
+        }
+    }
+
+    function unlockBgMusicOnInteraction() {
+        const audio = document.getElementById('bg-music-audio');
+        const playBtn = document.getElementById('user-music-play-btn');
+        if (!audio || !musicEnabled || !musicUrl || userMusicPaused) return;
+        if (audio.paused) {
+            audio.play().then(() => {
+                if (playBtn) playBtn.textContent = '⏸';
+            }).catch(() => {});
+        }
+    }
+    document.addEventListener('pointerdown', unlockBgMusicOnInteraction, { passive: true });
+    document.addEventListener('touchstart', unlockBgMusicOnInteraction, { passive: true });
+
+    function toggleUserMusicPlayback() {
+        const audio = document.getElementById('bg-music-audio');
+        const playBtn = document.getElementById('user-music-play-btn');
+        if (!audio || !musicUrl) return;
+        if (audio.paused) {
+            userMusicPaused = false;
+            audio.play().then(() => {
+                if (playBtn) playBtn.textContent = '⏸';
+            }).catch(() => {});
+        } else {
+            userMusicPaused = true;
+            audio.pause();
+            if (playBtn) playBtn.textContent = '▶';
+        }
+    }
+
+    function setUserMusicVolumePercent(pctVal) {
+        const pct = Math.max(0, Math.min(100, parseInt(pctVal, 10) || 0));
+        musicVolume = pct / 100;
+        localStorage.setItem('monkey_music_volume', String(musicVolume));
+        applyMusicPlayerUI();
+    }
+
+    function handleAdminMusicVolumeInput(pctVal) {
+        isMusicDirty = true;
+        const pct = Math.max(0, Math.min(100, parseInt(pctVal, 10) || 0));
+        musicVolume = pct / 100;
+        localStorage.setItem('monkey_music_volume', String(musicVolume));
+        const lbl = document.getElementById('admin-music-vol-label');
+        if (lbl) lbl.textContent = `${pct}%`;
+        const audio = document.getElementById('bg-music-audio');
+        if (audio) audio.volume = musicVolume;
+        const userSlider = document.getElementById('user-music-volume-slider');
+        const userPct = document.getElementById('user-music-volume-pct');
+        if (userSlider) userSlider.value = pct;
+        if (userPct) userPct.textContent = `${pct}%`;
+    }
+
+    function handleMusicFileSelect(inputEl) {
+        const file = inputEl.files && inputEl.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            isMusicDirty = true;
+            musicUrl = String(ev.target.result || '');
+            const cleanName = file.name.replace(/\.[^/.]+$/, '');
+            if (cleanName) musicTitle = cleanName;
+            const titleInp = document.getElementById('admin-music-title-input');
+            const urlInp = document.getElementById('admin-music-url-input');
+            if (titleInp) titleInp.value = musicTitle;
+            if (urlInp) urlInp.value = musicUrl;
+            userMusicPaused = false;
+            applyMusicPlayerUI();
+            showToast("🎧 Трек загружен! Нажмите «Сохранить музыку»");
+        };
+        reader.readAsDataURL(file);
+        inputEl.value = '';
+    }
+
+    function adminToggleMusicEnabled() {
+        document.activeElement?.blur();
+        isMusicDirty = true;
+        musicEnabled = !musicEnabled;
+        if (musicEnabled) userMusicPaused = false;
+        localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+        applyMusicPlayerUI();
+    }
+
+    async function adminSaveMusic() {
+        document.activeElement?.blur();
+        const titleVal = (document.getElementById('admin-music-title-input')?.value || '').trim() || 'Фоновый трек';
+        const urlVal = (document.getElementById('admin-music-url-input')?.value || '').trim();
+        const sliderVal = parseInt(document.getElementById('admin-music-vol-slider')?.value ?? String(Math.round(musicVolume * 100)), 10);
+        const volNum = Math.max(0, Math.min(1, (isNaN(sliderVal) ? 35 : sliderVal) / 100));
+
+        musicTitle = titleVal;
+        musicUrl = urlVal;
+        musicVolume = volNum;
+        if (musicEnabled && musicUrl) userMusicPaused = false;
+
+        localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+        localStorage.setItem('monkey_music_title', musicTitle);
+        localStorage.setItem('monkey_music_url', musicUrl);
+        localStorage.setItem('monkey_music_volume', String(musicVolume));
+        applyMusicPlayerUI();
+
+        try {
+            await apiFetch(`/api/admin/music`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    music_enabled: musicEnabled,
+                    music_url: musicUrl,
+                    music_title: musicTitle,
+                    music_volume: musicVolume
+                })
+            });
+            isMusicDirty = false;
+            showToast("🎵 Настройки музыки сохранены для всех!");
+        } catch (e) {
+            showToast("Ошибка сохранения музыки на сервере", true);
+        }
+    }
+    applyMusicPlayerUI();
 
     let promoBanner = JSON.parse(localStorage.getItem('monkey_promo_banner')) || {
         enabled: true,
@@ -3043,9 +3478,17 @@
                     }
                 }
 
-                if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined || cfg.splash_emoji !== undefined || cfg.splash_image !== undefined || cfg.welcome_text !== undefined || cfg.welcome_message !== undefined) {
+                if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined || cfg.logo_image !== undefined || cfg.splash_style !== undefined || cfg.splash_emoji !== undefined || cfg.splash_image !== undefined || cfg.welcome_text !== undefined || cfg.welcome_message !== undefined) {
                     if (cfg.logo_part1 !== undefined) logoPart1 = cfg.logo_part1 ?? 'MONKEY';
                     if (cfg.logo_part2 !== undefined) logoPart2 = cfg.logo_part2 ?? 'VAPE';
+                    if (!isLogoImageDirty && cfg.logo_image !== undefined) {
+                        logoImage = (cfg.logo_image || '').trim();
+                        localStorage.setItem('monkey_logo_image', logoImage);
+                    }
+                    if (cfg.splash_style) {
+                        splashStyle = String(cfg.splash_style).trim() || 'neon';
+                        localStorage.setItem('monkey_splash_style', splashStyle);
+                    }
                     if (cfg.splash_emoji !== undefined) splashEmoji = (cfg.splash_emoji || '🐵').trim() || '🐵';
                     if (!isSplashImageDirty && cfg.splash_image !== undefined) {
                         splashImage = (cfg.splash_image || '').trim();
@@ -3058,6 +3501,26 @@
                     localStorage.setItem('monkey_splash_emoji', splashEmoji);
                     localStorage.setItem('monkey_welcome_text', welcomeText);
                     applyLogoBranding();
+                }
+
+                if (!isMusicDirty && (cfg.music_enabled !== undefined || cfg.music_url !== undefined || cfg.music_title !== undefined || cfg.music_volume !== undefined)) {
+                    if (cfg.music_enabled !== undefined) {
+                        musicEnabled = Boolean(cfg.music_enabled);
+                        localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+                    }
+                    if (cfg.music_url !== undefined) {
+                        musicUrl = (cfg.music_url || '').trim();
+                        localStorage.setItem('monkey_music_url', musicUrl);
+                    }
+                    if (cfg.music_title !== undefined) {
+                        musicTitle = (cfg.music_title || 'Фоновый трек').trim() || 'Фоновый трек';
+                        localStorage.setItem('monkey_music_title', musicTitle);
+                    }
+                    if (cfg.music_volume !== undefined && !isNaN(Number(cfg.music_volume))) {
+                        musicVolume = Math.max(0, Math.min(1, Number(cfg.music_volume)));
+                        localStorage.setItem('monkey_music_volume', String(musicVolume));
+                    }
+                    applyMusicPlayerUI();
                 }
 
                 if (cfg.banner) {
@@ -4372,6 +4835,21 @@
         shopCloseTime = closeVal;
         localStorage.setItem('monkey_open_time', shopOpenTime);
         localStorage.setItem('monkey_close_time', shopCloseTime);
+
+        const wasOpenBeforeSchedule = isShopOpen;
+        if (fromToggle && autoScheduleEnabled && !wasOpenBeforeSchedule) {
+            isShopOpen = true;
+            updateShopClosedUI();
+            renderCart();
+            try {
+                const msg = (document.getElementById('admin-closed-msg-input')?.value || shopClosedMessage).trim();
+                await apiFetch(`/api/admin/shop_status`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: Number(currentUserId), is_open: true, closed_message: msg })
+                });
+            } catch (_) {}
+        }
+
         renderAdminShopMaster();
         try {
             const res = await apiFetch(`/api/admin/schedule`, {
@@ -4386,8 +4864,20 @@
             const data = await res.json();
             if (data?.open_time) shopOpenTime = data.open_time;
             if (data?.close_time) shopCloseTime = data.close_time;
+            if (fromToggle && autoScheduleEnabled && wasOpenBeforeSchedule && !isShopOpen) {
+                isShopOpen = true;
+                updateShopClosedUI();
+                renderCart();
+                try {
+                    const msg = (document.getElementById('admin-closed-msg-input')?.value || shopClosedMessage).trim();
+                    await apiFetch(`/api/admin/shop_status`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: Number(currentUserId), is_open: true, closed_message: msg })
+                    });
+                } catch (_) {}
+            }
             isScheduleDirty = false;
-            await syncShopConfig();
+            renderAdminShopMaster();
             showToast(fromToggle
                 ? (autoScheduleEnabled ? `⏰ Автографик включён (${shopOpenTime} – ${shopCloseTime})` : "⚪ Автографик выключен")
                 : `✅ График работы сохранён (${shopOpenTime} – ${shopCloseTime})`);
@@ -4604,15 +5094,19 @@
         document.activeElement?.blur();
         const p1 = (document.getElementById('admin-logo-part1')?.value || '').trim();
         const p2 = (document.getElementById('admin-logo-part2')?.value || '').trim();
+        const lImgVal = (document.getElementById('admin-logo-image')?.value ?? logoImage ?? '').trim();
         const imgVal = (document.getElementById('admin-splash-image')?.value ?? splashImage ?? '').trim();
         const wText = (document.getElementById('admin-welcome-text')?.value || '').trim();
-        if (!p1 && !p2) { showToast("Введите хотя бы первую часть названия логотипа", true); return; }
+        if (!p1 && !p2 && !lImgVal) { showToast("Введите название логотипа или выберите изображение", true); return; }
         logoPart1 = p1;
         logoPart2 = p2;
+        logoImage = lImgVal;
         splashImage = imgVal;
         welcomeText = wText;
         localStorage.setItem('monkey_logo_part1', logoPart1);
         localStorage.setItem('monkey_logo_part2', logoPart2);
+        localStorage.setItem('monkey_logo_image', logoImage);
+        localStorage.setItem('monkey_splash_style', splashStyle);
         localStorage.setItem('monkey_splash_image', splashImage);
         localStorage.setItem('monkey_welcome_text', welcomeText);
         applyLogoBranding();
@@ -4623,13 +5117,16 @@
                     user_id: Number(currentUserId),
                     logo_part1: p1,
                     logo_part2: p2,
+                    logo_image: lImgVal,
                     splash_emoji: splashEmoji,
                     splash_image: imgVal,
+                    splash_style: splashStyle,
                     welcome_text: wText
                 })
             });
+            isLogoImageDirty = false;
             isSplashImageDirty = false;
-            showToast("✅ Брендинг и приветствие обновлены!");
+            showToast("✅ Логотип, загрузка и приветствие обновлены!");
         } catch (e) { showToast("Ошибка сохранения настроек на сервере", true); }
     }
 
