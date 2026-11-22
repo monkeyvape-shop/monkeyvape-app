@@ -1,7 +1,11 @@
 import asyncio
+import csv
+import hmac
 import html
+import io
 import json
 import os
+import re
 import time
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
@@ -16,10 +20,13 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import (
     Message, ReplyKeyboardMarkup, KeyboardButton,
     InlineKeyboardMarkup, InlineKeyboardButton,
-    WebAppInfo, MenuButtonWebApp
+    WebAppInfo, MenuButtonWebApp, BufferedInputFile
 )
 
-def load_token_from_env():
+def load_env_config() -> dict[str, str]:
+    cfg: dict[str, str] = {}
+    for k, v in os.environ.items():
+        cfg[k.upper()] = v
     if os.path.exists(".env"):
         try:
             with open(".env", "r", encoding="utf-8") as f:
@@ -27,14 +34,39 @@ def load_token_from_env():
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
                         key, val = line.split("=", 1)
-                        if "TOKEN" in key.upper():
-                            return val.strip().strip('"').strip("'")
+                        clean_val = val.strip().strip('"').strip("'")
+                        cfg[key.strip().upper()] = clean_val
         except Exception:
             pass
+    return cfg
+
+ENV_CFG = load_env_config()
+
+def load_token_from_env() -> str | None:
+    for priority_key in ("BOT_TOKEN", "TELEGRAM_BOT_TOKEN", "TOKEN"):
+        if ENV_CFG.get(priority_key):
+            return ENV_CFG[priority_key]
+    for key, val in ENV_CFG.items():
+        if "TOKEN" in key and val:
+            return val
     return None
+
+def load_primary_owner_ids_from_env() -> list[int]:
+    if "PRIMARY_OWNER_IDS" in ENV_CFG:
+        raw = ENV_CFG["PRIMARY_OWNER_IDS"]
+        ids: list[int] = []
+        for part in re.split(r"[,;\s\[\]]+", raw):
+            part = part.strip()
+            if part.isdigit():
+                uid = int(part)
+                if uid > 0 and uid not in ids:
+                    ids.append(uid)
+        return ids
+    return [7280921605]
 
 FALLBACK_TOKEN = "ВСТАВЬ_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
+CLAIM_SECRET = ENV_CFG.get("CLAIM_SECRET", "").strip()
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 TUNNEL_FILE = "tunnel_url.txt"
 
@@ -51,7 +83,7 @@ def load_tunnel_url() -> str:
 
 PUBLIC_TUNNEL_URL = load_tunnel_url()
 
-PRIMARY_OWNER_IDS = [7280921605]
+PRIMARY_OWNER_IDS = load_primary_owner_ids_from_env()
 DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
 DB_FILE = "database.db"
 
@@ -262,15 +294,57 @@ async def get_metro_map(db) -> dict:
             pass
     return json.loads(json.dumps(DEFAULT_METRO_STATIONS))
 
-async def get_all_owner_ids(db) -> list[int]:
-    extra = await get_setting_list(db, "extra_owners")
+async def get_primary_owner_ids(db) -> list[int]:
+    claimed = await get_setting_list(db, "claimed_primary_owners")
     combined = set(PRIMARY_OWNER_IDS)
-    for x in extra:
+    for x in claimed:
         try:
-            combined.add(int(x))
+            uid = int(x)
+            if uid > 0:
+                combined.add(uid)
         except Exception:
             pass
     return list(combined)
+
+async def get_all_owner_ids(db) -> list[int]:
+    extra = await get_setting_list(db, "extra_owners")
+    combined = set(await get_primary_owner_ids(db))
+    for x in extra:
+        try:
+            uid = int(x)
+            if uid > 0:
+                combined.add(uid)
+        except Exception:
+            pass
+    return list(combined)
+
+def normalize_hhmm(raw: str, fallback: str) -> str:
+    m = re.match(r"^(\d{1,2}):(\d{2})$", (raw or "").strip())
+    if not m:
+        return fallback
+    hh, mm = int(m.group(1)), int(m.group(2))
+    if 0 <= hh <= 23 and 0 <= mm <= 59:
+        return f"{hh:02d}:{mm:02d}"
+    return fallback
+
+def hhmm_to_minutes(hhmm: str, default_mins: int) -> int:
+    m = re.match(r"^(\d{1,2}):(\d{2})$", (hhmm or "").strip())
+    if not m:
+        return default_mins
+    hh, mm = int(m.group(1)), int(m.group(2))
+    if 0 <= hh <= 23 and 0 <= mm <= 59:
+        return hh * 60 + mm
+    return default_mins
+
+def is_within_schedule(now_dt: datetime, open_time_str: str, close_time_str: str) -> bool:
+    open_mins = hhmm_to_minutes(open_time_str, 10 * 60)
+    close_mins = hhmm_to_minutes(close_time_str, 22 * 60)
+    now_mins = now_dt.hour * 60 + now_dt.minute
+    if open_mins == close_mins:
+        return True
+    if open_mins < close_mins:
+        return open_mins <= now_mins < close_mins
+    return now_mins >= open_mins or now_mins < close_mins
 
 async def get_all_courier_ids(db) -> list[int]:
     extra = await get_setting_list(db, "extra_couriers")
@@ -464,6 +538,9 @@ async def init_db():
             ("min_order_amount", "0"),
             ("delivery_fee", "0"),
             ("free_delivery_threshold", "0"),
+            ("auto_schedule_enabled", "0"),
+            ("open_time", "10:00"),
+            ("close_time", "22:00"),
         ]
         for s_key, s_val in default_shop_settings:
             await db.execute("INSERT OR IGNORE INTO shop_settings (key, value) VALUES (?, ?)", (s_key, s_val))
@@ -496,10 +573,54 @@ async def init_db():
                 )
         await db.commit()
 
+async def apply_auto_schedule_tick():
+    notify_uids: list[int] = []
+    brand_name = "Monkey Vape"
+    async with aiosqlite.connect(DB_FILE) as db:
+        sched_enabled = (await get_setting_raw(db, "auto_schedule_enabled", "0")) == "1"
+        if not sched_enabled:
+            return
+        open_time_str = normalize_hhmm(await get_setting_raw(db, "open_time", "10:00"), "10:00")
+        close_time_str = normalize_hhmm(await get_setting_raw(db, "close_time", "22:00"), "22:00")
+        should_be_open = is_within_schedule(datetime.now(), open_time_str, close_time_str)
+        currently_open = (await get_setting_raw(db, "shop_open", "1")) == "1"
+
+        if should_be_open != currently_open:
+            await set_setting_raw(db, "shop_open", "1" if should_be_open else "0")
+            if should_be_open and not currently_open:
+                brand_name = await get_shop_brand_name(db)
+                notify_uids = [int(x) for x in await get_setting_list(db, "shop_open_subscribers")]
+                if notify_uids:
+                    await set_setting_list(db, "shop_open_subscribers", [])
+            await db.commit()
+
+    for uid in notify_uids:
+        try:
+            await bot.send_message(
+                uid,
+                f"🟢 <b>Магазин {html.escape(brand_name)} открылся по расписанию!</b>\n\nТеперь вы можете оформить заказ в каталоге.",
+                parse_mode="HTML"
+            )
+            await asyncio.sleep(0.05)
+        except Exception:
+            pass
+
+async def auto_schedule_worker():
+    while True:
+        try:
+            await apply_auto_schedule_tick()
+        except Exception as e:
+            print(f"[ERR] auto_schedule_worker: {e}")
+        await asyncio.sleep(60)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    yield
+    sched_task = asyncio.create_task(auto_schedule_worker())
+    try:
+        yield
+    finally:
+        sched_task.cancel()
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -695,6 +816,15 @@ class AdminRoleManageSchema(BaseModel):
     target_id: int
     action: str
 
+class AdminScheduleSchema(BaseModel):
+    user_id: int
+    auto_schedule_enabled: bool = False
+    open_time: str = "10:00"
+    close_time: str = "22:00"
+
+class AdminUserActionSchema(BaseModel):
+    user_id: int
+
 @app.get("/api/user_avatar/{user_id}")
 async def get_user_avatar(user_id: int):
     if not user_id:
@@ -747,6 +877,9 @@ async def get_shop_config():
         min_order_amount = float(await get_setting_raw(db, "min_order_amount", "0") or 0)
         delivery_fee = float(await get_setting_raw(db, "delivery_fee", "0") or 0)
         free_delivery_threshold = float(await get_setting_raw(db, "free_delivery_threshold", "0") or 0)
+        auto_schedule_enabled = (await get_setting_raw(db, "auto_schedule_enabled", "0")) == "1"
+        open_time = normalize_hhmm(await get_setting_raw(db, "open_time", "10:00"), "10:00")
+        close_time = normalize_hhmm(await get_setting_raw(db, "close_time", "22:00"), "22:00")
 
         news_channel_url = await get_setting_raw(db, "news_channel_url", "")
         reviews_channel_url = await get_setting_raw(db, "reviews_channel_url", "")
@@ -808,6 +941,9 @@ async def get_shop_config():
             "min_order_amount": min_order_amount,
             "delivery_fee": delivery_fee,
             "free_delivery_threshold": free_delivery_threshold,
+            "auto_schedule_enabled": auto_schedule_enabled,
+            "open_time": open_time,
+            "close_time": close_time,
             "news_channel_url": news_channel_url,
             "reviews_channel_url": reviews_channel_url,
             "support_username": support_username,
@@ -1249,13 +1385,14 @@ async def admin_manage_role(data: AdminRoleManageSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, data.user_id):
             raise HTTPException(status_code=403, detail="Only owner")
+        primary_owners = await get_primary_owner_ids(db)
         if data.action == "add_owner":
             owners = [int(x) for x in await get_setting_list(db, "extra_owners")]
-            if tid not in owners and tid not in PRIMARY_OWNER_IDS:
+            if tid not in owners and tid not in primary_owners:
                 owners.append(tid)
                 await set_setting_list(db, "extra_owners", owners)
         elif data.action == "remove_owner":
-            if tid in PRIMARY_OWNER_IDS:
+            if tid in primary_owners:
                 raise HTTPException(status_code=400, detail="Cannot remove primary owner")
             owners = [int(x) for x in await get_setting_list(db, "extra_owners") if int(x) != tid]
             await set_setting_list(db, "extra_owners", owners)
@@ -1284,6 +1421,175 @@ async def admin_manage_role(data: AdminRoleManageSchema):
         elif data.action == "unban_user":
             banned = [int(x) for x in await get_setting_list(db, "banned_users") if int(x) != tid]
             await set_setting_list(db, "banned_users", banned)
+        await db.commit()
+    return {"success": True}
+
+@app.post("/api/admin/schedule")
+async def update_admin_schedule(data: AdminScheduleSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        open_t = normalize_hhmm(data.open_time, "10:00")
+        close_t = normalize_hhmm(data.close_time, "22:00")
+        await set_setting_raw(db, "auto_schedule_enabled", "1" if data.auto_schedule_enabled else "0")
+        await set_setting_raw(db, "open_time", open_t)
+        await set_setting_raw(db, "close_time", close_t)
+        await db.commit()
+    if data.auto_schedule_enabled:
+        await apply_auto_schedule_tick()
+    return {
+        "success": True,
+        "auto_schedule_enabled": bool(data.auto_schedule_enabled),
+        "open_time": open_t,
+        "close_time": close_t
+    }
+
+async def build_orders_report_csv_bytes() -> bytes:
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter=";", lineterminator="\r\n")
+
+    async with aiosqlite.connect(DB_FILE) as db:
+        currency = await get_setting_raw(db, "currency", "р.")
+        banned_set = {int(x) for x in await get_setting_list(db, "banned_users")}
+
+        writer.writerow([
+            "ID заказа", "Дата оформления", "Статус", "Кем отменён",
+            "ID клиента", "Имя клиента", "Локация / Адрес", "Время встречи",
+            "Курьер", "Состав заказа", "Промокод", "Скидка", "Доставка", "Итого", "Валюта"
+        ])
+
+        user_stats: dict[int, dict] = {}
+        async with db.execute(
+            """SELECT id, created_at, status, cancelled_by, user_id, user_name,
+                      station, time, claimed_by_name, items, promo_code, discount, delivery_fee, total
+               FROM orders ORDER BY rowid DESC"""
+        ) as cur:
+            order_rows = await cur.fetchall()
+
+        status_map = {"active": "Активен", "completed": "Выдан", "cancelled": "Отменён"}
+        cancel_map = {"client": "Клиент", "courier": "Курьер"}
+
+        for row in order_rows:
+            (oid, created_at, status, cancelled_by, uid, uname,
+             station, meet_time, courier_name, items_json, promo_code, discount, deliv_fee, total) = row
+            uid_int = int(uid or 0)
+            tot_val = float(total or 0.0)
+            try:
+                parsed_items = json.loads(items_json or "[]")
+                items_text = ", ".join(
+                    f"{it.get('title', 'Товар')} x{it.get('qty', 1)} ({float(it.get('price', 0)):.2f})"
+                    for it in parsed_items
+                )
+            except Exception:
+                items_text = str(items_json or "")
+
+            writer.writerow([
+                str(oid or ""),
+                str(created_at or ""),
+                status_map.get(status, str(status or "")),
+                cancel_map.get(cancelled_by, str(cancelled_by or "")),
+                uid_int,
+                str(uname or ""),
+                str(station or ""),
+                str(meet_time or ""),
+                str(courier_name or ""),
+                items_text,
+                str(promo_code or ""),
+                f"{float(discount or 0):.2f}",
+                f"{float(deliv_fee or 0):.2f}",
+                f"{tot_val:.2f}",
+                currency
+            ])
+
+            if uid_int > 0:
+                st_entry = user_stats.setdefault(uid_int, {
+                    "user_name": str(uname or ""),
+                    "joined_at": "",
+                    "total_orders": 0,
+                    "completed_orders": 0,
+                    "total_spent": 0.0
+                })
+                if not st_entry["user_name"] and uname:
+                    st_entry["user_name"] = str(uname)
+                st_entry["total_orders"] += 1
+                if status == "completed":
+                    st_entry["completed_orders"] += 1
+                    st_entry["total_spent"] = round(st_entry["total_spent"] + tot_val, 2)
+
+        async with db.execute("SELECT user_id, user_name, joined_at FROM users WHERE user_id > 0 ORDER BY rowid DESC") as ucur:
+            user_rows = await ucur.fetchall()
+
+        for uid, uname, joined_at in user_rows:
+            uid_int = int(uid)
+            st_entry = user_stats.setdefault(uid_int, {
+                "user_name": str(uname or ""),
+                "joined_at": str(joined_at or ""),
+                "total_orders": 0,
+                "completed_orders": 0,
+                "total_spent": 0.0
+            })
+            if uname:
+                st_entry["user_name"] = str(uname)
+            if joined_at:
+                st_entry["joined_at"] = str(joined_at)
+
+        writer.writerow([])
+        writer.writerow(["БАЗА КЛИЕНТОВ"])
+        writer.writerow([
+            "ID клиента", "Имя / Username", "Дата регистрации",
+            "Всего заказов", "Выдано заказов", f"Сумма выкупа ({currency})", "Статус"
+        ])
+        for uid_int, info in user_stats.items():
+            writer.writerow([
+                uid_int,
+                info["user_name"],
+                info["joined_at"],
+                info["total_orders"],
+                info["completed_orders"],
+                f"{info['total_spent']:.2f}",
+                "Заблокирован" if uid_int in banned_set else "Активен"
+            ])
+
+    return buf.getvalue().encode("utf-8-sig")
+
+async def send_backup_files_to_owner(target_uid: int):
+    now_label = datetime.now().strftime("%d.%m.%Y %H:%M")
+    csv_bytes = await build_orders_report_csv_bytes()
+    if os.path.exists(DB_FILE):
+        with open(DB_FILE, "rb") as f:
+            db_bytes = f.read()
+        await bot.send_document(
+            target_uid,
+            BufferedInputFile(db_bytes, filename="database.db"),
+            caption=f"🗄 <b>Резервная копия базы данных</b> ({html.escape(now_label)})",
+            parse_mode="HTML"
+        )
+    await bot.send_document(
+        target_uid,
+        BufferedInputFile(csv_bytes, filename="orders_report.csv"),
+        caption=f"📊 <b>Отчёт по заказам и клиентам</b> ({html.escape(now_label)})",
+        parse_mode="HTML"
+    )
+
+@app.post("/api/admin/send_backup")
+async def admin_send_backup(data: AdminUserActionSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+    try:
+        await send_backup_files_to_owner(int(data.user_id))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Не удалось отправить файлы в Telegram: {e}")
+    return {"success": True}
+
+@app.post("/api/admin/clear_test_orders")
+async def admin_clear_test_orders(data: AdminUserActionSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        await db.execute("DELETE FROM orders")
+        await db.execute("UPDATE promocodes SET used_count = 0")
+        await db.execute("DELETE FROM broadcasts")
         await db.commit()
     return {"success": True}
 
@@ -1423,6 +1729,13 @@ async def create_order(order: OrderSchema):
         configured_delivery_fee = float(await get_setting_raw(db, "delivery_fee", "0") or 0)
         free_delivery_threshold = float(await get_setting_raw(db, "free_delivery_threshold", "0") or 0)
 
+        if not order.items:
+            raise HTTPException(status_code=400, detail="Корзина пуста.")
+
+        station_clean = (order.station or "").strip()
+        if not station_clean:
+            raise HTTPException(status_code=400, detail=f"Укажите: {get_location_label(delivery_mode).lower()}.")
+
         items_subtotal = round(sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in order.items), 2)
         if min_order_amount > 0 and items_subtotal + 1e-6 < min_order_amount:
             raise HTTPException(
@@ -1438,7 +1751,24 @@ async def create_order(order: OrderSchema):
         else:
             applied_delivery_fee = 0.0
 
-        net_items_total = max(0.0, round(items_subtotal - float(order.discount or 0.0), 2))
+        applied_discount = max(0.0, min(items_subtotal, round(float(order.discount or 0.0), 2)))
+        if order.promo_code:
+            code_up = order.promo_code.strip().upper()
+            async with db.execute("SELECT discount, discount_type, max_uses, used_count FROM promocodes WHERE code = ?", (code_up,)) as cur:
+                p_row = await cur.fetchone()
+                if p_row:
+                    p_disc, p_type = float(p_row[0] or 0), (p_row[1] or "rub")
+                    m_uses, u_cnt = int(p_row[2] or 0), int(p_row[3] or 0)
+                    if m_uses > 0 and u_cnt >= m_uses:
+                        raise HTTPException(status_code=400, detail="Лимит использований промокода исчерпан.")
+                    if applied_discount <= 0 and p_disc > 0:
+                        if p_type == "percent":
+                            applied_discount = min(items_subtotal, round(items_subtotal * (p_disc / 100.0), 2))
+                        else:
+                            applied_discount = min(items_subtotal, round(p_disc, 2))
+                    await db.execute("UPDATE promocodes SET used_count = used_count + 1 WHERE code = ?", (code_up,))
+
+        net_items_total = max(0.0, round(items_subtotal - applied_discount, 2))
         final_total = round(net_items_total + applied_delivery_fee, 2)
 
         if order.user_id > 0:
@@ -1447,23 +1777,13 @@ async def create_order(order: OrderSchema):
                 (order.user_id, order.user_name, created_at)
             )
 
-        if order.promo_code:
-            code_up = order.promo_code.strip().upper()
-            async with db.execute("SELECT max_uses, used_count FROM promocodes WHERE code = ?", (code_up,)) as cur:
-                p_row = await cur.fetchone()
-                if p_row:
-                    m_uses, u_cnt = int(p_row[0] or 0), int(p_row[1] or 0)
-                    if m_uses > 0 and u_cnt >= m_uses:
-                        raise HTTPException(status_code=400, detail="Лимит использований промокода исчерпан.")
-                    await db.execute("UPDATE promocodes SET used_count = used_count + 1 WHERE code = ?", (code_up,))
-
         await db.execute(
             """INSERT OR REPLACE INTO orders 
                (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, delivery_fee, created_at, cancelled_by, claimed_by_id, claimed_by_name)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, '', 0, '')""",
             (
-                order_id, order.user_id, order.user_name, order.station, order.time,
-                final_total, json.dumps(order.items), order.status, order.promo_code, order.discount, applied_delivery_fee, created_at
+                order_id, order.user_id, order.user_name, station_clean, order.time,
+                final_total, json.dumps(order.items), order.status, order.promo_code, applied_discount, applied_delivery_fee, created_at
             )
         )
         all_couriers = await get_all_courier_ids(db)
@@ -1473,10 +1793,10 @@ async def create_order(order: OrderSchema):
     safe_cur = html.escape(currency)
     safe_user = html.escape(order.user_name or "User")
     loc_label = html.escape(get_location_label(delivery_mode))
-    loc_value = html.escape(format_location_value(order.station, delivery_mode))
+    loc_value = html.escape(format_location_value(station_clean, delivery_mode))
     safe_time = html.escape(order.time or "")
     items_str = "\n".join([f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} {safe_cur}" for i in order.items])
-    promo_line = f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{order.discount:.2f} {safe_cur})" if order.promo_code else ""
+    promo_line = f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{applied_discount:.2f} {safe_cur})" if order.promo_code and applied_discount > 0 else ""
     if applied_delivery_fee > 0:
         deliv_line = f"\n🚚 <b>Доставка:</b> {applied_delivery_fee:.2f} {safe_cur}"
     elif configured_delivery_fee > 0 and free_delivery_threshold > 0:
@@ -1900,6 +2220,80 @@ async def cmd_post_broadcast(message: Message):
         f"🚫 Недоступны / заблокировали бота: <b>{failed}</b>",
         parse_mode="HTML"
     )
+
+@dp.message(F.text.startswith("/claim"))
+async def cmd_claim_owner(message: Message):
+    uid = message.from_user.id
+    first_name = message.from_user.first_name or "Владелец"
+    uname = f"@{message.from_user.username}" if message.from_user.username else first_name
+    secret_arg = message.text[6:].strip()
+
+    if not CLAIM_SECRET:
+        await message.answer(
+            "⚠️ Секретный ключ активации <code>CLAIM_SECRET</code> не задан в файле <code>.env</code>.",
+            parse_mode="HTML"
+        )
+        return
+
+    if not secret_arg:
+        await message.answer(
+            "🔑 Укажите секретный ключ после команды:\n<code>/claim ваш_секретный_ключ</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    if not hmac.compare_digest(secret_arg, CLAIM_SECRET):
+        await message.answer("❌ Неверный секретный ключ активации.")
+        return
+
+    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)",
+            (uid, uname, now_str)
+        )
+        claimed = [int(x) for x in await get_setting_list(db, "claimed_primary_owners")]
+        if uid not in claimed:
+            claimed.append(uid)
+            await set_setting_list(db, "claimed_primary_owners", claimed)
+        banned = [int(x) for x in await get_setting_list(db, "banned_users") if int(x) != uid]
+        await set_setting_list(db, "banned_users", banned)
+        brand_name = await get_shop_brand_name(db)
+        await db.commit()
+
+    personal_url = build_personal_url(uid, uname, is_owner=True, is_courier=True)
+    try:
+        await bot.set_chat_menu_button(
+            chat_id=uid,
+            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=personal_url))
+        )
+    except Exception:
+        pass
+
+    kb = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=f"🛍 Открыть {brand_name}", web_app=WebAppInfo(url=personal_url))]],
+        resize_keyboard=True
+    )
+    await message.answer(
+        f"👑 <b>Права главного владельца успешно активированы!</b>\n\n"
+        f"Ваш Telegram ID (<code>{uid}</code>) добавлен в список главных администраторов.\n"
+        f"Откройте магазин по кнопке ниже — панель управления уже доступна во вкладке <b>«Профиль»</b>.",
+        reply_markup=kb,
+        parse_mode="HTML"
+    )
+
+@dp.message(F.text == "/backup")
+async def cmd_owner_backup(message: Message):
+    uid = message.from_user.id
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, uid):
+            return
+    status_msg = await message.answer("⏳ Формирую резервную копию базы данных и отчёт по заказам...")
+    try:
+        await send_backup_files_to_owner(uid)
+        await status_msg.delete()
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Ошибка при выгрузке бэкапа: {html.escape(str(e))}", parse_mode="HTML")
 
 @dp.message(F.text == "/start")
 async def cmd_start(message: Message):
