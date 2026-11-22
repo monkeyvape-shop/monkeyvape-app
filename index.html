@@ -2517,11 +2517,14 @@
         if (curLbl) curLbl.innerText = styleLabels[activeSt] || activeSt;
     }
 
+    let splashStyleLockTimer = null;
     function selectSplashStyle(styleName) {
         isSplashStyleDirty = true;
         splashStyle = styleName || 'neon';
-        localStorage.setItem('monkey_splash_style', splashStyle);
+        try { localStorage.setItem('monkey_splash_style', splashStyle); } catch (_) {}
         applySplashStyleUI();
+        if (splashStyleLockTimer) clearTimeout(splashStyleLockTimer);
+        splashStyleLockTimer = setTimeout(() => { isSplashStyleDirty = false; }, 10000);
         if (currentUserId && isCurrentUserOwner()) {
             apiFetch(`/api/admin/branding`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2535,7 +2538,10 @@
                     splash_style: splashStyle,
                     welcome_text: welcomeText || ''
                 })
-            }).then(() => { isSplashStyleDirty = false; }).catch(() => {});
+            }).then(() => {
+                if (splashStyleLockTimer) clearTimeout(splashStyleLockTimer);
+                splashStyleLockTimer = setTimeout(() => { isSplashStyleDirty = false; }, 6000);
+            }).catch(() => {});
         }
     }
 
@@ -2673,15 +2679,21 @@
             return;
         }
 
-        if (audio.src !== musicUrl) {
+        const srcChanged = audio.getAttribute('data-active-src') !== musicUrl;
+        if (srcChanged) {
+            audio.setAttribute('data-active-src', musicUrl);
             audio.src = musicUrl;
+            try { audio.load(); } catch (_) {}
         }
         if (!userMusicPaused) {
-            audio.play().then(() => {
-                if (playBtn) playBtn.textContent = '⏸';
-            }).catch(() => {
-                if (playBtn) playBtn.textContent = '▶';
-            });
+            const p = audio.play();
+            if (p && typeof p.then === 'function') {
+                p.then(() => {
+                    if (playBtn) playBtn.textContent = '⏸';
+                }).catch(() => {
+                    if (playBtn) playBtn.textContent = '▶';
+                });
+            }
         } else {
             audio.pause();
             if (playBtn) playBtn.textContent = '▶';
@@ -3617,15 +3629,20 @@
                 }
 
                 if (!isMusicDirty && (cfg.music_enabled !== undefined || cfg.music_url !== undefined || cfg.music_title !== undefined || cfg.music_volume !== undefined)) {
+                    const prevUrl = musicUrl;
+                    const prevVol = musicVolume;
                     if (cfg.music_enabled !== undefined) {
                         musicEnabled = Boolean(cfg.music_enabled);
                         try { localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0'); } catch (_) {}
                     }
                     if (cfg.music_url !== undefined) {
                         const srvUrl = (cfg.music_url || '').trim();
-                        if (srvUrl || !musicUrl) {
+                        if (srvUrl) {
                             musicUrl = srvUrl;
                             try { localStorage.setItem('monkey_music_url', musicUrl); } catch (_) {}
+                        } else if (!musicEnabled) {
+                            musicUrl = '';
+                            try { localStorage.setItem('monkey_music_url', ''); } catch (_) {}
                         }
                     }
                     if (cfg.music_title !== undefined) {
@@ -3635,6 +3652,10 @@
                     if (cfg.music_volume !== undefined && !isNaN(Number(cfg.music_volume))) {
                         musicVolume = Math.max(0, Math.min(1, Number(cfg.music_volume)));
                         try { localStorage.setItem('monkey_music_volume', String(musicVolume)); } catch (_) {}
+                    }
+                    const audioEl = document.getElementById('bg-music-audio');
+                    if (musicEnabled && musicUrl && (musicUrl !== prevUrl || musicVolume !== prevVol || (audioEl && audioEl.paused && !userMusicPaused))) {
+                        userMusicPaused = false;
                     }
                     applyMusicPlayerUI();
                 }
