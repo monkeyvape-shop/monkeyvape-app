@@ -393,6 +393,23 @@ def parse_product_options(raw_json: str, category: str) -> list:
             pass
     return [{"name": o, "available": True} for o in DEFAULT_OPTIONS_BY_CAT.get(category, ["Стандарт"])]
 
+def parse_product_categories(raw_json: str, primary_cat: str) -> list[str]:
+    res: list[str] = []
+    if raw_json:
+        try:
+            parsed = json.loads(raw_json)
+            if isinstance(parsed, list):
+                for item in parsed:
+                    cid = str(item or "").strip()
+                    if cid and cid not in res:
+                        res.append(cid)
+        except Exception:
+            pass
+    p_clean = (primary_cat or "").strip()
+    if p_clean and p_clean not in res:
+        res.insert(0, p_clean)
+    return res
+
 async def notify_stock_subscribers(db, product_id: int, product_title: str, available_options: list[str] = None, all_restocked: bool = False):
     brand_name = await get_shop_brand_name(db)
     async with db.execute("SELECT id, user_id, option_name FROM stock_notifications WHERE product_id = ?", (product_id,)) as cur:
@@ -472,7 +489,8 @@ async def init_db():
             "ALTER TABLE products ADD COLUMN image_url TEXT DEFAULT ''",
             "ALTER TABLE products ADD COLUMN has_discount INTEGER DEFAULT 0",
             "ALTER TABLE products ADD COLUMN low_stock INTEGER DEFAULT 0",
-            "ALTER TABLE products ADD COLUMN options_json TEXT DEFAULT ''"
+            "ALTER TABLE products ADD COLUMN options_json TEXT DEFAULT ''",
+            "ALTER TABLE products ADD COLUMN categories_json TEXT DEFAULT ''"
         ]:
             try:
                 await db.execute(col_sql)
@@ -546,6 +564,7 @@ async def init_db():
             ("logo_image", ""),
             ("splash_style", "neon"),
             ("music_enabled", "0"),
+            ("music_paused", "0"),
             ("music_url", ""),
             ("music_title", "Фоновый трек"),
             ("music_volume", "0.35"),
@@ -709,6 +728,7 @@ class AdminBrandingSchema(BaseModel):
 class AdminMusicSchema(BaseModel):
     user_id: int
     music_enabled: bool = False
+    music_paused: bool = False
     music_url: str = ""
     music_title: str = "Фоновый трек"
     music_volume: float = 0.35
@@ -819,7 +839,8 @@ class AdminProductSaveSchema(BaseModel):
     user_id: int
     id: int = 0
     title: str
-    category: str
+    category: str = ""
+    categories: list = []
     price: float
     old_price: float = 0.0
     tag: str = ""
@@ -916,6 +937,7 @@ async def get_shop_config():
         logo_image = (await get_setting_raw(db, "logo_image", "")).strip()
         splash_style = (await get_setting_raw(db, "splash_style", "neon")).strip() or "neon"
         music_enabled = (await get_setting_raw(db, "music_enabled", "0")) == "1"
+        music_paused = (await get_setting_raw(db, "music_paused", "0")) == "1"
         music_url = (await get_setting_raw(db, "music_url", "")).strip()
         music_title = (await get_setting_raw(db, "music_title", "Фоновый трек")).strip() or "Фоновый трек"
         try:
@@ -962,15 +984,18 @@ async def get_shop_config():
 
         products_list = []
         async with db.execute("""
-            SELECT id, title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json
+            SELECT id, title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json, categories_json
             FROM products ORDER BY id ASC
         """) as cursor:
             for pr in await cursor.fetchall():
-                cat = pr[2]
+                cat = pr[2] or "liquid"
+                cats_arr = parse_product_categories(pr[12] or "", cat)
+                primary_c = cats_arr[0] if cats_arr else cat
                 products_list.append({
                     "id": pr[0],
                     "title": pr[1],
-                    "category": cat,
+                    "category": primary_c,
+                    "categories": cats_arr,
                     "price": float(pr[3]),
                     "old_price": float(pr[4] or 0.0),
                     "tag": pr[5] or "",
@@ -979,7 +1004,7 @@ async def get_shop_config():
                     "image_url": pr[8] or "",
                     "has_discount": bool(pr[9]),
                     "low_stock": bool(pr[10]),
-                    "options": parse_product_options(pr[11] or "", cat)
+                    "options": parse_product_options(pr[11] or "", primary_c)
                 })
 
         return {
@@ -993,6 +1018,7 @@ async def get_shop_config():
             "logo_image": logo_image,
             "splash_style": splash_style,
             "music_enabled": music_enabled,
+            "music_paused": music_paused,
             "music_url": music_url,
             "music_title": music_title,
             "music_volume": music_volume,
@@ -1139,7 +1165,8 @@ async def upload_admin_music(data: AdminMusicUploadSchema):
 
         await set_setting_raw(db, "music_url", track_url)
         await set_setting_raw(db, "music_title", clean_title)
-        await set_setting_raw(db, "music_enabled", "1" if data.music_enabled else "0")
+        await set_setting_raw(db, "music_enabled", "1")
+        await set_setting_raw(db, "music_paused", "0")
         if data.music_volume is not None:
             m_vol = max(0.0, min(1.0, round(float(data.music_volume), 2)))
             await set_setting_raw(db, "music_volume", str(m_vol))
@@ -1154,7 +1181,8 @@ async def upload_admin_music(data: AdminMusicUploadSchema):
         "success": True,
         "music_url": track_url,
         "music_title": clean_title,
-        "music_enabled": bool(data.music_enabled),
+        "music_enabled": True,
+        "music_paused": False,
         "music_volume": m_vol
     }
 
@@ -1183,6 +1211,7 @@ async def update_admin_music(data: AdminMusicSchema):
         m_title = (data.music_title or "").strip() or "Фоновый трек"
         m_vol = max(0.0, min(1.0, round(float(data.music_volume if data.music_volume is not None else 0.35), 2)))
         await set_setting_raw(db, "music_enabled", "1" if data.music_enabled else "0")
+        await set_setting_raw(db, "music_paused", "1" if data.music_paused else "0")
         await set_setting_raw(db, "music_url", m_url)
         await set_setting_raw(db, "music_title", m_title)
         await set_setting_raw(db, "music_volume", str(m_vol))
@@ -1190,6 +1219,7 @@ async def update_admin_music(data: AdminMusicSchema):
     return {
         "success": True,
         "music_enabled": bool(data.music_enabled),
+        "music_paused": bool(data.music_paused),
         "music_url": m_url,
         "music_title": m_title,
         "music_volume": m_vol
@@ -1500,9 +1530,21 @@ async def admin_delete_promo(data: AdminPromoDeleteSchema):
 
 @app.post("/api/admin/save_product")
 async def admin_save_product(data: AdminProductSaveSchema):
+    clean_cats: list[str] = []
+    for c in (data.categories or []):
+        cid = str(c or "").strip()
+        if cid and cid not in clean_cats:
+            clean_cats.append(cid)
+    if not clean_cats and (data.category or "").strip():
+        clean_cats = [(data.category or "").strip()]
+    if not clean_cats:
+        clean_cats = ["liquid"]
+    primary_cat = clean_cats[0]
+    cats_json = json.dumps(clean_cats, ensure_ascii=False)
+
     clean_opts = [{"name": str(o.get("name", "")).strip(), "available": bool(o.get("available", True))} for o in (data.options or []) if str(o.get("name", "")).strip()]
     if not clean_opts:
-        clean_opts = [{"name": o, "available": True} for o in DEFAULT_OPTIONS_BY_CAT.get(data.category, ["Стандарт"])]
+        clean_opts = [{"name": o, "available": True} for o in DEFAULT_OPTIONS_BY_CAT.get(primary_cat, ["Стандарт"])]
     opts_json = json.dumps(clean_opts, ensure_ascii=False)
 
     async with aiosqlite.connect(DB_FILE) as db:
@@ -1514,10 +1556,10 @@ async def admin_save_product(data: AdminProductSaveSchema):
             was_avail = bool(old_row[0]) if old_row else False
 
             await db.execute(
-                """UPDATE products SET title = ?, category = ?, price = ?, old_price = ?, tag = ?, icon = ?,
+                """UPDATE products SET title = ?, category = ?, categories_json = ?, price = ?, old_price = ?, tag = ?, icon = ?,
                    available = ?, image_url = ?, has_discount = ?, low_stock = ?, options_json = ? WHERE id = ?""",
                 (
-                    data.title.strip(), data.category, float(data.price), float(data.old_price or 0.0),
+                    data.title.strip(), primary_cat, cats_json, float(data.price), float(data.old_price or 0.0),
                     data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0,
                     data.image_url.strip(), 1 if data.has_discount else 0, 1 if data.low_stock else 0,
                     opts_json, data.id
@@ -1528,10 +1570,10 @@ async def admin_save_product(data: AdminProductSaveSchema):
                 await notify_stock_subscribers(db, data.id, data.title.strip(), avail_opt_names, all_restocked=(not was_avail))
         else:
             await db.execute(
-                """INSERT INTO products (title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO products (title, category, categories_json, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    data.title.strip(), data.category, float(data.price), float(data.old_price or 0.0),
+                    data.title.strip(), primary_cat, cats_json, float(data.price), float(data.old_price or 0.0),
                     data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0,
                     data.image_url.strip(), 1 if data.has_discount else 0, 1 if data.low_stock else 0,
                     opts_json
@@ -2281,6 +2323,7 @@ async def handle_owner_audio_upload(message: Message):
         await set_setting_raw(db, "music_url", audio_url)
         await set_setting_raw(db, "music_title", track_title)
         await set_setting_raw(db, "music_enabled", "1")
+        await set_setting_raw(db, "music_paused", "0")
         await db.commit()
     await message.answer(
         f"🎵 <b>Аудиофайл из Telegram сохранён для магазина!</b>\n\n"
