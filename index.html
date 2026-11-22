@@ -702,25 +702,6 @@
         }
 
         .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
-        .catalog-cat-divider {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 4px 0 0 0;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-        }
-        .catalog-cat-divider::before,
-        .catalog-cat-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border-color);
-        }
         .multi-cats-picker {
             display: flex;
             flex-wrap: wrap;
@@ -2546,6 +2527,7 @@
     let isSplashImageDirty = false;
     let welcomeText = localStorage.getItem('monkey_welcome_text') || '';
 
+    try { localStorage.removeItem('monkey_user_music_muted_v2'); } catch (_) {}
     let musicEnabled = localStorage.getItem('monkey_music_enabled') === '1';
     let adminMusicPaused = localStorage.getItem('monkey_music_paused') === '1';
     let musicUrl = localStorage.getItem('monkey_music_url') || '';
@@ -2553,8 +2535,10 @@
     let musicVolume = Number(localStorage.getItem('monkey_music_volume') ?? '0.35');
     if (isNaN(musicVolume) || musicVolume < 0 || musicVolume > 1) musicVolume = 0.35;
     let isMusicDirty = false;
-    let userMusicMuted = localStorage.getItem('monkey_user_music_muted') === '1';
+    let userMusicMuted = localStorage.getItem('monkey_user_music_muted_v2') === '1';
     let lastSyncedMusicUrl = musicUrl;
+    let isAudioElementUnlocked = false;
+    const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
     const protectedAudioBlobCache = {};
     const protectedAudioFetchPromises = {};
 
@@ -2790,27 +2774,40 @@
         if (protectedAudioFetchPromises[target]) return protectedAudioFetchPromises[target];
 
         protectedAudioFetchPromises[target] = (async () => {
-            try {
-                const res = await fetch(target, {
-                    headers: {
-                        'ngrok-skip-browser-warning': 'true',
-                        'Bypass-Tunnel-Reminder': 'true',
-                        'X-Pinggy-No-Screen': 'true'
+            const basesToTry = Array.from(new Set([
+                BACKEND_URL,
+                ...CANDIDATE_BACKENDS
+            ])).filter(Boolean);
+            const apiMatch = target.match(/(\/api\/(?:music|tg_audio)\/[^?#\s]+)/);
+            const urlsToTry = apiMatch
+                ? [target, ...basesToTry.map(b => `${b.replace(/\/+$/, '')}${apiMatch[1]}`)]
+                : [target];
+
+            for (const candidateUrl of Array.from(new Set(urlsToTry))) {
+                try {
+                    const res = await fetch(candidateUrl, {
+                        headers: {
+                            'ngrok-skip-browser-warning': 'true',
+                            'Bypass-Tunnel-Reminder': 'true',
+                            'X-Pinggy-No-Screen': 'true'
+                        }
+                    });
+                    if (res.ok) {
+                        const ctype = (res.headers.get('content-type') || '').toLowerCase();
+                        if (!ctype.includes('text/html')) {
+                            const rawBlob = await res.blob();
+                            if (rawBlob && rawBlob.size > 0) {
+                                const audioBlob = rawBlob.type && rawBlob.type.startsWith('audio/')
+                                    ? rawBlob
+                                    : new Blob([rawBlob], { type: 'audio/mpeg' });
+                                const blobUrl = URL.createObjectURL(audioBlob);
+                                protectedAudioBlobCache[target] = blobUrl;
+                                return blobUrl;
+                            }
+                        }
                     }
-                });
-                if (res.ok) {
-                    const ctype = (res.headers.get('content-type') || '').toLowerCase();
-                    if (!ctype.includes('text/html')) {
-                        const rawBlob = await res.blob();
-                        const audioBlob = rawBlob.type && rawBlob.type.startsWith('audio/')
-                            ? rawBlob
-                            : new Blob([rawBlob], { type: 'audio/mpeg' });
-                        const blobUrl = URL.createObjectURL(audioBlob);
-                        protectedAudioBlobCache[target] = blobUrl;
-                        return blobUrl;
-                    }
-                }
-            } catch (_) {}
+                } catch (_) {}
+            }
             return target;
         })();
 
@@ -2830,10 +2827,8 @@
         }
     }
 
-    async function ensureAudioLoadedAndPlay(audio, rawUrl) {
-        if (!audio || !rawUrl) return;
-        const playableSrc = await resolvePlayableAudioSrc(rawUrl);
-        if (!playableSrc) return;
+    function playAudioElementDirectly(audio, playableSrc) {
+        if (!audio || !playableSrc) return;
         if (audio.getAttribute('data-resolved-src') !== playableSrc) {
             audio.setAttribute('data-resolved-src', playableSrc);
             audio.src = playableSrc;
@@ -2849,12 +2844,25 @@
             const p = audio.play();
             if (p && typeof p.then === 'function') {
                 p.then(() => {
-                    syncUserMusicToggleBtn(!userMusicMuted && musicEnabled && !adminMusicPaused);
+                    isAudioElementUnlocked = true;
+                    syncUserMusicToggleBtn(true);
                 }).catch(() => {
                     syncUserMusicToggleBtn(!userMusicMuted && musicEnabled && !adminMusicPaused);
                 });
             }
         } catch (_) {}
+    }
+
+    async function ensureAudioLoadedAndPlay(audio, rawUrl) {
+        if (!audio || !rawUrl) return;
+        const target = normalizeBackendAudioUrl(rawUrl);
+        if (target && protectedAudioBlobCache[target]) {
+            playAudioElementDirectly(audio, protectedAudioBlobCache[target]);
+            return;
+        }
+        const playableSrc = await resolvePlayableAudioSrc(rawUrl);
+        if (!playableSrc) return;
+        playAudioElementDirectly(audio, playableSrc);
     }
 
     function applyMusicPlayerUI() {
@@ -2919,20 +2927,44 @@
 
     function unlockBgMusicOnInteraction() {
         const audio = document.getElementById('bg-music-audio');
-        if (!audio || !musicEnabled || adminMusicPaused || !musicUrl || userMusicMuted) return;
+        if (!audio) return;
+
+        // Синхронно разблокируем <audio> на первом касании/клике для iOS/Android Telegram WebView
+        if (!isAudioElementUnlocked && !audio.getAttribute('data-resolved-src')) {
+            try {
+                audio.src = SILENT_WAV_DATA_URI;
+                audio.volume = 0.01;
+                const p = audio.play();
+                if (p && typeof p.then === 'function') {
+                    p.then(() => {
+                        isAudioElementUnlocked = true;
+                        try { audio.pause(); } catch (_) {}
+                        if (musicEnabled && !adminMusicPaused && musicUrl && !userMusicMuted) {
+                            ensureAudioLoadedAndPlay(audio, musicUrl);
+                        }
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+        }
+
+        if (!musicEnabled || adminMusicPaused || !musicUrl || userMusicMuted) return;
         if (audio.paused) {
             ensureAudioLoadedAndPlay(audio, musicUrl);
         }
     }
-    document.addEventListener('pointerdown', unlockBgMusicOnInteraction, { passive: true });
-    document.addEventListener('touchstart', unlockBgMusicOnInteraction, { passive: true });
+    ['pointerdown', 'touchstart', 'touchend', 'click'].forEach(evtName => {
+        document.addEventListener(evtName, unlockBgMusicOnInteraction, { capture: true, passive: true });
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') unlockBgMusicOnInteraction();
+    });
 
     function toggleUserMusicPlayback() {
         const audio = document.getElementById('bg-music-audio');
         const isCurrentlyActive = Boolean(!userMusicMuted && musicEnabled && !adminMusicPaused);
         if (isCurrentlyActive) {
             userMusicMuted = true;
-            try { localStorage.setItem('monkey_user_music_muted', '1'); } catch (_) {}
+            try { localStorage.setItem('monkey_user_music_muted_v2', '1'); } catch (_) {}
             if (audio) {
                 try { audio.pause(); } catch (_) {}
             }
@@ -2941,7 +2973,8 @@
         }
 
         userMusicMuted = false;
-        try { localStorage.setItem('monkey_user_music_muted', '0'); } catch (_) {}
+        isAudioElementUnlocked = true;
+        try { localStorage.setItem('monkey_user_music_muted_v2', '0'); } catch (_) {}
         syncUserMusicToggleBtn(true);
         if (audio && musicUrl) {
             ensureAudioLoadedAndPlay(audio, musicUrl);
@@ -3012,7 +3045,7 @@
                 try {
                     localStorage.setItem('monkey_music_enabled', '1');
                     localStorage.setItem('monkey_music_paused', '0');
-                    localStorage.setItem('monkey_user_music_muted', '0');
+                    localStorage.setItem('monkey_user_music_muted_v2', '0');
                 } catch (_) {}
                 applyMusicPlayerUI();
                 showToast("🎵 Трек запущен 24/7 для всех пользователей!");
@@ -3394,7 +3427,7 @@
         const clean = (rawUrl || '').trim();
         if (!clean) return '';
         if (clean.startsWith('data:') || clean.startsWith('blob:')) return clean;
-        const apiMatch = clean.match(/(\/api\/tg_photo\/[^?#\s]+)/);
+        const apiMatch = clean.match(/(\/api\/(?:tg_photo|product_image)\/[^?#\s]+)/);
         if (apiMatch) {
             const activeBase = (typeof BACKEND_URL === 'string' && BACKEND_URL.trim())
                 ? BACKEND_URL.trim().replace(/\/+$/, '')
@@ -3437,7 +3470,7 @@
         if (cleanUrl.startsWith('data:image/')) {
             return `<img src="${cleanUrl}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${escapeHtml(fallbackHtml)}'">`;
         }
-        if (cleanUrl.includes('ngrok') || cleanUrl.includes('/api/tg_photo/')) {
+        if (cleanUrl.includes('ngrok') || cleanUrl.includes('/api/tg_photo/') || cleanUrl.includes('/api/product_image/')) {
             const normUrl = normalizeBackendImageUrl(cleanUrl);
             const cached = protectedBlobCache[normUrl];
             const initialSrc = cached || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -4029,7 +4062,7 @@
                     if (musicUrl && musicUrl !== prevUrl && musicUrl !== lastSyncedMusicUrl) {
                         lastSyncedMusicUrl = musicUrl;
                         userMusicMuted = false;
-                        try { localStorage.setItem('monkey_user_music_muted', '0'); } catch (_) {}
+                        try { localStorage.setItem('monkey_user_music_muted_v2', '0'); } catch (_) {}
                     }
                     applyMusicPlayerUI();
                 }
@@ -4239,13 +4272,6 @@
         return card;
     }
 
-    function appendCatalogDivider(grid, label) {
-        const div = document.createElement('div');
-        div.className = 'catalog-cat-divider';
-        div.innerHTML = `<span>${escapeHtml(label)}</span>`;
-        grid.appendChild(div);
-    }
-
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
         if (!grid) return;
@@ -4260,7 +4286,7 @@
             .sort((a, b) => (getProductCategoryRank(a) - getProductCategoryRank(b)) || (Number(a.id) - Number(b.id)));
 
         if (activeCategory === 'all') {
-            // 1. Приоритетные товары (Хит, Скидка, Мало) — в самом верху каталога по убыванию приоритета
+            // 1. Невидимый блок приоритетных товаров (Хит, Скидка, Мало) — в самом верху каталога
             const priorityItems = availItems
                 .filter(p => getProductPriorityScore(p) > 0)
                 .sort((a, b) => {
@@ -4273,7 +4299,7 @@
 
             priorityItems.forEach(p => grid.appendChild(createProductCardElement(p)));
 
-            // 2. Обычные товары в наличии — сгруппированы по категориям ("невидимые колонки") без смешивания между собой
+            // 2. Невидимые блоки по категориям — товары идут строго категория за категорией без смешивания и без полос
             const regularItems = availItems.filter(p => getProductPriorityScore(p) === 0);
             const placedIds = new Set();
 
@@ -4281,41 +4307,28 @@
                 const group = regularItems
                     .filter(p => !placedIds.has(p.id) && getProductCategories(p).includes(catObj.id))
                     .sort((a, b) => Number(a.id) - Number(b.id));
-                if (group.length > 0) {
-                    if (grid.children.length > 0) appendCatalogDivider(grid, catObj.name);
-                    group.forEach(p => {
-                        placedIds.add(p.id);
-                        grid.appendChild(createProductCardElement(p));
-                    });
-                }
+                group.forEach(p => {
+                    placedIds.add(p.id);
+                    grid.appendChild(createProductCardElement(p));
+                });
             });
 
-            const uncategorized = regularItems
+            regularItems
                 .filter(p => !placedIds.has(p.id))
-                .sort((a, b) => Number(a.id) - Number(b.id));
-            if (uncategorized.length > 0) {
-                if (grid.children.length > 0) appendCatalogDivider(grid, 'Другое');
-                uncategorized.forEach(p => grid.appendChild(createProductCardElement(p)));
-            }
+                .sort((a, b) => Number(a.id) - Number(b.id))
+                .forEach(p => grid.appendChild(createProductCardElement(p)));
 
-            // 3. Товары, которых нет в наличии — в самом низу каталога
-            if (outOfStockItems.length > 0) {
-                if (grid.children.length > 0) appendCatalogDivider(grid, 'Нет в наличии');
-                outOfStockItems.forEach(p => grid.appendChild(createProductCardElement(p)));
-            }
+            // 3. Невидимый блок товаров без наличия — в самом низу каталога
+            outOfStockItems.forEach(p => grid.appendChild(createProductCardElement(p)));
         } else {
-            // Внутри конкретной вкладки: сначала по приоритету (Хит/Скидка/Мало), затем обычные, в самом низу — нет в наличии
+            // Внутри выбранной вкладки: сначала по приоритету, затем обычные, внизу — нет в наличии
             const sortedAvail = availItems.sort((a, b) => {
                 const diff = getProductPriorityScore(b) - getProductPriorityScore(a);
                 if (diff !== 0) return diff;
                 return Number(a.id) - Number(b.id);
             });
             sortedAvail.forEach(p => grid.appendChild(createProductCardElement(p)));
-
-            if (outOfStockItems.length > 0) {
-                if (sortedAvail.length > 0) appendCatalogDivider(grid, 'Нет в наличии');
-                outOfStockItems.forEach(p => grid.appendChild(createProductCardElement(p)));
-            }
+            outOfStockItems.forEach(p => grid.appendChild(createProductCardElement(p)));
         }
 
         hydrateProtectedImages();
@@ -5077,29 +5090,70 @@
         });
     }
 
+    let pendingAddProductImage = '';
+    let pendingEditProductImage = '';
+
     async function handleProductImageFileSelect(inputEl, mode) {
         const file = inputEl.files && inputEl.files[0];
         if (!file) return;
         try {
-            const dataUrl = await compressImageFileToDataUrl(file, 480, 0.82);
+            const dataUrl = await compressImageFileToDataUrl(file, 520, 0.84);
+            if (mode === 'add') pendingAddProductImage = dataUrl;
+            else pendingEditProductImage = dataUrl;
+
             const textInp = document.getElementById(mode === 'add' ? 'admin-prod-img' : 'edit-prod-img');
-            if (textInp) textInp.value = dataUrl;
-            syncImagePreviewFromInput(mode);
+            if (textInp) textInp.value = '';
+            syncImagePreviewFromInput(mode, dataUrl);
+            showToast("⏳ Сохраняем фото на сервер...");
+
+            try {
+                const res = await apiFetch(`/api/admin/upload_image`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: Number(currentUserId),
+                        filename: file.name || 'product.jpg',
+                        data_base64: dataUrl
+                    })
+                });
+                const upData = await res.json();
+                const savedPath = (upData?.image_url || '').trim();
+                if (savedPath) {
+                    if (mode === 'add') pendingAddProductImage = savedPath;
+                    else pendingEditProductImage = savedPath;
+                    if (textInp) textInp.value = savedPath;
+                    showToast("✅ Фото загружено на сервер!");
+                }
+            } catch (_) {
+                showToast("✅ Фото выбрано! Нажмите «Сохранить»");
+            }
         } catch (e) {
             showToast("Не удалось обработать картинку", true);
         }
         inputEl.value = '';
     }
 
-    function syncImagePreviewFromInput(mode) {
+    function syncImagePreviewFromInput(mode, overrideSrc = null) {
         const textInp = document.getElementById(mode === 'add' ? 'admin-prod-img' : 'edit-prod-img');
         const box = document.getElementById(mode === 'add' ? 'admin-prod-img-preview-box' : 'edit-prod-img-preview-box');
         const previewImg = document.getElementById(mode === 'add' ? 'admin-prod-img-preview' : 'edit-prod-img-preview');
-        const val = (textInp?.value || '').trim();
+        const typedVal = (textInp?.value || '').trim();
+        if (overrideSrc === null) {
+            if (mode === 'add') pendingAddProductImage = typedVal;
+            else pendingEditProductImage = typedVal;
+        }
+        const effectiveVal = (overrideSrc !== null ? overrideSrc : (mode === 'add' ? pendingAddProductImage : pendingEditProductImage) || typedVal).trim();
         if (box && previewImg) {
-            if (val) {
+            if (effectiveVal) {
                 box.style.display = 'flex';
-                previewImg.src = val;
+                const resolvedPreview = normalizeBackendImageUrl(effectiveVal);
+                if (resolvedPreview.includes('ngrok') || resolvedPreview.includes('/api/tg_photo/') || resolvedPreview.includes('/api/product_image/')) {
+                    fetch(resolvedPreview, { headers: { 'ngrok-skip-browser-warning': 'true', 'Bypass-Tunnel-Reminder': 'true' } })
+                        .then(r => r.ok ? r.blob() : null)
+                        .then(b => { if (b) previewImg.src = URL.createObjectURL(b); else previewImg.src = resolvedPreview; })
+                        .catch(() => { previewImg.src = resolvedPreview; });
+                } else {
+                    previewImg.src = resolvedPreview;
+                }
             } else {
                 box.style.display = 'none';
                 previewImg.src = '';
@@ -5108,9 +5162,11 @@
     }
 
     function clearProductImage(mode) {
+        if (mode === 'add') pendingAddProductImage = '';
+        else pendingEditProductImage = '';
         const textInp = document.getElementById(mode === 'add' ? 'admin-prod-img' : 'edit-prod-img');
         if (textInp) textInp.value = '';
-        syncImagePreviewFromInput(mode);
+        syncImagePreviewFromInput(mode, '');
     }
 
     function compressSplashLogoToDataUrl(file, maxSize = 256) {
@@ -6137,7 +6193,7 @@
     async function adminAddProduct() {
         document.activeElement?.blur();
         const title = document.getElementById('admin-prod-title').value.trim();
-        const image_url = document.getElementById('admin-prod-img').value.trim();
+        const image_url = (pendingAddProductImage || document.getElementById('admin-prod-img').value || '').trim();
         const optsRaw = document.getElementById('admin-prod-opts').value.trim();
         const cleanCats = selectedAddProductCats.length > 0 ? [...selectedAddProductCats] : [shopCategories[0]?.id || 'liquid'];
         const category = cleanCats[0];
@@ -6157,9 +6213,10 @@
                     tag: '', icon, available: true, image_url, has_discount: false, low_stock: false, options
                 })
             });
+            pendingAddProductImage = '';
             document.getElementById('admin-prod-title').value = '';
             document.getElementById('admin-prod-img').value = '';
-            syncImagePreviewFromInput('add');
+            syncImagePreviewFromInput('add', '');
             document.getElementById('admin-prod-opts').value = '';
             document.getElementById('admin-prod-price').value = '';
             await syncShopConfig();
@@ -6189,8 +6246,9 @@
         document.getElementById('edit-prod-icon').value = prod.icon || '🧪';
         document.getElementById('edit-prod-price').value = prod.price;
         document.getElementById('edit-prod-old-price').value = prod.old_price || 0;
-        document.getElementById('edit-prod-img').value = prod.image_url || '';
-        syncImagePreviewFromInput('edit');
+        pendingEditProductImage = (prod.image_url || '').trim();
+        document.getElementById('edit-prod-img').value = pendingEditProductImage;
+        syncImagePreviewFromInput('edit', pendingEditProductImage);
 
         editingProductOptions = JSON.parse(JSON.stringify(
             (Array.isArray(prod.options) && prod.options.length > 0) ? prod.options : (DEFAULT_OPTS[prod.category] || [{ name: 'Стандарт', available: true }])
@@ -6249,7 +6307,7 @@
         const icon = document.getElementById('edit-prod-icon').value.trim() || '🧪';
         const price = parseFloat(document.getElementById('edit-prod-price').value);
         const old_price = parseFloat(document.getElementById('edit-prod-old-price').value) || 0;
-        const image_url = document.getElementById('edit-prod-img').value.trim();
+        const image_url = (pendingEditProductImage || document.getElementById('edit-prod-img').value || '').trim();
 
         if (!title || isNaN(price) || price <= 0) { showToast("Укажите название и цену", true); return; }
         const autoDiscount = old_price > price ? true : Boolean(prod.has_discount && old_price > 0);
