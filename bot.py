@@ -541,6 +541,12 @@ async def init_db():
             ("auto_schedule_enabled", "0"),
             ("open_time", "10:00"),
             ("close_time", "22:00"),
+            ("logo_image", ""),
+            ("splash_style", "neon"),
+            ("music_enabled", "0"),
+            ("music_url", ""),
+            ("music_title", "Фоновый трек"),
+            ("music_volume", "0.35"),
         ]
         for s_key, s_val in default_shop_settings:
             await db.execute("INSERT OR IGNORE INTO shop_settings (key, value) VALUES (?, ?)", (s_key, s_val))
@@ -689,9 +695,18 @@ class AdminBrandingSchema(BaseModel):
     user_id: int
     logo_part1: str
     logo_part2: str = ""
+    logo_image: str | None = None
     splash_emoji: str = ""
     splash_image: str | None = None
+    splash_style: str | None = None
     welcome_text: str = ""
+
+class AdminMusicSchema(BaseModel):
+    user_id: int
+    music_enabled: bool = False
+    music_url: str = ""
+    music_title: str = "Фоновый трек"
+    music_volume: float = 0.35
 
 class AdminLocalizationSchema(BaseModel):
     user_id: int
@@ -864,6 +879,15 @@ async def get_shop_config():
         hit_color = await get_setting_raw(db, "hit_color", "#ffcc00")
         logo_part1 = await get_setting_raw(db, "logo_part1", "MONKEY")
         logo_part2 = await get_setting_raw(db, "logo_part2", "VAPE")
+        logo_image = (await get_setting_raw(db, "logo_image", "")).strip()
+        splash_style = (await get_setting_raw(db, "splash_style", "neon")).strip() or "neon"
+        music_enabled = (await get_setting_raw(db, "music_enabled", "0")) == "1"
+        music_url = (await get_setting_raw(db, "music_url", "")).strip()
+        music_title = (await get_setting_raw(db, "music_title", "Фоновый трек")).strip() or "Фоновый трек"
+        try:
+            music_volume = max(0.0, min(1.0, float(await get_setting_raw(db, "music_volume", "0.35") or 0.35)))
+        except Exception:
+            music_volume = 0.35
         currency = await get_setting_raw(db, "currency", "р.")
         if currency not in ALLOWED_CURRENCIES:
             currency = "р."
@@ -932,6 +956,12 @@ async def get_shop_config():
             "ui_theme": ui_theme,
             "logo_part1": logo_part1,
             "logo_part2": logo_part2,
+            "logo_image": logo_image,
+            "splash_style": splash_style,
+            "music_enabled": music_enabled,
+            "music_url": music_url,
+            "music_title": music_title,
+            "music_volume": music_volume,
             "currency": currency,
             "delivery_mode": delivery_mode,
             "delivery_locations": delivery_locations,
@@ -988,19 +1018,47 @@ async def update_admin_branding(data: AdminBrandingSchema):
             raise HTTPException(status_code=403, detail="Only owner")
         p1 = data.logo_part1.strip()
         p2 = data.logo_part2.strip()
-        if not p1 and not p2:
+        logo_img = (data.logo_image or "").strip() if data.logo_image is not None else (await get_setting_raw(db, "logo_image", "")).strip()
+        if not p1 and not p2 and not logo_img:
             raise HTTPException(status_code=400, detail="Logo cannot be empty")
         await set_setting_raw(db, "logo_part1", p1)
         await set_setting_raw(db, "logo_part2", p2)
+        if data.logo_image is not None:
+            await set_setting_raw(db, "logo_image", data.logo_image.strip())
         if data.splash_emoji.strip():
             await set_setting_raw(db, "splash_emoji", data.splash_emoji.strip())
         if data.splash_image is not None:
             await set_setting_raw(db, "splash_image", data.splash_image.strip())
+        if data.splash_style is not None:
+            st_clean = data.splash_style.strip()
+            if st_clean in ("neon", "minimal", "orbit", "pulse", "glass"):
+                await set_setting_raw(db, "splash_style", st_clean)
         if data.welcome_text is not None:
             w_clean = data.welcome_text.strip()
             await set_setting_raw(db, "welcome_text", w_clean if w_clean else DEFAULT_WELCOME_TEXT)
         await db.commit()
     return {"success": True}
+
+@app.post("/api/admin/music")
+async def update_admin_music(data: AdminMusicSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        m_url = (data.music_url or "").strip()
+        m_title = (data.music_title or "").strip() or "Фоновый трек"
+        m_vol = max(0.0, min(1.0, round(float(data.music_volume if data.music_volume is not None else 0.35), 2)))
+        await set_setting_raw(db, "music_enabled", "1" if data.music_enabled else "0")
+        await set_setting_raw(db, "music_url", m_url)
+        await set_setting_raw(db, "music_title", m_title)
+        await set_setting_raw(db, "music_volume", str(m_vol))
+        await db.commit()
+    return {
+        "success": True,
+        "music_enabled": bool(data.music_enabled),
+        "music_url": m_url,
+        "music_title": m_title,
+        "music_volume": m_vol
+    }
 
 @app.post("/api/admin/localization")
 async def update_admin_localization(data: AdminLocalizationSchema):
