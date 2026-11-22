@@ -701,6 +701,51 @@
         }
 
         .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+        .catalog-cat-divider {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0 0 0;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .catalog-cat-divider::before,
+        .catalog-cat-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+        .multi-cats-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .multi-cat-chip {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+        }
+        .multi-cat-chip.selected {
+            background: var(--accent-green-glow);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            font-weight: 700;
+        }
         .product-card {
             background: linear-gradient(165deg, color-mix(in srgb, var(--card-bg) 86%, rgba(255,255,255,0.03)) 0%, color-mix(in srgb, var(--card-bg) 76%, transparent) 100%);
             backdrop-filter: blur(14px);
@@ -1689,9 +1734,13 @@
 
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
                 <input type="text" id="edit-prod-title" class="promo-input" style="text-transform:none;" placeholder="Название товара">
-                <div style="display:flex; gap:6px;">
-                    <select id="edit-prod-cat" class="admin-select" style="flex:1;"></select>
-                    <input type="text" id="edit-prod-icon" class="promo-input" style="text-transform:none; width:50px; text-align:center;" placeholder="🧪">
+                <div>
+                    <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:5px;">📂 Вкладки каталога (можно выбрать несколько):</div>
+                    <div id="edit-prod-cats-picker" class="multi-cats-picker"></div>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <span style="font-size:12px; color:var(--text-secondary);">Иконка товара:</span>
+                    <input type="text" id="edit-prod-icon" class="promo-input" style="text-transform:none; width:56px; text-align:center;" placeholder="🧪">
                 </div>
                 <div style="display:flex; gap:6px;">
                     <input type="number" id="edit-prod-old-price" class="promo-input" style="text-transform:none;" placeholder="Старая цена (напр. 17)" step="0.5">
@@ -1895,10 +1944,13 @@
                         <input type="text" id="admin-prod-img" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px; font-size:12px;" placeholder="Или вставьте ссылку на картинку (необязательно)" oninput="syncImagePreviewFromInput('add')">
 
                         <input type="text" id="admin-prod-opts" class="promo-input" style="text-transform:none; width:100%; margin-bottom:6px;" placeholder="Вкусы / варианты через запятую (необязательно)">
+                        <div style="margin-bottom:6px;">
+                            <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:5px;">📂 Вкладки каталога (можно выбрать несколько):</div>
+                            <div id="admin-prod-cats-picker" class="multi-cats-picker"></div>
+                        </div>
                         <div style="display:flex; gap:6px; margin-bottom:6px;">
-                            <select id="admin-prod-cat" class="admin-select" style="flex:1;"></select>
-                            <input type="number" id="admin-prod-price" class="promo-input" style="text-transform:none; width:82px;" placeholder="Цена" step="0.5">
-                            <input type="text" id="admin-prod-icon" class="promo-input" style="text-transform:none; width:44px; text-align:center;" value="🧪">
+                            <input type="number" id="admin-prod-price" class="promo-input" style="text-transform:none; flex:1;" placeholder="Цена (напр. 15)" step="0.5">
+                            <input type="text" id="admin-prod-icon" class="promo-input" style="text-transform:none; width:52px; text-align:center;" value="🧪">
                         </div>
                         <button class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminAddProduct()">Добавить в каталог</button>
                     </div>
@@ -1984,29 +2036,27 @@
 
                     <div class="shop-master-box">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
-                            <span style="font-size:12.5px; font-weight:700;">🎵 Фоновая музыка в магазине (24/7):</span>
+                            <span style="font-size:12.5px; font-weight:700;">🎵 Фоновая музыка 24/7</span>
                             <button type="button" id="admin-music-toggle-btn" class="toggle-pill off" onclick="adminToggleMusicEnabled()">⚪ Выкл.</button>
                         </div>
-                        <div style="display:flex; flex-direction:column; gap:7px; margin-bottom:8px;">
-                            <input type="text" id="admin-music-title-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Название трека (напр. Chill Lounge)" oninput="isMusicDirty=true">
-                            <input type="file" id="admin-music-file" accept="audio/*" style="display:none;" onchange="handleMusicFileSelect(this)">
-                            <button type="button" class="img-upload-btn" onclick="document.getElementById('admin-music-file').click()">
-                                🎧 Выбрать аудиофайл с устройства
-                            </button>
-                            <div style="font-size:11px; color:var(--text-secondary); line-height:1.35;">💡 Также можно отправить аудиофайл прямо в чат с ботом в Telegram — он сам сохранит его и включит музыку.</div>
-                            <div style="display:flex; gap:6px; align-items:center;">
-                                <input type="text" id="admin-music-url-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Или вставьте прямую ссылку на MP3 / аудио..." onfocus="if(this.value.trim()){this.value=''; isMusicDirty=true;}" oninput="isMusicDirty=true">
-                                <button type="button" class="toggle-pill off" style="padding:9px 10px;" title="Очистить поле" onclick="clearAdminMusicUrlInput()">✕</button>
+                        <input type="file" id="admin-music-file" accept="audio/*" style="display:none;" onchange="handleMusicFileSelect(this)">
+                        <div style="display:flex; flex-direction:column; gap:7px;">
+                            <input type="text" id="admin-music-title-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Название трека..." oninput="isMusicDirty=true">
+                            <div style="display:grid; grid-template-columns:1.25fr 1fr 0.85fr; gap:6px;">
+                                <button type="button" class="toggle-pill on" style="padding:8px 6px; font-size:11px;" onclick="document.getElementById('admin-music-file').click()">🎧 Сменить трек</button>
+                                <button type="button" id="admin-music-pause-btn" class="toggle-pill off" style="padding:8px 6px; font-size:11px;" onclick="adminToggleMusicPause()">⏸ Пауза</button>
+                                <button type="button" class="toggle-pill off" style="padding:8px 6px; font-size:11px;" onclick="adminClearMusic()">🗑 Убрать</button>
                             </div>
-                            <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:var(--text-secondary); margin-bottom:4px;">
-                                    <span>🔊 Громкость для магазина и покупателей:</span>
-                                    <b id="admin-music-vol-label" style="color:var(--accent-green);">35%</b>
-                                </div>
-                                <input type="range" id="admin-music-vol-slider" min="0" max="100" value="35" style="width:100%; accent-color:var(--accent-green); cursor:pointer;" oninput="handleAdminMusicVolumeInput(this.value)">
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <input type="text" id="admin-music-url-input" class="promo-input" style="text-transform:none; font-size:11.5px;" placeholder="Ссылка на MP3 (необязательно)..." onfocus="if(this.value.trim()){this.value=''; isMusicDirty=true;}" oninput="isMusicDirty=true">
+                                <button type="button" class="toggle-pill off" style="padding:8px 9px;" title="Очистить" onclick="clearAdminMusicUrlInput()">✕</button>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">🔊 <b id="admin-music-vol-label" style="color:var(--accent-green);">35%</b></span>
+                                <input type="range" id="admin-music-vol-slider" min="0" max="100" value="35" style="flex:1; accent-color:var(--accent-green); cursor:pointer;" oninput="handleAdminMusicVolumeInput(this.value)" onchange="adminSaveMusic(true)">
+                                <button type="button" class="promo-apply-btn" style="padding:7px 11px; font-size:11.5px;" onclick="adminSaveMusic(false)">💾 Ок</button>
                             </div>
                         </div>
-                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveMusic()">💾 Сохранить музыку и громкость</button>
                     </div>
 
                     <div class="shop-master-box">
@@ -2496,12 +2546,16 @@
     let welcomeText = localStorage.getItem('monkey_welcome_text') || '';
 
     let musicEnabled = localStorage.getItem('monkey_music_enabled') === '1';
+    let adminMusicPaused = localStorage.getItem('monkey_music_paused') === '1';
     let musicUrl = localStorage.getItem('monkey_music_url') || '';
     let musicTitle = localStorage.getItem('monkey_music_title') || 'Фоновый трек';
     let musicVolume = Number(localStorage.getItem('monkey_music_volume') ?? '0.35');
     if (isNaN(musicVolume) || musicVolume < 0 || musicVolume > 1) musicVolume = 0.35;
     let isMusicDirty = false;
-    let userMusicPaused = false;
+    let userMusicMuted = localStorage.getItem('monkey_user_music_muted') === '1';
+    let lastSyncedMusicUrl = musicUrl;
+    const protectedAudioBlobCache = {};
+    const protectedAudioFetchPromises = {};
 
     function escapeHtml(str) {
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -2710,6 +2764,62 @@
         }
     }
 
+    function normalizeBackendAudioUrl(rawUrl) {
+        const clean = (rawUrl || '').trim();
+        if (!clean) return '';
+        if (clean.startsWith('data:') || clean.startsWith('blob:')) return clean;
+        const apiMatch = clean.match(/(\/api\/(?:music|tg_audio)\/[^?#\s]+)/);
+        if (apiMatch) {
+            const activeBase = (typeof BACKEND_URL === 'string' && BACKEND_URL.trim())
+                ? BACKEND_URL.trim().replace(/\/+$/, '')
+                : '';
+            return activeBase ? `${activeBase}${apiMatch[1]}` : apiMatch[1];
+        }
+        return clean;
+    }
+
+    async function resolvePlayableAudioSrc(rawUrl) {
+        const target = normalizeBackendAudioUrl(rawUrl);
+        if (!target) return '';
+        if (target.startsWith('data:') || target.startsWith('blob:')) return target;
+        if (!target.includes('/api/music/') && !target.includes('/api/tg_audio/') && !target.includes('ngrok')) {
+            return target;
+        }
+        if (protectedAudioBlobCache[target]) return protectedAudioBlobCache[target];
+        if (protectedAudioFetchPromises[target]) return protectedAudioFetchPromises[target];
+
+        protectedAudioFetchPromises[target] = (async () => {
+            try {
+                const res = await fetch(target, {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true',
+                        'Bypass-Tunnel-Reminder': 'true',
+                        'X-Pinggy-No-Screen': 'true'
+                    }
+                });
+                if (res.ok) {
+                    const ctype = (res.headers.get('content-type') || '').toLowerCase();
+                    if (!ctype.includes('text/html')) {
+                        const rawBlob = await res.blob();
+                        const audioBlob = rawBlob.type && rawBlob.type.startsWith('audio/')
+                            ? rawBlob
+                            : new Blob([rawBlob], { type: 'audio/mpeg' });
+                        const blobUrl = URL.createObjectURL(audioBlob);
+                        protectedAudioBlobCache[target] = blobUrl;
+                        return blobUrl;
+                    }
+                }
+            } catch (_) {}
+            return target;
+        })();
+
+        try {
+            return await protectedAudioFetchPromises[target];
+        } finally {
+            delete protectedAudioFetchPromises[target];
+        }
+    }
+
     function clearAdminMusicUrlInput() {
         isMusicDirty = true;
         const urlInp = document.getElementById('admin-music-url-input');
@@ -2717,6 +2827,33 @@
             urlInp.value = '';
             urlInp.focus();
         }
+    }
+
+    async function ensureAudioLoadedAndPlay(audio, rawUrl) {
+        if (!audio || !rawUrl) return;
+        const playableSrc = await resolvePlayableAudioSrc(rawUrl);
+        if (!playableSrc) return;
+        if (audio.getAttribute('data-resolved-src') !== playableSrc) {
+            audio.setAttribute('data-resolved-src', playableSrc);
+            audio.src = playableSrc;
+            try { audio.load(); } catch (_) {}
+        }
+        audio.volume = Math.max(0, Math.min(1, musicVolume));
+        if (userMusicMuted || !musicEnabled || adminMusicPaused) {
+            try { audio.pause(); } catch (_) {}
+            syncUserMusicToggleBtn(false);
+            return;
+        }
+        try {
+            const p = audio.play();
+            if (p && typeof p.then === 'function') {
+                p.then(() => {
+                    syncUserMusicToggleBtn(!userMusicMuted && musicEnabled && !adminMusicPaused);
+                }).catch(() => {
+                    syncUserMusicToggleBtn(!userMusicMuted && musicEnabled && !adminMusicPaused);
+                });
+            }
+        } catch (_) {}
     }
 
     function applyMusicPlayerUI() {
@@ -2731,17 +2868,29 @@
         if (pctEl) pctEl.textContent = `${volPct}%`;
         if (titleEl) titleEl.textContent = `🎵 ${musicTitle || 'Фоновый трек'}`;
 
-        const showPlayer = Boolean(musicEnabled && musicUrl);
-        if (card) card.classList.toggle('active', showPlayer);
+        const hasTrack = Boolean((musicUrl || '').trim());
+        const showUserCard = Boolean(hasTrack && musicEnabled && !adminMusicPaused);
+        if (card) card.classList.toggle('active', showUserCard);
 
         const admBtn = document.getElementById('admin-music-toggle-btn');
+        const admPauseBtn = document.getElementById('admin-music-pause-btn');
         const admTitle = document.getElementById('admin-music-title-input');
         const admUrl = document.getElementById('admin-music-url-input');
         const admSlider = document.getElementById('admin-music-vol-slider');
         const admVolLbl = document.getElementById('admin-music-vol-label');
         if (admBtn) {
-            admBtn.className = `toggle-pill ${musicEnabled ? 'on' : 'off'}`;
-            admBtn.innerText = musicEnabled ? '🟢 Вкл.' : '⚪ Выкл.';
+            const isPlaying247 = Boolean(musicEnabled && !adminMusicPaused && hasTrack);
+            admBtn.className = `toggle-pill ${isPlaying247 ? 'on' : 'off'}`;
+            admBtn.innerText = isPlaying247 ? '🟢 Вкл. 24/7' : (adminMusicPaused ? '⏸ Пауза' : '⚪ Выкл.');
+        }
+        if (admPauseBtn) {
+            if (adminMusicPaused || !musicEnabled) {
+                admPauseBtn.className = 'toggle-pill on';
+                admPauseBtn.innerText = '▶️ Играть';
+            } else {
+                admPauseBtn.className = 'toggle-pill off';
+                admPauseBtn.innerText = '⏸ Пауза';
+            }
         }
         if (admTitle && document.activeElement !== admTitle) admTitle.value = musicTitle || '';
         if (admUrl && document.activeElement !== admUrl) admUrl.value = musicUrl || '';
@@ -2751,40 +2900,27 @@
         if (!audio) return;
         audio.volume = Math.max(0, Math.min(1, musicVolume));
 
-        if (!showPlayer) {
-            audio.pause();
+        if (!hasTrack || !musicEnabled || adminMusicPaused) {
+            try { audio.pause(); } catch (_) {}
             syncUserMusicToggleBtn(false);
             return;
         }
 
-        const srcChanged = audio.getAttribute('data-active-src') !== musicUrl;
-        if (srcChanged) {
-            audio.setAttribute('data-active-src', musicUrl);
-            audio.src = musicUrl;
-            try { audio.load(); } catch (_) {}
-        }
-        if (!userMusicPaused) {
-            const p = audio.play();
-            if (p && typeof p.then === 'function') {
-                p.then(() => {
-                    syncUserMusicToggleBtn(true);
-                }).catch(() => {
-                    syncUserMusicToggleBtn(false);
-                });
-            }
-        } else {
-            audio.pause();
+        if (userMusicMuted) {
+            try { audio.pause(); } catch (_) {}
             syncUserMusicToggleBtn(false);
+            return;
         }
+
+        syncUserMusicToggleBtn(true);
+        ensureAudioLoadedAndPlay(audio, musicUrl);
     }
 
     function unlockBgMusicOnInteraction() {
         const audio = document.getElementById('bg-music-audio');
-        if (!audio || !musicEnabled || !musicUrl || userMusicPaused) return;
+        if (!audio || !musicEnabled || adminMusicPaused || !musicUrl || userMusicMuted) return;
         if (audio.paused) {
-            audio.play().then(() => {
-                syncUserMusicToggleBtn(true);
-            }).catch(() => {});
+            ensureAudioLoadedAndPlay(audio, musicUrl);
         }
     }
     document.addEventListener('pointerdown', unlockBgMusicOnInteraction, { passive: true });
@@ -2792,18 +2928,22 @@
 
     function toggleUserMusicPlayback() {
         const audio = document.getElementById('bg-music-audio');
-        if (!audio || !musicUrl) return;
-        if (audio.paused) {
-            userMusicPaused = false;
-            audio.play().then(() => {
-                syncUserMusicToggleBtn(true);
-            }).catch(() => {
-                syncUserMusicToggleBtn(false);
-            });
-        } else {
-            userMusicPaused = true;
-            audio.pause();
+        const isCurrentlyActive = Boolean(!userMusicMuted && musicEnabled && !adminMusicPaused);
+        if (isCurrentlyActive) {
+            userMusicMuted = true;
+            try { localStorage.setItem('monkey_user_music_muted', '1'); } catch (_) {}
+            if (audio) {
+                try { audio.pause(); } catch (_) {}
+            }
             syncUserMusicToggleBtn(false);
+            return;
+        }
+
+        userMusicMuted = false;
+        try { localStorage.setItem('monkey_user_music_muted', '0'); } catch (_) {}
+        syncUserMusicToggleBtn(true);
+        if (audio && musicUrl) {
+            ensureAudioLoadedAndPlay(audio, musicUrl);
         }
     }
 
@@ -2842,7 +2982,7 @@
             const typedTitle = (titleInp?.value || '').trim() || cleanName;
             musicTitle = typedTitle;
             if (titleInp) titleInp.value = musicTitle;
-            showToast("⏳ Загружаем трек на сервер...");
+            showToast("⏳ Загружаем и запускаем трек...");
             try {
                 const res = await apiFetch(`/api/admin/upload_music`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2851,29 +2991,37 @@
                         filename: file.name || 'track.mp3',
                         data_base64: base64Part,
                         music_title: musicTitle,
-                        music_enabled: musicEnabled,
+                        music_enabled: true,
                         music_volume: musicVolume
                     })
                 });
                 const upData = await res.json();
                 const resolvedUrl = (upData?.music_url || '').trim();
-                const finalTrackUrl = (resolvedUrl && resolvedUrl.startsWith('/'))
-                    ? `${BACKEND_URL.replace(/\/+$/, '')}${resolvedUrl}`
-                    : resolvedUrl;
+                const finalTrackUrl = normalizeBackendAudioUrl(resolvedUrl) || resolvedUrl;
                 if (finalTrackUrl) {
                     musicUrl = finalTrackUrl;
+                    lastSyncedMusicUrl = musicUrl;
                     if (urlInp) urlInp.value = musicUrl;
                     try { localStorage.setItem('monkey_music_url', musicUrl); } catch (_) {}
                 }
+                musicEnabled = true;
+                adminMusicPaused = false;
+                userMusicMuted = false;
                 isMusicDirty = false;
-                userMusicPaused = false;
+                try {
+                    localStorage.setItem('monkey_music_enabled', '1');
+                    localStorage.setItem('monkey_music_paused', '0');
+                    localStorage.setItem('monkey_user_music_muted', '0');
+                } catch (_) {}
                 applyMusicPlayerUI();
-                showToast("✅ Трек загружен на сервер и доступен всем!");
+                showToast("🎵 Трек запущен 24/7 для всех пользователей!");
             } catch (e) {
                 isMusicDirty = true;
                 musicUrl = rawDataUrl;
+                musicEnabled = true;
+                adminMusicPaused = false;
+                userMusicMuted = false;
                 if (urlInp) urlInp.value = musicUrl;
-                userMusicPaused = false;
                 applyMusicPlayerUI();
                 showToast(e?.detail ? `⚠️ ${e.detail}` : "⚠️ Не удалось загрузить файл на сервер", true);
             }
@@ -2882,16 +3030,65 @@
         inputEl.value = '';
     }
 
-    function adminToggleMusicEnabled() {
+    async function adminToggleMusicEnabled() {
         document.activeElement?.blur();
         isMusicDirty = true;
         musicEnabled = !musicEnabled;
-        if (musicEnabled) userMusicPaused = false;
-        localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+        if (musicEnabled) {
+            adminMusicPaused = false;
+            userMusicMuted = false;
+        }
+        try {
+            localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+            localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0');
+        } catch (_) {}
         applyMusicPlayerUI();
+        await adminSaveMusic(true);
     }
 
-    async function adminSaveMusic() {
+    async function adminToggleMusicPause() {
+        document.activeElement?.blur();
+        if (!musicUrl) {
+            document.getElementById('admin-music-file')?.click();
+            return;
+        }
+        isMusicDirty = true;
+        if (!musicEnabled) {
+            musicEnabled = true;
+            adminMusicPaused = false;
+            userMusicMuted = false;
+        } else {
+            adminMusicPaused = !adminMusicPaused;
+            if (!adminMusicPaused) userMusicMuted = false;
+        }
+        try {
+            localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+            localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0');
+        } catch (_) {}
+        applyMusicPlayerUI();
+        await adminSaveMusic(true);
+        showToast(adminMusicPaused ? "⏸ Фоновая музыка на паузе" : "▶️ Фоновая музыка запущена");
+    }
+
+    async function adminClearMusic() {
+        document.activeElement?.blur();
+        isMusicDirty = true;
+        musicUrl = '';
+        musicEnabled = false;
+        adminMusicPaused = false;
+        const urlInp = document.getElementById('admin-music-url-input');
+        if (urlInp) urlInp.value = '';
+        try {
+            localStorage.setItem('monkey_music_url', '');
+            localStorage.setItem('monkey_music_enabled', '0');
+            localStorage.setItem('monkey_music_paused', '0');
+        } catch (_) {}
+        applyMusicPlayerUI();
+        await adminSaveMusic(true);
+        showToast("🗑 Трек убран");
+    }
+
+    async function adminSaveMusic(silent = false) {
         document.activeElement?.blur();
         const titleVal = (document.getElementById('admin-music-title-input')?.value || '').trim() || 'Фоновый трек';
         const urlVal = (document.getElementById('admin-music-url-input')?.value || '').trim();
@@ -2901,10 +3098,11 @@
         musicTitle = titleVal;
         musicUrl = urlVal;
         musicVolume = volNum;
-        if (musicEnabled && musicUrl) userMusicPaused = false;
+        if (musicEnabled && !adminMusicPaused && musicUrl) userMusicMuted = false;
 
         try {
             localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+            localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0');
             localStorage.setItem('monkey_music_title', musicTitle);
             localStorage.setItem('monkey_music_url', musicUrl);
             localStorage.setItem('monkey_music_volume', String(musicVolume));
@@ -2917,15 +3115,16 @@
                 body: JSON.stringify({
                     user_id: Number(currentUserId),
                     music_enabled: musicEnabled,
+                    music_paused: adminMusicPaused,
                     music_url: musicUrl,
                     music_title: musicTitle,
                     music_volume: musicVolume
                 })
             });
             isMusicDirty = false;
-            showToast("🎵 Настройки музыки сохранены для всех!");
+            if (!silent) showToast("🎵 Настройки музыки сохранены для всех!");
         } catch (e) {
-            showToast("Ошибка сохранения музыки на сервере", true);
+            if (!silent) showToast("Ошибка сохранения музыки на сервере", true);
         }
     }
     applyMusicPlayerUI();
@@ -3643,20 +3842,63 @@
         scroll.innerHTML = html;
     }
 
+    let selectedAddProductCats = [shopCategories[0]?.id || 'liquid'];
+    let editingProductCats = [];
+
+    function getProductCategories(prod) {
+        const list = [];
+        if (Array.isArray(prod?.categories)) {
+            prod.categories.forEach(c => {
+                const cid = String(c || '').trim();
+                if (cid && !list.includes(cid)) list.push(cid);
+            });
+        }
+        const primary = String(prod?.category || '').trim();
+        if (primary && !list.includes(primary)) list.unshift(primary);
+        return list;
+    }
+
+    function renderMultiCatsPicker(containerId, selectedArr, mode) {
+        const box = document.getElementById(containerId);
+        if (!box) return;
+        const validIds = new Set(shopCategories.map(c => c.id));
+        const cleaned = (selectedArr || []).filter(id => validIds.has(id));
+        if (cleaned.length === 0 && shopCategories.length > 0) {
+            cleaned.push(shopCategories[0].id);
+        }
+        if (mode === 'add') selectedAddProductCats = cleaned;
+        else editingProductCats = cleaned;
+
+        box.innerHTML = shopCategories.map(c => {
+            const isSel = cleaned.includes(c.id);
+            return `<button type="button" class="multi-cat-chip ${isSel ? 'selected' : ''}" onclick="toggleMultiProductCategory('${mode}', '${escapeHtml(c.id)}')">${isSel ? '✓ ' : ''}${escapeHtml(c.name)}</button>`;
+        }).join('');
+    }
+
+    function toggleMultiProductCategory(mode, catId) {
+        const arr = mode === 'add' ? [...selectedAddProductCats] : [...editingProductCats];
+        const idx = arr.indexOf(catId);
+        if (idx >= 0) {
+            if (arr.length <= 1) {
+                showToast("Товар должен быть хотя бы в одной вкладке", true);
+                return;
+            }
+            arr.splice(idx, 1);
+        } else {
+            arr.push(catId);
+        }
+        if (mode === 'add') {
+            selectedAddProductCats = arr;
+            renderMultiCatsPicker('admin-prod-cats-picker', selectedAddProductCats, 'add');
+        } else {
+            editingProductCats = arr;
+            renderMultiCatsPicker('edit-prod-cats-picker', editingProductCats, 'edit');
+        }
+    }
+
     function populateCategorySelects() {
-        const addSel = document.getElementById('admin-prod-cat');
-        const editSel = document.getElementById('edit-prod-cat');
-        const optsHtml = shopCategories.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
-        if (addSel) {
-            const prev = addSel.value;
-            addSel.innerHTML = optsHtml;
-            if (prev && shopCategories.some(c => c.id === prev)) addSel.value = prev;
-        }
-        if (editSel) {
-            const prev = editSel.value;
-            editSel.innerHTML = optsHtml;
-            if (prev && shopCategories.some(c => c.id === prev)) editSel.value = prev;
-        }
+        renderMultiCatsPicker('admin-prod-cats-picker', selectedAddProductCats, 'add');
+        renderMultiCatsPicker('edit-prod-cats-picker', editingProductCats, 'edit');
     }
 
     function ensureValidSelectedStationAndTime() {
@@ -3738,22 +3980,20 @@
                     applyLogoBranding();
                 }
 
-                if (!isMusicDirty && (cfg.music_enabled !== undefined || cfg.music_url !== undefined || cfg.music_title !== undefined || cfg.music_volume !== undefined)) {
+                if (!isMusicDirty && (cfg.music_enabled !== undefined || cfg.music_paused !== undefined || cfg.music_url !== undefined || cfg.music_title !== undefined || cfg.music_volume !== undefined)) {
                     const prevUrl = musicUrl;
-                    const prevVol = musicVolume;
                     if (cfg.music_enabled !== undefined) {
                         musicEnabled = Boolean(cfg.music_enabled);
                         try { localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0'); } catch (_) {}
                     }
+                    if (cfg.music_paused !== undefined) {
+                        adminMusicPaused = Boolean(cfg.music_paused);
+                        try { localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0'); } catch (_) {}
+                    }
                     if (cfg.music_url !== undefined) {
                         const srvUrl = (cfg.music_url || '').trim();
-                        if (srvUrl) {
-                            musicUrl = srvUrl;
-                            try { localStorage.setItem('monkey_music_url', musicUrl); } catch (_) {}
-                        } else if (!musicEnabled) {
-                            musicUrl = '';
-                            try { localStorage.setItem('monkey_music_url', ''); } catch (_) {}
-                        }
+                        musicUrl = srvUrl ? (normalizeBackendAudioUrl(srvUrl) || srvUrl) : '';
+                        try { localStorage.setItem('monkey_music_url', musicUrl); } catch (_) {}
                     }
                     if (cfg.music_title !== undefined) {
                         musicTitle = (cfg.music_title || 'Фоновый трек').trim() || 'Фоновый трек';
@@ -3763,9 +4003,10 @@
                         musicVolume = Math.max(0, Math.min(1, Number(cfg.music_volume)));
                         try { localStorage.setItem('monkey_music_volume', String(musicVolume)); } catch (_) {}
                     }
-                    const audioEl = document.getElementById('bg-music-audio');
-                    if (musicEnabled && musicUrl && (musicUrl !== prevUrl || musicVolume !== prevVol || (audioEl && audioEl.paused && !userMusicPaused))) {
-                        userMusicPaused = false;
+                    if (musicUrl && musicUrl !== prevUrl && musicUrl !== lastSyncedMusicUrl) {
+                        lastSyncedMusicUrl = musicUrl;
+                        userMusicMuted = false;
+                        try { localStorage.setItem('monkey_user_music_muted', '0'); } catch (_) {}
                     }
                     applyMusicPlayerUI();
                 }
@@ -3902,6 +4143,86 @@
     }
     setInterval(syncShopConfig, 4000);
 
+    function getProductPriorityScore(p) {
+        if (p.available === false) return -1;
+        const isHit = p.tag === 'хит';
+        const hasDisc = Boolean(p.has_discount) || Number(p.old_price || 0) > Number(p.price);
+        const isLow = Boolean(p.low_stock);
+        return (isHit ? 2 : 0) + (hasDisc ? 2 : 0) + (isLow ? 1 : 0);
+    }
+
+    function getProductCategoryRank(p) {
+        const cats = getProductCategories(p);
+        for (let i = 0; i < shopCategories.length; i++) {
+            if (cats.includes(shopCategories[i].id)) return i;
+        }
+        return shopCategories.length;
+    }
+
+    function createProductCardElement(p) {
+        const isAvail = p.available !== false;
+        const isHit = p.tag === 'хит';
+        const oldPrice = Number(p.old_price || 0);
+        const hasDisc = Boolean(p.has_discount) || oldPrice > Number(p.price);
+        const isLow = Boolean(p.low_stock);
+
+        const card = document.createElement('div');
+        card.className = `product-card ${!isAvail ? 'out-of-stock' : ''}`;
+        card.onclick = () => { if (isAvail) openProductModal(p.id); };
+
+        if (isHit && isAvail) {
+            card.style.borderColor = hitHighlightColor;
+            card.style.boxShadow = `0 0 16px ${hexToRgba(hitHighlightColor, 0.35)}`;
+        }
+
+        let imageBadges = '';
+        if (!isAvail) {
+            imageBadges = `<div class="product-tag soldout">нет в наличии</div>`;
+        } else if (isHit) {
+            imageBadges = `<div class="product-tag" style="color:${hitHighlightColor}; border:1px solid ${hexToRgba(hitHighlightColor, 0.55)};">🔥 хит</div>`;
+        }
+
+        let underTitleBadges = '';
+        if (isAvail && (hasDisc || isLow)) {
+            underTitleBadges = `
+                <div class="product-sub-badges">
+                    ${hasDisc ? `<span class="discount-tag-under">СКИДКА</span>` : `<span></span>`}
+                    ${isLow ? `<span class="lowstock-tag-right">⚡ Мало</span>` : ``}
+                </div>
+            `;
+        }
+
+        const fallbackSpan = `<span>${escapeHtml(p.icon || '🧪')}</span>`;
+        const mediaHtml = buildProductImgTag(p.image_url, p.title, fallbackSpan);
+
+        const priceHtml = `
+            <div class="price-block">
+                ${oldPrice > Number(p.price) ? `<span class="product-old-price">${formatMoney(oldPrice)}</span>` : ''}
+                <span class="product-price">${formatMoney(p.price)}</span>
+            </div>
+        `;
+
+        const safeEscTitle = p.title.replace(/\/g, '\\').replace(/'/g, "\'");
+        const rightBtnHtml = isAvail
+            ? `<button class="add-btn" onclick="event.stopPropagation(); openProductModal(${p.id})">+</button>`
+            : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${safeEscTitle}')">🔔 Жду</button>`;
+
+        card.innerHTML = `
+            <div class="product-img-container"><div class="product-badges-stack">${imageBadges}</div>${mediaHtml}</div>
+            <div class="product-title">${escapeHtml(p.title)}</div>
+            ${underTitleBadges}
+            <div class="product-footer">${priceHtml}${rightBtnHtml}</div>
+        `;
+        return card;
+    }
+
+    function appendCatalogDivider(grid, label) {
+        const div = document.createElement('div');
+        div.className = 'catalog-cat-divider';
+        div.innerHTML = `<span>${escapeHtml(label)}</span>`;
+        grid.appendChild(div);
+    }
+
     function renderProducts(items) {
         const grid = document.getElementById('products-grid');
         if (!grid) return;
@@ -3910,61 +4231,70 @@
             grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 34px 16px;">По этому запросу ничего не найдено — попробуйте другое название</div>';
             return;
         }
-        items.forEach(p => {
-            const isAvail = p.available !== false;
-            const isHit = p.tag === 'хит';
-            const oldPrice = Number(p.old_price || 0);
-            const hasDisc = Boolean(p.has_discount) || oldPrice > Number(p.price);
-            const isLow = Boolean(p.low_stock);
 
-            const card = document.createElement('div');
-            card.className = `product-card ${!isAvail ? 'out-of-stock' : ''}`;
-            card.onclick = () => { if (isAvail) openProductModal(p.id); };
+        const availItems = items.filter(p => p.available !== false);
+        const outOfStockItems = items.filter(p => p.available === false)
+            .sort((a, b) => (getProductCategoryRank(a) - getProductCategoryRank(b)) || (Number(a.id) - Number(b.id)));
 
-            if (isHit && isAvail) {
-                card.style.borderColor = hitHighlightColor;
-                card.style.boxShadow = `0 0 16px ${hexToRgba(hitHighlightColor, 0.35)}`;
+        if (activeCategory === 'all') {
+            // 1. Приоритетные товары (Хит, Скидка, Мало) — в самом верху каталога по убыванию приоритета
+            const priorityItems = availItems
+                .filter(p => getProductPriorityScore(p) > 0)
+                .sort((a, b) => {
+                    const diff = getProductPriorityScore(b) - getProductPriorityScore(a);
+                    if (diff !== 0) return diff;
+                    const cDiff = getProductCategoryRank(a) - getProductCategoryRank(b);
+                    if (cDiff !== 0) return cDiff;
+                    return Number(a.id) - Number(b.id);
+                });
+
+            priorityItems.forEach(p => grid.appendChild(createProductCardElement(p)));
+
+            // 2. Обычные товары в наличии — сгруппированы по категориям ("невидимые колонки") без смешивания между собой
+            const regularItems = availItems.filter(p => getProductPriorityScore(p) === 0);
+            const placedIds = new Set();
+
+            shopCategories.forEach(catObj => {
+                const group = regularItems
+                    .filter(p => !placedIds.has(p.id) && getProductCategories(p).includes(catObj.id))
+                    .sort((a, b) => Number(a.id) - Number(b.id));
+                if (group.length > 0) {
+                    if (grid.children.length > 0) appendCatalogDivider(grid, catObj.name);
+                    group.forEach(p => {
+                        placedIds.add(p.id);
+                        grid.appendChild(createProductCardElement(p));
+                    });
+                }
+            });
+
+            const uncategorized = regularItems
+                .filter(p => !placedIds.has(p.id))
+                .sort((a, b) => Number(a.id) - Number(b.id));
+            if (uncategorized.length > 0) {
+                if (grid.children.length > 0) appendCatalogDivider(grid, 'Другое');
+                uncategorized.forEach(p => grid.appendChild(createProductCardElement(p)));
             }
 
-            let imageBadges = '';
-            if (!isAvail) {
-                imageBadges = `<div class="product-tag soldout">нет в наличии</div>`;
-            } else if (isHit) {
-                imageBadges = `<div class="product-tag" style="color:${hitHighlightColor}; border:1px solid ${hexToRgba(hitHighlightColor, 0.55)};">🔥 хит</div>`;
+            // 3. Товары, которых нет в наличии — в самом низу каталога
+            if (outOfStockItems.length > 0) {
+                if (grid.children.length > 0) appendCatalogDivider(grid, 'Нет в наличии');
+                outOfStockItems.forEach(p => grid.appendChild(createProductCardElement(p)));
             }
+        } else {
+            // Внутри конкретной вкладки: сначала по приоритету (Хит/Скидка/Мало), затем обычные, в самом низу — нет в наличии
+            const sortedAvail = availItems.sort((a, b) => {
+                const diff = getProductPriorityScore(b) - getProductPriorityScore(a);
+                if (diff !== 0) return diff;
+                return Number(a.id) - Number(b.id);
+            });
+            sortedAvail.forEach(p => grid.appendChild(createProductCardElement(p)));
 
-            let underTitleBadges = '';
-            if (isAvail && (hasDisc || isLow)) {
-                underTitleBadges = `
-                    <div class="product-sub-badges">
-                        ${hasDisc ? `<span class="discount-tag-under">СКИДКА</span>` : `<span></span>`}
-                        ${isLow ? `<span class="lowstock-tag-right">⚡ Мало</span>` : ``}
-                    </div>
-                `;
+            if (outOfStockItems.length > 0) {
+                if (sortedAvail.length > 0) appendCatalogDivider(grid, 'Нет в наличии');
+                outOfStockItems.forEach(p => grid.appendChild(createProductCardElement(p)));
             }
+        }
 
-            const fallbackSpan = `<span>${escapeHtml(p.icon || '🧪')}</span>`;
-            const mediaHtml = buildProductImgTag(p.image_url, p.title, fallbackSpan);
-
-            const priceHtml = `
-                <div class="price-block">
-                    ${oldPrice > Number(p.price) ? `<span class="product-old-price">${formatMoney(oldPrice)}</span>` : ''}
-                    <span class="product-price">${formatMoney(p.price)}</span>
-                </div>
-            `;
-
-            const rightBtnHtml = isAvail
-                ? `<button class="add-btn" onclick="event.stopPropagation(); openProductModal(${p.id})">+</button>`
-                : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${p.title.replace(/'/g, "'")}')">🔔 Жду</button>`;
-
-            card.innerHTML = `
-                <div class="product-img-container"><div class="product-badges-stack">${imageBadges}</div>${mediaHtml}</div>
-                <div class="product-title">${escapeHtml(p.title)}</div>
-                ${underTitleBadges}
-                <div class="product-footer">${priceHtml}${rightBtnHtml}</div>
-            `;
-            grid.appendChild(card);
-        });
         hydrateProtectedImages();
     }
 
@@ -4079,7 +4409,7 @@
 
     function filterProducts() {
         const query = (document.getElementById('search-input')?.value || '').toLowerCase();
-        renderProducts(products.filter(p => (activeCategory === 'all' || p.category === activeCategory) && p.title.toLowerCase().includes(query)));
+        renderProducts(products.filter(p => (activeCategory === 'all' || getProductCategories(p).includes(activeCategory)) && p.title.toLowerCase().includes(query)));
     }
 
     function setCategory(cat, el) {
@@ -5697,6 +6027,7 @@
     function renderAdminProducts() {
         const container = document.getElementById('admin-products-list');
         if (!container) return;
+        const catNameMap = Object.fromEntries(shopCategories.map(c => [c.id, c.name]));
         container.innerHTML = products.map(p => {
             const isAvail = p.available !== false, isHit = p.tag === 'хит', isLow = Boolean(p.low_stock);
             const oldP = Number(p.old_price || 0);
@@ -5704,6 +6035,10 @@
             const priceLabel = oldP > Number(p.price)
                 ? `<span style="text-decoration:line-through; color:var(--text-secondary); font-size:11px; margin-right:4px;">${formatMoney(oldP)}</span>${formatMoney(p.price)}`
                 : `${formatMoney(p.price)}`;
+            const assignedNames = getProductCategories(p).map(cid => catNameMap[cid]).filter(Boolean);
+            const catsBadgeHtml = assignedNames.length
+                ? `<div style="font-size:10.5px; color:var(--text-secondary);">📂 ${escapeHtml(assignedNames.join(' • '))}</div>`
+                : '';
 
             return `
                 <div class="admin-toggle-row" style="flex-direction:column; align-items:stretch; gap:6px;">
@@ -5711,6 +6046,7 @@
                         <span style="font-weight:600; ${!isAvail ? 'text-decoration:line-through; color:var(--text-secondary);' : ''}">${p.image_url ? '🖼' : escapeHtml(p.icon)} ${escapeHtml(p.title)}</span>
                         <span style="color:var(--accent-green); font-weight:700; white-space:nowrap;">${priceLabel}</span>
                     </div>
+                    ${catsBadgeHtml}
                     <div style="display:flex; gap:5px; justify-content:flex-end; flex-wrap:wrap;">
                         <button class="toggle-pill ${isAvail ? 'on' : 'off'}" onclick="adminToggleProduct(${p.id}, 'available')">${isAvail ? 'В наличии' : 'Нет'}</button>
                         <button class="toggle-pill ${isHit ? 'on' : ''}" style="${!isHit ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="adminToggleProduct(${p.id}, 'hit')">🔥 Хит</button>
@@ -5728,6 +6064,7 @@
         const prod = products.find(p => p.id === productId);
         if (!prod) return;
         const currentlyDiscounted = Boolean(prod.has_discount) || Number(prod.old_price || 0) > Number(prod.price);
+        const prodCats = getProductCategories(prod);
 
         if (currentlyDiscounted) {
             const restoredPrice = Number(prod.old_price || 0) > Number(prod.price) ? Number(prod.old_price) : Number(prod.price);
@@ -5735,7 +6072,7 @@
                 await apiFetch(`/api/admin/save_product`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: Number(currentUserId), id: prod.id, title: prod.title, category: prod.category,
+                        user_id: Number(currentUserId), id: prod.id, title: prod.title, category: prodCats[0] || prod.category, categories: prodCats,
                         price: restoredPrice, old_price: 0, tag: prod.tag || '', icon: prod.icon || '🧪',
                         available: prod.available !== false, image_url: prod.image_url || '',
                         has_discount: false, low_stock: Boolean(prod.low_stock), options: prod.options || []
@@ -5762,7 +6099,7 @@
             await apiFetch(`/api/admin/save_product`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_id: Number(currentUserId), id: prod.id, title: prod.title, category: prod.category,
+                    user_id: Number(currentUserId), id: prod.id, title: prod.title, category: prodCats[0] || prod.category, categories: prodCats,
                     price: newPrice, old_price: oldPrice, tag: prod.tag || '', icon: prod.icon || '🧪',
                     available: prod.available !== false, image_url: prod.image_url || '',
                     has_discount: true, low_stock: Boolean(prod.low_stock), options: prod.options || []
@@ -5779,7 +6116,8 @@
         const title = document.getElementById('admin-prod-title').value.trim();
         const image_url = document.getElementById('admin-prod-img').value.trim();
         const optsRaw = document.getElementById('admin-prod-opts').value.trim();
-        const category = document.getElementById('admin-prod-cat').value;
+        const cleanCats = selectedAddProductCats.length > 0 ? [...selectedAddProductCats] : [shopCategories[0]?.id || 'liquid'];
+        const category = cleanCats[0];
         const price = parseFloat(document.getElementById('admin-prod-price').value);
         const icon = document.getElementById('admin-prod-icon').value.trim() || '🧪';
         if (!title || isNaN(price) || price <= 0) { showToast("Введите название и корректную цену", true); return; }
@@ -5792,7 +6130,7 @@
             await apiFetch(`/api/admin/save_product`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_id: Number(currentUserId), id: 0, title, category, price, old_price: 0,
+                    user_id: Number(currentUserId), id: 0, title, category, categories: cleanCats, price, old_price: 0,
                     tag: '', icon, available: true, image_url, has_discount: false, low_stock: false, options
                 })
             });
@@ -5821,19 +6159,10 @@
     function openAdminEditProductModal(productId) {
         const prod = products.find(p => p.id === productId);
         if (!prod) return;
+        editingProductCats = getProductCategories(prod);
         populateCategorySelects();
         document.getElementById('edit-prod-id').value = prod.id;
         document.getElementById('edit-prod-title').value = prod.title;
-        const editCatSel = document.getElementById('edit-prod-cat');
-        if (editCatSel) {
-            if (!Array.from(editCatSel.options).some(o => o.value === prod.category) && prod.category) {
-                const extraOpt = document.createElement('option');
-                extraOpt.value = prod.category;
-                extraOpt.text = prod.category;
-                editCatSel.appendChild(extraOpt);
-            }
-            editCatSel.value = prod.category;
-        }
         document.getElementById('edit-prod-icon').value = prod.icon || '🧪';
         document.getElementById('edit-prod-price').value = prod.price;
         document.getElementById('edit-prod-old-price').value = prod.old_price || 0;
@@ -5892,7 +6221,8 @@
         if (!prod) return;
 
         const title = document.getElementById('edit-prod-title').value.trim();
-        const category = document.getElementById('edit-prod-cat').value;
+        const cleanCats = editingProductCats.length > 0 ? [...editingProductCats] : getProductCategories(prod);
+        const category = cleanCats[0] || prod.category;
         const icon = document.getElementById('edit-prod-icon').value.trim() || '🧪';
         const price = parseFloat(document.getElementById('edit-prod-price').value);
         const old_price = parseFloat(document.getElementById('edit-prod-old-price').value) || 0;
@@ -5905,7 +6235,7 @@
             await apiFetch(`/api/admin/save_product`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_id: Number(currentUserId), id, title, category, price, old_price,
+                    user_id: Number(currentUserId), id, title, category, categories: cleanCats, price, old_price,
                     tag: prod.tag || '', icon, available: prod.available !== false,
                     image_url, has_discount: autoDiscount, low_stock: Boolean(prod.low_stock),
                     options: editingProductOptions
