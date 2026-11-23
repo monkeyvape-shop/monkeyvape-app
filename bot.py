@@ -82,7 +82,7 @@ def load_tunnel_url() -> str:
                         return saved
             except Exception:
                 pass
-    return "https://nemeses-july-concrete.ngrok-free.dev"
+    return "https://grandma-unrefined-ecosystem.ngrok-free.dev"
 
 PUBLIC_TUNNEL_URL = load_tunnel_url()
 

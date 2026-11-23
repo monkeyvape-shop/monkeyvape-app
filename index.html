@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Monkey Vape — Online Shop</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js" async></script>
     <style>
         :root {
             --bg-color: #0b0f0c;
@@ -1886,6 +1886,14 @@
             <div class="progress-fill" id="progress-fill"></div>
         </div>
     </div>
+    <script>
+        (function () {
+            var pf = document.getElementById('progress-fill');
+            var pctEl = document.getElementById('splash-percent');
+            if (pf) pf.style.width = '12%';
+            if (pctEl) pctEl.textContent = '12%';
+        })();
+    </script>
 
     <!-- Выбор локации / адреса доставки -->
     <div class="modal-overlay" id="metro-modal" onclick="closeMetroModal(event)">
@@ -4057,7 +4065,13 @@
     }
 
     try { localStorage.removeItem('monkey_backend_url'); } catch (_) {}
-    const BACKEND_URL = "https://grandma-unrefined-ecosystem.ngrok-free.dev";
+    const BACKEND_URL = (() => {
+        try {
+            const pApi = new URLSearchParams(window.location.search).get("api");
+            if (pApi && pApi.startsWith("http")) return pApi.trim().replace(/\/+$/, "");
+        } catch (_) {}
+        return "https://grandma-unrefined-ecosystem.ngrok-free.dev";
+    })();
 
     function updateServerStatusBadge(connected, activeUrl = BACKEND_URL) {
         const bar = document.getElementById('admin-server-status');
@@ -4615,25 +4629,29 @@
         showRoleTabsIfAllowed(); checkUserRole(); syncShopConfig(); renderOrders(); syncClientOrdersStatus();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const catScroll = document.getElementById('categories-scroll');
-        if (catScroll) {
-            catScroll.addEventListener('wheel', (e) => {
-                if (e.deltaY !== 0) { e.preventDefault(); catScroll.scrollLeft += e.deltaY; }
-            }, { passive: false });
-        }
-        if (currentSeasonEffect !== 'none') startSeasonCanvas(currentSeasonEffect);
-    });
-
-    window.addEventListener('load', () => {
-        initTelegramUser();
-        setTimeout(initTelegramUser, 500);
+    let splashProgressStarted = false;
+    function startSplashProgressAnimation() {
+        if (splashProgressStarted) return;
+        splashProgressStarted = true;
         const pf = document.getElementById('progress-fill');
         const pctEl = document.getElementById('splash-percent');
         const subEl = document.getElementById('splash-sub');
-        let pct = 0;
+        let pct = 8;
+        if (pf) pf.style.width = pct + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
+
+        const hideSplash = () => {
+            const splash = document.getElementById('splash-screen');
+            if (!splash || splash.dataset.hiding === '1') return;
+            splash.dataset.hiding = '1';
+            splash.style.opacity = '0';
+            splash.style.transform = 'scale(1.05)';
+            splash.style.filter = 'blur(8px)';
+            setTimeout(() => { try { splash.remove(); } catch (_) {} }, 550);
+        };
+
         const stepTimer = setInterval(() => {
-            pct = Math.min(100, pct + Math.floor(14 + Math.random() * 18));
+            pct = Math.min(100, pct + Math.floor(16 + Math.random() * 18));
             if (pf) pf.style.width = pct + '%';
             if (pctEl) pctEl.textContent = pct + '%';
             if (subEl) {
@@ -4642,18 +4660,40 @@
             }
             if (pct >= 100) {
                 clearInterval(stepTimer);
-                setTimeout(() => {
-                    const splash = document.getElementById('splash-screen');
-                    if (splash) {
-                        splash.style.opacity = '0';
-                        splash.style.transform = 'scale(1.05)';
-                        splash.style.filter = 'blur(8px)';
-                        setTimeout(() => splash.remove(), 550);
-                    }
-                }, 260);
+                setTimeout(hideSplash, 220);
             }
-        }, 145);
+        }, 130);
+
+        // Гарантированный страховочный таймер на случай, если внешние ресурсы грузятся медленно
+        setTimeout(() => {
+            clearInterval(stepTimer);
+            if (pf) pf.style.width = '100%';
+            if (pctEl) pctEl.textContent = '100%';
+            hideSplash();
+        }, 3200);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const catScroll = document.getElementById('categories-scroll');
+        if (catScroll) {
+            catScroll.addEventListener('wheel', (e) => {
+                if (e.deltaY !== 0) { e.preventDefault(); catScroll.scrollLeft += e.deltaY; }
+            }, { passive: false });
+        }
+        if (currentSeasonEffect !== 'none') startSeasonCanvas(currentSeasonEffect);
+        startSplashProgressAnimation();
     });
+
+    window.addEventListener('load', () => {
+        startSplashProgressAnimation();
+        try { initTelegramUser(); } catch (_) {}
+        setTimeout(() => { try { initTelegramUser(); } catch (_) {} }, 500);
+    });
+
+    setTimeout(() => {
+        startSplashProgressAnimation();
+        try { initTelegramUser(); } catch (_) {}
+    }, 300);
 
     let cart = JSON.parse(localStorage.getItem('monkey_cart')) || {};
     let activeCategory = 'all', currentLine = 'green', modalCurrentLine = 'green';
