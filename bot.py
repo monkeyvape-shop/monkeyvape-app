@@ -106,6 +106,14 @@ DEFAULT_PICKUP_LOCATIONS = [
 ]
 
 DEFAULT_TOP_NOTICE_TEXT = "Возьми две жижи в подарок"
+DEFAULT_TOP_NOTICE_SLIDES = [
+    {
+        "id": "tn_default_1",
+        "icon": "🎁",
+        "text": DEFAULT_TOP_NOTICE_TEXT,
+        "style": "emerald"
+    }
+]
 
 DEFAULT_WELCOME_TEXT = (
     "Здравствуйте, <b>{user}</b>! Добро пожаловать в <b>{brand}</b> 👋\n\n"
@@ -404,6 +412,44 @@ async def get_banners_list(db) -> list[dict]:
             "promo_code": legacy_badge if legacy_badge and not legacy_badge.startswith("-") else "MONKEY3"
         }, 0)
     ]
+
+def normalize_top_notice_slide(raw_item: dict, idx: int = 0) -> dict:
+    s_id = str(raw_item.get("id") or f"tn_{int(time.time() * 1000)}_{idx}").strip()
+    icon = str(raw_item.get("icon") if raw_item.get("icon") is not None else "🎁").strip()
+    text = str(raw_item.get("text") or "").strip() or DEFAULT_TOP_NOTICE_TEXT
+    style = str(raw_item.get("style") or "emerald").strip() or "emerald"
+    return {
+        "id": s_id,
+        "icon": icon,
+        "text": text,
+        "style": style
+    }
+
+async def get_top_notice_state(db) -> dict:
+    enabled = (await get_setting_raw(db, "top_notice_enabled", "1")) == "1"
+    try:
+        interval = max(0, min(120, int(await get_setting_raw(db, "top_notice_interval", "4") or 4)))
+    except Exception:
+        interval = 4
+    legacy_text = (await get_setting_raw(db, "top_notice_text", DEFAULT_TOP_NOTICE_TEXT)).strip() or DEFAULT_TOP_NOTICE_TEXT
+    raw_slides = await get_setting_raw(db, "top_notice_slides", "")
+    slides: list[dict] = []
+    if raw_slides:
+        try:
+            parsed = json.loads(raw_slides)
+            if isinstance(parsed, list):
+                slides = [normalize_top_notice_slide(item, i) for i, item in enumerate(parsed) if isinstance(item, dict)]
+        except Exception:
+            pass
+    if not slides:
+        slides = [normalize_top_notice_slide({"id": "tn_default_1", "icon": "🎁", "text": legacy_text, "style": "emerald"}, 0)]
+    first_text = slides[0]["text"] if slides else legacy_text
+    return {
+        "enabled": enabled,
+        "text": first_text,
+        "interval": interval,
+        "slides": slides
+    }
 
 async def get_delivery_settings_state(db) -> dict:
     primary_mode = await get_setting_raw(db, "delivery_mode", "metro")
@@ -778,6 +824,8 @@ async def init_db():
             ("audio_default_volume", "35"),
             ("top_notice_enabled", "1"),
             ("top_notice_text", DEFAULT_TOP_NOTICE_TEXT),
+            ("top_notice_interval", "4"),
+            ("top_notice_slides", json.dumps(DEFAULT_TOP_NOTICE_SLIDES, ensure_ascii=False)),
             ("banner_interval", "5"),
         ]
         for s_key, s_val in default_shop_settings:
@@ -924,6 +972,8 @@ class CourierArrivedSchema(BaseModel):
 class TopNoticePayload(BaseModel):
     enabled: bool = True
     text: str = DEFAULT_TOP_NOTICE_TEXT
+    interval: int | None = None
+    slides: list | None = None
 
 class CourierBannerSchema(BaseModel):
     user_id: int
@@ -942,6 +992,8 @@ class AdminTopNoticeSchema(BaseModel):
     user_id: int
     enabled: bool = True
     text: str = DEFAULT_TOP_NOTICE_TEXT
+    interval: int | None = None
+    slides: list | None = None
 
 class AdminBrandingSchema(BaseModel):
     user_id: int
@@ -1214,8 +1266,7 @@ async def get_shop_config():
         reviews_channel_url = await get_setting_raw(db, "reviews_channel_url", "")
         support_username = await get_setting_raw(db, "support_username", "@warat_24")
 
-        top_notice_enabled = (await get_setting_raw(db, "top_notice_enabled", "1")) == "1"
-        top_notice_text = await get_setting_raw(db, "top_notice_text", DEFAULT_TOP_NOTICE_TEXT)
+        top_notice_state = await get_top_notice_state(db)
 
         banner_enabled = await get_setting_raw(db, "banner_enabled", "1") == "1"
         try:
@@ -1309,10 +1360,7 @@ async def get_shop_config():
             "reviews_channel_url": reviews_channel_url,
             "support_username": support_username,
             "categories": categories,
-            "top_notice": {
-                "enabled": top_notice_enabled,
-                "text": top_notice_text
-            },
+            "top_notice": top_notice_state,
             "banner_interval": banner_interval,
             "banners": banners_list,
             "banner": {
@@ -1809,11 +1857,40 @@ async def update_admin_top_notice(data: AdminTopNoticeSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, data.user_id):
             raise HTTPException(status_code=403, detail="Only owner")
-        clean_text = (data.text or "").strip() or DEFAULT_TOP_NOTICE_TEXT
+        cur_state = await get_top_notice_state(db)
+        if data.interval is not None:
+            try:
+                safe_iv = max(0, min(120, int(data.interval)))
+            except Exception:
+                safe_iv = 4
+        else:
+            safe_iv = cur_state["interval"]
+
+        if data.slides is not None:
+            norm_slides = [normalize_top_notice_slide(s, i) for i, s in enumerate(data.slides) if isinstance(s, dict)]
+        else:
+            clean_text = (data.text or "").strip() or DEFAULT_TOP_NOTICE_TEXT
+            norm_slides = list(cur_state["slides"])
+            if norm_slides:
+                norm_slides[0]["text"] = clean_text
+            else:
+                norm_slides = [normalize_top_notice_slide({"text": clean_text}, 0)]
+
+        first_text = norm_slides[0]["text"] if norm_slides else ((data.text or "").strip() or DEFAULT_TOP_NOTICE_TEXT)
         await set_setting_raw(db, "top_notice_enabled", "1" if data.enabled else "0")
-        await set_setting_raw(db, "top_notice_text", clean_text)
+        await set_setting_raw(db, "top_notice_text", first_text)
+        await set_setting_raw(db, "top_notice_interval", str(safe_iv))
+        await set_setting_raw(db, "top_notice_slides", json.dumps(norm_slides, ensure_ascii=False))
         await db.commit()
-    return {"success": True, "top_notice": {"enabled": bool(data.enabled), "text": clean_text}}
+    return {
+        "success": True,
+        "top_notice": {
+            "enabled": bool(data.enabled),
+            "text": first_text,
+            "interval": safe_iv,
+            "slides": norm_slides
+        }
+    }
 
 async def _save_banner_settings_db(db, data: CourierBannerSchema) -> dict:
     await set_setting_raw(db, "banner_enabled", "1" if data.enabled else "0")
@@ -1858,11 +1935,26 @@ async def _save_banner_settings_db(db, data: CourierBannerSchema) -> dict:
         if isinstance(data.top_notice, dict):
             tn_enabled = bool(data.top_notice.get("enabled", True))
             tn_text = str(data.top_notice.get("text") or "").strip() or DEFAULT_TOP_NOTICE_TEXT
+            tn_iv = data.top_notice.get("interval")
+            tn_slides_raw = data.top_notice.get("slides")
         else:
             tn_enabled = bool(data.top_notice.enabled)
             tn_text = (data.top_notice.text or "").strip() or DEFAULT_TOP_NOTICE_TEXT
+            tn_iv = data.top_notice.interval
+            tn_slides_raw = data.top_notice.slides
         await set_setting_raw(db, "top_notice_enabled", "1" if tn_enabled else "0")
-        await set_setting_raw(db, "top_notice_text", tn_text)
+        if tn_iv is not None:
+            try:
+                await set_setting_raw(db, "top_notice_interval", str(max(0, min(120, int(tn_iv)))))
+            except Exception:
+                pass
+        if isinstance(tn_slides_raw, list):
+            norm_tn_slides = [normalize_top_notice_slide(s, i) for i, s in enumerate(tn_slides_raw) if isinstance(s, dict)]
+            await set_setting_raw(db, "top_notice_slides", json.dumps(norm_tn_slides, ensure_ascii=False))
+            first_tn = norm_tn_slides[0]["text"] if norm_tn_slides else tn_text
+            await set_setting_raw(db, "top_notice_text", first_tn)
+        else:
+            await set_setting_raw(db, "top_notice_text", tn_text)
     else:
         if data.top_notice_enabled is not None:
             await set_setting_raw(db, "top_notice_enabled", "1" if data.top_notice_enabled else "0")
@@ -1870,17 +1962,13 @@ async def _save_banner_settings_db(db, data: CourierBannerSchema) -> dict:
             tn_clean = data.top_notice_text.strip() or DEFAULT_TOP_NOTICE_TEXT
             await set_setting_raw(db, "top_notice_text", tn_clean)
 
-    tn_en_cur = (await get_setting_raw(db, "top_notice_enabled", "1")) == "1"
-    tn_tx_cur = await get_setting_raw(db, "top_notice_text", DEFAULT_TOP_NOTICE_TEXT)
+    tn_state_cur = await get_top_notice_state(db)
 
     return {
         "enabled": bool(data.enabled),
         "banner_interval": safe_interval,
         "banners": norm_banners,
-        "top_notice": {
-            "enabled": tn_en_cur,
-            "text": tn_tx_cur
-        }
+        "top_notice": tn_state_cur
     }
 
 @app.post("/api/admin/banner")
@@ -1966,7 +2054,7 @@ async def admin_appearance(data: AdminAppearanceSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, data.user_id):
             raise HTTPException(status_code=403, detail="Only owner")
-        season = data.season_effect if data.season_effect in ("none", "winter", "autumn", "spring", "summer", "rain") else "none"
+        season = data.season_effect if data.season_effect in ("none", "winter", "autumn", "spring", "summer", "rain", "garland", "fireworks", "aurora", "bokeh") else "none"
         color = data.hit_color.strip() or "#ffcc00"
         await set_setting_raw(db, "season_effect", season)
         await set_setting_raw(db, "hit_color", color)
@@ -2701,13 +2789,13 @@ async def courier_arrived(data: CourierArrivedSchema):
     if buyer_id:
         try:
             await bot.send_message(
-                buyer_id,
+                int(buyer_id),
                 f"📍 <b>Курьер на месте ({loc_value})!</b>\n"
                 f"Заказ #{html.escape(oid)} ожидает вас на месте встречи.",
                 parse_mode="HTML"
             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[ERR] arrived notify buyer {buyer_id}: {e}")
     return {"success": True}
 
 @app.get("/api/orders")
@@ -2785,37 +2873,58 @@ async def update_order_status(data: StatusUpdateSchema):
         reviews_url = await get_setting_raw(db, "reviews_channel_url", "")
         await db.commit()
 
+        all_owners = await get_all_owner_ids(db)
         safe_user = html.escape(user_name or "User")
         loc_value = html.escape(format_location_value(station, delivery_mode))
         if data.status == 'cancelled':
             who_text = "Отменено клиентом" if cancelled_by == 'client' else ("Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён")
             if user_id:
                 try:
-                    await bot.send_message(user_id, f"❌ Заказ #{html.escape(str(data.order_id))} — <b>{who_text}</b>.", parse_mode="HTML")
-                except Exception:
-                    pass
-            notify_targets = [existing_claimed_id] if (existing_claimed_id != 0 and cancelled_by == 'client') else all_couriers
+                    await bot.send_message(
+                        int(user_id),
+                        f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text}).\n"
+                        f"📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}",
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    print(f"[ERR] cancel notify buyer {user_id}: {e}")
+            if existing_claimed_id != 0 and cancelled_by == 'client':
+                notify_targets = list({int(existing_claimed_id)} | {int(x) for x in all_owners})
+            else:
+                notify_targets = list({int(x) for x in (all_couriers + all_owners)})
             for cid in notify_targets:
                 if cid:
                     try:
-                        await bot.send_message(cid, f"❌ Заказ #{html.escape(str(data.order_id))} ({safe_user}, {loc_value}) — <b>{who_text}</b>.", parse_mode="HTML")
-                    except Exception:
-                        pass
+                        await bot.send_message(
+                            int(cid),
+                            f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text})\n"
+                            f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
+                            f"📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}",
+                            parse_mode="HTML"
+                        )
+                    except Exception as e:
+                        print(f"[ERR] cancel notify courier {cid}: {e}")
         elif data.status == 'completed':
+            clean_reviews_url = normalize_tg_link(reviews_url)
+            clean_news_url = normalize_tg_link(news_url)
             if user_id:
+                completed_msg = f"🎉 <b>Заказ #{html.escape(str(data.order_id))} успешно выдан! Спасибо, что выбираешь нас.</b>"
+                kb_rows = []
+                if clean_reviews_url.startswith(("http://", "https://")):
+                    completed_msg += f"\n\n⭐ <b>Будем рады твоему отзыву о заказе:</b>\n{html.escape(clean_reviews_url)}"
+                    kb_rows.append([InlineKeyboardButton(text="⭐ Оставить отзыв", url=clean_reviews_url)])
+                if clean_news_url.startswith(("http://", "https://")):
+                    completed_msg += f"\n\n✈️ <b>Следите за новостями и поступлениями в канале:</b>\n{html.escape(clean_news_url)}"
+                    kb_rows.append([InlineKeyboardButton(text="✈️ Канал с новостями", url=clean_news_url)])
+                markup = InlineKeyboardMarkup(inline_keyboard=kb_rows) if kb_rows else None
                 try:
-                    completed_msg = f"🎉 <b>Заказ #{html.escape(str(data.order_id))} успешно выдан! Спасибо, что выбираешь нас.</b>"
-                    kb_rows = []
-                    if reviews_url:
-                        completed_msg += f"\n\n⭐ <b>Будем рады твоему отзыву о заказе:</b>\n{html.escape(reviews_url)}"
-                        kb_rows.append([InlineKeyboardButton(text="⭐ Оставить отзыв", url=reviews_url)])
-                    if news_url:
-                        completed_msg += f"\n\n✈️ <b>Следите за новостями и поступлениями в канале:</b>\n{html.escape(news_url)}"
-                        kb_rows.append([InlineKeyboardButton(text="✈️ Канал с новостями", url=news_url)])
-                    markup = InlineKeyboardMarkup(inline_keyboard=kb_rows) if kb_rows else None
-                    await bot.send_message(user_id, completed_msg, parse_mode="HTML", reply_markup=markup)
-                except Exception:
-                    pass
+                    await bot.send_message(int(user_id), completed_msg, parse_mode="HTML", reply_markup=markup)
+                except Exception as e:
+                    print(f"[ERR] completed notify with markup failed for {user_id}: {e}")
+                    try:
+                        await bot.send_message(int(user_id), completed_msg, parse_mode="HTML")
+                    except Exception as e2:
+                        print(f"[ERR] completed notify fallback failed for {user_id}: {e2}")
     return {"success": True}
 
 @app.post("/api/delete_completed_order")
@@ -2843,17 +2952,29 @@ async def update_order_time(data: TimeUpdateSchema):
                 loc_value = html.escape(format_location_value(station, delivery_mode))
                 targets = [claimed_id] if claimed_id != 0 else all_couriers
                 for cid in targets:
+                    if cid:
+                        try:
+                            await bot.send_message(
+                                int(cid),
+                                f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n"
+                                f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
+                                f"📍 {loc_label}: {loc_value}\n"
+                                f"🕒 Новое время: <b>{html.escape(data.time)}</b>",
+                                parse_mode="HTML"
+                            )
+                        except Exception as e:
+                            print(f"[ERR] time notify courier {cid}: {e}")
+                if user_id:
                     try:
                         await bot.send_message(
-                            cid,
-                            f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n"
-                            f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
+                            int(user_id),
+                            f"⏰ <b>Время встречи по заказу #{html.escape(str(data.order_id))} обновлено!</b>\n"
                             f"📍 {loc_label}: {loc_value}\n"
                             f"🕒 Новое время: <b>{html.escape(data.time)}</b>",
                             parse_mode="HTML"
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"[ERR] time notify buyer {user_id}: {e}")
     return {"success": True}
 
 @app.get("/api/check_role/{user_id}")

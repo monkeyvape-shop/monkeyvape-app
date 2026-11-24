@@ -135,9 +135,10 @@
             display: none;
         }
         #splash-screen.splash-style-minimal .splash-badge-wrap {
-            border-radius: 999px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
-            border-color: var(--border-color);
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: none;
+            border: 1.5px solid var(--border-color);
         }
         #splash-screen.splash-style-minimal .splash-logo {
             text-shadow: none;
@@ -176,7 +177,7 @@
         }
         #splash-screen.splash-style-pulse .splash-badge-wrap::after {
             inset: -6px;
-            border-radius: 34px;
+            border-radius: 50%;
             border: 2px solid var(--accent-green);
             opacity: 0.85;
             animation: splashPulseExpand 1.2s ease-out infinite;
@@ -192,12 +193,12 @@
                 var(--bg-color);
         }
         #splash-screen.splash-style-glass .splash-badge-wrap {
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.28);
-            border-radius: 34px;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.45), 0 16px 40px rgba(0,0,0,0.35);
+            background: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border: none;
+            border-radius: 50%;
+            box-shadow: none;
         }
         #splash-screen.splash-style-glass .progress-bar {
             width: 210px;
@@ -297,27 +298,24 @@
         }
         .splash-badge-wrap {
             position: relative;
-            width: 98px;
-            height: 98px;
-            border-radius: 28px;
-            background: color-mix(in srgb, var(--card-bg) 78%, transparent);
-            border: 1px solid color-mix(in srgb, var(--accent-green) 48%, var(--border-color));
-            box-shadow:
-                inset 0 1px 0 var(--glass-highlight),
-                0 18px 44px rgba(0, 0, 0, 0.38),
-                0 0 32px var(--accent-green-glow);
+            width: 176px;
+            height: 176px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            box-shadow: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 24px;
+            margin-bottom: 26px;
             animation: splashBadgeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         .splash-badge-wrap::before {
             content: '';
             position: absolute;
-            inset: -7px;
-            border-radius: 34px;
-            padding: 2px;
+            inset: -6px;
+            border-radius: 50%;
+            padding: 3px;
             background: conic-gradient(from 0deg, transparent 0%, var(--accent-green) 35%, transparent 65%, var(--icon-color) 90%, transparent 100%);
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -329,8 +327,8 @@
         .splash-badge-wrap::after {
             content: '';
             position: absolute;
-            inset: -4px;
-            border-radius: 32px;
+            inset: -2px;
+            border-radius: 50%;
             border: 1.5px solid var(--accent-green);
             opacity: 0;
             animation: splashPulseRing 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
@@ -341,13 +339,15 @@
         }
         @keyframes splashPulseRing {
             0% { transform: scale(0.96); opacity: 0.65; }
-            100% { transform: scale(1.26); opacity: 0; }
+            100% { transform: scale(1.24); opacity: 0; }
         }
         .splash-emblem {
-            font-size: 42px;
+            font-size: 64px;
             line-height: 1;
-            width: 72px;
-            height: 72px;
+            width: 158px;
+            height: 158px;
+            border-radius: 50%;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -358,9 +358,10 @@
         .splash-emblem img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
+            border-radius: 50%;
             display: block;
-            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+            filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
         }
         @keyframes splashBadgeIn {
             0% { opacity: 0; transform: translateY(16px) scale(0.85); }
@@ -620,20 +621,117 @@
             box-shadow: 0 4px 16px var(--accent-green-glow);
         }
         .top-notice-bar {
+            position: relative;
             width: 100%;
+            margin-bottom: 10px;
+            perspective: 720px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: pan-x;
+        }
+        .top-notice-flip-stage {
+            position: relative;
+            width: 100%;
+            min-height: 36px;
+            transform-style: preserve-3d;
+        }
+        .top-notice-card {
+            width: 100%;
+            min-height: 36px;
             background: linear-gradient(90deg, color-mix(in srgb, var(--accent-green) 16%, var(--card-bg)) 0%, color-mix(in srgb, var(--banner-bg) 88%, var(--card-bg)) 50%, color-mix(in srgb, var(--accent-green) 16%, var(--card-bg)) 100%);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
-            border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
+            border: 1px solid color-mix(in srgb, var(--accent-green) 45%, var(--border-color));
             box-shadow: inset 0 1px 0 var(--glass-highlight), 0 4px 14px rgba(0, 0, 0, 0.16);
             border-radius: 13px;
-            padding: 8px 14px;
-            margin-bottom: 10px;
+            padding: 8px 22px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 7px;
             text-align: center;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            --notice-dot-color: var(--accent-green);
+        }
+        .top-notice-card.flip-out-down {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            transform-origin: center bottom;
+            animation: topNoticeFlipOutDown 0.44s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+        .top-notice-card.flip-in-down {
+            transform-origin: center top;
+            animation: topNoticeFlipInDown 0.44s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+        @keyframes topNoticeFlipOutDown {
+            0% { transform: rotateX(0deg) translateY(0); opacity: 1; }
+            100% { transform: rotateX(-88deg) translateY(8px); opacity: 0; }
+        }
+        @keyframes topNoticeFlipInDown {
+            0% { transform: rotateX(88deg) translateY(-8px); opacity: 0; }
+            100% { transform: rotateX(0deg) translateY(0); opacity: 1; }
+        }
+        .top-notice-card.banner-style-emerald {
+            background: linear-gradient(90deg, color-mix(in srgb, var(--accent-green) 18%, var(--card-bg)) 0%, color-mix(in srgb, var(--banner-bg) 90%, var(--card-bg)) 50%, color-mix(in srgb, var(--accent-green) 18%, var(--card-bg)) 100%);
+            border-color: color-mix(in srgb, var(--accent-green) 48%, var(--border-color));
+            --notice-dot-color: var(--accent-green);
+        }
+        .top-notice-card.banner-style-cyber {
+            background: linear-gradient(90deg, rgba(12, 38, 68, 0.94) 0%, rgba(18, 52, 92, 0.94) 50%, rgba(12, 38, 68, 0.94) 100%);
+            border-color: rgba(56, 189, 248, 0.52);
+            --notice-dot-color: #38bdf8;
+        }
+        .top-notice-card.banner-style-sunset {
+            background: linear-gradient(90deg, rgba(64, 28, 12, 0.94) 0%, rgba(86, 38, 16, 0.94) 50%, rgba(64, 28, 12, 0.94) 100%);
+            border-color: rgba(255, 140, 36, 0.52);
+            --notice-dot-color: #ff9a3c;
+        }
+        .top-notice-card.banner-style-violet {
+            background: linear-gradient(90deg, rgba(46, 20, 74, 0.94) 0%, rgba(66, 28, 104, 0.94) 50%, rgba(46, 20, 74, 0.94) 100%);
+            border-color: rgba(192, 132, 252, 0.52);
+            --notice-dot-color: #c084fc;
+        }
+        .top-notice-card.banner-style-gold {
+            background: linear-gradient(90deg, rgba(54, 40, 12, 0.94) 0%, rgba(78, 58, 16, 0.94) 50%, rgba(54, 40, 12, 0.94) 100%);
+            border-color: rgba(255, 208, 38, 0.52);
+            --notice-dot-color: #ffd026;
+        }
+        .top-notice-card.banner-style-crimson {
+            background: linear-gradient(90deg, rgba(62, 16, 28, 0.94) 0%, rgba(88, 22, 40, 0.94) 50%, rgba(62, 16, 28, 0.94) 100%);
+            border-color: rgba(255, 77, 109, 0.52);
+            --notice-dot-color: #ff5c7a;
+        }
+        [data-theme="light"] .top-notice-card.banner-style-cyber { background: linear-gradient(90deg, #e0f2fe 0%, #bae6fd 50%, #e0f2fe 100%); --notice-dot-color: #0284c7; }
+        [data-theme="light"] .top-notice-card.banner-style-sunset { background: linear-gradient(90deg, #ffedd5 0%, #fed7aa 50%, #ffedd5 100%); --notice-dot-color: #ea580c; }
+        [data-theme="light"] .top-notice-card.banner-style-violet { background: linear-gradient(90deg, #f3e8ff 0%, #e9d5ff 50%, #f3e8ff 100%); --notice-dot-color: #7e22ce; }
+        [data-theme="light"] .top-notice-card.banner-style-gold { background: linear-gradient(90deg, #fef3c7 0%, #fde68a 50%, #fef3c7 100%); --notice-dot-color: #b45309; }
+        [data-theme="light"] .top-notice-card.banner-style-crimson { background: linear-gradient(90deg, #ffe4e6 0%, #fecdd3 50%, #ffe4e6 100%); --notice-dot-color: #be123c; }
+        .top-notice-corner-dot {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--notice-dot-color, var(--accent-green));
+            box-shadow: 0 0 7px var(--notice-dot-color, var(--accent-green));
+            pointer-events: none;
+            z-index: 3;
+            animation: noticeCornerBlink 1.7s ease-in-out infinite;
+        }
+        .top-notice-corner-dot.dot-tl {
+            top: 6px;
+            left: 8px;
+        }
+        .top-notice-corner-dot.dot-br {
+            bottom: 6px;
+            right: 8px;
+            animation-delay: 0.85s;
+        }
+        @keyframes noticeCornerBlink {
+            0%, 100% { opacity: 0.22; transform: scale(0.82); }
+            50% { opacity: 1; transform: scale(1.22); }
         }
         .top-notice-dot {
             font-size: 13px;
@@ -699,40 +797,70 @@
         }
         .promo-banner.banner-style-cyber h3 { color: #38bdf8; }
         .promo-banner.banner-style-cyber::after { background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, transparent 70%); }
+        .promo-banner.banner-style-cyber .promo-copy-btn {
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            color: #05131f;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.36);
+        }
         .promo-banner.banner-style-sunset {
             background: linear-gradient(135deg, rgba(64, 28, 12, 0.94) 0%, rgba(30, 18, 14, 0.92) 100%);
             border-color: rgba(255, 140, 36, 0.45);
         }
         .promo-banner.banner-style-sunset h3 { color: #ff9a3c; }
         .promo-banner.banner-style-sunset::after { background: radial-gradient(circle, rgba(255, 140, 36, 0.25) 0%, transparent 70%); }
+        .promo-banner.banner-style-sunset .promo-copy-btn {
+            background: linear-gradient(135deg, #ff9a3c 0%, #f97316 100%);
+            color: #1c0b03;
+            box-shadow: 0 4px 14px rgba(255, 140, 36, 0.36);
+        }
         .promo-banner.banner-style-violet {
             background: linear-gradient(135deg, rgba(46, 20, 74, 0.94) 0%, rgba(23, 16, 36, 0.92) 100%);
             border-color: rgba(192, 132, 252, 0.45);
         }
         .promo-banner.banner-style-violet h3 { color: #c084fc; }
         .promo-banner.banner-style-violet::after { background: radial-gradient(circle, rgba(192, 132, 252, 0.25) 0%, transparent 70%); }
+        .promo-banner.banner-style-violet .promo-copy-btn {
+            background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+            color: #160726;
+            box-shadow: 0 4px 14px rgba(192, 132, 252, 0.36);
+        }
         .promo-banner.banner-style-gold {
             background: linear-gradient(135deg, rgba(54, 40, 12, 0.94) 0%, rgba(26, 22, 14, 0.92) 100%);
             border-color: rgba(255, 208, 38, 0.45);
         }
         .promo-banner.banner-style-gold h3 { color: #ffd026; }
         .promo-banner.banner-style-gold::after { background: radial-gradient(circle, rgba(255, 208, 38, 0.24) 0%, transparent 70%); }
+        .promo-banner.banner-style-gold .promo-copy-btn {
+            background: linear-gradient(135deg, #ffd026 0%, #eab308 100%);
+            color: #1a1204;
+            box-shadow: 0 4px 14px rgba(255, 208, 38, 0.36);
+        }
         .promo-banner.banner-style-crimson {
             background: linear-gradient(135deg, rgba(62, 16, 28, 0.94) 0%, rgba(28, 14, 18, 0.92) 100%);
             border-color: rgba(255, 77, 109, 0.45);
         }
         .promo-banner.banner-style-crimson h3 { color: #ff5c7a; }
         .promo-banner.banner-style-crimson::after { background: radial-gradient(circle, rgba(255, 77, 109, 0.24) 0%, transparent 70%); }
+        .promo-banner.banner-style-crimson .promo-copy-btn {
+            background: linear-gradient(135deg, #ff5c7a 0%, #e11d48 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(255, 77, 109, 0.38);
+        }
         [data-theme="light"] .promo-banner.banner-style-cyber { background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); }
         [data-theme="light"] .promo-banner.banner-style-cyber h3 { color: #0284c7; }
+        [data-theme="light"] .promo-banner.banner-style-cyber .promo-copy-btn { background: #0284c7; color: #ffffff; }
         [data-theme="light"] .promo-banner.banner-style-sunset { background: linear-gradient(135deg, #ffedd5 0%, #fff7ed 100%); }
         [data-theme="light"] .promo-banner.banner-style-sunset h3 { color: #ea580c; }
+        [data-theme="light"] .promo-banner.banner-style-sunset .promo-copy-btn { background: #ea580c; color: #ffffff; }
         [data-theme="light"] .promo-banner.banner-style-violet { background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%); }
         [data-theme="light"] .promo-banner.banner-style-violet h3 { color: #7e22ce; }
+        [data-theme="light"] .promo-banner.banner-style-violet .promo-copy-btn { background: #7e22ce; color: #ffffff; }
         [data-theme="light"] .promo-banner.banner-style-gold { background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); }
         [data-theme="light"] .promo-banner.banner-style-gold h3 { color: #b45309; }
+        [data-theme="light"] .promo-banner.banner-style-gold .promo-copy-btn { background: #b45309; color: #ffffff; }
         [data-theme="light"] .promo-banner.banner-style-crimson { background: linear-gradient(135deg, #ffe4e6 0%, #fff1f2 100%); }
         [data-theme="light"] .promo-banner.banner-style-crimson h3 { color: #be123c; }
+        [data-theme="light"] .promo-banner.banner-style-crimson .promo-copy-btn { background: #be123c; color: #ffffff; }
         .promo-banner-text {
             flex: 1;
             min-width: 0;
@@ -1427,8 +1555,12 @@
         }
         .profile-music-slider {
             flex: 1;
+            height: 24px;
             accent-color: var(--accent-green);
             cursor: pointer;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
         .profile-music-pct {
             font-size: 11.5px;
@@ -1881,9 +2013,15 @@
                 <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров по названию или вкусу..." oninput="filterProducts()">
             </div>
             <div class="categories-scroll" id="categories-scroll"></div>
-            <div class="top-notice-bar" id="catalog-top-notice">
-                <span class="top-notice-dot">🎁</span>
-                <span class="top-notice-text" id="catalog-top-notice-text">Возьми две жижи в подарок</span>
+            <div class="top-notice-bar" id="catalog-top-notice" onclick="advanceTopNoticeSlide(true)">
+                <div class="top-notice-flip-stage" id="top-notice-flip-stage">
+                    <div class="top-notice-card banner-style-emerald">
+                        <span class="top-notice-corner-dot dot-tl"></span>
+                        <span class="top-notice-dot">🎁</span>
+                        <span class="top-notice-text" id="catalog-top-notice-text">Возьми две жижи в подарок</span>
+                        <span class="top-notice-corner-dot dot-br"></span>
+                    </div>
+                </div>
             </div>
             <div class="promo-banner-carousel" id="promo-banner">
                 <div class="promo-banner-track" id="promo-banner-track">
@@ -1936,7 +2074,7 @@
                 </div>
                 <div class="profile-music-vol-row">
                     <span style="font-size:12px; color:var(--text-secondary);">Громкость:</span>
-                    <input type="range" class="profile-music-slider" id="user-music-volume-slider" min="0" max="100" value="35" oninput="setUserMusicVolumePercent(this.value)">
+                    <input type="range" class="profile-music-slider" id="user-music-volume-slider" min="0" max="100" value="35" oninput="setUserMusicVolumePercent(this.value)" onchange="setUserMusicVolumePercent(this.value)" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()" onpointerdown="event.stopPropagation()" onpointermove="event.stopPropagation()">
                     <span class="profile-music-pct" id="user-music-volume-pct">35%</span>
                 </div>
             </div>
@@ -2129,10 +2267,13 @@
                             <span style="font-size:12.5px; font-weight:700;">🏷 Табличка-анонс над баннером:</span>
                             <button type="button" id="admin-top-notice-toggle-btn" class="toggle-pill on" onclick="adminToggleTopNoticeEnabled()">🟢 Показана</button>
                         </div>
-                        <div style="display:flex; gap:6px;">
-                            <input type="text" id="admin-top-notice-text" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Возьми две жижи в подарок" oninput="isBannerDirty=true">
-                            <button type="button" class="promo-apply-btn" style="padding:8px 12px; font-size:12px;" onclick="adminSaveTopNotice()">💾 Ок</button>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:7px 10px;">
+                            <span style="font-size:12px; color:var(--text-secondary);">⏱ Перелистывать вниз каждые (сек.):</span>
+                            <input type="number" id="admin-top-notice-interval" class="promo-input" style="text-transform:none; width:72px; text-align:center; padding:6px 8px; font-size:12.5px;" min="0" max="120" value="4" oninput="handleAdminTopNoticeIntervalInput(this.value)">
                         </div>
+                        <div id="admin-top-notice-slides-list"></div>
+                        <button type="button" class="toggle-pill on" style="width:100%; padding:9px; font-size:12px; margin-bottom:8px;" onclick="adminAddTopNoticeSlide()">➕ Добавить слайд таблички</button>
+                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveTopNotice()">💾 Сохранить табличку</button>
                     </div>
                     <div class="shop-master-box">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -2156,6 +2297,10 @@
                             <button class="toggle-pill" id="season-btn-spring" onclick="adminSetSeason('spring')">🌸 Весна (Лепестки)</button>
                             <button class="toggle-pill" id="season-btn-summer" onclick="adminSetSeason('summer')">✨ Лето (Искры)</button>
                             <button class="toggle-pill" id="season-btn-rain" onclick="adminSetSeason('rain')">🌧 Дождь</button>
+                            <button class="toggle-pill" id="season-btn-garland" onclick="adminSetSeason('garland')">🎄 Гирлянда</button>
+                            <button class="toggle-pill" id="season-btn-fireworks" onclick="adminSetSeason('fireworks')">🎆 Салюты</button>
+                            <button class="toggle-pill" id="season-btn-aurora" onclick="adminSetSeason('aurora')">🌌 Сияние</button>
+                            <button class="toggle-pill" id="season-btn-bokeh" onclick="adminSetSeason('bokeh')">🫧 Огоньки боке</button>
                         </div>
                     </div>
                     <div class="shop-master-box">
