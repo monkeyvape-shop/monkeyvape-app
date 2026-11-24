@@ -2379,7 +2379,6 @@
                 <div id="admin-tab-stats">
                     <div id="admin-stats-content" style="font-size:12px; color:var(--text-secondary);">Загрузка статистики...</div>
                     <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
-                        <button type="button" id="admin-test-notify-btn" class="toggle-pill on" style="width:100%; padding:11px 12px; font-size:12.5px; border-radius:14px;" onclick="adminTestNotify()">🔔 Проверить уведомления в Telegram</button>
                         <button type="button" id="admin-send-backup-btn" class="primary-btn" style="padding:11px 12px; font-size:12.5px;" onclick="adminSendBackup()">📥 Скачать бэкап и отчёт в Telegram</button>
                         <button type="button" id="admin-clear-orders-btn" onclick="adminClearTestOrders()" style="width:100%; background:rgba(255,51,51,0.12); border:1px solid var(--danger); color:var(--danger); padding:11px 12px; border-radius:14px; font-size:12.5px; font-weight:700; cursor:pointer;">🧹 Очистить тестовые заказы и статистику</button>
                     </div>
@@ -4895,7 +4894,13 @@
     }
     const PRIMARY_OWNER_IDS = [7280921605];
     let DYNAMIC_OWNER_IDS = [7280921605];
-    let DYNAMIC_COURIER_IDS = [7280921605, 6658906694, 1335426710];
+    let DYNAMIC_COURIER_IDS = (() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('monkey_courier_ids') || 'null');
+            if (Array.isArray(saved)) return saved.map(Number);
+        } catch (_) {}
+        return [7280921605, 6658906694];
+    })();
     function isCurrentUserOwner() { return PRIMARY_OWNER_IDS.includes(Number(currentUserId)) || DYNAMIC_OWNER_IDS.includes(Number(currentUserId)); }
     function isCurrentUserCourier() { return DYNAMIC_COURIER_IDS.includes(Number(currentUserId)) || isCurrentUserOwner(); }
     let BANNED_USER_IDS = [];
@@ -6067,7 +6072,10 @@
                 if (Array.isArray(cfg.products) && cfg.products.length > 0) products = cfg.products;
                 if (Array.isArray(cfg.banned_users)) BANNED_USER_IDS = cfg.banned_users.map(Number);
                 if (Array.isArray(cfg.owner_ids)) DYNAMIC_OWNER_IDS = cfg.owner_ids.map(Number);
-                if (Array.isArray(cfg.courier_ids)) DYNAMIC_COURIER_IDS = cfg.courier_ids.map(Number);
+                if (Array.isArray(cfg.courier_ids)) {
+                    DYNAMIC_COURIER_IDS = cfg.courier_ids.map(Number);
+                    try { localStorage.setItem('monkey_courier_ids', JSON.stringify(DYNAMIC_COURIER_IDS)); } catch (_) {}
+                }
                 localStorage.setItem('monkey_disabled_stations', JSON.stringify(disabledStations));
                 localStorage.setItem('monkey_disabled_times', JSON.stringify(disabledTimes));
                 localStorage.setItem('monkey_promocodes', JSON.stringify(promoCodes));
@@ -7299,11 +7307,6 @@
             desc: 'Обновить ссылку на туннель/сервер API, если изменился домен сервера.'
         },
         {
-            cmd: '/testnotify',
-            copyText: '/testnotify',
-            desc: 'Проверить отправку личных уведомлений курьерам и владельцам прямо в Telegram и посмотреть активный адрес сервера.'
-        },
-        {
             cmd: '/start',
             copyText: '/start',
             desc: 'Перезапустить меню бота и обновить кнопку запуска мини-приложения внизу чата.'
@@ -7912,30 +7915,6 @@
             renderProfileLinks();
             showToast("✅ Настройки каналов и подписки сохранены!");
         } catch (e) { showToast("Ошибка сохранения настроек каналов", true); }
-    }
-    async function adminTestNotify() {
-        const btn = document.getElementById('admin-test-notify-btn');
-        if (btn) { btn.disabled = true; btn.innerText = '⏳ Отправка теста...'; }
-        try {
-            const res = await apiFetch(`/api/admin/test_notify`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: Number(currentUserId) })
-            });
-            const data = await res.json();
-            const okList = Array.isArray(data?.delivered) ? data.delivered : [];
-            const failList = Array.isArray(data?.failed) ? data.failed : [];
-            if (okList.length > 0 && failList.length === 0) {
-                showToast(`✅ Тест доставлен (${okList.join(', ')})!`);
-            } else if (okList.length > 0) {
-                showToast(`⚠️ Доставлено: ${okList.join(', ')}. Ошибка: ${failList.join(', ')}`, true);
-            } else {
-                showToast(`❌ Не доставлено никому (${failList.join(', ')})`, true);
-            }
-        } catch (e) {
-            showToast("🔴 Сервер недоступен! Обновите /seturl и перезапустите Mini App", true);
-        } finally {
-            if (btn) { btn.disabled = false; btn.innerText = '🔔 Проверить уведомления в Telegram'; }
-        }
     }
     async function adminSendBackup() {
         document.activeElement?.blur();
@@ -8558,6 +8537,7 @@
         }
         if (action === 'remove_courier') {
             DYNAMIC_COURIER_IDS = DYNAMIC_COURIER_IDS.filter(id => Number(id) !== Number(targetId));
+            try { localStorage.setItem('monkey_courier_ids', JSON.stringify(DYNAMIC_COURIER_IDS)); } catch (_) {}
             renderAdminRoles();
         }
         try {

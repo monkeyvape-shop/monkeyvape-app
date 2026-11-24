@@ -87,7 +87,7 @@ def load_tunnel_url() -> str:
 PUBLIC_TUNNEL_URL = load_tunnel_url()
 
 PRIMARY_OWNER_IDS = load_primary_owner_ids_from_env()
-DEFAULT_COURIER_IDS = [6658906694, 7280921605, 1335426710]
+DEFAULT_COURIER_IDS = [6658906694, 7280921605]
 DB_FILE = os.path.join(BASE_DIR, "database.db")
 AUDIO_DIR = os.path.join(BASE_DIR, "uploaded_audio")
 IMAGES_DIR = os.path.join(BASE_DIR, "uploaded_images")
@@ -611,18 +611,20 @@ def is_within_schedule(now_dt: datetime, open_time_str: str, close_time_str: str
 
 async def get_all_courier_ids(db) -> list[int]:
     extra = await get_setting_list(db, "extra_couriers")
-    removed_defaults = set()
+    removed_list = set()
     for x in await get_setting_list(db, "removed_default_couriers"):
         try:
-            removed_defaults.add(int(x))
+            removed_list.add(int(x))
         except Exception:
             pass
     owners = await get_all_owner_ids(db)
-    base_defaults = [cid for cid in DEFAULT_COURIER_IDS if cid not in removed_defaults]
+    base_defaults = [cid for cid in DEFAULT_COURIER_IDS if cid not in removed_list]
     combined = set(base_defaults + owners)
     for x in extra:
         try:
-            combined.add(int(x))
+            cid_int = int(x)
+            if cid_int not in removed_list:
+                combined.add(cid_int)
         except Exception:
             pass
     return list(combined)
@@ -2492,11 +2494,10 @@ async def admin_manage_role(data: AdminRoleManageSchema):
         elif data.action == "remove_courier":
             couriers = [int(x) for x in await get_setting_list(db, "extra_couriers") if int(x) != tid]
             await set_setting_list(db, "extra_couriers", couriers)
-            if tid in DEFAULT_COURIER_IDS:
-                removed_defs = [int(x) for x in await get_setting_list(db, "removed_default_couriers")]
-                if tid not in removed_defs:
-                    removed_defs.append(tid)
-                    await set_setting_list(db, "removed_default_couriers", removed_defs)
+            removed_defs = [int(x) for x in await get_setting_list(db, "removed_default_couriers")]
+            if tid not in removed_defs:
+                removed_defs.append(tid)
+                await set_setting_list(db, "removed_default_couriers", removed_defs)
         elif data.action == "ban_user":
             if await check_is_owner(db, tid):
                 raise HTTPException(status_code=400, detail="Cannot ban owner")
@@ -2673,39 +2674,6 @@ async def admin_send_backup(data: AdminUserActionSchema):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Не удалось отправить файлы в Telegram: {e}")
     return {"success": True}
-
-@app.post("/api/admin/test_notify")
-async def admin_test_notify(data: AdminUserActionSchema):
-    async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
-        all_couriers = await get_all_courier_ids(db)
-        all_owners = await get_all_owner_ids(db)
-    targets = sorted({int(x) for x in (all_couriers + all_owners) if int(x or 0) > 0})
-    delivered: list[int] = []
-    failed: list[str] = []
-    for cid in targets:
-        courier_url = build_personal_url(cid, "Courier", is_owner=(cid in all_owners), is_courier=True)
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🛵 Открыть панель курьера", web_app=WebAppInfo(url=courier_url))]
-        ])
-        ok = await send_tg_dm(
-            cid,
-            f"🔔 <b>Тестовое уведомление о заказе!</b>\n\n"
-            f"Связь между Mini App и Telegram работает исправно.\n"
-            f"🌐 Адрес сервера: <code>{html.escape(PUBLIC_TUNNEL_URL)}</code>",
-            reply_markup=kb
-        )
-        if ok:
-            delivered.append(cid)
-        else:
-            failed.append(str(cid))
-    return {
-        "success": True,
-        "delivered": delivered,
-        "failed": failed,
-        "tunnel_url": PUBLIC_TUNNEL_URL
-    }
 
 @app.post("/api/admin/clear_test_orders")
 async def admin_clear_test_orders(data: AdminUserActionSchema):
@@ -3499,30 +3467,6 @@ async def cmd_owner_backup(message: Message):
         await status_msg.delete()
     except Exception as e:
         await status_msg.edit_text(f"❌ Ошибка при выгрузке бэкапа: {html.escape(str(e))}", parse_mode="HTML")
-
-@dp.message(F.text == "/testnotify")
-async def cmd_test_notify(message: Message):
-    uid = message.from_user.id
-    async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, uid) and not await check_is_courier(db, uid):
-            return
-        all_couriers = await get_all_courier_ids(db)
-        all_owners = await get_all_owner_ids(db)
-    targets = sorted({int(x) for x in (all_couriers + all_owners) if int(x or 0) > 0})
-    report_lines = [
-        f"🔍 <b>Диагностика уведомлений:</b>",
-        f"🌐 Сервер API: <code>{html.escape(PUBLIC_TUNNEL_URL)}</code>",
-        f"👑 Владельцы: <code>{all_owners}</code>",
-        f"🛵 Курьеры: <code>{all_couriers}</code>",
-        ""
-    ]
-    for cid in targets:
-        ok = await send_tg_dm(
-            cid,
-            f"🔔 <b>Тест уведомления от бота!</b>\nПолучатель: <code>{cid}</code>"
-        )
-        report_lines.append(f"• ID <code>{cid}</code>: {'✅ Доставлено' if ok else '❌ Ошибка (пользователь не нажал /start или заблокировал бота)'}")
-    await message.answer("\n".join(report_lines), parse_mode="HTML")
 
 @dp.message(F.text == "/start")
 async def cmd_start(message: Message):
