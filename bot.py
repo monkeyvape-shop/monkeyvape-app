@@ -10,7 +10,7 @@ import re
 import time
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
-from urllib.parse import quote
+from urllib.parse import quote, parse_qs
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response
@@ -914,6 +914,62 @@ async def lifespan(app: FastAPI):
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
+def extract_user_from_init_data(init_data: str) -> tuple[int, str]:
+    raw = (init_data or "").strip()
+    if not raw:
+        return 0, ""
+    try:
+        parsed = parse_qs(raw, keep_blank_values=False)
+        user_json_str = (parsed.get("user") or [""])[0]
+        if user_json_str:
+            uobj = json.loads(user_json_str)
+            uid = int(uobj.get("id") or 0)
+            uname = f"@{uobj['username']}" if uobj.get("username") else str(uobj.get("first_name") or "")
+            return uid, uname
+    except Exception:
+        pass
+    return 0, ""
+
+async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
+    try:
+        cid = int(chat_id or 0)
+    except Exception:
+        cid = 0
+    if cid <= 0:
+        print(f"[TG_DM_SKIP] Invalid chat_id: {chat_id}")
+        return False
+
+    print(f"[TG_DM] Sending message to chat_id={cid}")
+    # Attempt 1: main bot instance with markup
+    try:
+        await bot.send_message(chat_id=cid, text=text, parse_mode="HTML", reply_markup=reply_markup)
+        print(f"[TG_DM_OK] Delivered to {cid}")
+        return True
+    except Exception as e1:
+        print(f"[TG_DM_WARN] Attempt 1 failed for {cid}: {e1}")
+
+    # Attempt 2: main bot instance without reply_markup (in case BUTTON_URL_INVALID)
+    if reply_markup is not None:
+        try:
+            await bot.send_message(chat_id=cid, text=text, parse_mode="HTML")
+            print(f"[TG_DM_OK] Delivered (without markup) to {cid}")
+            return True
+        except Exception as e2:
+            print(f"[TG_DM_WARN] Attempt 2 failed for {cid}: {e2}")
+
+    # Attempt 3: fresh Bot session bound strictly to current running event loop
+    try:
+        async with Bot(token=TOKEN) as temp_bot:
+            try:
+                await temp_bot.send_message(chat_id=cid, text=text, parse_mode="HTML", reply_markup=reply_markup)
+            except Exception:
+                await temp_bot.send_message(chat_id=cid, text=text, parse_mode="HTML")
+        print(f"[TG_DM_OK] Delivered (via fresh session) to {cid}")
+        return True
+    except Exception as e3:
+        print(f"[TG_DM_ERR] All attempts failed for {cid}: {e3}")
+        return False
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
@@ -2575,9 +2631,18 @@ async def admin_broadcast(data: AdminBroadcastSchema):
     return {"success": True, "sent": sent, "failed": failed, "total": len(user_ids)}
 
 @app.post("/api/create_order")
-async def create_order(order: OrderSchema):
+async def create_order(order: OrderSchema, request: Request):
     order_id = str(order.id).strip()
     created_at = order.created_at or datetime.now().strftime("%d.%m.%Y, %H:%M")
+    init_uid, init_uname = extract_user_from_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    effective_user_id = int(order.user_id or 0) if int(order.user_id or 0) > 0 else init_uid
+    effective_user_name = (order.user_name or "").strip()
+    if (not effective_user_name or effective_user_name == "User") and init_uname:
+        effective_user_name = init_uname
+    if not effective_user_name:
+        effective_user_name = "User"
+    order.user_id = effective_user_id
+    order.user_name = effective_user_name
 
     async with aiosqlite.connect(DB_FILE) as db:
         shop_open_raw = await get_setting_raw(db, "shop_open", "1")
@@ -2697,17 +2762,14 @@ async def create_order(order: OrderSchema):
     )
 
     for cid in all_couriers:
-        try:
-            courier_url = build_personal_url(cid, "Courier", is_owner=(cid in all_owners), is_courier=True)
-            kb = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🛵 Открыть панель курьера", web_app=WebAppInfo(url=courier_url))]
-            ])
-            await bot.send_message(cid, courier_text, parse_mode="HTML", reply_markup=kb)
-        except Exception as e:
-            print(f"[ERR] Курьер {cid}: {e}")
+        courier_url = build_personal_url(cid, "Courier", is_owner=(cid in all_owners), is_courier=True)
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🛵 Открыть панель курьера", web_app=WebAppInfo(url=courier_url))]
+        ])
+        await send_tg_dm(int(cid), courier_text, reply_markup=kb)
 
     user_text = (
-        f"✨ <b>Заказ #{html.escape(order_id)} принят!</b>\n"
+        f"✨ <b>Электронный чек • Заказ #{html.escape(order_id)} принят!</b>\n"
         f"📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n"
         f"🚚 <b>Формат:</b> {mode_title}\n"
         f"📍 <b>{loc_label}:</b> {loc_value}\n"
@@ -2718,10 +2780,7 @@ async def create_order(order: OrderSchema):
     )
 
     if order.user_id:
-        try:
-            await bot.send_message(order.user_id, user_text, parse_mode="HTML")
-        except Exception as e:
-            print(f"[ERR] Покупатель {order.user_id}: {e}")
+        await send_tg_dm(int(order.user_id), user_text)
 
     return {
         "success": True,
@@ -2759,16 +2818,12 @@ async def courier_claim_order(data: CourierClaimSchema):
     loc_label = html.escape(get_location_label(delivery_mode))
     loc_value = html.escape(format_location_value(station, delivery_mode))
     if buyer_id and current_cid == 0:
-        try:
-            await bot.send_message(
-                buyer_id,
-                f"🛵 <b>Курьер уже везёт ваш заказ #{html.escape(oid)}!</b>\n"
-                f"👤 Курьер: {html.escape(data.courier_name)}\n"
-                f"📍 {loc_label}: {loc_value} в {html.escape(time_str)}",
-                parse_mode="HTML"
-            )
-        except Exception:
-            pass
+        await send_tg_dm(
+            int(buyer_id),
+            f"🛵 <b>Курьер уже везёт ваш заказ #{html.escape(oid)}!</b>\n"
+            f"👤 Курьер: {html.escape(data.courier_name)}\n"
+            f"📍 {loc_label}: {loc_value} в {html.escape(time_str)}"
+        )
     return {"success": True}
 
 @app.post("/api/courier/arrived")
@@ -2787,15 +2842,11 @@ async def courier_arrived(data: CourierArrivedSchema):
 
     loc_value = html.escape(format_location_value(station, delivery_mode))
     if buyer_id:
-        try:
-            await bot.send_message(
-                int(buyer_id),
-                f"📍 <b>Курьер на месте ({loc_value})!</b>\n"
-                f"Заказ #{html.escape(oid)} ожидает вас на месте встречи.",
-                parse_mode="HTML"
-            )
-        except Exception as e:
-            print(f"[ERR] arrived notify buyer {buyer_id}: {e}")
+        await send_tg_dm(
+            int(buyer_id),
+            f"📍 <b>Курьер на месте ({loc_value})!</b>\n"
+            f"Заказ #{html.escape(oid)} ожидает вас на месте встречи."
+        )
     return {"success": True}
 
 @app.get("/api/orders")
@@ -2879,31 +2930,23 @@ async def update_order_status(data: StatusUpdateSchema):
         if data.status == 'cancelled':
             who_text = "Отменено клиентом" if cancelled_by == 'client' else ("Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён")
             if user_id:
-                try:
-                    await bot.send_message(
-                        int(user_id),
-                        f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text}).\n"
-                        f"📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}",
-                        parse_mode="HTML"
-                    )
-                except Exception as e:
-                    print(f"[ERR] cancel notify buyer {user_id}: {e}")
+                await send_tg_dm(
+                    int(user_id),
+                    f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text}).\n"
+                    f"📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}"
+                )
             if existing_claimed_id != 0 and cancelled_by == 'client':
                 notify_targets = list({int(existing_claimed_id)} | {int(x) for x in all_owners})
             else:
                 notify_targets = list({int(x) for x in (all_couriers + all_owners)})
             for cid in notify_targets:
                 if cid:
-                    try:
-                        await bot.send_message(
-                            int(cid),
-                            f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text})\n"
-                            f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
-                            f"📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}",
-                            parse_mode="HTML"
-                        )
-                    except Exception as e:
-                        print(f"[ERR] cancel notify courier {cid}: {e}")
+                    await send_tg_dm(
+                        int(cid),
+                        f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text})\n"
+                        f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
+                        f"📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}"
+                    )
         elif data.status == 'completed':
             clean_reviews_url = normalize_tg_link(reviews_url)
             clean_news_url = normalize_tg_link(news_url)
@@ -2917,14 +2960,14 @@ async def update_order_status(data: StatusUpdateSchema):
                     completed_msg += f"\n\n✈️ <b>Следите за новостями и поступлениями в канале:</b>\n{html.escape(clean_news_url)}"
                     kb_rows.append([InlineKeyboardButton(text="✈️ Канал с новостями", url=clean_news_url)])
                 markup = InlineKeyboardMarkup(inline_keyboard=kb_rows) if kb_rows else None
-                try:
-                    await bot.send_message(int(user_id), completed_msg, parse_mode="HTML", reply_markup=markup)
-                except Exception as e:
-                    print(f"[ERR] completed notify with markup failed for {user_id}: {e}")
-                    try:
-                        await bot.send_message(int(user_id), completed_msg, parse_mode="HTML")
-                    except Exception as e2:
-                        print(f"[ERR] completed notify fallback failed for {user_id}: {e2}")
+                await send_tg_dm(int(user_id), completed_msg, reply_markup=markup)
+            for oid_owner in all_owners:
+                if oid_owner and int(oid_owner) != int(user_id or 0):
+                    await send_tg_dm(
+                        int(oid_owner),
+                        f"✅ <b>Заказ #{html.escape(str(data.order_id))} успешно выдан!</b>\n"
+                        f"👤 Покупатель: {safe_user} • 📍 {loc_value}"
+                    )
     return {"success": True}
 
 @app.post("/api/delete_completed_order")
@@ -2953,28 +2996,20 @@ async def update_order_time(data: TimeUpdateSchema):
                 targets = [claimed_id] if claimed_id != 0 else all_couriers
                 for cid in targets:
                     if cid:
-                        try:
-                            await bot.send_message(
-                                int(cid),
-                                f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n"
-                                f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
-                                f"📍 {loc_label}: {loc_value}\n"
-                                f"🕒 Новое время: <b>{html.escape(data.time)}</b>",
-                                parse_mode="HTML"
-                            )
-                        except Exception as e:
-                            print(f"[ERR] time notify courier {cid}: {e}")
-                if user_id:
-                    try:
-                        await bot.send_message(
-                            int(user_id),
-                            f"⏰ <b>Время встречи по заказу #{html.escape(str(data.order_id))} обновлено!</b>\n"
+                        await send_tg_dm(
+                            int(cid),
+                            f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n"
+                            f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
                             f"📍 {loc_label}: {loc_value}\n"
-                            f"🕒 Новое время: <b>{html.escape(data.time)}</b>",
-                            parse_mode="HTML"
+                            f"🕒 Новое время: <b>{html.escape(data.time)}</b>"
                         )
-                    except Exception as e:
-                        print(f"[ERR] time notify buyer {user_id}: {e}")
+                if user_id:
+                    await send_tg_dm(
+                        int(user_id),
+                        f"⏰ <b>Время встречи по заказу #{html.escape(str(data.order_id))} обновлено!</b>\n"
+                        f"📍 {loc_label}: {loc_value}\n"
+                        f"🕒 Новое время: <b>{html.escape(data.time)}</b>"
+                    )
     return {"success": True}
 
 @app.get("/api/check_role/{user_id}")

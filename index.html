@@ -659,20 +659,20 @@
             position: absolute;
             inset: 0;
             pointer-events: none;
-            transform-origin: center bottom;
-            animation: topNoticeFlipOutDown 0.44s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+            transform-origin: 50% 100% -18px;
+            animation: topNoticeFlipOutDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .top-notice-card.flip-in-down {
-            transform-origin: center top;
-            animation: topNoticeFlipInDown 0.44s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+            transform-origin: 50% 0% -18px;
+            animation: topNoticeFlipInDown 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         @keyframes topNoticeFlipOutDown {
-            0% { transform: rotateX(0deg) translateY(0); opacity: 1; }
-            100% { transform: rotateX(-88deg) translateY(8px); opacity: 0; }
+            0% { transform: rotateX(0deg) translateZ(0px); opacity: 1; }
+            100% { transform: rotateX(-90deg) translateZ(14px); opacity: 0; }
         }
         @keyframes topNoticeFlipInDown {
-            0% { transform: rotateX(88deg) translateY(-8px); opacity: 0; }
-            100% { transform: rotateX(0deg) translateY(0); opacity: 1; }
+            0% { transform: rotateX(90deg) translateZ(14px); opacity: 0; }
+            100% { transform: rotateX(0deg) translateZ(0px); opacity: 1; }
         }
         .top-notice-card.banner-style-emerald {
             background: linear-gradient(90deg, color-mix(in srgb, var(--accent-green) 18%, var(--card-bg)) 0%, color-mix(in srgb, var(--banner-bg) 90%, var(--card-bg)) 50%, color-mix(in srgb, var(--accent-green) 18%, var(--card-bg)) 100%);
@@ -711,27 +711,26 @@
         [data-theme="light"] .top-notice-card.banner-style-crimson { background: linear-gradient(90deg, #ffe4e6 0%, #fecdd3 50%, #ffe4e6 100%); --notice-dot-color: #be123c; }
         .top-notice-corner-dot {
             position: absolute;
-            width: 5px;
-            height: 5px;
+            top: 50%;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--notice-dot-color, var(--accent-green));
-            box-shadow: 0 0 7px var(--notice-dot-color, var(--accent-green));
+            box-shadow: 0 0 8px var(--notice-dot-color, var(--accent-green));
             pointer-events: none;
             z-index: 3;
             animation: noticeCornerBlink 1.7s ease-in-out infinite;
         }
         .top-notice-corner-dot.dot-tl {
-            top: 6px;
-            left: 8px;
+            left: 11px;
         }
         .top-notice-corner-dot.dot-br {
-            bottom: 6px;
-            right: 8px;
+            right: 11px;
             animation-delay: 0.85s;
         }
         @keyframes noticeCornerBlink {
-            0%, 100% { opacity: 0.22; transform: scale(0.82); }
-            50% { opacity: 1; transform: scale(1.22); }
+            0%, 100% { opacity: 0.25; transform: translateY(-50%) scale(0.82); }
+            50% { opacity: 1; transform: translateY(-50%) scale(1.25); }
         }
         .top-notice-dot {
             font-size: 13px;
@@ -1837,6 +1836,125 @@
             justify-content: center;
             box-shadow: 0 2px 8px var(--icon-glow);
         }
+        /* Окно подтверждения 18+ и согласия на обработку персональных данных */
+        #age-consent-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 6, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 18px;
+            z-index: 3500;
+        }
+        #age-consent-modal.active {
+            display: flex;
+        }
+        .age-consent-card {
+            width: 100%;
+            max-width: 420px;
+            background: color-mix(in srgb, var(--card-bg) 95%, transparent);
+            border: 1.5px solid color-mix(in srgb, var(--accent-green) 45%, var(--border-color));
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 22px 54px rgba(0, 0, 0, 0.65), 0 0 28px var(--accent-green-glow);
+            border-radius: 24px;
+            padding: 22px 20px 20px 20px;
+            text-align: center;
+            animation: screenReveal 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .age-badge-18 {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            margin: 0 auto 14px auto;
+            background: var(--accent-green-glow);
+            border: 1.5px solid var(--accent-green);
+            color: var(--accent-green);
+            font-size: 20px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 18px var(--accent-green-glow);
+        }
+        .age-consent-check-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            text-align: left;
+            background: color-mix(in srgb, var(--bg-color) 85%, transparent);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 11px 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: border-color 0.2s ease;
+        }
+        .age-consent-check-row.error-highlight {
+            border-color: var(--danger);
+            box-shadow: 0 0 12px rgba(255, 51, 51, 0.22);
+        }
+        .age-consent-check-row input[type="checkbox"] {
+            width: 19px;
+            height: 19px;
+            margin-top: 1px;
+            accent-color: var(--accent-green);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .age-consent-error-text {
+            display: none;
+            color: var(--danger);
+            font-size: 12px;
+            font-weight: 700;
+            text-align: left;
+            margin-bottom: 12px;
+            line-height: 1.35;
+        }
+        .age-consent-error-text.visible {
+            display: block;
+            animation: ageShake 0.34s ease;
+        }
+        @keyframes ageShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-3px); }
+        }
+        .age-consent-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            margin-top: 10px;
+        }
+        .age-btn-no {
+            background: rgba(255, 51, 51, 0.12);
+            border: 1px solid rgba(255, 51, 51, 0.55);
+            color: var(--danger);
+            padding: 13px 10px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.14s ease;
+        }
+        .age-btn-no:active { transform: scale(0.96); }
+        .age-btn-yes {
+            background: linear-gradient(135deg, var(--accent-green) 0%, color-mix(in srgb, var(--accent-green) 82%, #ffffff) 100%);
+            border: none;
+            color: #080c09;
+            padding: 13px 10px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 16px var(--accent-green-glow);
+            transition: transform 0.14s ease;
+        }
+        .age-btn-yes:active { transform: scale(0.96); }
     </style>
 </head>
 <body>
@@ -1878,6 +1996,42 @@
             <a id="channel-sub-modal-link" href="https://t.me/" target="_blank" onclick="openRequiredChannelLink(event)" class="primary-btn" style="display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; margin-bottom:10px;">✈️ Перейти в канал</a>
             <button type="button" onclick="retryOrderAfterSubscribe()" style="width:100%; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); padding:13px; border-radius:14px; font-size:13px; font-weight:700; cursor:pointer;">✅ Я подписался, оформить заказ</button>
             <button type="button" onclick="closeChannelSubModal()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Закрыть</button>
+        </div>
+    </div>
+    <!-- Подтверждение 18+ и согласия на обработку персональной информации при первом входе -->
+    <div id="age-consent-modal">
+        <div class="age-consent-card" onclick="event.stopPropagation()">
+            <div id="age-consent-main-view">
+                <div class="age-badge-18">18+</div>
+                <div class="modal-title" style="font-size:18px; margin-bottom:6px;">Вам уже исполнилось 18 лет?</div>
+                <div class="modal-subtitle" style="margin-bottom:14px; font-size:12.5px;">
+                    Магазин предназначен исключительно для совершеннолетних пользователей.
+                </div>
+                <label class="age-consent-check-row" id="age-consent-check-row" for="age-consent-checkbox">
+                    <input type="checkbox" id="age-consent-checkbox" onchange="handleAgeConsentCheckboxChange()">
+                    <span style="font-size:12px; color:var(--text-main); line-height:1.4;">
+                        Я даю <span style="color:var(--accent-green); text-decoration:underline;" onclick="event.preventDefault(); event.stopPropagation(); toggleAgePolicyDetails();">согласие на обработку персональных данных</span> и подтверждаю, что мне исполнилось 18 лет.
+                    </span>
+                </label>
+                <div id="age-policy-details" style="display:none; text-align:left; font-size:11px; color:var(--text-secondary); background:var(--bg-color); border:1px solid var(--border-color); border-radius:11px; padding:9px 11px; margin-bottom:8px; line-height:1.4;">
+                    Нажимая «Да, мне есть 18», вы соглашаетесь на обработку вашего Telegram ID, имени пользователя и данных заказа исключительно для оформления, доставки и уведомлений о статусе заказа.
+                </div>
+                <div id="age-consent-error" class="age-consent-error-text">
+                    ⚠️ Поставьте галочку согласия на обработку персональных данных, чтобы продолжить!
+                </div>
+                <div class="age-consent-btns">
+                    <button type="button" class="age-btn-no" onclick="confirmAgeConsentNo()">Нет, мне нет 18</button>
+                    <button type="button" class="age-btn-yes" onclick="confirmAgeConsentYes()">Да, мне есть 18</button>
+                </div>
+            </div>
+            <div id="age-consent-denied-view" style="display:none; padding:10px 4px;">
+                <div style="font-size:42px; margin-bottom:10px;">⛔</div>
+                <div class="modal-title" style="color:var(--danger); margin-bottom:8px;">Доступ запрещён</div>
+                <div class="modal-subtitle" style="margin-bottom:14px; color:var(--text-main);">
+                    Вход в мини-приложение разрешён только пользователям старше 18 лет.
+                </div>
+                <div style="font-size:11.5px; color:var(--text-secondary);">Закрываем приложение...</div>
+            </div>
         </div>
     </div>
     <div id="splash-screen">
@@ -2017,7 +2171,6 @@
                 <div class="top-notice-flip-stage" id="top-notice-flip-stage">
                     <div class="top-notice-card banner-style-emerald">
                         <span class="top-notice-corner-dot dot-tl"></span>
-                        <span class="top-notice-dot">🎁</span>
                         <span class="top-notice-text" id="catalog-top-notice-text">Возьми две жижи в подарок</span>
                         <span class="top-notice-corner-dot dot-br"></span>
                     </div>
@@ -2291,16 +2444,16 @@
                     <div class="shop-master-box">
                         <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🌦 Сезонный эффект на экране:</div>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                            <button class="toggle-pill" id="season-btn-none" onclick="adminSetSeason('none')">🚫 Выключен</button>
-                            <button class="toggle-pill" id="season-btn-winter" onclick="adminSetSeason('winter')">❄️ Зима (Снег)</button>
-                            <button class="toggle-pill" id="season-btn-autumn" onclick="adminSetSeason('autumn')">🍂 Осень (Листья)</button>
-                            <button class="toggle-pill" id="season-btn-spring" onclick="adminSetSeason('spring')">🌸 Весна (Лепестки)</button>
-                            <button class="toggle-pill" id="season-btn-summer" onclick="adminSetSeason('summer')">✨ Лето (Искры)</button>
-                            <button class="toggle-pill" id="season-btn-rain" onclick="adminSetSeason('rain')">🌧 Дождь</button>
-                            <button class="toggle-pill" id="season-btn-garland" onclick="adminSetSeason('garland')">🎄 Гирлянда</button>
-                            <button class="toggle-pill" id="season-btn-fireworks" onclick="adminSetSeason('fireworks')">🎆 Салюты</button>
-                            <button class="toggle-pill" id="season-btn-aurora" onclick="adminSetSeason('aurora')">🌌 Сияние</button>
-                            <button class="toggle-pill" id="season-btn-bokeh" onclick="adminSetSeason('bokeh')">🫧 Огоньки боке</button>
+                            <button type="button" class="toggle-pill" id="season-btn-none" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('none')">🚫 Выключен</button>
+                            <button type="button" class="toggle-pill" id="season-btn-winter" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('winter')">❄️ Зима (Снег)</button>
+                            <button type="button" class="toggle-pill" id="season-btn-autumn" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('autumn')">🍂 Осень (Листья)</button>
+                            <button type="button" class="toggle-pill" id="season-btn-spring" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('spring')">🌸 Весна (Лепестки)</button>
+                            <button type="button" class="toggle-pill" id="season-btn-summer" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('summer')">✨ Лето (Искры)</button>
+                            <button type="button" class="toggle-pill" id="season-btn-rain" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('rain')">🌧 Дождь</button>
+                            <button type="button" class="toggle-pill" id="season-btn-garland" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('garland')">🎄 Гирлянда</button>
+                            <button type="button" class="toggle-pill" id="season-btn-fireworks" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('fireworks')">🎆 Салюты</button>
+                            <button type="button" class="toggle-pill" id="season-btn-aurora" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('aurora')">🌌 Сияние</button>
+                            <button type="button" class="toggle-pill" id="season-btn-bokeh" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('bokeh')">🫧 Огоньки боке</button>
                         </div>
                     </div>
                     <div class="shop-master-box">
@@ -2967,7 +3120,15 @@
     function getRuntimeBackendBaseUrl() {
         try {
             const qApi = new URLSearchParams(window.location.search).get('api');
-            if (qApi && qApi.trim().startsWith('http')) return qApi.trim().replace(/\/+$/, '');
+            if (qApi && qApi.trim().startsWith('http')) {
+                const cleanApi = qApi.trim().replace(/\/+$/, '');
+                try { localStorage.setItem('monkey_runtime_api_url', cleanApi); } catch (_) {}
+                return cleanApi;
+            }
+            const savedApi = localStorage.getItem('monkey_runtime_api_url');
+            if (savedApi && savedApi.trim().startsWith('http')) {
+                return savedApi.trim().replace(/\/+$/, '');
+            }
         } catch (_) {}
         return 'https://grandma-unrefined-ecosystem.ngrok-free.dev';
     }
@@ -3069,6 +3230,41 @@
             `;
         }).join('');
     }
+    let webAudioCtx = null;
+    let webAudioGainNode = null;
+    let webAudioSourceNode = null;
+    function ensureWebAudioGainGraph(audio) {
+        if (!audio) return;
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            if (!webAudioCtx) {
+                webAudioCtx = new AudioCtx();
+            }
+            if (!webAudioSourceNode) {
+                webAudioSourceNode = webAudioCtx.createMediaElementSource(audio);
+                webAudioGainNode = webAudioCtx.createGain();
+                webAudioSourceNode.connect(webAudioGainNode);
+                webAudioGainNode.connect(webAudioCtx.destination);
+            }
+            if (webAudioCtx.state === 'suspended') {
+                webAudioCtx.resume().catch(() => {});
+            }
+            if (webAudioGainNode) {
+                webAudioGainNode.gain.value = getEffectiveUserVolumeFloat();
+            }
+        } catch (_) {}
+    }
+    function applyVolumeToAudioHardware(audio) {
+        const vol = getEffectiveUserVolumeFloat();
+        if (audio) {
+            try { audio.volume = vol; } catch (_) {}
+            ensureWebAudioGainGraph(audio);
+        }
+        if (webAudioGainNode) {
+            try { webAudioGainNode.gain.value = vol; } catch (_) {}
+        }
+    }
     function playAudioElementDirectly(audio, playableSrc) {
         if (!audio || !playableSrc) return;
         const shouldLoopSingle = (audioLoopMode === 'single') || !Array.isArray(audioTracks) || audioTracks.length <= 1;
@@ -3078,7 +3274,7 @@
             audio.src = playableSrc;
             try { audio.load(); } catch (_) {}
         }
-        audio.volume = getEffectiveUserVolumeFloat();
+        applyVolumeToAudioHardware(audio);
         if (userMusicMuted || !musicEnabled || adminMusicPaused) {
             try { audio.pause(); } catch (_) {}
             syncUserMusicToggleBtn(false);
@@ -3089,6 +3285,7 @@
             if (p && typeof p.then === 'function') {
                 p.then(() => {
                     isAudioElementUnlocked = true;
+                    applyVolumeToAudioHardware(audio);
                     syncUserMusicToggleBtn(true);
                 }).catch(() => {
                     syncUserMusicToggleBtn(!userMusicMuted && musicEnabled && !adminMusicPaused);
@@ -3250,8 +3447,38 @@
         userAudioVolumePct = pct;
         hasUserCustomVolume = true;
         try { localStorage.setItem('user_audio_volume', String(pct)); } catch (_) {}
-        applyMusicPlayerUI();
+        const audio = document.getElementById('bg-music-audio');
+        applyVolumeToAudioHardware(audio);
+        const pctEl = document.getElementById('user-music-volume-pct');
+        if (pctEl) pctEl.textContent = `${pct}%`;
+        const slider = document.getElementById('user-music-volume-slider');
+        if (slider && Number(slider.value) !== pct) slider.value = pct;
     }
+    (function bindUserVolumeSliderTouch() {
+        const bind = () => {
+            const slider = document.getElementById('user-music-volume-slider');
+            if (!slider || slider.dataset.touchBound) return;
+            slider.dataset.touchBound = '1';
+            const calcFromClientX = (clientX) => {
+                const rect = slider.getBoundingClientRect();
+                if (!rect || rect.width <= 0) return;
+                const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                const val = Math.round(ratio * 100);
+                slider.value = val;
+                setUserMusicVolumePercent(val);
+            };
+            slider.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                if (e.touches && e.touches[0]) calcFromClientX(e.touches[0].clientX);
+            }, { passive: true });
+            slider.addEventListener('touchmove', (e) => {
+                e.stopPropagation();
+                if (e.touches && e.touches[0]) calcFromClientX(e.touches[0].clientX);
+            }, { passive: true });
+        };
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+        else bind();
+    })();
     function handleAdminMusicVolumeInput(pctVal) {
         isMusicDirty = true;
         const pct = Math.max(0, Math.min(100, parseInt(pctVal, 10) || 0));
@@ -3536,10 +3763,40 @@
         { id: 'gold', label: '👑 Золото' },
         { id: 'crimson', label: '🔥 Малиновый' }
     ];
-    let topNotice = JSON.parse(localStorage.getItem('monkey_top_notice')) || {
-        enabled: true,
-        text: 'Возьми две жижи в подарок'
-    };
+    function normalizeClientTopNoticeSlide(raw, idx = 0) {
+        const s = raw || {};
+        return {
+            id: String(s.id || `tn_${Date.now()}_${idx}`),
+            text: String(s.text || '').trim() || 'Возьми две жижи в подарок',
+            style: BANNER_STYLE_OPTIONS.some(o => o.id === s.style) ? s.style : 'emerald'
+        };
+    }
+    let topNotice = (() => {
+        try {
+            const raw = JSON.parse(localStorage.getItem('monkey_top_notice') || 'null');
+            if (raw && typeof raw === 'object') {
+                const slides = Array.isArray(raw.slides) && raw.slides.length > 0
+                    ? raw.slides.map((item, i) => normalizeClientTopNoticeSlide(item, i))
+                    : [normalizeClientTopNoticeSlide({ id: 'tn_default_1', text: raw.text || 'Возьми две жижи в подарок', style: 'emerald' }, 0)];
+                const iv = parseInt(raw.interval ?? '4', 10);
+                return {
+                    enabled: raw.enabled !== false,
+                    text: slides[0].text,
+                    interval: isNaN(iv) ? 4 : Math.max(0, Math.min(120, iv)),
+                    slides
+                };
+            }
+        } catch (_) {}
+        return {
+            enabled: true,
+            text: 'Возьми две жижи в подарок',
+            interval: 4,
+            slides: [normalizeClientTopNoticeSlide({ id: 'tn_default_1', text: 'Возьми две жижи в подарок', style: 'emerald' }, 0)]
+        };
+    })();
+    let currentTopNoticeSlideIdx = 0;
+    let topNoticeAutoSlideTimer = null;
+    let lastRenderedTopNoticeSig = '';
     let bannerCarouselEnabled = localStorage.getItem('monkey_banner_enabled') !== '0';
     let bannerIntervalSec = parseInt(localStorage.getItem('monkey_banner_interval') ?? '5', 10);
     if (isNaN(bannerIntervalSec) || bannerIntervalSec < 0) bannerIntervalSec = 5;
@@ -3647,25 +3904,178 @@
             goToBannerSlide(currentBannerSlideIdx + 1, false);
         }, bannerIntervalSec * 1000);
     }
-    function applyTopNoticeUI() {
+    function buildTopNoticeCardHtml(slide, extraAnimClass = '') {
+        const stClass = `banner-style-${slide?.style || 'emerald'}`;
+        const txt = (slide?.text || '').trim() || 'Возьми две жижи в подарок';
+        return `
+            <div class="top-notice-card ${stClass} ${extraAnimClass}">
+                <span class="top-notice-corner-dot dot-tl"></span>
+                <span class="top-notice-text">${escapeHtml(txt)}</span>
+                <span class="top-notice-corner-dot dot-br"></span>
+            </div>
+        `;
+    }
+    function renderTopNoticeCard(animateCubeRoll = false) {
         const bar = document.getElementById('catalog-top-notice');
-        const txt = document.getElementById('catalog-top-notice-text');
-        const cleanText = (topNotice?.text || '').trim() || 'Возьми две жижи в подарок';
-        if (bar) {
-            bar.style.display = topNotice?.enabled ? 'flex' : 'none';
+        const stage = document.getElementById('top-notice-flip-stage');
+        const slides = Array.isArray(topNotice?.slides) ? topNotice.slides : [];
+        if (!bar || !stage) return;
+        if (!topNotice?.enabled || slides.length === 0) {
+            bar.style.display = 'none';
+            if (topNoticeAutoSlideTimer) {
+                clearInterval(topNoticeAutoSlideTimer);
+                topNoticeAutoSlideTimer = null;
+            }
+            return;
         }
-        if (txt) {
-            txt.innerText = cleanText;
+        bar.style.display = 'block';
+        if (currentTopNoticeSlideIdx >= slides.length) currentTopNoticeSlideIdx = 0;
+        const activeSlide = slides[currentTopNoticeSlideIdx];
+        const sig = `${currentTopNoticeSlideIdx}|${activeSlide.text}|${activeSlide.style}`;
+        if (animateCubeRoll && stage.firstElementChild) {
+            const oldCard = stage.querySelector('.top-notice-card:not(.flip-out-down)');
+            if (oldCard) {
+                oldCard.classList.remove('flip-in-down');
+                oldCard.classList.add('flip-out-down');
+                setTimeout(() => oldCard.remove(), 500);
+            }
+            const wrap = document.createElement('div');
+            wrap.innerHTML = buildTopNoticeCardHtml(activeSlide, 'flip-in-down').trim();
+            const newCard = wrap.firstElementChild;
+            if (newCard) stage.appendChild(newCard);
+            lastRenderedTopNoticeSig = sig;
+        } else if (lastRenderedTopNoticeSig !== sig || !stage.querySelector('.top-notice-card')) {
+            stage.innerHTML = buildTopNoticeCardHtml(activeSlide, '');
+            lastRenderedTopNoticeSig = sig;
         }
+    }
+    function advanceTopNoticeSlide(isManual = false) {
+        const slides = Array.isArray(topNotice?.slides) ? topNotice.slides : [];
+        if (slides.length <= 1) return;
+        currentTopNoticeSlideIdx = (currentTopNoticeSlideIdx + 1) % slides.length;
+        renderTopNoticeCard(true);
+        if (isManual) restartTopNoticeAutoSlideTimer();
+    }
+    function restartTopNoticeAutoSlideTimer() {
+        if (topNoticeAutoSlideTimer) {
+            clearInterval(topNoticeAutoSlideTimer);
+            topNoticeAutoSlideTimer = null;
+        }
+        const slides = Array.isArray(topNotice?.slides) ? topNotice.slides : [];
+        const iv = Number(topNotice?.interval ?? 4);
+        if (!topNotice?.enabled || slides.length <= 1 || iv <= 0) return;
+        topNoticeAutoSlideTimer = setInterval(() => {
+            advanceTopNoticeSlide(false);
+        }, iv * 1000);
+    }
+    function renderAdminTopNoticeSlidesList() {
+        const listEl = document.getElementById('admin-top-notice-slides-list');
+        if (!listEl) return;
+        const slides = Array.isArray(topNotice?.slides) ? topNotice.slides : [];
+        if (!slides.length) {
+            listEl.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px;">Нет слайдов — нажмите «Добавить слайд таблички»</div>';
+            return;
+        }
+        listEl.innerHTML = slides.map((slide, idx) => {
+            const styleOptsHtml = BANNER_STYLE_OPTIONS.map(opt =>
+                `<option value="${opt.id}" ${slide.style === opt.id ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
+            return `
+                <div class="admin-banner-slide-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                        <span style="font-size:12px; font-weight:800; color:var(--accent-green);">Табличка #${idx + 1}</span>
+                        <div style="display:flex; gap:4px; align-items:center;">
+                            ${slides.length > 1 ? `<button type="button" class="toggle-pill on" style="padding:3px 7px;" title="Вверх" onclick="adminMoveTopNoticeSlide(${idx}, -1)">↑</button>` : ''}
+                            ${slides.length > 1 ? `<button type="button" class="toggle-pill on" style="padding:3px 7px;" title="Вниз" onclick="adminMoveTopNoticeSlide(${idx}, 1)">↓</button>` : ''}
+                            <button type="button" class="toggle-pill off" style="padding:3px 8px;" title="Удалить слайд" onclick="adminDeleteTopNoticeSlide(${idx})">✕</button>
+                        </div>
+                    </div>
+                    <input type="text" class="promo-input admin-top-notice-field" style="text-transform:none; font-size:12px;" placeholder="Текст таблички (напр. Возьми две жижи в подарок)" value="${escapeHtml(slide.text)}" oninput="updateTopNoticeSlideField(${idx}, 'text', this.value)">
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">🎨 Цвет:</span>
+                        <select class="admin-select" style="flex:1; padding:7px 8px; font-size:12px;" onchange="updateTopNoticeSlideField(${idx}, 'style', this.value)">
+                            ${styleOptsHtml}
+                        </select>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    function applyTopNoticeUI() {
+        renderTopNoticeCard(false);
+        restartTopNoticeAutoSlideTimer();
         const admBtn = document.getElementById('admin-top-notice-toggle-btn');
-        const admInp = document.getElementById('admin-top-notice-text');
+        const admInt = document.getElementById('admin-top-notice-interval');
         if (admBtn) {
             admBtn.className = `toggle-pill ${topNotice?.enabled ? 'on' : 'off'}`;
             admBtn.innerText = topNotice?.enabled ? '🟢 Показана' : '🔴 Скрыта';
         }
-        if (admInp && document.activeElement !== admInp) {
-            admInp.value = cleanText;
+        if (admInt && document.activeElement !== admInt) {
+            admInt.value = String(topNotice?.interval ?? 4);
         }
+        const activeEl = document.activeElement;
+        const isEditingTn = activeEl?.classList?.contains('admin-top-notice-field') || (activeEl?.tagName === 'SELECT' && activeEl?.closest('#admin-top-notice-slides-list'));
+        if (!isEditingTn) {
+            renderAdminTopNoticeSlidesList();
+        }
+    }
+    function handleAdminTopNoticeIntervalInput(val) {
+        isBannerDirty = true;
+        const num = parseInt(val, 10);
+        topNotice.interval = isNaN(num) ? 4 : Math.max(0, Math.min(120, num));
+        try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
+        restartTopNoticeAutoSlideTimer();
+    }
+    function updateTopNoticeSlideField(idx, field, val) {
+        if (!topNotice.slides || !topNotice.slides[idx]) return;
+        isBannerDirty = true;
+        topNotice.slides[idx][field] = String(val ?? '');
+        if (idx === 0 && field === 'text') {
+            topNotice.text = topNotice.slides[0].text;
+        }
+        try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
+        renderTopNoticeCard(false);
+    }
+    function adminAddTopNoticeSlide() {
+        isBannerDirty = true;
+        if (!Array.isArray(topNotice.slides)) topNotice.slides = [];
+        const nextStyle = BANNER_STYLE_OPTIONS[topNotice.slides.length % BANNER_STYLE_OPTIONS.length].id;
+        topNotice.slides.push(normalizeClientTopNoticeSlide({
+            id: `tn_${Date.now()}_${topNotice.slides.length}`,
+            text: 'Новая акция для покупателей',
+            style: nextStyle
+        }, topNotice.slides.length));
+        currentTopNoticeSlideIdx = topNotice.slides.length - 1;
+        try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
+        renderAdminTopNoticeSlidesList();
+        renderTopNoticeCard(true);
+        restartTopNoticeAutoSlideTimer();
+    }
+    function adminMoveTopNoticeSlide(idx, delta) {
+        const target = idx + delta;
+        if (!topNotice.slides || target < 0 || target >= topNotice.slides.length) return;
+        isBannerDirty = true;
+        const tmp = topNotice.slides[idx];
+        topNotice.slides[idx] = topNotice.slides[target];
+        topNotice.slides[target] = tmp;
+        currentTopNoticeSlideIdx = target;
+        topNotice.text = topNotice.slides[0]?.text || topNotice.text;
+        try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
+        renderAdminTopNoticeSlidesList();
+        renderTopNoticeCard(false);
+    }
+    function adminDeleteTopNoticeSlide(idx) {
+        if (!topNotice.slides) return;
+        isBannerDirty = true;
+        topNotice.slides.splice(idx, 1);
+        if (currentTopNoticeSlideIdx >= topNotice.slides.length) {
+            currentTopNoticeSlideIdx = Math.max(0, topNotice.slides.length - 1);
+        }
+        topNotice.text = topNotice.slides[0]?.text || '';
+        try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
+        renderAdminTopNoticeSlidesList();
+        renderTopNoticeCard(false);
+        restartTopNoticeAutoSlideTimer();
     }
     function renderAdminBannersList() {
         const listEl = document.getElementById('admin-banners-list');
@@ -3845,9 +4255,11 @@
     }
     async function adminSaveTopNotice(silent = false) {
         document.activeElement?.blur();
-        const inp = document.getElementById('admin-top-notice-text');
-        const txt = (inp ? inp.value : topNotice.text).trim() || 'Возьми две жижи в подарок';
-        topNotice.text = txt;
+        const intVal = parseInt(document.getElementById('admin-top-notice-interval')?.value ?? String(topNotice.interval ?? 4), 10);
+        topNotice.interval = isNaN(intVal) ? 4 : Math.max(0, Math.min(120, intVal));
+        const slides = Array.isArray(topNotice.slides) ? topNotice.slides : [];
+        const firstText = slides[0]?.text || topNotice.text || 'Возьми две жижи в подарок';
+        topNotice.text = firstText;
         try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
         applyTopNoticeUI();
         try {
@@ -3856,7 +4268,9 @@
                 body: JSON.stringify({
                     user_id: Number(currentUserId),
                     enabled: Boolean(topNotice.enabled),
-                    text: txt
+                    text: firstText,
+                    interval: topNotice.interval,
+                    slides: slides
                 })
             });
             isBannerDirty = false;
@@ -3971,7 +4385,159 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (currentSeasonEffect === 'none') { seasonParticles = []; return; }
         const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width = rect.width; canvas.height = rect.height;
+        canvas.width = rect.width || 420;
+        canvas.height = rect.height || 760;
+
+        if (currentSeasonEffect === 'garland') {
+            const bulbColors = ['#ff4d6d', '#ffd166', '#06d6a0', '#38bdf8', '#c084fc'];
+            const bulbCount = Math.max(9, Math.floor(canvas.width / 38));
+            seasonParticles = Array.from({ length: bulbCount }, (_, i) => ({
+                x: ((i + 0.5) / bulbCount) * canvas.width,
+                phase: i * 0.75,
+                color: bulbColors[i % bulbColors.length]
+            }));
+            let tick = 0;
+            function drawGarland() {
+                tick += 0.035;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                for (let x = 0; x <= canvas.width; x += 8) {
+                    const sag = 8 + Math.sin((x / canvas.width) * Math.PI * 3) * 4;
+                    if (x === 0) ctx.moveTo(x, sag);
+                    else ctx.lineTo(x, sag);
+                }
+                ctx.stroke();
+                seasonParticles.forEach(b => {
+                    const sagY = 8 + Math.sin((b.x / canvas.width) * Math.PI * 3) * 4;
+                    const pulse = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(tick + b.phase));
+                    ctx.save();
+                    ctx.globalAlpha = 0.25 + pulse * 0.45;
+                    ctx.fillStyle = b.color;
+                    ctx.shadowColor = b.color;
+                    ctx.shadowBlur = 10 * pulse;
+                    ctx.beginPath();
+                    ctx.arc(b.x, sagY + 4, 2.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+                ctx.restore();
+                seasonAnimId = requestAnimationFrame(drawGarland);
+            }
+            drawGarland();
+            return;
+        }
+
+        if (currentSeasonEffect === 'fireworks') {
+            const fwColors = ['#00ff88', '#38bdf8', '#ffd166', '#ff5c7a', '#c084fc'];
+            let sparks = [];
+            let cooldown = 15;
+            function spawnBurst() {
+                const cx = canvas.width * (0.18 + Math.random() * 0.64);
+                const cy = canvas.height * (0.14 + Math.random() * 0.42);
+                const col = fwColors[Math.floor(Math.random() * fwColors.length)];
+                const n = 16;
+                for (let i = 0; i < n; i++) {
+                    const ang = (Math.PI * 2 * i) / n + (Math.random() - 0.5) * 0.18;
+                    const spd = 0.65 + Math.random() * 0.95;
+                    sparks.push({
+                        x: cx, y: cy,
+                        vx: Math.cos(ang) * spd,
+                        vy: Math.sin(ang) * spd,
+                        life: 1.0,
+                        decay: 0.014 + Math.random() * 0.008,
+                        color: col
+                    });
+                }
+            }
+            function drawFireworks() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                cooldown -= 1;
+                if (cooldown <= 0 && sparks.length < 48) {
+                    spawnBurst();
+                    cooldown = 75 + Math.floor(Math.random() * 65);
+                }
+                sparks = sparks.filter(s => s.life > 0.02);
+                sparks.forEach(s => {
+                    s.x += s.vx;
+                    s.y += s.vy;
+                    s.vy += 0.012;
+                    s.vx *= 0.985;
+                    s.vy *= 0.985;
+                    s.life -= s.decay;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, s.life * 0.52);
+                    ctx.fillStyle = s.color;
+                    ctx.shadowColor = s.color;
+                    ctx.shadowBlur = 6;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, 1.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+                seasonAnimId = requestAnimationFrame(drawFireworks);
+            }
+            drawFireworks();
+            return;
+        }
+
+        if (currentSeasonEffect === 'aurora') {
+            let t = 0;
+            function drawAurora() {
+                t += 0.012;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height * 0.42);
+                const shift = 0.5 + 0.5 * Math.sin(t);
+                grad.addColorStop(0, `rgba(0, 255, 136, ${0.06 + shift * 0.05})`);
+                grad.addColorStop(0.5, `rgba(56, 189, 248, ${0.05 + (1 - shift) * 0.05})`);
+                grad.addColorStop(1, 'rgba(192, 132, 252, 0.0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(canvas.width, 0);
+                ctx.lineTo(canvas.width, canvas.height * 0.34 + Math.cos(t) * 18);
+                ctx.quadraticCurveTo(canvas.width * 0.5, canvas.height * 0.24 + Math.sin(t * 1.3) * 24, 0, canvas.height * 0.36);
+                ctx.closePath();
+                ctx.fill();
+                seasonAnimId = requestAnimationFrame(drawAurora);
+            }
+            drawAurora();
+            return;
+        }
+
+        if (currentSeasonEffect === 'bokeh') {
+            const bokehColors = ['rgba(0, 255, 102, 0.14)', 'rgba(56, 189, 248, 0.13)', 'rgba(255, 208, 38, 0.12)'];
+            seasonParticles = Array.from({ length: 10 }, (_, i) => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: 10 + Math.random() * 14,
+                vx: (Math.random() - 0.5) * 0.18,
+                vy: -(0.1 + Math.random() * 0.18),
+                color: bokehColors[i % bokehColors.length]
+            }));
+            function drawBokeh() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                seasonParticles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.y < -24) { p.y = canvas.height + 24; p.x = Math.random() * canvas.width; }
+                    if (p.x < -24) p.x = canvas.width + 24;
+                    if (p.x > canvas.width + 24) p.x = -24;
+                    ctx.save();
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+                seasonAnimId = requestAnimationFrame(drawBokeh);
+            }
+            drawBokeh();
+            return;
+        }
+
         const count = currentSeasonEffect === 'rain' ? 22 : (currentSeasonEffect === 'winter' ? 14 : 9);
         const autumnColors = ['#ff7b00', '#e64a19', '#ffb300', '#d84315'];
         const springColors = ['#ffb7c5', '#ff8da1', '#ffd1dc', '#ffffff'];
@@ -4021,7 +4587,7 @@
         drawFrame();
     }
     try { localStorage.removeItem('monkey_backend_url'); } catch (_) {}
-    const BACKEND_URL = "https://grandma-unrefined-ecosystem.ngrok-free.dev";
+    const BACKEND_URL = getRuntimeBackendBaseUrl();
     function updateServerStatusBadge(connected, activeUrl = BACKEND_URL) {
         const bar = document.getElementById('admin-server-status');
         if (!bar) return;
@@ -4029,8 +4595,12 @@
         bar.innerText = connected ? `🟢 Сервер подключен (${activeUrl})` : `🔴 Нет связи с сервером (${activeUrl})`;
     }
     async function apiFetch(path, options = {}, expectJson = true) {
+        const tgInitData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) ? String(window.Telegram.WebApp.initData) : '';
         options.headers = Object.assign({
-            'Bypass-Tunnel-Reminder': 'true', 'X-Pinggy-No-Screen': 'true', 'ngrok-skip-browser-warning': 'true'
+            'Bypass-Tunnel-Reminder': 'true',
+            'X-Pinggy-No-Screen': 'true',
+            'ngrok-skip-browser-warning': 'true',
+            'X-Telegram-Init-Data': tgInitData
         }, options.headers || {});
         try {
             const res = await fetch(`${BACKEND_URL}${path}`, options);
@@ -4502,6 +5072,88 @@
         }
         updateLocationModeUI();
     }
+    function getAgeConsentStorageKey() {
+        return `monkey_age_verified_v1_${currentUserId || 'guest'}`;
+    }
+    function isUserAgeVerified() {
+        try {
+            if (currentUserId && localStorage.getItem(`monkey_age_verified_v1_${currentUserId}`) === '1') return true;
+            if (!currentUserId && localStorage.getItem('monkey_age_verified_v1_guest') === '1') return true;
+        } catch (_) {}
+        return false;
+    }
+    function checkAndShowAgeConsentModal() {
+        const modal = document.getElementById('age-consent-modal');
+        if (!modal) return;
+        if (isUserAgeVerified()) {
+            modal.classList.remove('active');
+            return;
+        }
+        const mainView = document.getElementById('age-consent-main-view');
+        const deniedView = document.getElementById('age-consent-denied-view');
+        const errEl = document.getElementById('age-consent-error');
+        const rowEl = document.getElementById('age-consent-check-row');
+        const chkEl = document.getElementById('age-consent-checkbox');
+        if (mainView) mainView.style.display = 'block';
+        if (deniedView) deniedView.style.display = 'none';
+        if (errEl) errEl.classList.remove('visible');
+        if (rowEl) rowEl.classList.remove('error-highlight');
+        if (chkEl) chkEl.checked = false;
+        modal.classList.add('active');
+    }
+    function toggleAgePolicyDetails() {
+        const box = document.getElementById('age-policy-details');
+        if (!box) return;
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+    function handleAgeConsentCheckboxChange() {
+        const chkEl = document.getElementById('age-consent-checkbox');
+        const errEl = document.getElementById('age-consent-error');
+        const rowEl = document.getElementById('age-consent-check-row');
+        if (chkEl && chkEl.checked) {
+            errEl?.classList.remove('visible');
+            rowEl?.classList.remove('error-highlight');
+        }
+    }
+    function confirmAgeConsentYes() {
+        const chkEl = document.getElementById('age-consent-checkbox');
+        const errEl = document.getElementById('age-consent-error');
+        const rowEl = document.getElementById('age-consent-check-row');
+        if (!chkEl || !chkEl.checked) {
+            if (errEl) {
+                errEl.classList.remove('visible');
+                void errEl.offsetWidth;
+                errEl.classList.add('visible');
+            }
+            if (rowEl) rowEl.classList.add('error-highlight');
+            return;
+        }
+        try {
+            localStorage.setItem(getAgeConsentStorageKey(), '1');
+            if (currentUserId) localStorage.setItem(`monkey_age_verified_v1_${currentUserId}`, '1');
+            else localStorage.setItem('monkey_age_verified_v1_guest', '1');
+        } catch (_) {}
+        document.getElementById('age-consent-modal')?.classList.remove('active');
+    }
+    function confirmAgeConsentNo() {
+        try {
+            localStorage.removeItem(getAgeConsentStorageKey());
+            localStorage.removeItem('monkey_age_verified_v1_guest');
+            if (currentUserId) localStorage.removeItem(`monkey_age_verified_v1_${currentUserId}`);
+        } catch (_) {}
+        const mainView = document.getElementById('age-consent-main-view');
+        const deniedView = document.getElementById('age-consent-denied-view');
+        if (mainView) mainView.style.display = 'none';
+        if (deniedView) deniedView.style.display = 'block';
+        setTimeout(() => {
+            try {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.close();
+                }
+            } catch (_) {}
+            try { window.close(); } catch (_) {}
+        }, 1100);
+    }
     function initTelegramUser() {
         const urlParams = new URLSearchParams(window.location.search);
         const uidFromUrl = urlParams.get('uid'), unameFromUrl = urlParams.get('uname'), roleFromUrl = urlParams.get('role');
@@ -4509,16 +5161,36 @@
             let tg = window.Telegram.WebApp;
             tg.ready(); tg.expand();
             try {
-                if (tg.initDataUnsafe?.user?.id) {
-                    const user = tg.initDataUnsafe.user;
+                let user = tg.initDataUnsafe?.user;
+                if ((!user || !user.id) && tg.initData) {
+                    const rawUser = new URLSearchParams(tg.initData).get('user');
+                    if (rawUser) user = JSON.parse(rawUser);
+                }
+                if (user && user.id) {
                     currentUserId = Number(user.id);
                     currentUserName = user.username ? '@' + user.username : (user.first_name || 'User');
                     if (user.photo_url) currentUserPhotoUrl = user.photo_url;
+                    try {
+                        localStorage.setItem('monkey_cached_tg_uid', String(currentUserId));
+                        if (currentUserName && currentUserName !== 'User') localStorage.setItem('monkey_cached_tg_uname', currentUserName);
+                    } catch (_) {}
                 }
             } catch (err) {}
         }
         if (!currentUserId && uidFromUrl) currentUserId = Number(uidFromUrl);
+        if (!currentUserId) {
+            try {
+                const cachedUid = Number(localStorage.getItem('monkey_cached_tg_uid') || 0);
+                if (cachedUid > 0) currentUserId = cachedUid;
+            } catch (_) {}
+        }
         if (currentUserName === "User" && unameFromUrl) currentUserName = unameFromUrl;
+        if (currentUserName === "User") {
+            try {
+                const cachedUname = localStorage.getItem('monkey_cached_tg_uname');
+                if (cachedUname) currentUserName = cachedUname;
+            } catch (_) {}
+        }
         if (roleFromUrl === 'owner' && currentUserId && !DYNAMIC_OWNER_IDS.includes(Number(currentUserId))) {
             DYNAMIC_OWNER_IDS.push(Number(currentUserId));
         }
@@ -4570,7 +5242,12 @@
                         splash.style.opacity = '0';
                         splash.style.transform = 'scale(1.05)';
                         splash.style.filter = 'blur(8px)';
-                        setTimeout(() => splash.remove(), 550);
+                        setTimeout(() => {
+                            splash.remove();
+                            checkAndShowAgeConsentModal();
+                        }, 550);
+                    } else {
+                        checkAndShowAgeConsentModal();
                     }
                 }, 260);
             }
@@ -4814,9 +5491,15 @@
                 }
                 if (!isBannerDirty) {
                     if (cfg.top_notice && typeof cfg.top_notice === 'object') {
+                        const incomingTnSlides = Array.isArray(cfg.top_notice.slides) && cfg.top_notice.slides.length > 0
+                            ? cfg.top_notice.slides.map((s, i) => normalizeClientTopNoticeSlide(s, i))
+                            : [normalizeClientTopNoticeSlide({ id: 'tn_srv_1', text: cfg.top_notice.text || 'Возьми две жижи в подарок', style: 'emerald' }, 0)];
+                        const srvIv = parseInt(cfg.top_notice.interval ?? '4', 10);
                         topNotice = {
                             enabled: Boolean(cfg.top_notice.enabled),
-                            text: String(cfg.top_notice.text || '').trim() || 'Возьми две жижи в подарок'
+                            text: incomingTnSlides[0].text,
+                            interval: isNaN(srvIv) ? 4 : Math.max(0, Math.min(120, srvIv)),
+                            slides: incomingTnSlides
                         };
                         try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
                     }
@@ -6526,9 +7209,8 @@
         document.activeElement?.blur();
         const intVal = parseInt(document.getElementById('admin-banner-interval')?.value ?? String(bannerIntervalSec), 10);
         bannerIntervalSec = isNaN(intVal) ? 5 : Math.max(0, Math.min(120, intVal));
-        const tnInp = document.getElementById('admin-top-notice-text');
-        if (tnInp) {
-            topNotice.text = tnInp.value.trim() || 'Возьми две жижи в подарок';
+        if (Array.isArray(topNotice.slides) && topNotice.slides[0]) {
+            topNotice.text = topNotice.slides[0].text;
         }
         const first = bannerSlides[0] || { title: '', desc: '', promo_code: '' };
         try {
@@ -6755,7 +7437,7 @@
         } catch (e) { showToast("Ошибка удаления категории", true); }
     }
     function renderAdminAppearance() {
-        ['none', 'winter', 'autumn', 'spring', 'summer', 'rain'].forEach(s => {
+        ['none', 'winter', 'autumn', 'spring', 'summer', 'rain', 'garland', 'fireworks', 'aurora', 'bokeh'].forEach(s => {
             const btn = document.getElementById(`season-btn-${s}`);
             if (btn) {
                 btn.className = `toggle-pill ${currentSeasonEffect === s ? 'on' : ''}`;
