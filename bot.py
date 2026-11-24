@@ -21,7 +21,7 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import (
     Message, ReplyKeyboardMarkup, KeyboardButton,
     InlineKeyboardMarkup, InlineKeyboardButton,
-    WebAppInfo, MenuButtonWebApp, BufferedInputFile
+    WebAppInfo, MenuButtonWebApp, BufferedInputFile, CallbackQuery
 )
 
 def load_env_config() -> dict[str, str]:
@@ -225,6 +225,22 @@ def normalize_tg_link(raw: str) -> str:
     if val.startswith("http://") or val.startswith("https://"):
         return val
     return f"https://t.me/{val}"
+
+def extract_tg_chat_target(raw_link: str) -> str:
+    val = (raw_link or "").strip()
+    if not val:
+        return ""
+    if val.startswith("-100") or val.lstrip("-").isdigit():
+        return val
+    if val.startswith("@"):
+        return val
+    m = re.search(r"(?:https?://)?t\.me/([A-Za-z0-9_]{4,})", val)
+    if m:
+        slug = m.group(1)
+        if not slug.startswith("+"):
+            return f"@{slug}"
+    return ""
+
 
 def get_location_label(delivery_mode: str) -> str:
     mapping = {
@@ -714,6 +730,18 @@ async def init_db():
             )
         """)
         await db.execute("""
+            CREATE TABLE IF NOT EXISTS reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id TEXT,
+                user_id INTEGER,
+                user_name TEXT DEFAULT '',
+                stars INTEGER DEFAULT 5,
+                comment TEXT DEFAULT '',
+                items_summary TEXT DEFAULT '',
+                created_at TEXT DEFAULT ''
+            )
+        """)
+        await db.execute("""
             CREATE TABLE IF NOT EXISTS products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT,
@@ -827,6 +855,14 @@ async def init_db():
             ("top_notice_interval", "4"),
             ("top_notice_slides", json.dumps(DEFAULT_TOP_NOTICE_SLIDES, ensure_ascii=False)),
             ("banner_interval", "5"),
+            ("saved_ui_themes", "[]"),
+            ("age_check_enabled", "1"),
+            ("age_min_years", "18"),
+            ("age_modal_bg", "#131b14"),
+            ("age_modal_opacity", "95"),
+            ("smart_bar_enabled", "1"),
+            ("smart_bar_target", "0"),
+            ("smart_bar_reward", "Бесплатная доставка"),
         ]
         for s_key, s_val in default_shop_settings:
             await db.execute("INSERT OR IGNORE INTO shop_settings (key, value) VALUES (?, ?)", (s_key, s_val))
@@ -1111,11 +1147,34 @@ class AdminDeliveryPricingSchema(BaseModel):
     min_order_amount: float = 0.0
     delivery_fee: float = 0.0
     free_delivery_threshold: float = 0.0
+    smart_bar_enabled: bool | None = None
+    smart_bar_target: float | None = None
+    smart_bar_reward: str | None = None
+
+class AdminSmartBarSchema(BaseModel):
+    user_id: int
+    enabled: bool = True
+    target: float = 0.0
+    reward: str = "Бесплатная доставка"
 
 class AdminUiThemeSchema(BaseModel):
     user_id: int
     theme: dict = {}
     reset: bool = False
+
+class AdminSavedUiThemesSchema(BaseModel):
+    user_id: int
+    action: str = "save"
+    id: str = ""
+    name: str = ""
+    theme: dict = {}
+
+class AdminAgeSettingsSchema(BaseModel):
+    user_id: int
+    enabled: bool = True
+    min_years: int = 18
+    bg_color: str = "#131b14"
+    opacity: int = 95
 
 class AdminChannelsSchema(BaseModel):
     user_id: int
@@ -1339,6 +1398,22 @@ async def get_shop_config():
         banner_desc = first_banner.get("desc", "")
         banner_badge = first_banner.get("promo_code", "")
 
+        saved_ui_themes = await get_setting_list(db, "saved_ui_themes", [])
+        age_check_enabled = (await get_setting_raw(db, "age_check_enabled", "1")) == "1"
+        try:
+            age_min_years = max(14, min(99, int(await get_setting_raw(db, "age_min_years", "18") or 18)))
+        except Exception:
+            age_min_years = 18
+        age_modal_bg = (await get_setting_raw(db, "age_modal_bg", "#131b14")).strip() or "#131b14"
+        try:
+            age_modal_opacity = max(10, min(100, int(await get_setting_raw(db, "age_modal_opacity", "95") or 95)))
+        except Exception:
+            age_modal_opacity = 95
+
+        smart_bar_enabled = (await get_setting_raw(db, "smart_bar_enabled", "1")) == "1"
+        smart_bar_target = float(await get_setting_raw(db, "smart_bar_target", "0") or 0)
+        smart_bar_reward = (await get_setting_raw(db, "smart_bar_reward", "Бесплатная доставка")).strip() or "Бесплатная доставка"
+
         banned_users = [int(x) for x in await get_setting_list(db, "banned_users")]
         owner_ids = await get_all_owner_ids(db)
         courier_ids = await get_all_courier_ids(db)
@@ -1384,6 +1459,18 @@ async def get_shop_config():
             "season_effect": season_effect,
             "hit_color": hit_color,
             "ui_theme": ui_theme,
+            "saved_ui_themes": saved_ui_themes,
+            "age_settings": {
+                "enabled": age_check_enabled,
+                "min_years": age_min_years,
+                "bg_color": age_modal_bg,
+                "opacity": age_modal_opacity
+            },
+            "smart_bar": {
+                "enabled": smart_bar_enabled,
+                "target": smart_bar_target,
+                "reward": smart_bar_reward
+            },
             "logo_part1": logo_part1,
             "logo_part2": logo_part2,
             "logo_image": logo_image,
@@ -1453,6 +1540,57 @@ async def update_admin_ui_theme(data: AdminUiThemeSchema):
         await set_setting_raw(db, "ui_theme", json.dumps(new_theme, ensure_ascii=False))
         await db.commit()
     return {"success": True, "ui_theme": new_theme}
+
+@app.post("/api/admin/saved_ui_themes")
+async def update_admin_saved_ui_themes(data: AdminSavedUiThemesSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        themes_list = await get_setting_list(db, "saved_ui_themes", [])
+        if not isinstance(themes_list, list):
+            themes_list = []
+        if data.action == "save":
+            clean_name = (data.name or "").strip() or f"Моя тема #{len(themes_list) + 1}"
+            clean_theme = dict(DEFAULT_UI_THEME)
+            for k, v in (data.theme or {}).items():
+                if k in DEFAULT_UI_THEME and str(v).strip():
+                    clean_theme[k] = str(v).strip()
+            tid = (data.id or "").strip() or f"utheme_{int(time.time() * 1000)}_{os.urandom(2).hex()}"
+            existing = next((t for t in themes_list if isinstance(t, dict) and t.get("id") == tid), None)
+            if existing:
+                existing["name"] = clean_name
+                existing["theme"] = clean_theme
+            else:
+                themes_list.append({"id": tid, "name": clean_name, "theme": clean_theme})
+        elif data.action == "delete":
+            tid = (data.id or "").strip()
+            themes_list = [t for t in themes_list if isinstance(t, dict) and t.get("id") != tid]
+        await set_setting_list(db, "saved_ui_themes", themes_list)
+        await db.commit()
+    return {"success": True, "saved_ui_themes": themes_list}
+
+@app.post("/api/admin/age_settings")
+async def update_admin_age_settings(data: AdminAgeSettingsSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        min_y = max(14, min(99, int(data.min_years or 18)))
+        bg_c = (data.bg_color or "").strip() or "#131b14"
+        op_pct = max(10, min(100, int(data.opacity if data.opacity is not None else 95)))
+        await set_setting_raw(db, "age_check_enabled", "1" if data.enabled else "0")
+        await set_setting_raw(db, "age_min_years", str(min_y))
+        await set_setting_raw(db, "age_modal_bg", bg_c)
+        await set_setting_raw(db, "age_modal_opacity", str(op_pct))
+        await db.commit()
+    return {
+        "success": True,
+        "age_settings": {
+            "enabled": bool(data.enabled),
+            "min_years": min_y,
+            "bg_color": bg_c,
+            "opacity": op_pct
+        }
+    }
 
 @app.post("/api/admin/branding")
 async def update_admin_branding(data: AdminBrandingSchema):
@@ -1856,12 +1994,39 @@ async def update_admin_delivery_pricing(data: AdminDeliveryPricingSchema):
         await set_setting_raw(db, "min_order_amount", str(min_amt))
         await set_setting_raw(db, "delivery_fee", str(d_fee))
         await set_setting_raw(db, "free_delivery_threshold", str(free_thr))
+        if data.smart_bar_enabled is not None:
+            await set_setting_raw(db, "smart_bar_enabled", "1" if data.smart_bar_enabled else "0")
+        if data.smart_bar_target is not None:
+            await set_setting_raw(db, "smart_bar_target", str(max(0.0, round(float(data.smart_bar_target), 2))))
+        if data.smart_bar_reward is not None:
+            rew = data.smart_bar_reward.strip() or "Бесплатная доставка"
+            await set_setting_raw(db, "smart_bar_reward", rew)
         await db.commit()
     return {
         "success": True,
         "min_order_amount": min_amt,
         "delivery_fee": d_fee,
         "free_delivery_threshold": free_thr
+    }
+
+@app.post("/api/admin/smart_bar")
+async def update_admin_smart_bar(data: AdminSmartBarSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        sb_target = max(0.0, round(float(data.target or 0.0), 2))
+        sb_reward = (data.reward or "").strip() or "Бесплатная доставка"
+        await set_setting_raw(db, "smart_bar_enabled", "1" if data.enabled else "0")
+        await set_setting_raw(db, "smart_bar_target", str(sb_target))
+        await set_setting_raw(db, "smart_bar_reward", sb_reward)
+        await db.commit()
+    return {
+        "success": True,
+        "smart_bar": {
+            "enabled": bool(data.enabled),
+            "target": sb_target,
+            "reward": sb_reward
+        }
     }
 
 @app.post("/api/admin/channels")
@@ -2951,15 +3116,21 @@ async def update_order_status(data: StatusUpdateSchema):
             clean_reviews_url = normalize_tg_link(reviews_url)
             clean_news_url = normalize_tg_link(news_url)
             if user_id:
-                completed_msg = f"🎉 <b>Заказ #{html.escape(str(data.order_id))} успешно выдан! Спасибо, что выбираешь нас.</b>"
-                kb_rows = []
+                oid_safe = html.escape(str(data.order_id))
+                completed_msg = (
+                    f"🎉 <b>Заказ #{oid_safe} успешно выдан! Спасибо, что выбираешь нас.</b>\n\n"
+                    f"⭐ <b>Оцените качество заказа и работы курьера в 1 клик:</b>"
+                )
+                star_row = [
+                    InlineKeyboardButton(text=f"⭐ {s}", callback_data=f"rate:{data.order_id}:{s}")
+                    for s in range(1, 6)
+                ]
+                kb_rows = [star_row]
                 if clean_reviews_url.startswith(("http://", "https://")):
-                    completed_msg += f"\n\n⭐ <b>Будем рады твоему отзыву о заказе:</b>\n{html.escape(clean_reviews_url)}"
-                    kb_rows.append([InlineKeyboardButton(text="⭐ Оставить отзыв", url=clean_reviews_url)])
+                    kb_rows.append([InlineKeyboardButton(text="💬 Канал с отзывами", url=clean_reviews_url)])
                 if clean_news_url.startswith(("http://", "https://")):
-                    completed_msg += f"\n\n✈️ <b>Следите за новостями и поступлениями в канале:</b>\n{html.escape(clean_news_url)}"
                     kb_rows.append([InlineKeyboardButton(text="✈️ Канал с новостями", url=clean_news_url)])
-                markup = InlineKeyboardMarkup(inline_keyboard=kb_rows) if kb_rows else None
+                markup = InlineKeyboardMarkup(inline_keyboard=kb_rows)
                 await send_tg_dm(int(user_id), completed_msg, reply_markup=markup)
             for oid_owner in all_owners:
                 if oid_owner and int(oid_owner) != int(user_id or 0):
@@ -3340,6 +3511,140 @@ async def cmd_start(message: Message):
             plain_fallback,
             reply_markup=kb
         )
+
+PENDING_REVIEW_STATES: dict[int, dict] = {}
+
+async def publish_review_record(uid: int, user_name: str, order_id: str, stars: int, comment: str = ""):
+    stars_clamped = max(1, min(5, int(stars)))
+    stars_visual = "⭐" * stars_clamped
+    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
+    items_summary = ""
+    reviews_url = ""
+    all_owners: list[int] = []
+    brand_name = "Monkey Vape"
+
+    async with aiosqlite.connect(DB_FILE) as db:
+        async with db.execute("SELECT items FROM orders WHERE id = ?", (str(order_id),)) as cur:
+            orow = await cur.fetchone()
+            if orow and orow[0]:
+                try:
+                    parsed_it = json.loads(orow[0])
+                    items_summary = ", ".join(f"{it.get('title', 'Товар')} ×{it.get('qty', 1)}" for it in parsed_it)
+                except Exception:
+                    pass
+        await db.execute(
+            """INSERT INTO reviews (order_id, user_id, user_name, stars, comment, items_summary, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (str(order_id), int(uid), user_name, stars_clamped, comment.strip(), items_summary, now_str)
+        )
+        reviews_url = await get_setting_raw(db, "reviews_channel_url", "")
+        all_owners = await get_all_owner_ids(db)
+        brand_name = await get_shop_brand_name(db)
+        await db.commit()
+
+    safe_user = html.escape(user_name or "Покупатель")
+    safe_comment = html.escape(comment.strip())
+    safe_items = html.escape(items_summary)
+    comment_block = f"\n💬 <b>Отзыв:</b> {safe_comment}" if safe_comment else ""
+    items_block = f"\n🛍 <b>Заказ:</b> {safe_items}" if safe_items else ""
+
+    channel_post = (
+        f"🌟 <b>Новый отзыв о {html.escape(brand_name)}!</b>\n\n"
+        f"👤 <b>Клиент:</b> {safe_user}\n"
+        f"📊 <b>Оценка:</b> {stars_visual} ({stars_clamped}/5)"
+        f"{items_block}{comment_block}\n"
+        f"📅 <i>{html.escape(now_str)}</i>"
+    )
+
+    target_channel = extract_tg_chat_target(reviews_url)
+    published_to_channel = False
+    if target_channel:
+        try:
+            await bot.send_message(chat_id=target_channel, text=channel_post, parse_mode="HTML")
+            published_to_channel = True
+        except Exception as e:
+            print(f"[REVIEW_CHANNEL_WARN] Could not post to {target_channel}: {e}")
+
+    owner_post = (
+        f"⭐ <b>Новый отзыв по заказу #{html.escape(str(order_id))}!</b>\n"
+        f"👤 {safe_user} (<code>{uid}</code>) • {stars_visual} ({stars_clamped}/5)"
+        f"{items_block}{comment_block}\n"
+        f"{'✅ Опубликовано в канал отзывов' if published_to_channel else 'ℹ️ Сохранено в базе (канал не настроен или бот не админ канала)'}"
+    )
+    for oid_owner in all_owners:
+        if oid_owner:
+            await send_tg_dm(int(oid_owner), owner_post)
+
+@dp.callback_query(F.data.startswith("rate:"))
+async def handle_one_click_rating(callback: CallbackQuery):
+    parts = (callback.data or "").split(":")
+    if len(parts) < 3:
+        await callback.answer("Некорректные данные оценки")
+        return
+    order_id = parts[1].strip()
+    try:
+        stars = max(1, min(5, int(parts[2])))
+    except Exception:
+        stars = 5
+    uid = callback.from_user.id
+    uname = f"@{callback.from_user.username}" if callback.from_user.username else (callback.from_user.first_name or "Покупатель")
+    PENDING_REVIEW_STATES[uid] = {
+        "order_id": order_id,
+        "stars": stars,
+        "user_name": uname,
+        "expires_at": time.time() + 900
+    }
+    stars_visual = "⭐" * stars
+    await callback.answer(f"Оценка {stars_visual} принята!")
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Опубликовать без текста", callback_data=f"pubrev:{order_id}:{stars}")]
+    ])
+    try:
+        await callback.message.answer(
+            f"Спасибо за оценку {stars_visual} (<b>{stars}/5</b>) по заказу <b>#{html.escape(order_id)}</b>!\n\n"
+            f"✍️ Напишите ответным сообщением пару слов о впечатлении — мы опубликуем ваш отзыв, "
+            f"или нажмите кнопку ниже, чтобы отправить только оценку:",
+            parse_mode="HTML",
+            reply_markup=kb
+        )
+    except Exception:
+        pass
+
+@dp.callback_query(F.data.startswith("pubrev:"))
+async def handle_publish_rating_only(callback: CallbackQuery):
+    parts = (callback.data or "").split(":")
+    order_id = parts[1].strip() if len(parts) > 1 else ""
+    try:
+        stars = max(1, min(5, int(parts[2]))) if len(parts) > 2 else 5
+    except Exception:
+        stars = 5
+    uid = callback.from_user.id
+    state = PENDING_REVIEW_STATES.pop(uid, None)
+    uname = (state or {}).get("user_name") or (f"@{callback.from_user.username}" if callback.from_user.username else (callback.from_user.first_name or "Покупатель"))
+    await callback.answer("✅ Отзыв опубликован!")
+    await publish_review_record(uid, uname, order_id, stars, "")
+    try:
+        await callback.message.edit_text(f"✅ <b>Спасибо! Ваша оценка {'⭐' * stars} ({stars}/5) опубликована.</b>", parse_mode="HTML")
+    except Exception:
+        pass
+
+@dp.message(F.text & ~F.text.startswith("/"))
+async def handle_pending_review_text(message: Message):
+    uid = message.from_user.id
+    state = PENDING_REVIEW_STATES.get(uid)
+    if not state or time.time() > float(state.get("expires_at", 0)):
+        PENDING_REVIEW_STATES.pop(uid, None)
+        return
+    PENDING_REVIEW_STATES.pop(uid, None)
+    comment_text = (message.text or "").strip()
+    uname = state.get("user_name") or (f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "Покупатель"))
+    await publish_review_record(uid, uname, state["order_id"], int(state["stars"]), comment_text)
+    await message.answer(
+        f"✅ <b>Спасибо за ваш отзыв!</b>\n"
+        f"Оценка: {'⭐' * int(state['stars'])} ({state['stars']}/5)\n"
+        f"Ваш комментарий успешно принят.",
+        parse_mode="HTML"
+    )
 
 async def main():
     asyncio.create_task(dp.start_polling(bot))

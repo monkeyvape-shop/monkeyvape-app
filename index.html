@@ -1955,6 +1955,110 @@
             transition: transform 0.14s ease;
         }
         .age-btn-yes:active { transform: scale(0.96); }
+        /* Кнопка избранного (сердечко) на карточке товара */
+        .fav-heart-btn {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(11, 15, 12, 0.72);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13.5px;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 4;
+            transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .fav-heart-btn:active { transform: scale(0.84); }
+        .fav-heart-btn.active {
+            border-color: rgba(255, 77, 109, 0.75);
+            background: rgba(255, 51, 85, 0.24);
+            box-shadow: 0 0 10px rgba(255, 51, 85, 0.35);
+        }
+        /* Умный прогресс-бар в корзине */
+        .smart-cart-progress-box {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--banner-bg) 82%, transparent) 0%, color-mix(in srgb, var(--card-bg) 88%, transparent) 100%);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(0, 0, 0, 0.16);
+            border-radius: 18px;
+            padding: 13px 14px;
+            margin-bottom: 14px;
+        }
+        .smart-cart-progress-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.35;
+        }
+        .smart-cart-progress-pct {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--accent-green);
+            background: var(--accent-green-glow);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 45%, transparent);
+            padding: 2px 7px;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .smart-cart-track {
+            width: 100%;
+            height: 7px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+        }
+        [data-theme="light"] .smart-cart-track {
+            background: rgba(0, 0, 0, 0.08);
+        }
+        .smart-cart-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--accent-green), var(--icon-color));
+            box-shadow: 0 0 12px var(--accent-green-glow);
+            transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .saved-theme-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 11px;
+            padding: 7px 9px;
+            margin-bottom: 6px;
+        }
+        .saved-theme-apply-btn {
+            flex: 1;
+            min-width: 0;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            text-align: left;
+            padding: 2px 0;
+        }
     </style>
 </head>
 <body>
@@ -1998,36 +2102,37 @@
             <button type="button" onclick="closeChannelSubModal()" style="background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:13px; cursor:pointer;">Закрыть</button>
         </div>
     </div>
-    <!-- Подтверждение 18+ и согласия на обработку персональной информации при первом входе -->
+    <!-- Подтверждение возраста и согласия на обработку персональной информации при первом входе -->
     <div id="age-consent-modal">
-        <div class="age-consent-card" onclick="event.stopPropagation()">
+        <div class="age-consent-card" id="age-consent-card" onclick="event.stopPropagation()">
             <div id="age-consent-main-view">
-                <div class="age-badge-18">18+</div>
-                <div class="modal-title" style="font-size:18px; margin-bottom:6px;">Вам уже исполнилось 18 лет?</div>
+                <div class="age-badge-18" id="age-badge-label">18+</div>
+                <div class="modal-title" id="age-consent-title" style="font-size:18px; margin-bottom:6px;">Вам уже исполнилось 18 лет?</div>
                 <div class="modal-subtitle" style="margin-bottom:14px; font-size:12.5px;">
                     Магазин предназначен исключительно для совершеннолетних пользователей.
                 </div>
                 <label class="age-consent-check-row" id="age-consent-check-row" for="age-consent-checkbox">
                     <input type="checkbox" id="age-consent-checkbox" onchange="handleAgeConsentCheckboxChange()">
                     <span style="font-size:12px; color:var(--text-main); line-height:1.4;">
-                        Я даю <span style="color:var(--accent-green); text-decoration:underline;" onclick="event.preventDefault(); event.stopPropagation(); toggleAgePolicyDetails();">согласие на обработку персональных данных</span> и подтверждаю, что мне исполнилось 18 лет.
+                        Я даю <span style="color:var(--accent-green); text-decoration:underline;" onclick="event.preventDefault(); event.stopPropagation(); toggleAgePolicyDetails();">согласие на обработку персональных данных</span> и подтверждаю, что мне исполнилось <span id="age-consent-inline-years">18</span> лет.
                     </span>
                 </label>
                 <div id="age-policy-details" style="display:none; text-align:left; font-size:11px; color:var(--text-secondary); background:var(--bg-color); border:1px solid var(--border-color); border-radius:11px; padding:9px 11px; margin-bottom:8px; line-height:1.4;">
-                    Нажимая «Да, мне есть 18», вы соглашаетесь на обработку вашего Telegram ID, имени пользователя и данных заказа исключительно для оформления, доставки и уведомлений о статусе заказа.
+                    Нажимая «Да», вы соглашаетесь на обработку вашего Telegram ID, имени пользователя и данных заказа исключительно для оформления, доставки и уведомлений о статусе заказа.
                 </div>
                 <div id="age-consent-error" class="age-consent-error-text">
                     ⚠️ Поставьте галочку согласия на обработку персональных данных, чтобы продолжить!
                 </div>
                 <div class="age-consent-btns">
-                    <button type="button" class="age-btn-no" onclick="confirmAgeConsentNo()">Нет, мне нет 18</button>
-                    <button type="button" class="age-btn-yes" onclick="confirmAgeConsentYes()">Да, мне есть 18</button>
+                    <button type="button" class="age-btn-no" id="age-btn-no" onclick="confirmAgeConsentNo()">Нет, мне нет 18</button>
+                    <button type="button" class="age-btn-yes" id="age-btn-yes" onclick="confirmAgeConsentYes()">Да, мне есть 18</button>
                 </div>
+                <button type="button" id="age-preview-close-btn" onclick="closeAgePreviewModal()" style="display:none; background:none; border:none; color:var(--text-secondary); width:100%; margin-top:12px; font-size:12px; cursor:pointer;">✕ Закрыть предпросмотр</button>
             </div>
             <div id="age-consent-denied-view" style="display:none; padding:10px 4px;">
                 <div style="font-size:42px; margin-bottom:10px;">⛔</div>
                 <div class="modal-title" style="color:var(--danger); margin-bottom:8px;">Доступ запрещён</div>
-                <div class="modal-subtitle" style="margin-bottom:14px; color:var(--text-main);">
+                <div class="modal-subtitle" id="age-denied-subtitle" style="margin-bottom:14px; color:var(--text-main);">
                     Вход в мини-приложение разрешён только пользователям старше 18 лет.
                 </div>
                 <div style="font-size:11.5px; color:var(--text-secondary);">Закрываем приложение...</div>
@@ -2466,12 +2571,54 @@
                             <span style="color:var(--accent-green); font-size:12px;">Выбрать цвет ▸</span>
                         </button>
                     </div>
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">🔞 Окно проверки возраста:</span>
+                            <button type="button" id="admin-age-check-toggle-btn" class="toggle-pill on" onclick="adminToggleAgeCheckEnabled()">🟢 Включено</button>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:7px 10px;">
+                                <span style="font-size:12px; color:var(--text-secondary);">Минимальный возраст (лет):</span>
+                                <input type="number" id="admin-age-min-years" class="promo-input" style="text-transform:none; width:72px; text-align:center; padding:6px 8px; font-size:12.5px;" min="14" max="99" value="18" oninput="handleAdminAgeSettingsInput()">
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:7px 10px;">
+                                <span style="font-size:12px; color:var(--text-secondary);">🎨 Цвет окна:</span>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span class="swatch-circle" style="width:20px; height:20px; background:#131b14;" onclick="setAdminAgeBgColor('#131b14')"></span>
+                                    <span class="swatch-circle" style="width:20px; height:20px; background:#0b0f0c;" onclick="setAdminAgeBgColor('#0b0f0c')"></span>
+                                    <span class="swatch-circle" style="width:20px; height:20px; background:#0f1926;" onclick="setAdminAgeBgColor('#0f1926')"></span>
+                                    <span class="swatch-circle" style="width:20px; height:20px; background:#181124;" onclick="setAdminAgeBgColor('#181124')"></span>
+                                    <label class="color-wheel-label" style="width:22px; height:22px;" title="Любой цвет">
+                                        <input type="color" id="admin-age-bg-color" value="#131b14" oninput="setAdminAgeBgColor(this.value)" onchange="setAdminAgeBgColor(this.value)">
+                                    </label>
+                                </div>
+                            </div>
+                            <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:8px 10px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-secondary); margin-bottom:5px;">
+                                    <span>💧 Непрозрачность окна:</span>
+                                    <b id="admin-age-opacity-label" style="color:var(--accent-green);">95%</b>
+                                </div>
+                                <input type="range" id="admin-age-opacity-slider" min="15" max="100" value="95" style="width:100%; accent-color:var(--accent-green); cursor:pointer;" oninput="handleAdminAgeOpacityInput(this.value)">
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                            <button type="button" class="toggle-pill on" style="padding:9px; font-size:12px;" onclick="previewAgeConsentModalNow()">👁 Предпросмотр</button>
+                            <button type="button" class="primary-btn" style="padding:9px; font-size:12px;" onclick="adminSaveAgeSettings()">💾 Сохранить</button>
+                        </div>
+                    </div>
                 </div>
                 <!-- Вкладка "Интерфейс" — полная палитра цветов всего приложения -->
                 <div id="admin-tab-interface" style="display: none;">
                     <div class="shop-master-box">
                         <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">⚡ Готовые цветовые темы (в 1 клик):</div>
                         <div class="theme-presets-grid" id="ui-theme-presets-grid"></div>
+                    </div>
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">⭐ Мои сохранённые темы:</span>
+                        </div>
+                        <div id="ui-saved-themes-container"></div>
+                        <button type="button" class="toggle-pill on" style="width:100%; padding:9px; font-size:12px; margin-top:4px;" onclick="adminSaveCustomNamedTheme()">➕ Сохранить текущую палитру как тему</button>
                     </div>
                     <div id="ui-palette-controls-container"></div>
                     <button type="button" class="primary-btn" style="padding:11px; font-size:13px; margin-bottom:8px;" onclick="adminSaveUiTheme()">💾 Сохранить цвета для всех</button>
@@ -2523,6 +2670,23 @@
                             </div>
                         </div>
                         <button type="button" class="primary-btn" style="padding:10px; font-size:12.5px;" onclick="adminSaveDeliveryPricing()">💾 Сохранить тарифы доставки</button>
+                    </div>
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">📊 Умный прогресс-бар в корзине:</span>
+                            <button type="button" id="admin-smart-bar-toggle-btn" class="toggle-pill on" onclick="adminToggleSmartBarEnabled()">🟢 Включён</button>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:7px; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:3px;">Сумма цели (0 = порог бесплатной доставки):</div>
+                                <input type="number" id="admin-smart-bar-target-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" min="0" step="0.5" placeholder="Напр. 50" oninput="isRegionSettingsDirty=true">
+                            </div>
+                            <div>
+                                <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:3px;">Текст награды при достижении:</div>
+                                <input type="text" id="admin-smart-bar-reward-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="Напр. Бесплатная доставка или Подарок 🎁" oninput="isRegionSettingsDirty=true">
+                            </div>
+                        </div>
+                        <button type="button" class="primary-btn" style="padding:10px; font-size:12.5px;" onclick="adminSaveSmartBar()">💾 Сохранить прогресс-бар</button>
                     </div>
                 </div>
                 <!-- Вкладка управления Telegram-каналами (Новости, Отзывы, Поддержка) -->
@@ -2774,6 +2938,14 @@
         { key: 'text_secondary', label: '💬 Второстепенный текст', swatches: ['#9ca3af', '#94a3b8', '#a78bfa', '#a8a29e', '#5a685e'] }
     ];
     let customUiTheme = JSON.parse(localStorage.getItem('monkey_custom_ui_theme')) || { ...DEFAULT_UI_THEME };
+    let savedUiThemes = (() => {
+        try {
+            const arr = JSON.parse(localStorage.getItem('monkey_saved_ui_themes') || '[]');
+            return Array.isArray(arr) ? arr : [];
+        } catch (_) {
+            return [];
+        }
+    })();
     let isUiThemeDirty = false;
     let isCustomThemeModified = localStorage.getItem('monkey_custom_ui_active') === '1';
     let currentAppTheme = localStorage.getItem('monkey_theme') || 'dark';
@@ -2791,6 +2963,28 @@
             el.classList.remove('show');
             toastTimerId = null;
         }, 2500);
+    }
+    function triggerHaptic(style = 'light') {
+        try {
+            const hf = window.Telegram?.WebApp?.HapticFeedback;
+            if (hf) {
+                if (style === 'success' || style === 'warning' || style === 'error') {
+                    hf.notificationOccurred(style);
+                    return;
+                }
+                if (style === 'selection') {
+                    hf.selectionChanged();
+                    return;
+                }
+                hf.impactOccurred(['light', 'medium', 'heavy', 'rigid', 'soft'].includes(style) ? style : 'light');
+                return;
+            }
+        } catch (_) {}
+        try {
+            if (navigator.vibrate) {
+                navigator.vibrate(style === 'heavy' || style === 'error' ? 28 : (style === 'medium' ? 18 : 10));
+            }
+        } catch (_) {}
     }
     let customConfirmResolver = null;
     function showCustomConfirm(text, title = 'Подтверждение', isDanger = false) {
@@ -4433,47 +4627,62 @@
         if (currentSeasonEffect === 'fireworks') {
             const fwColors = ['#00ff88', '#38bdf8', '#ffd166', '#ff5c7a', '#c084fc'];
             let sparks = [];
-            let cooldown = 15;
+            let cooldown = 20;
             function spawnBurst() {
-                const cx = canvas.width * (0.18 + Math.random() * 0.64);
-                const cy = canvas.height * (0.14 + Math.random() * 0.42);
+                const cx = canvas.width * (0.16 + Math.random() * 0.68);
+                const cy = canvas.height * (0.14 + Math.random() * 0.44);
                 const col = fwColors[Math.floor(Math.random() * fwColors.length)];
-                const n = 16;
-                for (let i = 0; i < n; i++) {
-                    const ang = (Math.PI * 2 * i) / n + (Math.random() - 0.5) * 0.18;
-                    const spd = 0.65 + Math.random() * 0.95;
+                const outerRays = 24;
+                for (let i = 0; i < outerRays; i++) {
+                    const ang = (Math.PI * 2 * i) / outerRays + (Math.random() - 0.5) * 0.14;
+                    const spd = 0.72 + Math.random() * 0.88;
                     sparks.push({
                         x: cx, y: cy,
                         vx: Math.cos(ang) * spd,
                         vy: Math.sin(ang) * spd,
+                        size: 2.7 + Math.random() * 1.1,
                         life: 1.0,
-                        decay: 0.014 + Math.random() * 0.008,
+                        decay: 0.0062 + Math.random() * 0.0032,
                         color: col
+                    });
+                }
+                const innerRays = 10;
+                for (let j = 0; j < innerRays; j++) {
+                    const ang = (Math.PI * 2 * j) / innerRays + 0.15;
+                    const spd = 0.35 + Math.random() * 0.42;
+                    sparks.push({
+                        x: cx, y: cy,
+                        vx: Math.cos(ang) * spd,
+                        vy: Math.sin(ang) * spd,
+                        size: 2.2 + Math.random() * 0.8,
+                        life: 0.95,
+                        decay: 0.007 + Math.random() * 0.003,
+                        color: '#ffffff'
                     });
                 }
             }
             function drawFireworks() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 cooldown -= 1;
-                if (cooldown <= 0 && sparks.length < 48) {
+                if (cooldown <= 0 && sparks.length < 70) {
                     spawnBurst();
-                    cooldown = 75 + Math.floor(Math.random() * 65);
+                    cooldown = 110 + Math.floor(Math.random() * 75);
                 }
                 sparks = sparks.filter(s => s.life > 0.02);
                 sparks.forEach(s => {
                     s.x += s.vx;
                     s.y += s.vy;
-                    s.vy += 0.012;
-                    s.vx *= 0.985;
-                    s.vy *= 0.985;
+                    s.vy += 0.0055;
+                    s.vx *= 0.99;
+                    s.vy *= 0.99;
                     s.life -= s.decay;
                     ctx.save();
-                    ctx.globalAlpha = Math.max(0, s.life * 0.52);
+                    ctx.globalAlpha = Math.max(0, s.life * 0.58);
                     ctx.fillStyle = s.color;
                     ctx.shadowColor = s.color;
-                    ctx.shadowBlur = 6;
+                    ctx.shadowBlur = 12;
                     ctx.beginPath();
-                    ctx.arc(s.x, s.y, 1.8, 0, Math.PI * 2);
+                    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.restore();
                 });
@@ -4847,6 +5056,9 @@
     let deliveryFee = Number(localStorage.getItem('monkey_delivery_fee') || 0);
     let freeDeliveryThreshold = Number(localStorage.getItem('monkey_free_delivery_threshold') || 0);
     let freeAddressDraft = localStorage.getItem('monkey_free_address_draft') || '';
+    let smartBarEnabled = localStorage.getItem('monkey_smart_bar_enabled') !== '0';
+    let smartBarTarget = Number(localStorage.getItem('monkey_smart_bar_target') || 0);
+    let smartBarReward = localStorage.getItem('monkey_smart_bar_reward') || 'Бесплатная доставка';
     let isRegionSettingsDirty = false;
     function getActiveModeLocationsList(mode = deliveryMode) {
         if (mode === 'districts') return districtLocations;
@@ -5072,30 +5284,167 @@
         }
         updateLocationModeUI();
     }
+    let ageCheckEnabled = localStorage.getItem('monkey_age_check_enabled') !== '0';
+    let ageMinYears = parseInt(localStorage.getItem('monkey_age_min_years') || '18', 10) || 18;
+    let ageModalBg = localStorage.getItem('monkey_age_modal_bg') || '#131b14';
+    let ageModalOpacity = parseInt(localStorage.getItem('monkey_age_modal_opacity') ?? '95', 10);
+    if (isNaN(ageModalOpacity)) ageModalOpacity = 95;
+    let isAgeSettingsDirty = false;
+    let isAgeModalPreviewMode = false;
+
+    function applyAgeModalAppearance() {
+        const years = Math.max(14, Math.min(99, parseInt(ageMinYears, 10) || 18));
+        const opPct = Math.max(10, Math.min(100, parseInt(ageModalOpacity, 10) || 95));
+        const bgHex = (ageModalBg || '#131b14').trim();
+
+        const badgeEl = document.getElementById('age-badge-label');
+        const titleEl = document.getElementById('age-consent-title');
+        const inlineEl = document.getElementById('age-consent-inline-years');
+        const btnNo = document.getElementById('age-btn-no');
+        const btnYes = document.getElementById('age-btn-yes');
+        const deniedSub = document.getElementById('age-denied-subtitle');
+        const cardEl = document.getElementById('age-consent-card');
+        const overlayEl = document.getElementById('age-consent-modal');
+
+        if (badgeEl) badgeEl.innerText = `${years}+`;
+        if (titleEl) titleEl.innerText = `Вам уже исполнилось ${years} лет?`;
+        if (inlineEl) inlineEl.innerText = String(years);
+        if (btnNo) btnNo.innerText = `Нет, мне нет ${years}`;
+        if (btnYes) btnYes.innerText = `Да, мне есть ${years}`;
+        if (deniedSub) deniedSub.innerText = `Вход в мини-приложение разрешён только пользователям старше ${years} лет.`;
+        if (cardEl) {
+            cardEl.style.backgroundColor = hexToRgba(bgHex, opPct / 100);
+            cardEl.style.backdropFilter = 'blur(18px)';
+            cardEl.style.webkitBackdropFilter = 'blur(18px)';
+        }
+        if (overlayEl) {
+            const ovAlpha = Math.max(0.28, Math.min(0.88, (opPct / 100) * 0.88));
+            overlayEl.style.background = `rgba(5, 8, 6, ${ovAlpha.toFixed(2)})`;
+        }
+
+        const admBtn = document.getElementById('admin-age-check-toggle-btn');
+        const admYears = document.getElementById('admin-age-min-years');
+        const admColor = document.getElementById('admin-age-bg-color');
+        const admOpSlider = document.getElementById('admin-age-opacity-slider');
+        const admOpLbl = document.getElementById('admin-age-opacity-label');
+        if (admBtn) {
+            admBtn.className = `toggle-pill ${ageCheckEnabled ? 'on' : 'off'}`;
+            admBtn.innerText = ageCheckEnabled ? '🟢 Включено' : '⚪ Выключено';
+        }
+        if (admYears && document.activeElement !== admYears) admYears.value = String(years);
+        if (admColor && document.activeElement !== admColor) admColor.value = bgHex;
+        if (admOpSlider && document.activeElement !== admOpSlider) admOpSlider.value = String(opPct);
+        if (admOpLbl) admOpLbl.innerText = `${opPct}%`;
+    }
+    function adminToggleAgeCheckEnabled() {
+        isAgeSettingsDirty = true;
+        ageCheckEnabled = !ageCheckEnabled;
+        try { localStorage.setItem('monkey_age_check_enabled', ageCheckEnabled ? '1' : '0'); } catch (_) {}
+        applyAgeModalAppearance();
+        adminSaveAgeSettings(true);
+    }
+    function handleAdminAgeSettingsInput() {
+        isAgeSettingsDirty = true;
+        const y = parseInt(document.getElementById('admin-age-min-years')?.value || '18', 10);
+        if (!isNaN(y)) ageMinYears = Math.max(14, Math.min(99, y));
+        applyAgeModalAppearance();
+    }
+    function setAdminAgeBgColor(hexVal) {
+        isAgeSettingsDirty = true;
+        ageModalBg = hexVal || '#131b14';
+        try { localStorage.setItem('monkey_age_modal_bg', ageModalBg); } catch (_) {}
+        applyAgeModalAppearance();
+    }
+    function handleAdminAgeOpacityInput(val) {
+        isAgeSettingsDirty = true;
+        const op = parseInt(val, 10);
+        ageModalOpacity = isNaN(op) ? 95 : Math.max(10, Math.min(100, op));
+        try { localStorage.setItem('monkey_age_modal_opacity', String(ageModalOpacity)); } catch (_) {}
+        applyAgeModalAppearance();
+    }
+    function previewAgeConsentModalNow() {
+        isAgeModalPreviewMode = true;
+        applyAgeModalAppearance();
+        const modal = document.getElementById('age-consent-modal');
+        const mainView = document.getElementById('age-consent-main-view');
+        const deniedView = document.getElementById('age-consent-denied-view');
+        const closePrevBtn = document.getElementById('age-preview-close-btn');
+        const errEl = document.getElementById('age-consent-error');
+        const rowEl = document.getElementById('age-consent-check-row');
+        const chkEl = document.getElementById('age-consent-checkbox');
+        if (mainView) mainView.style.display = 'block';
+        if (deniedView) deniedView.style.display = 'none';
+        if (closePrevBtn) closePrevBtn.style.display = 'block';
+        if (errEl) errEl.classList.remove('visible');
+        if (rowEl) rowEl.classList.remove('error-highlight');
+        if (chkEl) chkEl.checked = true;
+        modal?.classList.add('active');
+    }
+    function closeAgePreviewModal() {
+        isAgeModalPreviewMode = false;
+        const closePrevBtn = document.getElementById('age-preview-close-btn');
+        if (closePrevBtn) closePrevBtn.style.display = 'none';
+        document.getElementById('age-consent-modal')?.classList.remove('active');
+    }
+    async function adminSaveAgeSettings(silent = false) {
+        document.activeElement?.blur();
+        const y = parseInt(document.getElementById('admin-age-min-years')?.value || String(ageMinYears), 10);
+        ageMinYears = isNaN(y) ? 18 : Math.max(14, Math.min(99, y));
+        const op = parseInt(document.getElementById('admin-age-opacity-slider')?.value || String(ageModalOpacity), 10);
+        ageModalOpacity = isNaN(op) ? 95 : Math.max(10, Math.min(100, op));
+        try {
+            localStorage.setItem('monkey_age_check_enabled', ageCheckEnabled ? '1' : '0');
+            localStorage.setItem('monkey_age_min_years', String(ageMinYears));
+            localStorage.setItem('monkey_age_modal_bg', ageModalBg);
+            localStorage.setItem('monkey_age_modal_opacity', String(ageModalOpacity));
+        } catch (_) {}
+        applyAgeModalAppearance();
+        try {
+            await apiFetch(`/api/admin/age_settings`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    enabled: Boolean(ageCheckEnabled),
+                    min_years: ageMinYears,
+                    bg_color: ageModalBg,
+                    opacity: ageModalOpacity
+                })
+            });
+            isAgeSettingsDirty = false;
+            if (!silent) showToast("✅ Настройки окна возраста сохранены!");
+        } catch (e) {
+            if (!silent) showToast("Ошибка сохранения настроек окна на сервере", true);
+        }
+    }
+
     function getAgeConsentStorageKey() {
-        return `monkey_age_verified_v1_${currentUserId || 'guest'}`;
+        return `monkey_age_verified_v1_${ageMinYears}_${currentUserId || 'guest'}`;
     }
     function isUserAgeVerified() {
         try {
-            if (currentUserId && localStorage.getItem(`monkey_age_verified_v1_${currentUserId}`) === '1') return true;
-            if (!currentUserId && localStorage.getItem('monkey_age_verified_v1_guest') === '1') return true;
+            if (currentUserId && localStorage.getItem(`monkey_age_verified_v1_${ageMinYears}_${currentUserId}`) === '1') return true;
+            if (!currentUserId && localStorage.getItem(`monkey_age_verified_v1_${ageMinYears}_guest`) === '1') return true;
         } catch (_) {}
         return false;
     }
     function checkAndShowAgeConsentModal() {
         const modal = document.getElementById('age-consent-modal');
         if (!modal) return;
-        if (isUserAgeVerified()) {
+        applyAgeModalAppearance();
+        if (!ageCheckEnabled || isUserAgeVerified()) {
             modal.classList.remove('active');
             return;
         }
+        isAgeModalPreviewMode = false;
         const mainView = document.getElementById('age-consent-main-view');
         const deniedView = document.getElementById('age-consent-denied-view');
+        const closePrevBtn = document.getElementById('age-preview-close-btn');
         const errEl = document.getElementById('age-consent-error');
         const rowEl = document.getElementById('age-consent-check-row');
         const chkEl = document.getElementById('age-consent-checkbox');
         if (mainView) mainView.style.display = 'block';
         if (deniedView) deniedView.style.display = 'none';
+        if (closePrevBtn) closePrevBtn.style.display = 'none';
         if (errEl) errEl.classList.remove('visible');
         if (rowEl) rowEl.classList.remove('error-highlight');
         if (chkEl) chkEl.checked = false;
@@ -5111,6 +5460,7 @@
         const errEl = document.getElementById('age-consent-error');
         const rowEl = document.getElementById('age-consent-check-row');
         if (chkEl && chkEl.checked) {
+            triggerHaptic('selection');
             errEl?.classList.remove('visible');
             rowEl?.classList.remove('error-highlight');
         }
@@ -5120,6 +5470,7 @@
         const errEl = document.getElementById('age-consent-error');
         const rowEl = document.getElementById('age-consent-check-row');
         if (!chkEl || !chkEl.checked) {
+            triggerHaptic('error');
             if (errEl) {
                 errEl.classList.remove('visible');
                 void errEl.offsetWidth;
@@ -5128,18 +5479,28 @@
             if (rowEl) rowEl.classList.add('error-highlight');
             return;
         }
+        triggerHaptic('success');
+        if (isAgeModalPreviewMode) {
+            closeAgePreviewModal();
+            return;
+        }
         try {
             localStorage.setItem(getAgeConsentStorageKey(), '1');
-            if (currentUserId) localStorage.setItem(`monkey_age_verified_v1_${currentUserId}`, '1');
-            else localStorage.setItem('monkey_age_verified_v1_guest', '1');
+            if (currentUserId) localStorage.setItem(`monkey_age_verified_v1_${ageMinYears}_${currentUserId}`, '1');
+            else localStorage.setItem(`monkey_age_verified_v1_${ageMinYears}_guest`, '1');
         } catch (_) {}
         document.getElementById('age-consent-modal')?.classList.remove('active');
     }
     function confirmAgeConsentNo() {
+        triggerHaptic('warning');
+        if (isAgeModalPreviewMode) {
+            closeAgePreviewModal();
+            return;
+        }
         try {
             localStorage.removeItem(getAgeConsentStorageKey());
-            localStorage.removeItem('monkey_age_verified_v1_guest');
-            if (currentUserId) localStorage.removeItem(`monkey_age_verified_v1_${currentUserId}`);
+            localStorage.removeItem(`monkey_age_verified_v1_${ageMinYears}_guest`);
+            if (currentUserId) localStorage.removeItem(`monkey_age_verified_v1_${ageMinYears}_${currentUserId}`);
         } catch (_) {}
         const mainView = document.getElementById('age-consent-main-view');
         const deniedView = document.getElementById('age-consent-denied-view');
@@ -5262,13 +5623,43 @@
     let currentSelectedProduct = null, chosenOptionValue = '', chosenOptionAvailable = true;
     let changingOrderId = null, newSelectedTime = ALL_TIME_SLOTS[0] || '12:00';
     let editingProductOptions = [];
+    let favoriteProductIds = (() => {
+        try {
+            const arr = JSON.parse(localStorage.getItem('monkey_favorites') || '[]');
+            return Array.isArray(arr) ? arr.map(Number).filter(n => n > 0) : [];
+        } catch (_) {
+            return [];
+        }
+    })();
+    function isProductFavorite(productId) {
+        return favoriteProductIds.includes(Number(productId));
+    }
+    function toggleFavoriteProduct(productId, btnEl) {
+        const pid = Number(productId);
+        const idx = favoriteProductIds.indexOf(pid);
+        const added = idx === -1;
+        if (added) favoriteProductIds.push(pid);
+        else favoriteProductIds.splice(idx, 1);
+        try { localStorage.setItem('monkey_favorites', JSON.stringify(favoriteProductIds)); } catch (_) {}
+        triggerHaptic(added ? 'success' : 'light');
+        if (btnEl) {
+            btnEl.classList.toggle('active', added);
+            btnEl.innerText = added ? '❤️' : '🤍';
+        }
+        renderCatalogCategories();
+        if (activeCategory === 'favorites') {
+            filterProducts();
+        }
+    }
     function renderCatalogCategories() {
         const scroll = document.getElementById('categories-scroll');
         if (!scroll) return;
-        if (activeCategory !== 'all' && !shopCategories.some(c => c.id === activeCategory)) {
+        if (activeCategory !== 'all' && activeCategory !== 'favorites' && !shopCategories.some(c => c.id === activeCategory)) {
             activeCategory = 'all';
         }
+        const favCountLabel = favoriteProductIds.length > 0 ? ` (${favoriteProductIds.length})` : '';
         let html = `<button class="cat-chip ${activeCategory === 'all' ? 'active' : ''}" onclick="setCategory('all', this)">Все товары</button>`;
+        html += `<button class="cat-chip ${activeCategory === 'favorites' ? 'active' : ''}" onclick="setCategory('favorites', this)">❤️ Избранное${favCountLabel}</button>`;
         shopCategories.forEach(c => {
             html += `<button class="cat-chip ${activeCategory === c.id ? 'active' : ''}" onclick="setCategory('${escapeHtml(c.id)}', this)">${escapeHtml(c.name)}</button>`;
         });
@@ -5404,6 +5795,27 @@
                             renderAdminInterfaceTab();
                         }
                     }
+                }
+                if (Array.isArray(cfg.saved_ui_themes)) {
+                    const prevSavedJson = JSON.stringify(savedUiThemes);
+                    if (JSON.stringify(cfg.saved_ui_themes) !== prevSavedJson) {
+                        savedUiThemes = cfg.saved_ui_themes;
+                        try { localStorage.setItem('monkey_saved_ui_themes', JSON.stringify(savedUiThemes)); } catch (_) {}
+                        renderSavedUiThemesList();
+                    }
+                }
+                if (!isAgeSettingsDirty && cfg.age_settings && typeof cfg.age_settings === 'object') {
+                    ageCheckEnabled = cfg.age_settings.enabled !== false;
+                    ageMinYears = Math.max(14, Math.min(99, parseInt(cfg.age_settings.min_years ?? '18', 10) || 18));
+                    ageModalBg = String(cfg.age_settings.bg_color || '#131b14');
+                    ageModalOpacity = Math.max(10, Math.min(100, parseInt(cfg.age_settings.opacity ?? '95', 10) || 95));
+                    try {
+                        localStorage.setItem('monkey_age_check_enabled', ageCheckEnabled ? '1' : '0');
+                        localStorage.setItem('monkey_age_min_years', String(ageMinYears));
+                        localStorage.setItem('monkey_age_modal_bg', ageModalBg);
+                        localStorage.setItem('monkey_age_modal_opacity', String(ageModalOpacity));
+                    } catch (_) {}
+                    applyAgeModalAppearance();
                 }
                 if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined || cfg.logo_image !== undefined || cfg.splash_style !== undefined || cfg.splash_emoji !== undefined || cfg.splash_image !== undefined || cfg.welcome_text !== undefined || cfg.welcome_message !== undefined) {
                     if (cfg.logo_part1 !== undefined) logoPart1 = cfg.logo_part1 ?? 'MONKEY';
@@ -5630,6 +6042,16 @@
                         freeDeliveryThreshold = Number(cfg.free_delivery_threshold || 0);
                         localStorage.setItem('monkey_free_delivery_threshold', String(freeDeliveryThreshold));
                     }
+                    if (cfg.smart_bar && typeof cfg.smart_bar === 'object') {
+                        smartBarEnabled = cfg.smart_bar.enabled !== false;
+                        smartBarTarget = Number(cfg.smart_bar.target || 0);
+                        smartBarReward = String(cfg.smart_bar.reward || 'Бесплатная доставка');
+                        try {
+                            localStorage.setItem('monkey_smart_bar_enabled', smartBarEnabled ? '1' : '0');
+                            localStorage.setItem('monkey_smart_bar_target', String(smartBarTarget));
+                            localStorage.setItem('monkey_smart_bar_reward', smartBarReward);
+                        } catch (_) {}
+                    }
                     const isRegionTabOpen = document.getElementById('screen-profile')?.classList.contains('active')
                         && document.getElementById('admin-tab-region')?.style.display !== 'none';
                     if (!isRegionTabOpen) {
@@ -5721,8 +6143,10 @@
         const rightBtnHtml = isAvail
             ? `<button class="add-btn" onclick="event.stopPropagation(); openProductModal(${p.id})">+</button>`
             : `<button class="notify-btn" onclick="event.stopPropagation(); subscribeWholeProduct(${p.id}, '${safeEscTitle}')">🔔 Жду</button>`;
+        const isFav = isProductFavorite(p.id);
+        const favBtnHtml = `<button type="button" class="fav-heart-btn ${isFav ? 'active' : ''}" title="В избранное" onclick="event.stopPropagation(); toggleFavoriteProduct(${p.id}, this)">${isFav ? '❤️' : '🤍'}</button>`;
         card.innerHTML = `
-            <div class="product-img-container"><div class="product-badges-stack">${imageBadges}</div>${mediaHtml}</div>
+            <div class="product-img-container"><div class="product-badges-stack" style="padding-right:32px;">${imageBadges}</div>${favBtnHtml}${mediaHtml}</div>
             <div class="product-title">${escapeHtml(p.title)}</div>
             ${underTitleBadges}
             <div class="product-footer">${priceHtml}${rightBtnHtml}</div>
@@ -5734,7 +6158,10 @@
         if (!grid) return;
         grid.innerHTML = '';
         if (items.length === 0) {
-            grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 34px 16px;">По этому запросу ничего не найдено — попробуйте другое название</div>';
+            const emptyMsg = activeCategory === 'favorites'
+                ? 'В избранном пока пусто — нажмите 🤍 на карточке любого товара'
+                : 'По этому запросу ничего не найдено — попробуйте другое название';
+            grid.innerHTML = `<div style="grid-column: span 2; text-align:center; color:var(--text-secondary); padding: 34px 16px;">${emptyMsg}</div>`;
             return;
         }
         const availItems = items.filter(p => p.available !== false);
@@ -5795,6 +6222,7 @@
     function openProductModal(productId) {
         const prod = products.find(p => p.id === productId);
         if (!prod || prod.available === false) return;
+        triggerHaptic('light');
         currentSelectedProduct = prod;
         const modalCard = document.getElementById('option-modal-card');
         const hitBadge = document.getElementById('modal-hit-badge');
@@ -5876,19 +6304,27 @@
                 has_discount: hasDisc, optionName: chosenOptionValue, qty: 1
             };
         }
+        triggerHaptic('success');
         saveCart(); renderCart(); closeModalDirect();
     }
     function filterProducts() {
         const query = (document.getElementById('search-input')?.value || '').toLowerCase();
-        renderProducts(products.filter(p => (activeCategory === 'all' || getProductCategories(p).includes(activeCategory)) && p.title.toLowerCase().includes(query)));
+        renderProducts(products.filter(p => {
+            const catOk = activeCategory === 'all'
+                ? true
+                : (activeCategory === 'favorites' ? isProductFavorite(p.id) : getProductCategories(p).includes(activeCategory));
+            return catOk && p.title.toLowerCase().includes(query);
+        }));
     }
     function setCategory(cat, el) {
+        triggerHaptic('selection');
         activeCategory = cat;
         document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
         if (el) el.classList.add('active');
         filterProducts();
     }
     function changeQty(cartKey, delta) {
+        triggerHaptic('light');
         if (cart[cartKey]) {
             cart[cartKey].qty += delta;
             if (cart[cartKey].qty <= 0) delete cart[cartKey];
@@ -6022,10 +6458,33 @@
         let checkoutActionHtml = `<button class="primary-btn" ${isBelowMinOrder ? 'disabled' : ''} onclick="proceedToCheckout()">Перейти к оформлению</button>`;
         if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
         else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${escapeHtml(shopClosedMessage)}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
+        let smartProgressBarHtml = '';
+        if (smartBarEnabled) {
+            const effTarget = smartBarTarget > 0
+                ? smartBarTarget
+                : (freeDeliveryThreshold > 0 ? freeDeliveryThreshold : 50);
+            const effReward = (smartBarReward || '').trim() || 'Бесплатная доставка';
+            const pctFill = effTarget > 0 ? Math.min(100, Math.round((subtotal / effTarget) * 100)) : 100;
+            const remaining = Math.max(0, effTarget - subtotal);
+            const barTitleHtml = remaining <= 1e-6
+                ? `🎉 <span>Активировано: <b style="color:var(--accent-green);">${escapeHtml(effReward)}</b></span>`
+                : `🚀 <span>Добавьте ещё на <b style="color:var(--accent-green);">${formatMoney(remaining)}</b> — ${escapeHtml(effReward)}</span>`;
+            smartProgressBarHtml = `
+                <div class="smart-cart-progress-box">
+                    <div class="smart-cart-progress-top">
+                        ${barTitleHtml}
+                        <span class="smart-cart-progress-pct">${pctFill}%</span>
+                    </div>
+                    <div class="smart-cart-track">
+                        <div class="smart-cart-fill" style="width:${pctFill}%;"></div>
+                    </div>
+                </div>
+            `;
+        }
         const modeSummaryRowHtml = enabledDeliveryModes.length > 1
             ? `<div class="summary-row" style="gap:10px;"><span style="flex-shrink:0;">Формат получения:</span><span style="color:var(--text-main); font-weight:700; text-align:right;">${escapeHtml(meta.modeName)}</span></div>`
             : '';
-        container.innerHTML = itemsHtml + promoBlockHtml + `
+        container.innerHTML = smartProgressBarHtml + itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
                 ${modeSummaryRowHtml}
                 <div class="summary-row" style="gap:10px;"><span style="flex-shrink:0;">${meta.cartRowLabel}</span><span style="color:var(--accent-green); font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right;">${locValueDisplay}</span></div>
@@ -6275,6 +6734,7 @@
         activeOrders = deduplicateOrdersList([orderData, ...activeOrders]);
         localStorage.setItem('monkey_orders', JSON.stringify(activeOrders));
         cart = {}; appliedPromoCode = ""; appliedPromoValue = 0; appliedPromoType = "rub"; promoMessage = ""; promoInputDraft = "";
+        triggerHaptic('success');
         saveCart(); renderCart(); currentOrdersSubTab = 'active'; renderOrders(); switchScreen('orders');
     }
     function repeatPastOrder(orderId) {
@@ -6604,6 +7064,100 @@
         syncSplashImagePreview('');
     }
     // ----- ВКЛАДКА "ИНТЕРФЕЙС" — ПАЛИТРА ЦВЕТОВ ВСЕГО ПРИЛОЖЕНИЯ -----
+    function renderSavedUiThemesList() {
+        const savedBox = document.getElementById('ui-saved-themes-container');
+        if (!savedBox) return;
+        if (!Array.isArray(savedUiThemes) || savedUiThemes.length === 0) {
+            savedBox.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">Пока нет сохранённых тем — настройте палитру ниже и сохраните её</div>';
+            return;
+        }
+        savedBox.innerHTML = savedUiThemes.map((item, idx) => {
+            const t = item.theme || DEFAULT_UI_THEME;
+            const c1 = t.accent_color || '#00ff66';
+            const c2 = t.card_bg || '#131b14';
+            return `
+                <div class="saved-theme-row">
+                    <button type="button" class="saved-theme-apply-btn" onclick="applySavedCustomTheme(${idx})">
+                        <span class="preset-dots">
+                            <span class="preset-dot" style="background:${escapeHtml(c1)};"></span>
+                            <span class="preset-dot" style="background:${escapeHtml(c2)};"></span>
+                        </span>
+                        <span style="min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(item.name || ('Моя тема #' + (idx + 1)))}</span>
+                    </button>
+                    <button type="button" class="toggle-pill off" style="padding:3px 7px; font-size:11px;" title="Удалить тему" onclick="adminDeleteSavedCustomTheme('${escapeHtml(item.id || '')}')">✕</button>
+                </div>
+            `;
+        }).join('');
+    }
+    function applySavedCustomTheme(idx) {
+        const item = savedUiThemes[idx];
+        if (!item || !item.theme) return;
+        isUiThemeDirty = true;
+        triggerHaptic('selection');
+        customUiTheme = { ...DEFAULT_UI_THEME, ...item.theme };
+        try { localStorage.setItem('monkey_custom_ui_theme', JSON.stringify(customUiTheme)); } catch (_) {}
+        if (currentAppTheme === 'light') {
+            currentAppTheme = 'dark';
+            localStorage.setItem('monkey_theme', 'dark');
+            document.documentElement.removeAttribute('data-theme');
+            const btn = document.getElementById('theme-toggle-btn');
+            if (btn) btn.innerText = '☀️';
+        }
+        applyCustomUiCssVars(customUiTheme);
+        renderAdminInterfaceTab();
+        showToast(`🎨 Тема «${item.name || 'Своя'}» применена!`);
+    }
+    async function adminSaveCustomNamedTheme() {
+        const themeName = await showCustomPrompt("Введите название для вашей цветовой темы:", `Моя тема #${savedUiThemes.length + 1}`, "Сохранить свою тему");
+        if (themeName === null) return;
+        const cleanName = String(themeName || '').trim() || `Моя тема #${savedUiThemes.length + 1}`;
+        const newEntry = {
+            id: `utheme_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: cleanName,
+            theme: { ...DEFAULT_UI_THEME, ...customUiTheme }
+        };
+        savedUiThemes.push(newEntry);
+        try { localStorage.setItem('monkey_saved_ui_themes', JSON.stringify(savedUiThemes)); } catch (_) {}
+        renderSavedUiThemesList();
+        try {
+            const res = await apiFetch(`/api/admin/saved_ui_themes`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    action: 'save',
+                    id: newEntry.id,
+                    name: newEntry.name,
+                    theme: newEntry.theme
+                })
+            });
+            const data = await res.json();
+            if (Array.isArray(data?.saved_ui_themes)) {
+                savedUiThemes = data.saved_ui_themes;
+                try { localStorage.setItem('monkey_saved_ui_themes', JSON.stringify(savedUiThemes)); } catch (_) {}
+                renderSavedUiThemesList();
+            }
+            showToast(`⭐ Тема «${cleanName}» сохранена!`);
+        } catch (e) {
+            showToast(`⭐ Тема «${cleanName}» сохранена локально`);
+        }
+    }
+    async function adminDeleteSavedCustomTheme(themeId) {
+        if (!themeId) return;
+        savedUiThemes = savedUiThemes.filter(t => t.id !== themeId);
+        try { localStorage.setItem('monkey_saved_ui_themes', JSON.stringify(savedUiThemes)); } catch (_) {}
+        renderSavedUiThemesList();
+        try {
+            await apiFetch(`/api/admin/saved_ui_themes`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    action: 'delete',
+                    id: themeId
+                })
+            });
+            showToast("🗑 Тема удалена");
+        } catch (_) {}
+    }
     function renderAdminInterfaceTab() {
         const presetsGrid = document.getElementById('ui-theme-presets-grid');
         if (presetsGrid) {
@@ -6617,6 +7171,7 @@
                 </button>
             `).join('');
         }
+        renderSavedUiThemesList();
         const container = document.getElementById('ui-palette-controls-container');
         if (!container) return;
         container.innerHTML = UI_PALETTE_FIELDS.map(field => {
@@ -6992,6 +7547,52 @@
         if (minInp && document.activeElement !== minInp) minInp.value = minOrderAmount || 0;
         if (feeInp && document.activeElement !== feeInp) feeInp.value = deliveryFee || 0;
         if (freeInp && document.activeElement !== freeInp) freeInp.value = freeDeliveryThreshold || 0;
+        const sbBtn = document.getElementById('admin-smart-bar-toggle-btn');
+        const sbTargetInp = document.getElementById('admin-smart-bar-target-input');
+        const sbRewardInp = document.getElementById('admin-smart-bar-reward-input');
+        if (sbBtn) {
+            sbBtn.className = `toggle-pill ${smartBarEnabled ? 'on' : 'off'}`;
+            sbBtn.innerText = smartBarEnabled ? '🟢 Включён' : '⚪ Выключен';
+        }
+        if (sbTargetInp && document.activeElement !== sbTargetInp) sbTargetInp.value = smartBarTarget || 0;
+        if (sbRewardInp && document.activeElement !== sbRewardInp) sbRewardInp.value = smartBarReward || 'Бесплатная доставка';
+    }
+    async function adminToggleSmartBarEnabled() {
+        isRegionSettingsDirty = true;
+        smartBarEnabled = !smartBarEnabled;
+        try { localStorage.setItem('monkey_smart_bar_enabled', smartBarEnabled ? '1' : '0'); } catch (_) {}
+        renderAdminRegionTab();
+        renderCart();
+        await adminSaveSmartBar(true);
+    }
+    async function adminSaveSmartBar(silent = false) {
+        document.activeElement?.blur();
+        const tVal = Math.max(0, parseFloat(document.getElementById('admin-smart-bar-target-input')?.value ?? String(smartBarTarget)) || 0);
+        const rVal = (document.getElementById('admin-smart-bar-reward-input')?.value ?? smartBarReward).trim() || 'Бесплатная доставка';
+        smartBarTarget = tVal;
+        smartBarReward = rVal;
+        try {
+            localStorage.setItem('monkey_smart_bar_enabled', smartBarEnabled ? '1' : '0');
+            localStorage.setItem('monkey_smart_bar_target', String(smartBarTarget));
+            localStorage.setItem('monkey_smart_bar_reward', smartBarReward);
+        } catch (_) {}
+        renderAdminRegionTab();
+        renderCart();
+        try {
+            await apiFetch(`/api/admin/smart_bar`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    enabled: Boolean(smartBarEnabled),
+                    target: smartBarTarget,
+                    reward: smartBarReward
+                })
+            });
+            isRegionSettingsDirty = false;
+            if (!silent) showToast("✅ Настройки прогресс-бара сохранены!");
+        } catch (e) {
+            if (!silent) showToast("Ошибка сохранения прогресс-бара на сервере", true);
+        }
     }
     function selectAdminCurrency(cur) {
         isRegionSettingsDirty = true;
@@ -7437,6 +8038,7 @@
         } catch (e) { showToast("Ошибка удаления категории", true); }
     }
     function renderAdminAppearance() {
+        applyAgeModalAppearance();
         ['none', 'winter', 'autumn', 'spring', 'summer', 'rain', 'garland', 'fireworks', 'aurora', 'bokeh'].forEach(s => {
             const btn = document.getElementById(`season-btn-${s}`);
             if (btn) {
@@ -8098,6 +8700,7 @@
     }
     setInterval(() => { if (document.getElementById('screen-courier').classList.contains('active')) loadCourierOrders(); }, 3500);
     function switchScreen(screenName) {
+        triggerHaptic('selection');
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(`screen-${screenName}`)?.classList.add('active');
