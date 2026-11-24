@@ -2379,6 +2379,7 @@
                 <div id="admin-tab-stats">
                     <div id="admin-stats-content" style="font-size:12px; color:var(--text-secondary);">Загрузка статистики...</div>
                     <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                        <button type="button" id="admin-test-notify-btn" class="toggle-pill on" style="width:100%; padding:11px 12px; font-size:12.5px; border-radius:14px;" onclick="adminTestNotify()">🔔 Проверить уведомления в Telegram</button>
                         <button type="button" id="admin-send-backup-btn" class="primary-btn" style="padding:11px 12px; font-size:12.5px;" onclick="adminSendBackup()">📥 Скачать бэкап и отчёт в Telegram</button>
                         <button type="button" id="admin-clear-orders-btn" onclick="adminClearTestOrders()" style="width:100%; background:rgba(255,51,51,0.12); border:1px solid var(--danger); color:var(--danger); padding:11px 12px; border-radius:14px; font-size:12.5px; font-weight:700; cursor:pointer;">🧹 Очистить тестовые заказы и статистику</button>
                     </div>
@@ -6776,7 +6777,9 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: key, status: 'cancelled', cancelled_by: 'client' })
             });
-        } catch (e) {}
+        } catch (e) {
+            showToast("⚠️ Отмена не дошла до сервера! Проверьте /seturl", true);
+        }
         if (document.getElementById('screen-courier').classList.contains('active')) loadCourierOrders();
     }
     async function deleteFinishedOrderCourier(orderId) {
@@ -7294,6 +7297,11 @@
             cmd: '/seturl https://...',
             copyText: '/seturl ',
             desc: 'Обновить ссылку на туннель/сервер API, если изменился домен сервера.'
+        },
+        {
+            cmd: '/testnotify',
+            copyText: '/testnotify',
+            desc: 'Проверить отправку личных уведомлений курьерам и владельцам прямо в Telegram и посмотреть активный адрес сервера.'
         },
         {
             cmd: '/start',
@@ -7904,6 +7912,30 @@
             renderProfileLinks();
             showToast("✅ Настройки каналов и подписки сохранены!");
         } catch (e) { showToast("Ошибка сохранения настроек каналов", true); }
+    }
+    async function adminTestNotify() {
+        const btn = document.getElementById('admin-test-notify-btn');
+        if (btn) { btn.disabled = true; btn.innerText = '⏳ Отправка теста...'; }
+        try {
+            const res = await apiFetch(`/api/admin/test_notify`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId) })
+            });
+            const data = await res.json();
+            const okList = Array.isArray(data?.delivered) ? data.delivered : [];
+            const failList = Array.isArray(data?.failed) ? data.failed : [];
+            if (okList.length > 0 && failList.length === 0) {
+                showToast(`✅ Тест доставлен (${okList.join(', ')})!`);
+            } else if (okList.length > 0) {
+                showToast(`⚠️ Доставлено: ${okList.join(', ')}. Ошибка: ${failList.join(', ')}`, true);
+            } else {
+                showToast(`❌ Не доставлено никому (${failList.join(', ')})`, true);
+            }
+        } catch (e) {
+            showToast("🔴 Сервер недоступен! Обновите /seturl и перезапустите Mini App", true);
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerText = '🔔 Проверить уведомления в Telegram'; }
+        }
     }
     async function adminSendBackup() {
         document.activeElement?.blur();
@@ -8695,7 +8727,9 @@
                     courier_id: Number(currentUserId), courier_name: currentUserName
                 })
             });
-        } catch (e) {}
+        } catch (e) {
+            showToast("⚠️ Статус не отправлен на сервер! Проверьте /seturl", true);
+        }
         loadCourierOrders();
     }
     setInterval(() => { if (document.getElementById('screen-courier').classList.contains('active')) loadCourierOrders(); }, 3500);
