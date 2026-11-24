@@ -101,6 +101,12 @@ DEFAULT_DELIVERY_LOCATIONS = [
     "Первомайский район"
 ]
 
+DEFAULT_PICKUP_LOCATIONS = [
+    "ТЦ Призма"
+]
+
+DEFAULT_TOP_NOTICE_TEXT = "Возьми две жижи в подарок"
+
 DEFAULT_WELCOME_TEXT = (
     "Здравствуйте, <b>{user}</b>! Добро пожаловать в <b>{brand}</b> 👋\n\n"
     "Актуальное наличие и быстрое оформление заказа.\n"
@@ -221,6 +227,15 @@ def get_location_label(delivery_mode: str) -> str:
     }
     return mapping.get(delivery_mode, "Локация")
 
+def get_delivery_mode_title(delivery_mode: str) -> str:
+    mapping = {
+        "metro": "Метро",
+        "districts": "По районам",
+        "pickup": "Пункт выдачи",
+        "free_address": "Доставка по адресу"
+    }
+    return mapping.get(delivery_mode, delivery_mode or "Метро")
+
 def format_location_value(station: str, delivery_mode: str) -> str:
     st = (station or "").strip()
     if not st:
@@ -256,6 +271,187 @@ async def get_setting_list(db, key: str, default_list=None) -> list:
 
 async def set_setting_list(db, key: str, values: list):
     await set_setting_raw(db, key, json.dumps(values, ensure_ascii=False))
+
+def sanitize_string_list(raw_items: list | None) -> list[str]:
+    clean: list[str] = []
+    seen: set[str] = set()
+    for item in (raw_items or []):
+        name = item.get("name", "") if isinstance(item, dict) else str(item or "")
+        name = name.strip()
+        if name and name.lower() not in seen:
+            seen.add(name.lower())
+            clean.append(name)
+    return clean
+
+def normalize_audio_track(raw_item: dict, idx: int = 0) -> dict | None:
+    if not isinstance(raw_item, dict):
+        return None
+    url = str(raw_item.get("url") or "").strip()
+    if not url:
+        return None
+    tid = str(raw_item.get("id") or f"trk_{int(time.time() * 1000)}_{idx}").strip()
+    title = str(raw_item.get("title") or "").strip() or f"Трек {idx + 1}"
+    return {"id": tid, "title": title, "url": url}
+
+def cleanup_orphaned_audio_files(keep_urls: list[str]):
+    if not os.path.isdir(AUDIO_DIR):
+        return
+    keep_names: set[str] = set()
+    for u in keep_urls:
+        m = re.search(r"/api/music/([^?#\s]+)", u or "")
+        if m:
+            keep_names.add(os.path.basename(m.group(1)))
+    for fname in os.listdir(AUDIO_DIR):
+        if fname not in keep_names:
+            fpath = os.path.join(AUDIO_DIR, fname)
+            if os.path.isfile(fpath):
+                try:
+                    os.remove(fpath)
+                except Exception:
+                    pass
+
+async def get_audio_library_state(db) -> dict:
+    raw_tracks = await get_setting_raw(db, "audio_tracks", "")
+    tracks: list[dict] = []
+    if raw_tracks:
+        try:
+            parsed = json.loads(raw_tracks)
+            if isinstance(parsed, list):
+                for i, item in enumerate(parsed):
+                    norm = normalize_audio_track(item, i)
+                    if norm:
+                        tracks.append(norm)
+        except Exception:
+            pass
+
+    legacy_url = (await get_setting_raw(db, "music_url", "")).strip()
+    legacy_title = (await get_setting_raw(db, "music_title", "Фоновый трек")).strip() or "Фоновый трек"
+    if not tracks and legacy_url:
+        tracks = [{"id": "trk_legacy_1", "title": legacy_title, "url": legacy_url}]
+
+    loop_mode = (await get_setting_raw(db, "audio_loop_mode", "sequence")).strip()
+    if loop_mode not in ("sequence", "single"):
+        loop_mode = "sequence"
+
+    active_id = (await get_setting_raw(db, "audio_active_track_id", "")).strip()
+    active_track = next((t for t in tracks if t["id"] == active_id), None)
+    if not active_track and tracks:
+        active_track = tracks[0]
+        active_id = active_track["id"]
+
+    raw_def_vol = await get_setting_raw(db, "audio_default_volume", "")
+    if raw_def_vol != "":
+        try:
+            default_vol_100 = max(0, min(100, int(round(float(raw_def_vol)))))
+        except Exception:
+            default_vol_100 = 35
+    else:
+        try:
+            legacy_vol = max(0.0, min(1.0, float(await get_setting_raw(db, "music_volume", "0.35") or 0.35)))
+            default_vol_100 = max(0, min(100, int(round(legacy_vol * 100))))
+        except Exception:
+            default_vol_100 = 35
+
+    eff_url = active_track["url"] if active_track else legacy_url
+    eff_title = active_track["title"] if active_track else legacy_title
+    eff_vol_float = round(default_vol_100 / 100.0, 2)
+
+    return {
+        "audio_tracks": tracks,
+        "audio_loop_mode": loop_mode,
+        "audio_active_track_id": active_id,
+        "audio_default_volume": default_vol_100,
+        "music_url": eff_url,
+        "music_title": eff_title,
+        "music_volume": eff_vol_float
+    }
+
+def normalize_banner_item(raw_item: dict, idx: int = 0) -> dict:
+    b_id = str(raw_item.get("id") or f"banner_{int(time.time() * 1000)}_{idx}").strip()
+    title = str(raw_item.get("title") or "").strip()
+    desc = str(raw_item.get("desc") or "").strip()
+    style = str(raw_item.get("style") or "emerald").strip() or "emerald"
+    btn_text = str(raw_item.get("btn_text") or "").strip() or "Скопировать"
+    promo_code = str(raw_item.get("promo_code") or "").strip()
+    return {
+        "id": b_id,
+        "title": title,
+        "desc": desc,
+        "style": style,
+        "btn_text": btn_text,
+        "promo_code": promo_code
+    }
+
+async def get_banners_list(db) -> list[dict]:
+    raw = await get_setting_raw(db, "banners", "")
+    if raw:
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return [normalize_banner_item(item, i) for i, item in enumerate(parsed) if isinstance(item, dict)]
+        except Exception:
+            pass
+    legacy_title = await get_setting_raw(db, "banner_title", "СКИДКА НЕДЕЛИ -20%")
+    legacy_desc = await get_setting_raw(db, "banner_desc", "Популярные товары и новинки уже в каталоге")
+    legacy_badge = await get_setting_raw(db, "banner_badge", "-20%")
+    return [
+        normalize_banner_item({
+            "id": "banner_default_1",
+            "title": legacy_title,
+            "desc": legacy_desc,
+            "style": "emerald",
+            "btn_text": "Скопировать",
+            "promo_code": legacy_badge if legacy_badge and not legacy_badge.startswith("-") else "MONKEY3"
+        }, 0)
+    ]
+
+async def get_delivery_settings_state(db) -> dict:
+    primary_mode = await get_setting_raw(db, "delivery_mode", "metro")
+    if primary_mode not in ALLOWED_DELIVERY_MODES:
+        primary_mode = "metro"
+
+    raw_enabled = await get_setting_raw(db, "enabled_delivery_modes", "")
+    enabled_modes: list[str] = []
+    if raw_enabled:
+        try:
+            parsed = json.loads(raw_enabled)
+            if isinstance(parsed, list):
+                for m in parsed:
+                    ms = str(m or "").strip()
+                    if ms in ALLOWED_DELIVERY_MODES and ms not in enabled_modes:
+                        enabled_modes.append(ms)
+        except Exception:
+            pass
+    if not enabled_modes:
+        enabled_modes = [primary_mode]
+
+    legacy_locs = await get_setting_list(db, "delivery_locations", DEFAULT_DELIVERY_LOCATIONS)
+
+    raw_districts = await get_setting_raw(db, "district_locations", "")
+    if raw_districts != "":
+        try:
+            district_locs = sanitize_string_list(json.loads(raw_districts))
+        except Exception:
+            district_locs = list(DEFAULT_DELIVERY_LOCATIONS)
+    else:
+        district_locs = list(legacy_locs) if primary_mode == "districts" else list(DEFAULT_DELIVERY_LOCATIONS)
+
+    raw_pickups = await get_setting_raw(db, "pickup_locations", "")
+    if raw_pickups != "":
+        try:
+            pickup_locs = sanitize_string_list(json.loads(raw_pickups))
+        except Exception:
+            pickup_locs = list(DEFAULT_PICKUP_LOCATIONS)
+    else:
+        pickup_locs = list(legacy_locs) if primary_mode == "pickup" else list(DEFAULT_PICKUP_LOCATIONS)
+
+    return {
+        "delivery_mode": enabled_modes[0],
+        "enabled_delivery_modes": enabled_modes,
+        "district_locations": district_locs,
+        "pickup_locations": pickup_locs,
+        "delivery_locations": legacy_locs
+    }
 
 async def get_ui_theme_dict(db) -> dict:
     raw = await get_setting_raw(db, "ui_theme", "")
@@ -527,7 +723,8 @@ async def init_db():
                 created_at TEXT DEFAULT '',
                 cancelled_by TEXT DEFAULT '',
                 claimed_by_id INTEGER DEFAULT 0,
-                claimed_by_name TEXT DEFAULT ''
+                claimed_by_name TEXT DEFAULT '',
+                delivery_mode TEXT DEFAULT ''
             )
         """)
         for col_sql in [
@@ -538,7 +735,8 @@ async def init_db():
             "ALTER TABLE orders ADD COLUMN created_at TEXT DEFAULT ''",
             "ALTER TABLE orders ADD COLUMN cancelled_by TEXT DEFAULT ''",
             "ALTER TABLE orders ADD COLUMN claimed_by_id INTEGER DEFAULT 0",
-            "ALTER TABLE orders ADD COLUMN claimed_by_name TEXT DEFAULT ''"
+            "ALTER TABLE orders ADD COLUMN claimed_by_name TEXT DEFAULT ''",
+            "ALTER TABLE orders ADD COLUMN delivery_mode TEXT DEFAULT ''"
         ]:
             try:
                 await db.execute(col_sql)
@@ -554,7 +752,10 @@ async def init_db():
         default_shop_settings = [
             ("currency", "р."),
             ("delivery_mode", "metro"),
+            ("enabled_delivery_modes", json.dumps(["metro"], ensure_ascii=False)),
             ("delivery_locations", json.dumps(DEFAULT_DELIVERY_LOCATIONS, ensure_ascii=False)),
+            ("district_locations", json.dumps(DEFAULT_DELIVERY_LOCATIONS, ensure_ascii=False)),
+            ("pickup_locations", json.dumps(DEFAULT_PICKUP_LOCATIONS, ensure_ascii=False)),
             ("splash_emoji", "🐵"),
             ("splash_image", ""),
             ("welcome_text", DEFAULT_WELCOME_TEXT),
@@ -571,6 +772,13 @@ async def init_db():
             ("music_url", ""),
             ("music_title", "Фоновый трек"),
             ("music_volume", "0.35"),
+            ("audio_tracks", "[]"),
+            ("audio_loop_mode", "sequence"),
+            ("audio_active_track_id", ""),
+            ("audio_default_volume", "35"),
+            ("top_notice_enabled", "1"),
+            ("top_notice_text", DEFAULT_TOP_NOTICE_TEXT),
+            ("banner_interval", "5"),
         ]
         for s_key, s_val in default_shop_settings:
             await db.execute("INSERT OR IGNORE INTO shop_settings (key, value) VALUES (?, ?)", (s_key, s_val))
@@ -688,6 +896,7 @@ class OrderSchema(BaseModel):
     total: float
     station: str
     time: str
+    delivery_mode: str = ""
     status: str = "active"
     promo_code: str = ""
     discount: float = 0.0
@@ -712,12 +921,27 @@ class CourierArrivedSchema(BaseModel):
     courier_id: int = 0
     courier_name: str = ""
 
+class TopNoticePayload(BaseModel):
+    enabled: bool = True
+    text: str = DEFAULT_TOP_NOTICE_TEXT
+
 class CourierBannerSchema(BaseModel):
     user_id: int
-    enabled: bool
-    title: str
-    desc: str
-    badge: str
+    enabled: bool = True
+    title: str = ""
+    desc: str = ""
+    badge: str = ""
+    banner_interval: int | None = None
+    interval: int | None = None
+    banners: list | None = None
+    top_notice: TopNoticePayload | dict | None = None
+    top_notice_enabled: bool | None = None
+    top_notice_text: str | None = None
+
+class AdminTopNoticeSchema(BaseModel):
+    user_id: int
+    enabled: bool = True
+    text: str = DEFAULT_TOP_NOTICE_TEXT
 
 class AdminBrandingSchema(BaseModel):
     user_id: int
@@ -737,6 +961,15 @@ class AdminMusicSchema(BaseModel):
     music_title: str = "Фоновый трек"
     music_volume: float = 0.35
 
+class AdminAudioSchema(BaseModel):
+    user_id: int
+    audio_tracks: list | None = None
+    audio_loop_mode: str | None = None
+    audio_active_track_id: str | None = None
+    audio_default_volume: int | float | None = None
+    music_enabled: bool | None = None
+    music_paused: bool | None = None
+
 class AdminMusicUploadSchema(BaseModel):
     user_id: int
     filename: str = "track.mp3"
@@ -754,7 +987,10 @@ class AdminLocalizationSchema(BaseModel):
     user_id: int
     currency: str = "р."
     delivery_mode: str = "metro"
+    enabled_delivery_modes: list | None = None
     delivery_locations: list = []
+    district_locations: list | None = None
+    pickup_locations: list | None = None
     splash_emoji: str = "🐵"
     splash_image: str | None = None
     welcome_text: str = ""
@@ -947,19 +1183,23 @@ async def get_shop_config():
         splash_style = (await get_setting_raw(db, "splash_style", "neon")).strip() or "neon"
         music_enabled = (await get_setting_raw(db, "music_enabled", "0")) == "1"
         music_paused = (await get_setting_raw(db, "music_paused", "0")) == "1"
-        music_url = (await get_setting_raw(db, "music_url", "")).strip()
-        music_title = (await get_setting_raw(db, "music_title", "Фоновый трек")).strip() or "Фоновый трек"
-        try:
-            music_volume = max(0.0, min(1.0, float(await get_setting_raw(db, "music_volume", "0.35") or 0.35)))
-        except Exception:
-            music_volume = 0.35
+
+        audio_state = await get_audio_library_state(db)
+        music_url = audio_state["music_url"]
+        music_title = audio_state["music_title"]
+        music_volume = audio_state["music_volume"]
+
         currency = await get_setting_raw(db, "currency", "р.")
         if currency not in ALLOWED_CURRENCIES:
             currency = "р."
-        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
-        if delivery_mode not in ALLOWED_DELIVERY_MODES:
-            delivery_mode = "metro"
-        delivery_locations = await get_setting_list(db, "delivery_locations", DEFAULT_DELIVERY_LOCATIONS)
+
+        deliv_state = await get_delivery_settings_state(db)
+        delivery_mode = deliv_state["delivery_mode"]
+        enabled_delivery_modes = deliv_state["enabled_delivery_modes"]
+        district_locations = deliv_state["district_locations"]
+        pickup_locations = deliv_state["pickup_locations"]
+        delivery_locations = deliv_state["delivery_locations"]
+
         splash_emoji = (await get_setting_raw(db, "splash_emoji", "🐵")).strip() or "🐵"
         splash_image = (await get_setting_raw(db, "splash_image", "")).strip()
         welcome_text = await get_setting_raw(db, "welcome_text", DEFAULT_WELCOME_TEXT)
@@ -973,10 +1213,25 @@ async def get_shop_config():
         news_channel_url = await get_setting_raw(db, "news_channel_url", "")
         reviews_channel_url = await get_setting_raw(db, "reviews_channel_url", "")
         support_username = await get_setting_raw(db, "support_username", "@warat_24")
+
+        top_notice_enabled = (await get_setting_raw(db, "top_notice_enabled", "1")) == "1"
+        top_notice_text = await get_setting_raw(db, "top_notice_text", DEFAULT_TOP_NOTICE_TEXT)
+
         banner_enabled = await get_setting_raw(db, "banner_enabled", "1") == "1"
-        banner_title = await get_setting_raw(db, "banner_title", "СКИДКА НЕДЕЛИ -20%")
-        banner_desc = await get_setting_raw(db, "banner_desc", "Популярные товары и новинки уже в каталоге")
-        banner_badge = await get_setting_raw(db, "banner_badge", "-20%")
+        try:
+            banner_interval = max(0, min(120, int(await get_setting_raw(db, "banner_interval", "5") or 5)))
+        except Exception:
+            banner_interval = 5
+        banners_list = await get_banners_list(db)
+        first_banner = banners_list[0] if banners_list else {
+            "title": "СКИДКА НЕДЕЛИ -20%",
+            "desc": "Популярные товары и новинки уже в каталоге",
+            "promo_code": "MONKEY3"
+        }
+        banner_title = first_banner.get("title", "")
+        banner_desc = first_banner.get("desc", "")
+        banner_badge = first_banner.get("promo_code", "")
+
         banned_users = [int(x) for x in await get_setting_list(db, "banned_users")]
         owner_ids = await get_all_owner_ids(db)
         courier_ids = await get_all_courier_ids(db)
@@ -1031,8 +1286,15 @@ async def get_shop_config():
             "music_url": music_url,
             "music_title": music_title,
             "music_volume": music_volume,
+            "audio_tracks": audio_state["audio_tracks"],
+            "audio_loop_mode": audio_state["audio_loop_mode"],
+            "audio_active_track_id": audio_state["audio_active_track_id"],
+            "audio_default_volume": audio_state["audio_default_volume"],
             "currency": currency,
             "delivery_mode": delivery_mode,
+            "enabled_delivery_modes": enabled_delivery_modes,
+            "district_locations": district_locations,
+            "pickup_locations": pickup_locations,
             "delivery_locations": delivery_locations,
             "splash_emoji": splash_emoji,
             "splash_image": splash_image,
@@ -1047,8 +1309,16 @@ async def get_shop_config():
             "reviews_channel_url": reviews_channel_url,
             "support_username": support_username,
             "categories": categories,
+            "top_notice": {
+                "enabled": top_notice_enabled,
+                "text": top_notice_text
+            },
+            "banner_interval": banner_interval,
+            "banners": banners_list,
             "banner": {
                 "enabled": banner_enabled,
+                "interval": banner_interval,
+                "banners": banners_list,
                 "title": banner_title,
                 "desc": banner_desc,
                 "badge": banner_badge
@@ -1154,16 +1424,9 @@ async def upload_admin_music(data: AdminMusicUploadSchema):
             raise HTTPException(status_code=400, detail="Размер аудиофайла должен быть от 1 Б до 25 МБ")
 
         os.makedirs(AUDIO_DIR, exist_ok=True)
-        for old_f in os.listdir(AUDIO_DIR):
-            old_path = os.path.join(AUDIO_DIR, old_f)
-            if os.path.isfile(old_path):
-                try:
-                    os.remove(old_path)
-                except Exception:
-                    pass
-
         ext = _sanitize_audio_ext(data.filename, data.data_base64)
-        stored_name = f"track_{int(time.time())}{ext}"
+        uniq = f"{int(time.time() * 1000)}_{os.urandom(2).hex()}"
+        stored_name = f"track_{uniq}{ext}"
         disk_path = os.path.join(AUDIO_DIR, stored_name)
         with open(disk_path, "wb") as f:
             f.write(audio_bytes)
@@ -1171,18 +1434,26 @@ async def upload_admin_music(data: AdminMusicUploadSchema):
         track_url = f"/api/music/{stored_name}"
         clean_title = (data.music_title or "").strip() or os.path.splitext(data.filename or "Фоновый трек")[0] or "Фоновый трек"
 
+        audio_state = await get_audio_library_state(db)
+        tracks = list(audio_state["audio_tracks"])
+        new_track_id = f"trk_{uniq}"
+        tracks.append({"id": new_track_id, "title": clean_title, "url": track_url})
+        cleanup_orphaned_audio_files([t["url"] for t in tracks])
+
+        await set_setting_raw(db, "audio_tracks", json.dumps(tracks, ensure_ascii=False))
+        await set_setting_raw(db, "audio_active_track_id", new_track_id)
         await set_setting_raw(db, "music_url", track_url)
         await set_setting_raw(db, "music_title", clean_title)
         await set_setting_raw(db, "music_enabled", "1")
         await set_setting_raw(db, "music_paused", "0")
         if data.music_volume is not None:
             m_vol = max(0.0, min(1.0, round(float(data.music_volume), 2)))
+            def_vol_100 = max(0, min(100, int(round(m_vol * 100))))
             await set_setting_raw(db, "music_volume", str(m_vol))
+            await set_setting_raw(db, "audio_default_volume", str(def_vol_100))
         else:
-            try:
-                m_vol = max(0.0, min(1.0, float(await get_setting_raw(db, "music_volume", "0.35") or 0.35)))
-            except Exception:
-                m_vol = 0.35
+            m_vol = audio_state["music_volume"]
+            def_vol_100 = audio_state["audio_default_volume"]
         await db.commit()
 
     return {
@@ -1191,7 +1462,92 @@ async def upload_admin_music(data: AdminMusicUploadSchema):
         "music_title": clean_title,
         "music_enabled": True,
         "music_paused": False,
-        "music_volume": m_vol
+        "music_volume": m_vol,
+        "audio_tracks": tracks,
+        "audio_loop_mode": audio_state["audio_loop_mode"],
+        "audio_active_track_id": new_track_id,
+        "audio_default_volume": def_vol_100
+    }
+
+@app.post("/api/admin/audio")
+async def update_admin_audio(data: AdminAudioSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+
+        audio_state = await get_audio_library_state(db)
+        tracks = list(audio_state["audio_tracks"])
+        loop_mode = audio_state["audio_loop_mode"]
+        active_id = audio_state["audio_active_track_id"]
+        def_vol_100 = audio_state["audio_default_volume"]
+
+        if data.audio_tracks is not None:
+            tracks = []
+            for i, item in enumerate(data.audio_tracks):
+                norm = normalize_audio_track(item, i)
+                if norm:
+                    tracks.append(norm)
+            cleanup_orphaned_audio_files([t["url"] for t in tracks])
+
+        if data.audio_loop_mode is not None and data.audio_loop_mode in ("sequence", "single"):
+            loop_mode = data.audio_loop_mode
+
+        if data.audio_active_track_id is not None:
+            cand_id = str(data.audio_active_track_id or "").strip()
+            if any(t["id"] == cand_id for t in tracks):
+                active_id = cand_id
+            elif tracks:
+                active_id = tracks[0]["id"]
+            else:
+                active_id = ""
+        elif tracks and not any(t["id"] == active_id for t in tracks):
+            active_id = tracks[0]["id"]
+        elif not tracks:
+            active_id = ""
+
+        if data.audio_default_volume is not None:
+            try:
+                def_vol_100 = max(0, min(100, int(round(float(data.audio_default_volume)))))
+            except Exception:
+                pass
+
+        active_track = next((t for t in tracks if t["id"] == active_id), None)
+        eff_url = active_track["url"] if active_track else ""
+        eff_title = active_track["title"] if active_track else "Фоновый трек"
+        eff_vol_float = round(def_vol_100 / 100.0, 2)
+
+        if data.music_enabled is not None:
+            m_enabled = bool(data.music_enabled)
+        else:
+            m_enabled = ((await get_setting_raw(db, "music_enabled", "0")) == "1") if tracks else False
+
+        if data.music_paused is not None:
+            m_paused = bool(data.music_paused)
+        else:
+            m_paused = (await get_setting_raw(db, "music_paused", "0")) == "1"
+
+        await set_setting_raw(db, "audio_tracks", json.dumps(tracks, ensure_ascii=False))
+        await set_setting_raw(db, "audio_loop_mode", loop_mode)
+        await set_setting_raw(db, "audio_active_track_id", active_id)
+        await set_setting_raw(db, "audio_default_volume", str(def_vol_100))
+        await set_setting_raw(db, "music_url", eff_url)
+        await set_setting_raw(db, "music_title", eff_title)
+        await set_setting_raw(db, "music_volume", str(eff_vol_float))
+        await set_setting_raw(db, "music_enabled", "1" if m_enabled else "0")
+        await set_setting_raw(db, "music_paused", "1" if m_paused else "0")
+        await db.commit()
+
+    return {
+        "success": True,
+        "audio_tracks": tracks,
+        "audio_loop_mode": loop_mode,
+        "audio_active_track_id": active_id,
+        "audio_default_volume": def_vol_100,
+        "music_enabled": m_enabled,
+        "music_paused": m_paused,
+        "music_url": eff_url,
+        "music_title": eff_title,
+        "music_volume": eff_vol_float
     }
 
 @app.get("/api/music/{filename}")
@@ -1269,11 +1625,33 @@ async def update_admin_music(data: AdminMusicSchema):
         m_url = (data.music_url or "").strip()
         m_title = (data.music_title or "").strip() or "Фоновый трек"
         m_vol = max(0.0, min(1.0, round(float(data.music_volume if data.music_volume is not None else 0.35), 2)))
+        def_vol_100 = max(0, min(100, int(round(m_vol * 100))))
+
+        audio_state = await get_audio_library_state(db)
+        tracks = list(audio_state["audio_tracks"])
+        active_id = audio_state["audio_active_track_id"]
+        if m_url:
+            found = next((t for t in tracks if t["id"] == active_id), None)
+            if found:
+                found["url"] = m_url
+                found["title"] = m_title
+            else:
+                new_id = f"trk_{int(time.time() * 1000)}_{os.urandom(2).hex()}"
+                tracks.append({"id": new_id, "title": m_title, "url": m_url})
+                active_id = new_id
+        else:
+            tracks = []
+            active_id = ""
+            cleanup_orphaned_audio_files([])
+
         await set_setting_raw(db, "music_enabled", "1" if data.music_enabled else "0")
         await set_setting_raw(db, "music_paused", "1" if data.music_paused else "0")
         await set_setting_raw(db, "music_url", m_url)
         await set_setting_raw(db, "music_title", m_title)
         await set_setting_raw(db, "music_volume", str(m_vol))
+        await set_setting_raw(db, "audio_tracks", json.dumps(tracks, ensure_ascii=False))
+        await set_setting_raw(db, "audio_active_track_id", active_id)
+        await set_setting_raw(db, "audio_default_volume", str(def_vol_100))
         await db.commit()
     return {
         "success": True,
@@ -1281,7 +1659,10 @@ async def update_admin_music(data: AdminMusicSchema):
         "music_paused": bool(data.music_paused),
         "music_url": m_url,
         "music_title": m_title,
-        "music_volume": m_vol
+        "music_volume": m_vol,
+        "audio_tracks": tracks,
+        "audio_active_track_id": active_id,
+        "audio_default_volume": def_vol_100
     }
 
 @app.post("/api/admin/localization")
@@ -1293,21 +1674,47 @@ async def update_admin_localization(data: AdminLocalizationSchema):
         cur = data.currency.strip() if data.currency.strip() in ALLOWED_CURRENCIES else "р."
         dmode = data.delivery_mode.strip() if data.delivery_mode.strip() in ALLOWED_DELIVERY_MODES else "metro"
 
-        clean_locs = []
-        seen = set()
-        for item in (data.delivery_locations or []):
-            name = item.get("name", "") if isinstance(item, dict) else str(item or "")
-            name = name.strip()
-            if name and name.lower() not in seen:
-                seen.add(name.lower())
-                clean_locs.append(name)
+        clean_enabled_modes: list[str] = []
+        if data.enabled_delivery_modes is not None:
+            for m in data.enabled_delivery_modes:
+                ms = str(m or "").strip()
+                if ms in ALLOWED_DELIVERY_MODES and ms not in clean_enabled_modes:
+                    clean_enabled_modes.append(ms)
+        if not clean_enabled_modes:
+            clean_enabled_modes = [dmode]
+        dmode = clean_enabled_modes[0]
+
+        clean_locs = sanitize_string_list(data.delivery_locations)
+
+        deliv_state = await get_delivery_settings_state(db)
+        district_locs = deliv_state["district_locations"]
+        pickup_locs = deliv_state["pickup_locations"]
+
+        if data.district_locations is not None:
+            district_locs = sanitize_string_list(data.district_locations)
+        elif dmode == "districts" and data.delivery_locations:
+            district_locs = list(clean_locs)
+
+        if data.pickup_locations is not None:
+            pickup_locs = sanitize_string_list(data.pickup_locations)
+        elif dmode == "pickup" and data.delivery_locations:
+            pickup_locs = list(clean_locs)
+
+        if not clean_locs:
+            if dmode == "districts":
+                clean_locs = list(district_locs)
+            elif dmode == "pickup":
+                clean_locs = list(pickup_locs)
 
         emoji = (data.splash_emoji or "").strip() or "🐵"
         w_text = (data.welcome_text or "").strip() or DEFAULT_WELCOME_TEXT
 
         await set_setting_raw(db, "currency", cur)
         await set_setting_raw(db, "delivery_mode", dmode)
+        await set_setting_list(db, "enabled_delivery_modes", clean_enabled_modes)
         await set_setting_list(db, "delivery_locations", clean_locs)
+        await set_setting_list(db, "district_locations", district_locs)
+        await set_setting_list(db, "pickup_locations", pickup_locs)
         await set_setting_raw(db, "splash_emoji", emoji)
         if data.splash_image is not None:
             await set_setting_raw(db, "splash_image", data.splash_image.strip())
@@ -1326,6 +1733,9 @@ async def update_admin_localization(data: AdminLocalizationSchema):
         "success": True,
         "currency": cur,
         "delivery_mode": dmode,
+        "enabled_delivery_modes": clean_enabled_modes,
+        "district_locations": district_locs,
+        "pickup_locations": pickup_locs,
         "delivery_locations": clean_locs,
         "splash_emoji": emoji,
         "welcome_text": w_text
@@ -1394,29 +1804,102 @@ async def admin_manage_category(data: AdminCategoryManageSchema):
         await db.commit()
     return {"success": True, "categories": cats}
 
+@app.post("/api/admin/top_notice")
+async def update_admin_top_notice(data: AdminTopNoticeSchema):
+    async with aiosqlite.connect(DB_FILE) as db:
+        if not await check_is_owner(db, data.user_id):
+            raise HTTPException(status_code=403, detail="Only owner")
+        clean_text = (data.text or "").strip() or DEFAULT_TOP_NOTICE_TEXT
+        await set_setting_raw(db, "top_notice_enabled", "1" if data.enabled else "0")
+        await set_setting_raw(db, "top_notice_text", clean_text)
+        await db.commit()
+    return {"success": True, "top_notice": {"enabled": bool(data.enabled), "text": clean_text}}
+
+async def _save_banner_settings_db(db, data: CourierBannerSchema) -> dict:
+    await set_setting_raw(db, "banner_enabled", "1" if data.enabled else "0")
+
+    raw_interval = data.banner_interval if data.banner_interval is not None else data.interval
+    if raw_interval is not None:
+        try:
+            safe_interval = max(0, min(120, int(raw_interval)))
+        except Exception:
+            safe_interval = 5
+        await set_setting_raw(db, "banner_interval", str(safe_interval))
+    else:
+        try:
+            safe_interval = max(0, min(120, int(await get_setting_raw(db, "banner_interval", "5") or 5)))
+        except Exception:
+            safe_interval = 5
+
+    if data.banners is not None:
+        norm_banners = [normalize_banner_item(b, i) for i, b in enumerate(data.banners) if isinstance(b, dict)]
+        await set_setting_raw(db, "banners", json.dumps(norm_banners, ensure_ascii=False))
+        if norm_banners:
+            await set_setting_raw(db, "banner_title", norm_banners[0]["title"])
+            await set_setting_raw(db, "banner_desc", norm_banners[0]["desc"])
+            await set_setting_raw(db, "banner_badge", norm_banners[0]["promo_code"])
+        else:
+            await set_setting_raw(db, "banner_title", "")
+            await set_setting_raw(db, "banner_desc", "")
+            await set_setting_raw(db, "banner_badge", "")
+    else:
+        await set_setting_raw(db, "banner_title", data.title.strip())
+        await set_setting_raw(db, "banner_desc", data.desc.strip())
+        await set_setting_raw(db, "banner_badge", data.badge.strip())
+        norm_banners = await get_banners_list(db)
+        if norm_banners:
+            norm_banners[0]["title"] = data.title.strip()
+            norm_banners[0]["desc"] = data.desc.strip()
+            if data.badge.strip():
+                norm_banners[0]["promo_code"] = data.badge.strip()
+            await set_setting_raw(db, "banners", json.dumps(norm_banners, ensure_ascii=False))
+
+    if data.top_notice is not None:
+        if isinstance(data.top_notice, dict):
+            tn_enabled = bool(data.top_notice.get("enabled", True))
+            tn_text = str(data.top_notice.get("text") or "").strip() or DEFAULT_TOP_NOTICE_TEXT
+        else:
+            tn_enabled = bool(data.top_notice.enabled)
+            tn_text = (data.top_notice.text or "").strip() or DEFAULT_TOP_NOTICE_TEXT
+        await set_setting_raw(db, "top_notice_enabled", "1" if tn_enabled else "0")
+        await set_setting_raw(db, "top_notice_text", tn_text)
+    else:
+        if data.top_notice_enabled is not None:
+            await set_setting_raw(db, "top_notice_enabled", "1" if data.top_notice_enabled else "0")
+        if data.top_notice_text is not None:
+            tn_clean = data.top_notice_text.strip() or DEFAULT_TOP_NOTICE_TEXT
+            await set_setting_raw(db, "top_notice_text", tn_clean)
+
+    tn_en_cur = (await get_setting_raw(db, "top_notice_enabled", "1")) == "1"
+    tn_tx_cur = await get_setting_raw(db, "top_notice_text", DEFAULT_TOP_NOTICE_TEXT)
+
+    return {
+        "enabled": bool(data.enabled),
+        "banner_interval": safe_interval,
+        "banners": norm_banners,
+        "top_notice": {
+            "enabled": tn_en_cur,
+            "text": tn_tx_cur
+        }
+    }
+
 @app.post("/api/admin/banner")
 async def update_admin_banner(data: CourierBannerSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, data.user_id):
             raise HTTPException(status_code=403, detail="Only owner")
-        await set_setting_raw(db, "banner_enabled", "1" if data.enabled else "0")
-        await set_setting_raw(db, "banner_title", data.title.strip())
-        await set_setting_raw(db, "banner_desc", data.desc.strip())
-        await set_setting_raw(db, "banner_badge", data.badge.strip())
+        saved = await _save_banner_settings_db(db, data)
         await db.commit()
-    return {"success": True}
+    return {"success": True, **saved}
 
 @app.post("/api/courier/banner")
 async def update_courier_banner(data: CourierBannerSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_courier(db, data.user_id):
             raise HTTPException(status_code=403, detail="Only courier or owner")
-        await set_setting_raw(db, "banner_enabled", "1" if data.enabled else "0")
-        await set_setting_raw(db, "banner_title", data.title.strip())
-        await set_setting_raw(db, "banner_desc", data.desc.strip())
-        await set_setting_raw(db, "banner_badge", data.badge.strip())
+        saved = await _save_banner_settings_db(db, data)
         await db.commit()
-    return {"success": True}
+    return {"success": True, **saved}
 
 @app.post("/api/subscribe_stock")
 async def subscribe_stock(data: StockNotifySchema):
@@ -1747,18 +2230,19 @@ async def build_orders_report_csv_bytes() -> bytes:
 
     async with aiosqlite.connect(DB_FILE) as db:
         currency = await get_setting_raw(db, "currency", "р.")
+        default_deliv_mode = await get_setting_raw(db, "delivery_mode", "metro")
         banned_set = {int(x) for x in await get_setting_list(db, "banned_users")}
 
         writer.writerow([
             "ID заказа", "Дата оформления", "Статус", "Кем отменён",
-            "ID клиента", "Имя клиента", "Локация / Адрес", "Время встречи",
+            "ID клиента", "Имя клиента", "Формат доставки", "Локация / Адрес", "Время встречи",
             "Курьер", "Состав заказа", "Промокод", "Скидка", "Доставка", "Итого", "Валюта"
         ])
 
         user_stats: dict[int, dict] = {}
         async with db.execute(
             """SELECT id, created_at, status, cancelled_by, user_id, user_name,
-                      station, time, claimed_by_name, items, promo_code, discount, delivery_fee, total
+                      delivery_mode, station, time, claimed_by_name, items, promo_code, discount, delivery_fee, total
                FROM orders ORDER BY rowid DESC"""
         ) as cur:
             order_rows = await cur.fetchall()
@@ -1768,9 +2252,10 @@ async def build_orders_report_csv_bytes() -> bytes:
 
         for row in order_rows:
             (oid, created_at, status, cancelled_by, uid, uname,
-             station, meet_time, courier_name, items_json, promo_code, discount, deliv_fee, total) = row
+             ord_dmode, station, meet_time, courier_name, items_json, promo_code, discount, deliv_fee, total) = row
             uid_int = int(uid or 0)
             tot_val = float(total or 0.0)
+            eff_dmode = (ord_dmode or "").strip() or default_deliv_mode
             try:
                 parsed_items = json.loads(items_json or "[]")
                 items_text = ", ".join(
@@ -1787,6 +2272,7 @@ async def build_orders_report_csv_bytes() -> bytes:
                 cancel_map.get(cancelled_by, str(cancelled_by or "")),
                 uid_int,
                 str(uname or ""),
+                get_delivery_mode_title(eff_dmode),
                 str(station or ""),
                 str(meet_time or ""),
                 str(courier_name or ""),
@@ -2018,9 +2504,18 @@ async def create_order(order: OrderSchema):
         currency = await get_setting_raw(db, "currency", "р.")
         if currency not in ALLOWED_CURRENCIES:
             currency = "р."
-        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
-        if delivery_mode not in ALLOWED_DELIVERY_MODES:
-            delivery_mode = "metro"
+
+        deliv_state = await get_delivery_settings_state(db)
+        enabled_modes = deliv_state["enabled_delivery_modes"]
+        default_dmode = deliv_state["delivery_mode"]
+
+        requested_dmode = (order.delivery_mode or "").strip()
+        if requested_dmode in ALLOWED_DELIVERY_MODES:
+            if enabled_modes and requested_dmode not in enabled_modes:
+                raise HTTPException(status_code=400, detail="Выбранный формат доставки сейчас недоступен.")
+            delivery_mode = requested_dmode
+        else:
+            delivery_mode = default_dmode
 
         min_order_amount = float(await get_setting_raw(db, "min_order_amount", "0") or 0)
         configured_delivery_fee = float(await get_setting_raw(db, "delivery_fee", "0") or 0)
@@ -2076,11 +2571,11 @@ async def create_order(order: OrderSchema):
 
         await db.execute(
             """INSERT OR REPLACE INTO orders 
-               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, delivery_fee, created_at, cancelled_by, claimed_by_id, claimed_by_name)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, '', 0, '')""",
+               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, delivery_fee, created_at, cancelled_by, claimed_by_id, claimed_by_name, delivery_mode)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, '', 0, '', ?)""",
             (
                 order_id, order.user_id, order.user_name, station_clean, order.time,
-                final_total, json.dumps(order.items), order.status, order.promo_code, applied_discount, applied_delivery_fee, created_at
+                final_total, json.dumps(order.items), order.status, order.promo_code, applied_discount, applied_delivery_fee, created_at, delivery_mode
             )
         )
         all_couriers = await get_all_courier_ids(db)
@@ -2089,6 +2584,7 @@ async def create_order(order: OrderSchema):
 
     safe_cur = html.escape(currency)
     safe_user = html.escape(order.user_name or "User")
+    mode_title = html.escape(get_delivery_mode_title(delivery_mode))
     loc_label = html.escape(get_location_label(delivery_mode))
     loc_value = html.escape(format_location_value(station_clean, delivery_mode))
     safe_time = html.escape(order.time or "")
@@ -2104,6 +2600,7 @@ async def create_order(order: OrderSchema):
     courier_text = (
         f"🛵 <b>Новый заказ #{html.escape(order_id)}!</b>\n\n"
         f"👤 <b>Покупатель:</b> {safe_user} (<code>{order.user_id}</code>)\n"
+        f"🚚 <b>Формат:</b> {mode_title}\n"
         f"📍 <b>{loc_label}:</b> {loc_value}\n"
         f"⏰ <b>Время встречи:</b> {safe_time}\n"
         f"💰 <b>К получению:</b> {final_total:.2f} {safe_cur}\n\n"
@@ -2124,6 +2621,7 @@ async def create_order(order: OrderSchema):
     user_text = (
         f"✨ <b>Заказ #{html.escape(order_id)} принят!</b>\n"
         f"📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n"
+        f"🚚 <b>Формат:</b> {mode_title}\n"
         f"📍 <b>{loc_label}:</b> {loc_value}\n"
         f"⏰ <b>Время встречи:</b> {safe_time}\n\n"
         f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}{deliv_line}\n\n"
@@ -2137,7 +2635,14 @@ async def create_order(order: OrderSchema):
         except Exception as e:
             print(f"[ERR] Покупатель {order.user_id}: {e}")
 
-    return {"success": True, "order_id": order_id, "total": final_total, "delivery_fee": applied_delivery_fee}
+    return {
+        "success": True,
+        "order_id": order_id,
+        "delivery_mode": delivery_mode,
+        "station": station_clean,
+        "total": final_total,
+        "delivery_fee": applied_delivery_fee
+    }
 
 @app.post("/api/courier/claim_order")
 async def courier_claim_order(data: CourierClaimSchema):
@@ -2145,12 +2650,13 @@ async def courier_claim_order(data: CourierClaimSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_courier(db, data.courier_id):
             raise HTTPException(status_code=403, detail="Нет прав курьера")
-        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
-        async with db.execute("SELECT user_id, claimed_by_id, claimed_by_name, station, time, status FROM orders WHERE id = ?", (oid,)) as cur:
+        default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
+        async with db.execute("SELECT user_id, claimed_by_id, claimed_by_name, station, time, status, delivery_mode FROM orders WHERE id = ?", (oid,)) as cur:
             row = await cur.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Заказ не найден")
         buyer_id, current_cid, current_cname, station, time_str, status = row[0], int(row[1] or 0), row[2], row[3], row[4], row[5]
+        delivery_mode = (row[6] or "").strip() or default_dmode
         if status != "active":
             raise HTTPException(status_code=400, detail="Заказ уже завершён")
         if current_cid != 0 and current_cid != int(data.courier_id):
@@ -2181,12 +2687,13 @@ async def courier_claim_order(data: CourierClaimSchema):
 async def courier_arrived(data: CourierArrivedSchema):
     oid = str(data.order_id).strip()
     async with aiosqlite.connect(DB_FILE) as db:
-        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
-        async with db.execute("SELECT user_id, station, claimed_by_id FROM orders WHERE id = ?", (oid,)) as cur:
+        default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
+        async with db.execute("SELECT user_id, station, claimed_by_id, delivery_mode FROM orders WHERE id = ?", (oid,)) as cur:
             row = await cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Заказ не найден")
     buyer_id, station, claimed_id = row[0], row[1], int(row[2] or 0)
+    delivery_mode = (row[3] or "").strip() or default_dmode
     if claimed_id != 0 and data.courier_id and claimed_id != int(data.courier_id):
         raise HTTPException(status_code=403, detail="Этот заказ ведёт другой курьер")
 
@@ -2206,6 +2713,7 @@ async def courier_arrived(data: CourierArrivedSchema):
 @app.get("/api/orders")
 async def get_orders(courier_id: int = 0):
     async with aiosqlite.connect(DB_FILE) as db:
+        default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM orders WHERE hidden_by_courier = 0 ORDER BY rowid DESC") as cursor:
             rows = await cursor.fetchall()
@@ -2214,8 +2722,10 @@ async def get_orders(courier_id: int = 0):
                 c_id = int(row["claimed_by_id"] or 0)
                 if courier_id and c_id != 0 and c_id != int(courier_id):
                     continue
+                eff_dmode = (row["delivery_mode"] or "").strip() or default_dmode
                 result.append({
                     "id": str(row["id"]), "user_id": row["user_id"], "user_name": row["user_name"],
+                    "delivery_mode": eff_dmode,
                     "station": row["station"], "time": row["time"], "total": row["total"],
                     "items": json.loads(row["items"]), "status": row["status"],
                     "time_changed": bool(row["time_changed"]), "hidden_by_courier": bool(row["hidden_by_courier"]),
@@ -2229,10 +2739,12 @@ async def get_orders(courier_id: int = 0):
 @app.get("/api/user_orders/{user_id}")
 async def get_user_orders(user_id: int):
     async with aiosqlite.connect(DB_FILE) as db:
+        default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY rowid DESC", (user_id,)) as cursor:
             return [{
                 "id": str(row["id"]), "user_id": row["user_id"], "user_name": row["user_name"],
+                "delivery_mode": (row["delivery_mode"] or "").strip() or default_dmode,
                 "station": row["station"], "time": row["time"], "total": row["total"],
                 "items": json.loads(row["items"]), "status": row["status"],
                 "time_changed": bool(row["time_changed"]), "promo_code": row["promo_code"] or "",
@@ -2246,13 +2758,14 @@ async def get_user_orders(user_id: int):
 async def update_order_status(data: StatusUpdateSchema):
     cancelled_by = data.cancelled_by if data.status == 'cancelled' else ''
     async with aiosqlite.connect(DB_FILE) as db:
-        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
-        async with db.execute("SELECT user_id, user_name, station, time, claimed_by_id FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
+        default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
+        async with db.execute("SELECT user_id, user_name, station, time, claimed_by_id, delivery_mode FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
             row = await cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Order not found")
 
         user_id, user_name, station, time_val, existing_claimed_id = row[0], row[1], row[2], row[3], int(row[4] or 0)
+        delivery_mode = (row[5] or "").strip() or default_dmode
 
         if cancelled_by != 'client' and existing_claimed_id != 0 and data.courier_id and existing_claimed_id != int(data.courier_id):
             raise HTTPException(status_code=403, detail="Этот заказ закреплён за другим курьером")
@@ -2315,15 +2828,16 @@ async def delete_completed_order(data: DeleteOrderSchema):
 @app.post("/api/update_order_time")
 async def update_order_time(data: TimeUpdateSchema):
     async with aiosqlite.connect(DB_FILE) as db:
-        delivery_mode = await get_setting_raw(db, "delivery_mode", "metro")
+        default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
         await db.execute("UPDATE orders SET time = ?, time_changed = 1 WHERE id = ?", (data.time, str(data.order_id)))
         all_couriers = await get_all_courier_ids(db)
         await db.commit()
 
-        async with db.execute("SELECT user_id, user_name, station, claimed_by_id FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
+        async with db.execute("SELECT user_id, user_name, station, claimed_by_id, delivery_mode FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
             row = await cursor.fetchone()
             if row:
                 user_id, user_name, station, claimed_id = row[0], row[1], row[2], int(row[3] or 0)
+                delivery_mode = (row[4] or "").strip() or default_dmode
                 safe_user = html.escape(user_name or "User")
                 loc_label = html.escape(get_location_label(delivery_mode))
                 loc_value = html.escape(format_location_value(station, delivery_mode))
@@ -2378,6 +2892,14 @@ async def handle_owner_audio_upload(message: Message):
         track_title = getattr(audio_obj, "title", None) or getattr(audio_obj, "file_name", None) or "Трек из Telegram"
         track_title = re.sub(r"\.[^/.]+$", "", str(track_title)).strip() or "Трек из Telegram"
         audio_url = f"/api/tg_audio/{file_id}"
+
+        audio_state = await get_audio_library_state(db)
+        tracks = list(audio_state["audio_tracks"])
+        new_id = f"trk_{int(time.time() * 1000)}_{os.urandom(2).hex()}"
+        tracks.append({"id": new_id, "title": track_title, "url": audio_url})
+
+        await set_setting_raw(db, "audio_tracks", json.dumps(tracks, ensure_ascii=False))
+        await set_setting_raw(db, "audio_active_track_id", new_id)
         await set_setting_raw(db, "music_url", audio_url)
         await set_setting_raw(db, "music_title", track_title)
         await set_setting_raw(db, "music_enabled", "1")
@@ -2386,6 +2908,7 @@ async def handle_owner_audio_upload(message: Message):
     await message.answer(
         f"🎵 <b>Аудиофайл из Telegram сохранён для магазина!</b>\n\n"
         f"Название: <b>{html.escape(track_title)}</b>\n"
+        f"Треков в библиотеке: <b>{len(tracks)}</b>\n"
         f"Ссылка: <code>{html.escape(audio_url)}</code>\n\n"
         f"Фоновая музыка включена — обновите или откройте мини-приложение.",
         parse_mode="HTML"

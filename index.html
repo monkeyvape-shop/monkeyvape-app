@@ -659,7 +659,53 @@
             box-shadow: 0 4px 16px var(--accent-green-glow);
         }
 
+        .top-notice-bar {
+            width: 100%;
+            background: linear-gradient(90deg, color-mix(in srgb, var(--accent-green) 16%, var(--card-bg)) 0%, color-mix(in srgb, var(--banner-bg) 88%, var(--card-bg)) 50%, color-mix(in srgb, var(--accent-green) 16%, var(--card-bg)) 100%);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
+            box-shadow: inset 0 1px 0 var(--glass-highlight), 0 4px 14px rgba(0, 0, 0, 0.16);
+            border-radius: 13px;
+            padding: 8px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            text-align: center;
+        }
+        .top-notice-dot {
+            font-size: 13px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .top-notice-text {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: 0.2px;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+
+        .promo-banner-carousel {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 20px;
+            overflow: hidden;
+            touch-action: pan-y;
+        }
+        .promo-banner-track {
+            display: flex;
+            width: 100%;
+            transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+        }
         .promo-banner {
+            flex: 0 0 100%;
+            width: 100%;
             background: linear-gradient(135deg, color-mix(in srgb, var(--banner-bg) 88%, transparent) 0%, color-mix(in srgb, var(--card-bg) 84%, transparent) 100%);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
@@ -667,7 +713,6 @@
             box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
             border-radius: 20px;
             padding: 17px 18px;
-            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -685,20 +730,130 @@
             background: radial-gradient(circle, var(--accent-green-glow) 0%, transparent 70%);
             pointer-events: none;
         }
-        .promo-banner h3 { font-size: 16px; font-weight: 800; letter-spacing: 0.3px; color: var(--accent-green); margin-bottom: 5px; word-break: break-word; }
+        .promo-banner.banner-style-emerald {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--banner-bg) 90%, transparent) 0%, color-mix(in srgb, var(--card-bg) 86%, transparent) 100%);
+            border-color: color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
+        }
+        .promo-banner.banner-style-cyber {
+            background: linear-gradient(135deg, rgba(12, 38, 68, 0.94) 0%, rgba(15, 25, 42, 0.92) 100%);
+            border-color: rgba(56, 189, 248, 0.45);
+        }
+        .promo-banner.banner-style-cyber h3 { color: #38bdf8; }
+        .promo-banner.banner-style-cyber::after { background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, transparent 70%); }
+        .promo-banner.banner-style-sunset {
+            background: linear-gradient(135deg, rgba(64, 28, 12, 0.94) 0%, rgba(30, 18, 14, 0.92) 100%);
+            border-color: rgba(255, 140, 36, 0.45);
+        }
+        .promo-banner.banner-style-sunset h3 { color: #ff9a3c; }
+        .promo-banner.banner-style-sunset::after { background: radial-gradient(circle, rgba(255, 140, 36, 0.25) 0%, transparent 70%); }
+        .promo-banner.banner-style-violet {
+            background: linear-gradient(135deg, rgba(46, 20, 74, 0.94) 0%, rgba(23, 16, 36, 0.92) 100%);
+            border-color: rgba(192, 132, 252, 0.45);
+        }
+        .promo-banner.banner-style-violet h3 { color: #c084fc; }
+        .promo-banner.banner-style-violet::after { background: radial-gradient(circle, rgba(192, 132, 252, 0.25) 0%, transparent 70%); }
+        .promo-banner.banner-style-gold {
+            background: linear-gradient(135deg, rgba(54, 40, 12, 0.94) 0%, rgba(26, 22, 14, 0.92) 100%);
+            border-color: rgba(255, 208, 38, 0.45);
+        }
+        .promo-banner.banner-style-gold h3 { color: #ffd026; }
+        .promo-banner.banner-style-gold::after { background: radial-gradient(circle, rgba(255, 208, 38, 0.24) 0%, transparent 70%); }
+        .promo-banner.banner-style-crimson {
+            background: linear-gradient(135deg, rgba(62, 16, 28, 0.94) 0%, rgba(28, 14, 18, 0.92) 100%);
+            border-color: rgba(255, 77, 109, 0.45);
+        }
+        .promo-banner.banner-style-crimson h3 { color: #ff5c7a; }
+        .promo-banner.banner-style-crimson::after { background: radial-gradient(circle, rgba(255, 77, 109, 0.24) 0%, transparent 70%); }
+
+        [data-theme="light"] .promo-banner.banner-style-cyber { background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); }
+        [data-theme="light"] .promo-banner.banner-style-cyber h3 { color: #0284c7; }
+        [data-theme="light"] .promo-banner.banner-style-sunset { background: linear-gradient(135deg, #ffedd5 0%, #fff7ed 100%); }
+        [data-theme="light"] .promo-banner.banner-style-sunset h3 { color: #ea580c; }
+        [data-theme="light"] .promo-banner.banner-style-violet { background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%); }
+        [data-theme="light"] .promo-banner.banner-style-violet h3 { color: #7e22ce; }
+        [data-theme="light"] .promo-banner.banner-style-gold { background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); }
+        [data-theme="light"] .promo-banner.banner-style-gold h3 { color: #b45309; }
+        [data-theme="light"] .promo-banner.banner-style-crimson { background: linear-gradient(135deg, #ffe4e6 0%, #fff1f2 100%); }
+        [data-theme="light"] .promo-banner.banner-style-crimson h3 { color: #be123c; }
+
+        .promo-banner-text {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+            z-index: 1;
+        }
+        .promo-banner h3 { font-size: 16.5px; font-weight: 800; letter-spacing: 0.3px; color: var(--accent-green); margin-bottom: 5px; word-break: break-word; line-height: 1.25; }
         .promo-banner p { font-size: 12px; color: var(--text-secondary); word-break: break-word; line-height: 1.35; }
-        .promo-badge {
+        .promo-badge,
+        .promo-copy-btn {
             background-color: var(--accent-green);
             color: #080c09;
+            border: none;
             font-size: 12px;
             font-weight: 800;
-            padding: 7px 11px;
+            padding: 8px 12px;
             border-radius: 11px;
             white-space: nowrap;
             flex-shrink: 0;
             box-shadow: 0 4px 14px var(--accent-green-glow);
             position: relative;
-            z-index: 1;
+            z-index: 2;
+            cursor: pointer;
+            transition: transform 0.14s ease, filter 0.15s ease, background-color 0.2s ease;
+        }
+        .promo-copy-btn:active {
+            transform: scale(0.93);
+        }
+        .promo-copy-btn.copied {
+            filter: brightness(1.08);
+        }
+        .promo-banner-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .promo-banner-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: var(--border-color);
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: width 0.22s ease, background-color 0.22s ease;
+        }
+        .promo-banner-dot.active {
+            width: 20px;
+            background: var(--accent-green);
+        }
+        .admin-audio-track-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 7px 9px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+        .admin-audio-track-item.active {
+            border-color: var(--accent-green);
+            background: var(--accent-green-glow);
+        }
+        .admin-banner-slide-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 9px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
@@ -1107,6 +1262,40 @@
         }
         .method-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
         .method-info p { font-size: 12px; color: var(--text-secondary); }
+
+        .checkout-modes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .checkout-mode-btn {
+            background-color: color-mix(in srgb, var(--card-bg) 84%, transparent);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            color: var(--text-secondary);
+            padding: 11px 10px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-align: center;
+            transition: transform 0.14s ease, border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .checkout-mode-btn:active { transform: scale(0.96); }
+        .checkout-mode-btn.active {
+            border-color: var(--accent-green);
+            background-color: var(--accent-green-glow);
+            color: var(--accent-green);
+            font-weight: 700;
+            box-shadow: 0 4px 14px var(--accent-green-glow);
+        }
 
         .metro-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
         .metro-tab { flex: 1; padding: 10px; background-color: color-mix(in srgb, var(--card-bg) 82%, transparent); border: 1px solid var(--border-color); border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-align: center; cursor: pointer; transition: transform 0.14s ease, border-color 0.2s ease; }
@@ -1668,6 +1857,7 @@
             <div class="sheet-handle"></div>
             <div class="modal-title" id="metro-modal-title">Выбрать локацию</div>
             <div class="modal-subtitle" id="metro-modal-subtitle">Выберите удобное место для получения заказа</div>
+            <div class="checkout-modes-grid" id="modal-delivery-modes-grid" style="display:none;"></div>
             <div class="metro-tabs" id="modal-metro-tabs">
                 <div class="metro-tab active-green" onclick="switchModalMetroLine('green', this)">Зеленая ветка</div>
                 <div class="metro-tab" onclick="switchModalMetroLine('blue', this)">Синяя ветка</div>
@@ -1780,7 +1970,7 @@
         </div>
     </div>
 
-    <audio id="bg-music-audio" loop preload="auto" playsinline></audio>
+    <audio id="bg-music-audio" preload="auto" playsinline></audio>
 
     <div class="content-area">
         <div id="screen-catalog" class="screen active">
@@ -1790,12 +1980,21 @@
                 <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров по названию или вкусу..." oninput="filterProducts()">
             </div>
             <div class="categories-scroll" id="categories-scroll"></div>
-            <div class="promo-banner" id="promo-banner">
-                <div>
-                    <h3 id="promo-banner-title">СКИДКА НЕДЕЛИ -20%</h3>
-                    <p id="promo-banner-desc">Популярные товары и новинки уже в каталоге</p>
+            <div class="top-notice-bar" id="catalog-top-notice">
+                <span class="top-notice-dot">🎁</span>
+                <span class="top-notice-text" id="catalog-top-notice-text">Возьми две жижи в подарок</span>
+            </div>
+            <div class="promo-banner-carousel" id="promo-banner">
+                <div class="promo-banner-track" id="promo-banner-track">
+                    <div class="promo-banner banner-style-emerald">
+                        <div class="promo-banner-text">
+                            <h3 id="promo-banner-title">СКИДКА НЕДЕЛИ -20%</h3>
+                            <p id="promo-banner-desc">Популярные товары и новинки уже в каталоге</p>
+                        </div>
+                        <button type="button" class="promo-copy-btn" id="promo-banner-badge" onclick="copyBannerPromoCode(0, this)">Скопировать</button>
+                    </div>
                 </div>
-                <div class="promo-badge" id="promo-banner-badge">-20%</div>
+                <div class="promo-banner-dots" id="promo-banner-dots" style="display: none;"></div>
             </div>
             <div class="products-grid" id="products-grid"></div>
         </div>
@@ -2018,40 +2217,59 @@
 
                     <div class="shop-master-box">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
-                            <span style="font-size:12.5px; font-weight:700;">🎵 Фоновая музыка 24/7</span>
+                            <span style="font-size:12.5px; font-weight:700;">🎵 Мини-библиотека аудио 24/7</span>
                             <button type="button" id="admin-music-toggle-btn" class="toggle-pill off" onclick="adminToggleMusicEnabled()">⚪ Выкл.</button>
                         </div>
-                        <input type="file" id="admin-music-file" accept="audio/*" style="display:none;" onchange="handleMusicFileSelect(this)">
+                        <input type="file" id="admin-music-file" accept="audio/*" multiple style="display:none;" onchange="handleMusicFileSelect(this)">
                         <div style="display:flex; flex-direction:column; gap:7px;">
-                            <input type="text" id="admin-music-title-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Название трека..." oninput="isMusicDirty=true">
-                            <div style="display:grid; grid-template-columns:1.25fr 1fr 0.85fr; gap:6px;">
-                                <button type="button" class="toggle-pill on" style="padding:8px 6px; font-size:11px;" onclick="document.getElementById('admin-music-file').click()">🎧 Сменить трек</button>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                                <button type="button" id="admin-loop-mode-sequence-btn" class="toggle-pill on" style="padding:7px 6px; font-size:11px;" onclick="adminSetAudioLoopMode('sequence')">🔁 По очереди по кругу</button>
+                                <button type="button" id="admin-loop-mode-single-btn" class="toggle-pill off" style="padding:7px 6px; font-size:11px;" onclick="adminSetAudioLoopMode('single')">🔂 Повторять 1 трек</button>
+                            </div>
+
+                            <div id="admin-audio-tracks-list" style="max-height:190px; overflow-y:auto;"></div>
+
+                            <input type="text" id="admin-music-title-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Название нового трека..." oninput="isMusicDirty=true">
+                            <div style="display:grid; grid-template-columns:1.35fr 0.9fr 0.75fr; gap:6px;">
+                                <button type="button" class="toggle-pill on" style="padding:8px 6px; font-size:11px;" onclick="document.getElementById('admin-music-file').click()">🎧 Добавить трек</button>
                                 <button type="button" id="admin-music-pause-btn" class="toggle-pill off" style="padding:8px 6px; font-size:11px;" onclick="adminToggleMusicPause()">⏸ Пауза</button>
-                                <button type="button" class="toggle-pill off" style="padding:8px 6px; font-size:11px;" onclick="adminClearMusic()">🗑 Убрать</button>
+                                <button type="button" class="toggle-pill off" style="padding:8px 6px; font-size:11px;" onclick="adminClearMusic()">🗑 Очистить</button>
                             </div>
                             <div style="display:flex; gap:6px; align-items:center;">
-                                <input type="text" id="admin-music-url-input" class="promo-input" style="text-transform:none; font-size:11.5px;" placeholder="Ссылка на MP3 (необязательно)..." onfocus="if(this.value.trim()){this.value=''; isMusicDirty=true;}" oninput="isMusicDirty=true">
-                                <button type="button" class="toggle-pill off" style="padding:8px 9px;" title="Очистить" onclick="clearAdminMusicUrlInput()">✕</button>
+                                <input type="text" id="admin-music-url-input" class="promo-input" style="text-transform:none; font-size:11.5px;" placeholder="Или вставьте ссылку на MP3..." oninput="isMusicDirty=true">
+                                <button type="button" class="promo-apply-btn" style="padding:8px 11px; font-size:11.5px;" title="Добавить по ссылке" onclick="adminAddAudioTrackByUrl()">+</button>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">🔊 <b id="admin-music-vol-label" style="color:var(--accent-green);">35%</b></span>
-                                <input type="range" id="admin-music-vol-slider" min="0" max="100" value="35" style="flex:1; accent-color:var(--accent-green); cursor:pointer;" oninput="handleAdminMusicVolumeInput(this.value)" onchange="adminSaveMusic(true)">
-                                <button type="button" class="promo-apply-btn" style="padding:7px 11px; font-size:11.5px;" onclick="adminSaveMusic(false)">💾 Ок</button>
+                                <span style="font-size:11px; color:var(--text-secondary); white-space:nowrap;">🔊 Старт: <b id="admin-music-vol-label" style="color:var(--accent-green);">35%</b></span>
+                                <input type="range" id="admin-music-vol-slider" min="0" max="100" value="35" style="flex:1; accent-color:var(--accent-green); cursor:pointer;" oninput="handleAdminMusicVolumeInput(this.value)" onchange="adminSaveAudioSettings(true)">
+                                <button type="button" class="promo-apply-btn" style="padding:7px 11px; font-size:11.5px;" onclick="adminSaveAudioSettings(false)">💾 Ок</button>
                             </div>
                         </div>
                     </div>
 
                     <div class="shop-master-box">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <span style="font-size:12.5px; font-weight:700;">🎯 Промо-баннер в каталоге:</span>
-                            <button type="button" id="admin-banner-toggle-btn" class="toggle-pill on" onclick="adminToggleBannerEnabled()">🟢 Показан</button>
+                            <span style="font-size:12.5px; font-weight:700;">🏷 Табличка-анонс над баннером:</span>
+                            <button type="button" id="admin-top-notice-toggle-btn" class="toggle-pill on" onclick="adminToggleTopNoticeEnabled()">🟢 Показана</button>
                         </div>
-                        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
-                            <input type="text" id="admin-banner-title" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Заголовок (напр. СКИДКА -20%)">
-                            <input type="text" id="admin-banner-desc" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Описание (напр. Популярные товары недели)">
-                            <input type="text" id="admin-banner-badge" class="promo-input" style="text-transform:none; font-size:12.5px;" placeholder="Бейдж справа (напр. -20% или ХИТ)">
+                        <div style="display:flex; gap:6px;">
+                            <input type="text" id="admin-top-notice-text" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Возьми две жижи в подарок" oninput="isBannerDirty=true">
+                            <button type="button" class="promo-apply-btn" style="padding:8px 12px; font-size:12px;" onclick="adminSaveTopNotice()">💾 Ок</button>
                         </div>
-                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBanner()">💾 Сохранить баннер</button>
+                    </div>
+
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">🎯 Промо-баннеры (карусель):</span>
+                            <button type="button" id="admin-banner-toggle-btn" class="toggle-pill on" onclick="adminToggleBannerEnabled()">🟢 Показаны</button>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:7px 10px;">
+                            <span style="font-size:12px; color:var(--text-secondary);">⏱ Перелистывать каждые (сек.):</span>
+                            <input type="number" id="admin-banner-interval" class="promo-input" style="text-transform:none; width:72px; text-align:center; padding:6px 8px; font-size:12.5px;" min="0" max="120" value="5" oninput="handleAdminBannerIntervalInput(this.value)">
+                        </div>
+                        <div id="admin-banners-list"></div>
+                        <button type="button" class="toggle-pill on" style="width:100%; padding:9px; font-size:12px; margin-bottom:8px;" onclick="adminAddBannerSlide()">➕ Добавить баннер</button>
+                        <button type="button" class="primary-btn" style="padding:9px; font-size:12.5px;" onclick="adminSaveBanner()">💾 Сохранить все баннеры</button>
                     </div>
 
                     <div class="shop-master-box">
@@ -2100,16 +2318,26 @@
                     </div>
 
                     <div class="shop-master-box">
-                        <div style="font-size:12.5px; font-weight:700; margin-bottom:8px;">🚚 Формат получения заказа:</div>
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:3px;">🚚 Форматы получения заказа:</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;">Можно включить сразу несколько форматов — покупатель выберет удобный при оформлении.</div>
                         <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; margin-bottom:10px;" id="admin-delivery-mode-grid"></div>
 
-                        <div id="admin-delivery-locs-wrapper">
+                        <div id="admin-district-locs-wrapper" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color);">
+                            <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;">🏙 Список районов города:</div>
+                            <div style="display:flex; gap:6px; margin-bottom:8px;">
+                                <input type="text" id="admin-new-district-loc-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Новый район (напр. Центральный район)..." onkeydown="if(event.key==='Enter'){event.preventDefault(); adminAddDistrictLocation();}">
+                                <button type="button" class="promo-apply-btn" style="padding:8px 13px;" onclick="adminAddDistrictLocation()">+</button>
+                            </div>
+                            <div id="admin-district-locs-list" style="max-height:170px; overflow-y:auto;"></div>
+                        </div>
+
+                        <div id="admin-pickup-locs-wrapper" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color);">
                             <div style="font-size:12px; font-weight:700; color:var(--accent-green); margin-bottom:6px;" id="admin-delivery-locs-title">📦 Список пунктов выдачи:</div>
                             <div style="display:flex; gap:6px; margin-bottom:8px;">
                                 <input type="text" id="admin-new-delivery-loc-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Новый пункт выдачи (напр. ТЦ Призма)..." onkeydown="if(event.key==='Enter'){event.preventDefault(); adminAddDeliveryLocation();}">
                                 <button type="button" class="promo-apply-btn" style="padding:8px 13px;" onclick="adminAddDeliveryLocation()">+</button>
                             </div>
-                            <div id="admin-delivery-locs-list" style="max-height:190px; overflow-y:auto;"></div>
+                            <div id="admin-delivery-locs-list" style="max-height:170px; overflow-y:auto;"></div>
                         </div>
 
                         <button type="button" class="primary-btn" style="padding:10px; font-size:12.5px; margin-top:8px;" onclick="adminSaveLocalization()">💾 Сохранить валюту и локации</button>
@@ -2259,6 +2487,7 @@
             <div class="section-title">Оформление заказа</div>
             <div style="margin-bottom: 18px;">
                 <p style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Формат получения</p>
+                <div class="checkout-modes-grid" id="checkout-delivery-modes-grid" style="display:none;"></div>
                 <div class="method-card">
                     <div class="method-info">
                         <h4 id="checkout-method-title">Встреча в метро</h4>
@@ -2532,8 +2761,25 @@
     let adminMusicPaused = localStorage.getItem('monkey_music_paused') === '1';
     let musicUrl = localStorage.getItem('monkey_music_url') || '';
     let musicTitle = localStorage.getItem('monkey_music_title') || 'Фоновый трек';
-    let musicVolume = Number(localStorage.getItem('monkey_music_volume') ?? '0.35');
-    if (isNaN(musicVolume) || musicVolume < 0 || musicVolume > 1) musicVolume = 0.35;
+    let audioTracks = JSON.parse(localStorage.getItem('monkey_audio_tracks') || '[]');
+    if (!Array.isArray(audioTracks)) audioTracks = [];
+    let audioLoopMode = localStorage.getItem('monkey_audio_loop_mode') || 'sequence';
+    if (audioLoopMode !== 'sequence' && audioLoopMode !== 'single') audioLoopMode = 'sequence';
+    let audioActiveTrackId = localStorage.getItem('monkey_audio_active_track_id') || '';
+
+    let adminDefaultVolumePct = parseInt(localStorage.getItem('monkey_admin_default_volume') ?? '', 10);
+    if (isNaN(adminDefaultVolumePct) || adminDefaultVolumePct < 0 || adminDefaultVolumePct > 100) {
+        const legacyV = Number(localStorage.getItem('monkey_music_volume') ?? '0.35');
+        adminDefaultVolumePct = (!isNaN(legacyV) && legacyV >= 0 && legacyV <= 1) ? Math.round(legacyV * 100) : 35;
+    }
+
+    const rawStoredUserAudioVol = localStorage.getItem('user_audio_volume');
+    let hasUserCustomVolume = rawStoredUserAudioVol !== null && rawStoredUserAudioVol !== '' && !isNaN(Number(rawStoredUserAudioVol));
+    let userAudioVolumePct = hasUserCustomVolume
+        ? Math.max(0, Math.min(100, (Number(rawStoredUserAudioVol) <= 1 && rawStoredUserAudioVol.includes('.')) ? Math.round(Number(rawStoredUserAudioVol) * 100) : parseInt(rawStoredUserAudioVol, 10)))
+        : adminDefaultVolumePct;
+    let musicVolume = adminDefaultVolumePct / 100;
+
     let isMusicDirty = false;
     let userMusicMuted = localStorage.getItem('monkey_user_music_muted_v2') === '1';
     let lastSyncedMusicUrl = musicUrl;
@@ -2816,14 +3062,58 @@
         }
     }
 
+    function getEffectiveUserVolumeFloat() {
+        return Math.max(0, Math.min(1, userAudioVolumePct / 100));
+    }
+
+    function syncActiveTrackFromLibrary() {
+        if (Array.isArray(audioTracks) && audioTracks.length > 0) {
+            let found = audioTracks.find(t => t.id === audioActiveTrackId);
+            if (!found) {
+                found = audioTracks[0];
+                audioActiveTrackId = found.id;
+            }
+            musicUrl = normalizeBackendAudioUrl(found.url) || found.url;
+            musicTitle = found.title || 'Фоновый трек';
+        }
+    }
+
+    function renderAdminAudioTracksList() {
+        const box = document.getElementById('admin-audio-tracks-list');
+        if (!box) return;
+        const seqBtn = document.getElementById('admin-loop-mode-sequence-btn');
+        const sngBtn = document.getElementById('admin-loop-mode-single-btn');
+        if (seqBtn) seqBtn.className = `toggle-pill ${audioLoopMode === 'sequence' ? 'on' : 'off'}`;
+        if (sngBtn) sngBtn.className = `toggle-pill ${audioLoopMode === 'single' ? 'on' : 'off'}`;
+
+        if (!Array.isArray(audioTracks) || audioTracks.length === 0) {
+            box.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); padding:6px 4px;">Библиотека пуста — добавьте трек ниже</div>';
+            return;
+        }
+        box.innerHTML = audioTracks.map((trk, idx) => {
+            const isAct = trk.id === audioActiveTrackId;
+            return `
+                <div class="admin-audio-track-item ${isAct ? 'active' : ''}" onclick="adminSelectAudioTrack('${escapeHtml(trk.id)}')">
+                    <div style="display:flex; align-items:center; gap:7px; min-width:0; flex:1;">
+                        <span style="font-size:12px; color:${isAct ? 'var(--accent-green)' : 'var(--text-secondary)'}; font-weight:800; flex-shrink:0;">${isAct ? '▶' : (idx + 1) + '.'}</span>
+                        <span style="font-size:12px; font-weight:${isAct ? '700' : '600'}; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(trk.title || ('Трек ' + (idx + 1)))}</span>
+                    </div>
+                    <button type="button" class="toggle-pill off" style="padding:3px 7px; font-size:11px;" title="Удалить трек" onclick="event.stopPropagation(); adminDeleteAudioTrack('${escapeHtml(trk.id)}')">✕</button>
+                </div>
+            `;
+        }).join('');
+    }
+
     function playAudioElementDirectly(audio, playableSrc) {
         if (!audio || !playableSrc) return;
+        const shouldLoopSingle = (audioLoopMode === 'single') || !Array.isArray(audioTracks) || audioTracks.length <= 1;
+        audio.loop = shouldLoopSingle;
         if (audio.getAttribute('data-resolved-src') !== playableSrc) {
             audio.setAttribute('data-resolved-src', playableSrc);
             audio.src = playableSrc;
             try { audio.load(); } catch (_) {}
         }
-        audio.volume = Math.max(0, Math.min(1, musicVolume));
+        audio.volume = getEffectiveUserVolumeFloat();
         if (userMusicMuted || !musicEnabled || adminMusicPaused) {
             try { audio.pause(); } catch (_) {}
             syncUserMusicToggleBtn(false);
@@ -2854,16 +3144,54 @@
         playAudioElementDirectly(audio, playableSrc);
     }
 
+    function advanceToNextTrackInSequence() {
+        if (!Array.isArray(audioTracks) || audioTracks.length === 0) return;
+        if (audioLoopMode === 'single' || audioTracks.length === 1) {
+            const audio = document.getElementById('bg-music-audio');
+            if (audio && musicUrl) {
+                audio.currentTime = 0;
+                ensureAudioLoadedAndPlay(audio, musicUrl);
+            }
+            return;
+        }
+        const curIdx = audioTracks.findIndex(t => t.id === audioActiveTrackId);
+        const nextIdx = (curIdx >= 0 ? curIdx + 1 : 0) % audioTracks.length;
+        const nextTrk = audioTracks[nextIdx];
+        if (!nextTrk) return;
+        audioActiveTrackId = nextTrk.id;
+        musicUrl = normalizeBackendAudioUrl(nextTrk.url) || nextTrk.url;
+        musicTitle = nextTrk.title || 'Фоновый трек';
+        try {
+            localStorage.setItem('monkey_audio_active_track_id', audioActiveTrackId);
+            localStorage.setItem('monkey_music_url', musicUrl);
+            localStorage.setItem('monkey_music_title', musicTitle);
+        } catch (_) {}
+        applyMusicPlayerUI();
+    }
+
+    (function bindBgMusicEndedHandler() {
+        const audio = document.getElementById('bg-music-audio');
+        if (audio && !audio.dataset.endedBound) {
+            audio.dataset.endedBound = '1';
+            audio.addEventListener('ended', () => {
+                if (musicEnabled && !adminMusicPaused && !userMusicMuted) {
+                    advanceToNextTrackInSequence();
+                }
+            });
+        }
+    })();
+
     function applyMusicPlayerUI() {
+        syncActiveTrackFromLibrary();
         const card = document.getElementById('user-music-card');
         const titleEl = document.getElementById('user-music-title');
         const slider = document.getElementById('user-music-volume-slider');
         const pctEl = document.getElementById('user-music-volume-pct');
         const audio = document.getElementById('bg-music-audio');
 
-        const volPct = Math.round(Math.max(0, Math.min(1, musicVolume)) * 100);
-        if (slider && document.activeElement !== slider) slider.value = volPct;
-        if (pctEl) pctEl.textContent = `${volPct}%`;
+        const userPct = Math.round(getEffectiveUserVolumeFloat() * 100);
+        if (slider && document.activeElement !== slider) slider.value = userPct;
+        if (pctEl) pctEl.textContent = `${userPct}%`;
         if (titleEl) titleEl.textContent = `🎵 ${musicTitle || 'Фоновый трек'}`;
 
         const hasTrack = Boolean((musicUrl || '').trim());
@@ -2872,8 +3200,6 @@
 
         const admBtn = document.getElementById('admin-music-toggle-btn');
         const admPauseBtn = document.getElementById('admin-music-pause-btn');
-        const admTitle = document.getElementById('admin-music-title-input');
-        const admUrl = document.getElementById('admin-music-url-input');
         const admSlider = document.getElementById('admin-music-vol-slider');
         const admVolLbl = document.getElementById('admin-music-vol-label');
         if (admBtn) {
@@ -2890,13 +3216,13 @@
                 admPauseBtn.innerText = '⏸ Пауза';
             }
         }
-        if (admTitle && document.activeElement !== admTitle) admTitle.value = musicTitle || '';
-        if (admUrl && document.activeElement !== admUrl) admUrl.value = musicUrl || '';
-        if (admSlider && document.activeElement !== admSlider) admSlider.value = volPct;
-        if (admVolLbl) admVolLbl.textContent = `${volPct}%`;
+        if (admSlider && document.activeElement !== admSlider) admSlider.value = adminDefaultVolumePct;
+        if (admVolLbl) admVolLbl.textContent = `${adminDefaultVolumePct}%`;
+        renderAdminAudioTracksList();
 
         if (!audio) return;
-        audio.volume = Math.max(0, Math.min(1, musicVolume));
+        audio.loop = (audioLoopMode === 'single') || !Array.isArray(audioTracks) || audioTracks.length <= 1;
+        audio.volume = getEffectiveUserVolumeFloat();
 
         if (!hasTrack || !musicEnabled || adminMusicPaused) {
             try { audio.pause(); } catch (_) {}
@@ -2928,6 +3254,7 @@
                     p.then(() => {
                         isAudioElementUnlocked = true;
                         try { audio.pause(); } catch (_) {}
+                        audio.volume = getEffectiveUserVolumeFloat();
                         if (musicEnabled && !adminMusicPaused && musicUrl && !userMusicMuted) {
                             ensureAudioLoadedAndPlay(audio, musicUrl);
                         }
@@ -2972,85 +3299,186 @@
 
     function setUserMusicVolumePercent(pctVal) {
         const pct = Math.max(0, Math.min(100, parseInt(pctVal, 10) || 0));
-        musicVolume = pct / 100;
-        localStorage.setItem('monkey_music_volume', String(musicVolume));
+        userAudioVolumePct = pct;
+        hasUserCustomVolume = true;
+        try { localStorage.setItem('user_audio_volume', String(pct)); } catch (_) {}
         applyMusicPlayerUI();
     }
 
     function handleAdminMusicVolumeInput(pctVal) {
         isMusicDirty = true;
         const pct = Math.max(0, Math.min(100, parseInt(pctVal, 10) || 0));
+        adminDefaultVolumePct = pct;
         musicVolume = pct / 100;
-        localStorage.setItem('monkey_music_volume', String(musicVolume));
+        try {
+            localStorage.setItem('monkey_admin_default_volume', String(pct));
+            localStorage.setItem('monkey_music_volume', String(musicVolume));
+        } catch (_) {}
         const lbl = document.getElementById('admin-music-vol-label');
         if (lbl) lbl.textContent = `${pct}%`;
-        const audio = document.getElementById('bg-music-audio');
-        if (audio) audio.volume = musicVolume;
-        const userSlider = document.getElementById('user-music-volume-slider');
-        const userPct = document.getElementById('user-music-volume-pct');
-        if (userSlider) userSlider.value = pct;
-        if (userPct) userPct.textContent = `${pct}%`;
+        if (!hasUserCustomVolume) {
+            userAudioVolumePct = pct;
+            const audio = document.getElementById('bg-music-audio');
+            if (audio) audio.volume = getEffectiveUserVolumeFloat();
+            const userSlider = document.getElementById('user-music-volume-slider');
+            const userPct = document.getElementById('user-music-volume-pct');
+            if (userSlider) userSlider.value = pct;
+            if (userPct) userPct.textContent = `${pct}%`;
+        }
     }
 
-    function handleMusicFileSelect(inputEl) {
-        const file = inputEl.files && inputEl.files[0];
-        if (!file) return;
-        const cleanName = file.name.replace(/\.[^/.]+$/, '') || 'Фоновый трек';
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            const rawDataUrl = String(ev.target.result || '');
-            const base64Part = rawDataUrl.includes(',') ? rawDataUrl.split(',')[1] : rawDataUrl;
-            const titleInp = document.getElementById('admin-music-title-input');
-            const urlInp = document.getElementById('admin-music-url-input');
-            const typedTitle = (titleInp?.value || '').trim() || cleanName;
-            musicTitle = typedTitle;
-            if (titleInp) titleInp.value = musicTitle;
-            showToast("⏳ Загружаем и запускаем трек...");
+    async function handleMusicFileSelect(inputEl) {
+        const files = inputEl.files ? Array.from(inputEl.files) : [];
+        if (!files.length) return;
+        const titleInp = document.getElementById('admin-music-title-input');
+        const customTitleForSingle = files.length === 1 ? (titleInp?.value || '').trim() : '';
+
+        showToast(files.length > 1 ? `⏳ Загружаем ${files.length} треков...` : "⏳ Загружаем трек в библиотеку...");
+        let uploadedCount = 0;
+
+        for (const file of files) {
+            const cleanName = file.name.replace(/\.[^/.]+$/, '') || 'Фоновый трек';
+            const trackTitle = customTitleForSingle || cleanName;
             try {
+                const rawDataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = ev => resolve(String(ev.target.result || ''));
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                const base64Part = rawDataUrl.includes(',') ? rawDataUrl.split(',')[1] : rawDataUrl;
                 const res = await apiFetch(`/api/admin/upload_music`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: Number(currentUserId),
                         filename: file.name || 'track.mp3',
                         data_base64: base64Part,
-                        music_title: musicTitle,
+                        music_title: trackTitle,
                         music_enabled: true,
-                        music_volume: musicVolume
+                        music_volume: adminDefaultVolumePct / 100
                     })
                 });
                 const upData = await res.json();
+                if (Array.isArray(upData?.audio_tracks)) {
+                    audioTracks = upData.audio_tracks;
+                    try { localStorage.setItem('monkey_audio_tracks', JSON.stringify(audioTracks)); } catch (_) {}
+                }
+                if (upData?.audio_active_track_id) {
+                    audioActiveTrackId = upData.audio_active_track_id;
+                    try { localStorage.setItem('monkey_audio_active_track_id', audioActiveTrackId); } catch (_) {}
+                }
                 const resolvedUrl = (upData?.music_url || '').trim();
                 const finalTrackUrl = normalizeBackendAudioUrl(resolvedUrl) || resolvedUrl;
                 if (finalTrackUrl) {
                     musicUrl = finalTrackUrl;
                     lastSyncedMusicUrl = musicUrl;
-                    if (urlInp) urlInp.value = musicUrl;
                     try { localStorage.setItem('monkey_music_url', musicUrl); } catch (_) {}
                 }
+                musicTitle = upData?.music_title || trackTitle;
                 musicEnabled = true;
                 adminMusicPaused = false;
                 userMusicMuted = false;
-                isMusicDirty = false;
-                try {
-                    localStorage.setItem('monkey_music_enabled', '1');
-                    localStorage.setItem('monkey_music_paused', '0');
-                    localStorage.setItem('monkey_user_music_muted_v2', '0');
-                } catch (_) {}
-                applyMusicPlayerUI();
-                showToast("🎵 Трек запущен 24/7 для всех пользователей!");
+                uploadedCount++;
             } catch (e) {
-                isMusicDirty = true;
-                musicUrl = rawDataUrl;
-                musicEnabled = true;
-                adminMusicPaused = false;
-                userMusicMuted = false;
-                if (urlInp) urlInp.value = musicUrl;
-                applyMusicPlayerUI();
-                showToast(e?.detail ? `⚠️ ${e.detail}` : "⚠️ Не удалось загрузить файл на сервер", true);
+                showToast(e?.detail ? `⚠️ ${e.detail}` : `⚠️ Не удалось загрузить ${file.name}`, true);
             }
-        };
-        reader.readAsDataURL(file);
+        }
+
+        if (titleInp) titleInp.value = '';
+        isMusicDirty = false;
+        try {
+            localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+            localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0');
+            localStorage.setItem('monkey_user_music_muted_v2', '0');
+        } catch (_) {}
+        applyMusicPlayerUI();
+        if (uploadedCount > 0) {
+            showToast(uploadedCount > 1 ? `🎵 Загружено треков: ${uploadedCount}` : "🎵 Трек добавлен в библиотеку!");
+        }
         inputEl.value = '';
+    }
+
+    async function adminAddAudioTrackByUrl() {
+        document.activeElement?.blur();
+        const titleInp = document.getElementById('admin-music-title-input');
+        const urlInp = document.getElementById('admin-music-url-input');
+        const rawUrl = (urlInp?.value || '').trim();
+        if (!rawUrl) {
+            showToast("Введите ссылку на MP3 или выберите файл", true);
+            return;
+        }
+        const title = (titleInp?.value || '').trim() || `Трек ${audioTracks.length + 1}`;
+        const newId = `trk_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        audioTracks.push({ id: newId, title, url: rawUrl });
+        audioActiveTrackId = newId;
+        musicUrl = normalizeBackendAudioUrl(rawUrl) || rawUrl;
+        musicTitle = title;
+        musicEnabled = true;
+        adminMusicPaused = false;
+        userMusicMuted = false;
+        if (titleInp) titleInp.value = '';
+        if (urlInp) urlInp.value = '';
+        applyMusicPlayerUI();
+        await adminSaveAudioSettings(true);
+        showToast("🎵 Трек добавлен в библиотеку!");
+    }
+
+    async function adminSelectAudioTrack(trackId) {
+        const found = audioTracks.find(t => t.id === trackId);
+        if (!found) return;
+        isMusicDirty = true;
+        audioActiveTrackId = found.id;
+        musicUrl = normalizeBackendAudioUrl(found.url) || found.url;
+        musicTitle = found.title || 'Фоновый трек';
+        musicEnabled = true;
+        adminMusicPaused = false;
+        userMusicMuted = false;
+        try {
+            localStorage.setItem('monkey_audio_active_track_id', audioActiveTrackId);
+            localStorage.setItem('monkey_music_url', musicUrl);
+            localStorage.setItem('monkey_music_title', musicTitle);
+            localStorage.setItem('monkey_music_enabled', '1');
+            localStorage.setItem('monkey_music_paused', '0');
+        } catch (_) {}
+        applyMusicPlayerUI();
+        await adminSaveAudioSettings(true);
+        showToast(`▶️ Выбран трек: ${musicTitle}`);
+    }
+
+    async function adminDeleteAudioTrack(trackId) {
+        isMusicDirty = true;
+        audioTracks = audioTracks.filter(t => t.id !== trackId);
+        if (audioActiveTrackId === trackId) {
+            audioActiveTrackId = audioTracks.length > 0 ? audioTracks[0].id : '';
+        }
+        if (audioTracks.length === 0) {
+            musicUrl = '';
+            musicTitle = 'Фоновый трек';
+            musicEnabled = false;
+            adminMusicPaused = false;
+        } else {
+            syncActiveTrackFromLibrary();
+        }
+        try {
+            localStorage.setItem('monkey_audio_tracks', JSON.stringify(audioTracks));
+            localStorage.setItem('monkey_audio_active_track_id', audioActiveTrackId);
+            localStorage.setItem('monkey_music_url', musicUrl);
+            localStorage.setItem('monkey_music_title', musicTitle);
+            localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
+        } catch (_) {}
+        applyMusicPlayerUI();
+        await adminSaveAudioSettings(true);
+        showToast("🗑 Трек удалён из библиотеки");
+    }
+
+    async function adminSetAudioLoopMode(mode) {
+        if (mode !== 'sequence' && mode !== 'single') return;
+        isMusicDirty = true;
+        audioLoopMode = mode;
+        try { localStorage.setItem('monkey_audio_loop_mode', audioLoopMode); } catch (_) {}
+        applyMusicPlayerUI();
+        await adminSaveAudioSettings(true);
+        showToast(mode === 'sequence' ? "🔁 Режим: по кругу по очереди" : "🔂 Режим: повторять один трек");
     }
 
     async function adminToggleMusicEnabled() {
@@ -3066,12 +3494,12 @@
             localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0');
         } catch (_) {}
         applyMusicPlayerUI();
-        await adminSaveMusic(true);
+        await adminSaveAudioSettings(true);
     }
 
     async function adminToggleMusicPause() {
         document.activeElement?.blur();
-        if (!musicUrl) {
+        if (!musicUrl && audioTracks.length === 0) {
             document.getElementById('admin-music-file')?.click();
             return;
         }
@@ -3089,41 +3517,47 @@
             localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0');
         } catch (_) {}
         applyMusicPlayerUI();
-        await adminSaveMusic(true);
+        await adminSaveAudioSettings(true);
         showToast(adminMusicPaused ? "⏸ Фоновая музыка на паузе" : "▶️ Фоновая музыка запущена");
     }
 
     async function adminClearMusic() {
         document.activeElement?.blur();
+        const ok = await showCustomConfirm("Удалить все треки из мини-библиотеки?", "Очистка библиотеки", true);
+        if (!ok) return;
         isMusicDirty = true;
+        audioTracks = [];
+        audioActiveTrackId = '';
         musicUrl = '';
+        musicTitle = 'Фоновый трек';
         musicEnabled = false;
         adminMusicPaused = false;
         const urlInp = document.getElementById('admin-music-url-input');
         if (urlInp) urlInp.value = '';
         try {
+            localStorage.setItem('monkey_audio_tracks', '[]');
+            localStorage.setItem('monkey_audio_active_track_id', '');
             localStorage.setItem('monkey_music_url', '');
             localStorage.setItem('monkey_music_enabled', '0');
             localStorage.setItem('monkey_music_paused', '0');
         } catch (_) {}
         applyMusicPlayerUI();
-        await adminSaveMusic(true);
-        showToast("🗑 Трек убран");
+        await adminSaveAudioSettings(true);
+        showToast("🗑 Библиотека аудио очищена");
     }
 
-    async function adminSaveMusic(silent = false) {
+    async function adminSaveAudioSettings(silent = false) {
         document.activeElement?.blur();
-        const titleVal = (document.getElementById('admin-music-title-input')?.value || '').trim() || 'Фоновый трек';
-        const urlVal = (document.getElementById('admin-music-url-input')?.value || '').trim();
-        const sliderVal = parseInt(document.getElementById('admin-music-vol-slider')?.value ?? String(Math.round(musicVolume * 100)), 10);
-        const volNum = Math.max(0, Math.min(1, (isNaN(sliderVal) ? 35 : sliderVal) / 100));
-
-        musicTitle = titleVal;
-        musicUrl = urlVal;
-        musicVolume = volNum;
-        if (musicEnabled && !adminMusicPaused && musicUrl) userMusicMuted = false;
+        const sliderVal = parseInt(document.getElementById('admin-music-vol-slider')?.value ?? String(adminDefaultVolumePct), 10);
+        adminDefaultVolumePct = Math.max(0, Math.min(100, isNaN(sliderVal) ? 35 : sliderVal));
+        musicVolume = adminDefaultVolumePct / 100;
+        syncActiveTrackFromLibrary();
 
         try {
+            localStorage.setItem('monkey_audio_tracks', JSON.stringify(audioTracks));
+            localStorage.setItem('monkey_audio_loop_mode', audioLoopMode);
+            localStorage.setItem('monkey_audio_active_track_id', audioActiveTrackId);
+            localStorage.setItem('monkey_admin_default_volume', String(adminDefaultVolumePct));
             localStorage.setItem('monkey_music_enabled', musicEnabled ? '1' : '0');
             localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0');
             localStorage.setItem('monkey_music_title', musicTitle);
@@ -3133,58 +3567,402 @@
         applyMusicPlayerUI();
 
         try {
-            await apiFetch(`/api/admin/music`, {
+            const res = await apiFetch(`/api/admin/audio`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: Number(currentUserId),
+                    audio_tracks: audioTracks,
+                    audio_loop_mode: audioLoopMode,
+                    audio_active_track_id: audioActiveTrackId,
+                    audio_default_volume: adminDefaultVolumePct,
                     music_enabled: musicEnabled,
-                    music_paused: adminMusicPaused,
-                    music_url: musicUrl,
-                    music_title: musicTitle,
-                    music_volume: musicVolume
+                    music_paused: adminMusicPaused
                 })
             });
+            const savedData = await res.json();
+            if (Array.isArray(savedData?.audio_tracks)) {
+                audioTracks = savedData.audio_tracks;
+                try { localStorage.setItem('monkey_audio_tracks', JSON.stringify(audioTracks)); } catch (_) {}
+            }
             isMusicDirty = false;
-            if (!silent) showToast("🎵 Настройки музыки сохранены для всех!");
+            renderAdminAudioTracksList();
+            if (!silent) showToast("🎵 Настройки аудио сохранены для всех!");
         } catch (e) {
-            if (!silent) showToast("Ошибка сохранения музыки на сервере", true);
+            if (!silent) showToast("Ошибка сохранения аудио на сервере", true);
         }
+    }
+
+    async function adminSaveMusic(silent = false) {
+        return adminSaveAudioSettings(silent);
     }
     applyMusicPlayerUI();
 
-    let promoBanner = JSON.parse(localStorage.getItem('monkey_promo_banner')) || {
+    const BANNER_STYLE_OPTIONS = [
+        { id: 'emerald', label: '🌿 Изумруд' },
+        { id: 'cyber', label: '💠 Кибер-синий' },
+        { id: 'sunset', label: '🌅 Закат' },
+        { id: 'violet', label: '🔮 Фиолетовый' },
+        { id: 'gold', label: '👑 Золото' },
+        { id: 'crimson', label: '🔥 Малиновый' }
+    ];
+
+    let topNotice = JSON.parse(localStorage.getItem('monkey_top_notice')) || {
         enabled: true,
-        title: 'СКИДКА НЕДЕЛИ -20%',
-        desc: 'Популярные товары и новинки уже в каталоге',
-        badge: '-20%'
+        text: 'Возьми две жижи в подарок'
     };
 
-    function applyPromoBannerUI() {
+    let bannerCarouselEnabled = localStorage.getItem('monkey_banner_enabled') !== '0';
+    let bannerIntervalSec = parseInt(localStorage.getItem('monkey_banner_interval') ?? '5', 10);
+    if (isNaN(bannerIntervalSec) || bannerIntervalSec < 0) bannerIntervalSec = 5;
+
+    function normalizeClientBannerSlide(raw, idx = 0) {
+        const s = raw || {};
+        return {
+            id: String(s.id || `banner_${Date.now()}_${idx}`),
+            title: String(s.title || ''),
+            desc: String(s.desc || ''),
+            style: BANNER_STYLE_OPTIONS.some(o => o.id === s.style) ? s.style : 'emerald',
+            btn_text: String(s.btn_text || 'Скопировать'),
+            promo_code: String(s.promo_code || '')
+        };
+    }
+
+    let bannerSlides = (() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('monkey_banners_list') || 'null');
+            if (Array.isArray(saved) && saved.length > 0) {
+                return saved.map((item, i) => normalizeClientBannerSlide(item, i));
+            }
+        } catch (_) {}
+        const legacy = JSON.parse(localStorage.getItem('monkey_promo_banner') || 'null');
+        return [
+            normalizeClientBannerSlide({
+                id: 'banner_default_1',
+                title: legacy?.title || 'СКИДКА НЕДЕЛИ -20%',
+                desc: legacy?.desc || 'Популярные товары и новинки уже в каталоге',
+                style: 'emerald',
+                btn_text: 'Скопировать',
+                promo_code: (legacy?.badge && !String(legacy.badge).startsWith('-')) ? legacy.badge : 'MONKEY3'
+            }, 0)
+        ];
+    })();
+
+    let currentBannerSlideIdx = 0;
+    let bannerAutoSlideTimer = null;
+    let isBannerDirty = false;
+    let bannerTouchStartX = 0;
+    let bannerTouchDeltaX = 0;
+
+    function copyTextToClipboardSafe(textToCopy) {
+        const val = String(textToCopy || '').trim();
+        if (!val) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(val).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = val;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (_) {}
+                ta.remove();
+            });
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = val;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch (_) {}
+            ta.remove();
+        }
+    }
+
+    function copyBannerPromoCode(slideIdx, btnEl) {
+        const slide = bannerSlides[slideIdx];
+        if (!slide) return;
+        const codeToCopy = (slide.promo_code || '').trim() || (slide.btn_text || '').trim();
+        if (!codeToCopy) return;
+        copyTextToClipboardSafe(codeToCopy);
+        if (!appliedPromoCode && (slide.promo_code || '').trim()) {
+            promoInputDraft = (slide.promo_code || '').trim().toUpperCase();
+        }
+        if (btnEl) {
+            const origText = (slide.btn_text || '').trim() || 'Скопировать';
+            btnEl.classList.add('copied');
+            btnEl.innerText = 'Скопировано ✓';
+            if (btnEl._copyResetTimer) clearTimeout(btnEl._copyResetTimer);
+            btnEl._copyResetTimer = setTimeout(() => {
+                btnEl.classList.remove('copied');
+                btnEl.innerText = origText;
+            }, 2000);
+        }
+        showToast(`🎟 Промокод «${codeToCopy}» скопирован!`);
+    }
+
+    function goToBannerSlide(idx, isManual = false) {
+        if (!bannerSlides.length) return;
+        const total = bannerSlides.length;
+        currentBannerSlideIdx = ((idx % total) + total) % total;
+        const track = document.getElementById('promo-banner-track');
+        if (track) {
+            track.style.transform = `translateX(-${currentBannerSlideIdx * 100}%)`;
+        }
+        document.querySelectorAll('#promo-banner-dots .promo-banner-dot').forEach((dot, i) => {
+            dot.classList.toggle('active', i === currentBannerSlideIdx);
+        });
+        if (isManual) restartBannerAutoSlideTimer();
+    }
+
+    function restartBannerAutoSlideTimer() {
+        if (bannerAutoSlideTimer) {
+            clearInterval(bannerAutoSlideTimer);
+            bannerAutoSlideTimer = null;
+        }
+        if (!bannerCarouselEnabled || bannerSlides.length <= 1 || bannerIntervalSec <= 0) return;
+        bannerAutoSlideTimer = setInterval(() => {
+            goToBannerSlide(currentBannerSlideIdx + 1, false);
+        }, bannerIntervalSec * 1000);
+    }
+
+    function applyTopNoticeUI() {
+        const bar = document.getElementById('catalog-top-notice');
+        const txt = document.getElementById('catalog-top-notice-text');
+        const cleanText = (topNotice?.text || '').trim() || 'Возьми две жижи в подарок';
+        if (bar) {
+            bar.style.display = topNotice?.enabled ? 'flex' : 'none';
+        }
+        if (txt) {
+            txt.innerText = cleanText;
+        }
+        const admBtn = document.getElementById('admin-top-notice-toggle-btn');
+        const admInp = document.getElementById('admin-top-notice-text');
+        if (admBtn) {
+            admBtn.className = `toggle-pill ${topNotice?.enabled ? 'on' : 'off'}`;
+            admBtn.innerText = topNotice?.enabled ? '🟢 Показана' : '🔴 Скрыта';
+        }
+        if (admInp && document.activeElement !== admInp) {
+            admInp.value = cleanText;
+        }
+    }
+
+    function renderAdminBannersList() {
+        const listEl = document.getElementById('admin-banners-list');
+        if (!listEl) return;
+        if (!bannerSlides.length) {
+            listEl.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px;">Нет баннеров — нажмите «Добавить баннер»</div>';
+            return;
+        }
+        listEl.innerHTML = bannerSlides.map((slide, idx) => {
+            const styleOptsHtml = BANNER_STYLE_OPTIONS.map(opt =>
+                `<option value="${opt.id}" ${slide.style === opt.id ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
+            return `
+                <div class="admin-banner-slide-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                        <span style="font-size:12px; font-weight:800; color:var(--accent-green);">Слайд #${idx + 1}</span>
+                        <div style="display:flex; gap:4px; align-items:center;">
+                            ${bannerSlides.length > 1 ? `<button type="button" class="toggle-pill on" style="padding:3px 7px;" title="Вверх" onclick="adminMoveBannerSlide(${idx}, -1)">↑</button>` : ''}
+                            ${bannerSlides.length > 1 ? `<button type="button" class="toggle-pill on" style="padding:3px 7px;" title="Вниз" onclick="adminMoveBannerSlide(${idx}, 1)">↓</button>` : ''}
+                            <button type="button" class="toggle-pill off" style="padding:3px 8px;" title="Удалить баннер" onclick="adminDeleteBannerSlide(${idx})">✕</button>
+                        </div>
+                    </div>
+                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Большой заголовок (напр. СКИДКА -3 БУНА)" value="${escapeHtml(slide.title)}" oninput="updateBannerSlideField(${idx}, 'title', this.value)">
+                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Мини-описание (напр. На все жидкости в каталоге)" value="${escapeHtml(slide.desc)}" oninput="updateBannerSlideField(${idx}, 'desc', this.value)">
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">🎨 Стиль:</span>
+                        <select class="admin-select" style="flex:1; padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'style', this.value)">
+                            ${styleOptsHtml}
+                        </select>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:6px;">
+                        <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Текст кнопки (Скопировать)" value="${escapeHtml(slide.btn_text)}" oninput="updateBannerSlideField(${idx}, 'btn_text', this.value)">
+                        <input type="text" class="promo-input admin-banner-field" style="font-size:12px;" placeholder="Промокод (1K3)" value="${escapeHtml(slide.promo_code)}" oninput="updateBannerSlideField(${idx}, 'promo_code', this.value)">
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderPromoBannerCarouselSlides() {
         const bannerEl = document.getElementById('promo-banner');
-        if (bannerEl) {
-            bannerEl.style.display = promoBanner.enabled ? 'flex' : 'none';
-            const tEl = document.getElementById('promo-banner-title');
-            const dEl = document.getElementById('promo-banner-desc');
-            const bEl = document.getElementById('promo-banner-badge');
-            if (tEl) tEl.innerText = promoBanner.title || '';
-            if (dEl) dEl.innerText = promoBanner.desc || '';
-            if (bEl) {
-                bEl.style.display = (promoBanner.badge || '').trim() ? 'block' : 'none';
-                bEl.innerText = promoBanner.badge || '';
+        const trackEl = document.getElementById('promo-banner-track');
+        const dotsEl = document.getElementById('promo-banner-dots');
+        if (!bannerEl || !trackEl) return;
+
+        if (!bannerCarouselEnabled || bannerSlides.length === 0) {
+            bannerEl.style.display = 'none';
+            if (bannerAutoSlideTimer) {
+                clearInterval(bannerAutoSlideTimer);
+                bannerAutoSlideTimer = null;
+            }
+            return;
+        }
+
+        bannerEl.style.display = 'block';
+        if (currentBannerSlideIdx >= bannerSlides.length) currentBannerSlideIdx = 0;
+
+        trackEl.innerHTML = bannerSlides.map((slide, idx) => {
+            const stClass = `banner-style-${slide.style || 'emerald'}`;
+            const btnLabel = (slide.btn_text || '').trim() || 'Скопировать';
+            const showBtn = Boolean(btnLabel || (slide.promo_code || '').trim());
+            return `
+                <div class="promo-banner ${stClass}">
+                    <div class="promo-banner-text">
+                        <h3>${escapeHtml(slide.title || '')}</h3>
+                        <p>${escapeHtml(slide.desc || '')}</p>
+                    </div>
+                    ${showBtn ? `<button type="button" class="promo-copy-btn" onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, this)">${escapeHtml(btnLabel)}</button>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        trackEl.style.transform = `translateX(-${currentBannerSlideIdx * 100}%)`;
+
+        if (dotsEl) {
+            if (bannerSlides.length > 1) {
+                dotsEl.style.display = 'flex';
+                dotsEl.innerHTML = bannerSlides.map((_, idx) =>
+                    `<button type="button" class="promo-banner-dot ${idx === currentBannerSlideIdx ? 'active' : ''}" aria-label="Слайд ${idx + 1}" onclick="goToBannerSlide(${idx}, true)"></button>`
+                ).join('');
+            } else {
+                dotsEl.style.display = 'none';
+                dotsEl.innerHTML = '';
             }
         }
+
+        if (!bannerEl.dataset.swipeBound) {
+            bannerEl.dataset.swipeBound = '1';
+            bannerEl.addEventListener('touchstart', (e) => {
+                if (!e.touches || !e.touches.length) return;
+                bannerTouchStartX = e.touches[0].clientX;
+                bannerTouchDeltaX = 0;
+            }, { passive: true });
+            bannerEl.addEventListener('touchmove', (e) => {
+                if (!e.touches || !e.touches.length) return;
+                bannerTouchDeltaX = e.touches[0].clientX - bannerTouchStartX;
+            }, { passive: true });
+            bannerEl.addEventListener('touchend', () => {
+                if (bannerSlides.length > 1 && Math.abs(bannerTouchDeltaX) > 36) {
+                    if (bannerTouchDeltaX < 0) goToBannerSlide(currentBannerSlideIdx + 1, true);
+                    else goToBannerSlide(currentBannerSlideIdx - 1, true);
+                }
+                bannerTouchDeltaX = 0;
+            }, { passive: true });
+        }
+
+        restartBannerAutoSlideTimer();
+    }
+
+    function applyPromoBannerUI() {
+        applyTopNoticeUI();
+        renderPromoBannerCarouselSlides();
+
         const toggleBtn = document.getElementById('admin-banner-toggle-btn');
         if (toggleBtn) {
-            toggleBtn.className = `toggle-pill ${promoBanner.enabled ? 'on' : 'off'}`;
-            toggleBtn.innerText = promoBanner.enabled ? '🟢 Показан' : '🔴 Скрыт';
+            toggleBtn.className = `toggle-pill ${bannerCarouselEnabled ? 'on' : 'off'}`;
+            toggleBtn.innerText = bannerCarouselEnabled ? '🟢 Показаны' : '🔴 Скрыты';
         }
-        const tInp = document.getElementById('admin-banner-title');
-        const dInp = document.getElementById('admin-banner-desc');
-        const bInp = document.getElementById('admin-banner-badge');
-        if (tInp && document.activeElement !== tInp) tInp.value = promoBanner.title || '';
-        if (dInp && document.activeElement !== dInp) dInp.value = promoBanner.desc || '';
-        if (bInp && document.activeElement !== bInp) bInp.value = promoBanner.badge || '';
+        const intInp = document.getElementById('admin-banner-interval');
+        if (intInp && document.activeElement !== intInp) {
+            intInp.value = String(bannerIntervalSec);
+        }
+        const activeTag = document.activeElement?.tagName;
+        const isEditingBannerField = document.activeElement?.classList?.contains('admin-banner-field') || activeTag === 'SELECT';
+        if (!isEditingBannerField) {
+            renderAdminBannersList();
+        }
     }
+
+    function handleAdminBannerIntervalInput(val) {
+        isBannerDirty = true;
+        const num = parseInt(val, 10);
+        bannerIntervalSec = isNaN(num) ? 5 : Math.max(0, Math.min(120, num));
+        try { localStorage.setItem('monkey_banner_interval', String(bannerIntervalSec)); } catch (_) {}
+        restartBannerAutoSlideTimer();
+    }
+
+    function updateBannerSlideField(idx, field, val) {
+        if (!bannerSlides[idx]) return;
+        isBannerDirty = true;
+        bannerSlides[idx][field] = String(val ?? '');
+        try { localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides)); } catch (_) {}
+        renderPromoBannerCarouselSlides();
+    }
+
+    function adminAddBannerSlide() {
+        isBannerDirty = true;
+        const nextStyle = BANNER_STYLE_OPTIONS[bannerSlides.length % BANNER_STYLE_OPTIONS.length].id;
+        bannerSlides.push(normalizeClientBannerSlide({
+            id: `banner_${Date.now()}_${bannerSlides.length}`,
+            title: 'НОВАЯ АКЦИЯ',
+            desc: 'Выгодное предложение для всех покупателей',
+            style: nextStyle,
+            btn_text: 'Скопировать',
+            promo_code: '1K3'
+        }, bannerSlides.length));
+        currentBannerSlideIdx = bannerSlides.length - 1;
+        try { localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides)); } catch (_) {}
+        renderAdminBannersList();
+        renderPromoBannerCarouselSlides();
+    }
+
+    function adminMoveBannerSlide(idx, delta) {
+        const target = idx + delta;
+        if (target < 0 || target >= bannerSlides.length) return;
+        isBannerDirty = true;
+        const tmp = bannerSlides[idx];
+        bannerSlides[idx] = bannerSlides[target];
+        bannerSlides[target] = tmp;
+        currentBannerSlideIdx = target;
+        try { localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides)); } catch (_) {}
+        renderAdminBannersList();
+        renderPromoBannerCarouselSlides();
+    }
+
+    function adminDeleteBannerSlide(idx) {
+        isBannerDirty = true;
+        bannerSlides.splice(idx, 1);
+        if (currentBannerSlideIdx >= bannerSlides.length) {
+            currentBannerSlideIdx = Math.max(0, bannerSlides.length - 1);
+        }
+        try { localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides)); } catch (_) {}
+        renderAdminBannersList();
+        renderPromoBannerCarouselSlides();
+    }
+
+    async function adminToggleTopNoticeEnabled() {
+        document.activeElement?.blur();
+        isBannerDirty = true;
+        topNotice.enabled = !topNotice.enabled;
+        applyTopNoticeUI();
+        await adminSaveTopNotice(true);
+    }
+
+    async function adminSaveTopNotice(silent = false) {
+        document.activeElement?.blur();
+        const inp = document.getElementById('admin-top-notice-text');
+        const txt = (inp ? inp.value : topNotice.text).trim() || 'Возьми две жижи в подарок';
+        topNotice.text = txt;
+        try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
+        applyTopNoticeUI();
+        try {
+            await apiFetch(`/api/admin/top_notice`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    enabled: Boolean(topNotice.enabled),
+                    text: txt
+                })
+            });
+            isBannerDirty = false;
+            if (!silent) showToast("✅ Табличка над баннером сохранена!");
+        } catch (e) {
+            if (!silent) showToast("Ошибка сохранения таблички на сервере", true);
+        }
+    }
+
     applyPromoBannerUI();
 
     let newsChannelUrl = localStorage.getItem('monkey_news_channel') || '';
@@ -3590,21 +4368,66 @@
     let currentAdminSubTab = 'stats';
 
     const CURRENCY_OPTIONS = ['р.', '₽', '₸', '$', '₴'];
+    const ALL_DELIVERY_MODE_IDS = ['metro', 'districts', 'pickup', 'free_address'];
     const DELIVERY_MODE_OPTIONS = [
-        { id: 'metro', label: '🚇 Станции метро' },
-        { id: 'pickup', label: '📦 Пункт выдачи' },
-        { id: 'free_address', label: '✍️ Свободный ввод адреса' }
+        { id: 'metro', shortLabel: '🚇 Метро', label: '🚇 Станции метро' },
+        { id: 'districts', shortLabel: '🏙 По районам', label: '🏙 Районы города' },
+        { id: 'pickup', shortLabel: '📦 Пункт выдачи', label: '📦 Пункты выдачи' },
+        { id: 'free_address', shortLabel: '✍️ По адресу', label: '✍️ Свободный ввод адреса' }
     ];
 
     let shopCurrency = localStorage.getItem('monkey_currency') || 'р.';
-    let deliveryMode = localStorage.getItem('monkey_delivery_mode') || 'metro';
-    if (deliveryMode === 'districts') deliveryMode = 'pickup';
-    let deliveryLocations = JSON.parse(localStorage.getItem('monkey_delivery_locations')) || ['ТЦ Призма'];
+    let enabledDeliveryModes = (() => {
+        try {
+            const parsed = JSON.parse(localStorage.getItem('monkey_enabled_delivery_modes') || 'null');
+            if (Array.isArray(parsed)) {
+                const cleaned = parsed.filter(m => ALL_DELIVERY_MODE_IDS.includes(m));
+                if (cleaned.length > 0) return cleaned;
+            }
+        } catch (_) {}
+        const legacyMode = localStorage.getItem('monkey_delivery_mode') || 'metro';
+        return [ALL_DELIVERY_MODE_IDS.includes(legacyMode) ? legacyMode : 'metro'];
+    })();
+
+    let deliveryMode = (() => {
+        const savedBuyerMode = localStorage.getItem('monkey_selected_delivery_mode') || localStorage.getItem('monkey_delivery_mode') || '';
+        if (enabledDeliveryModes.includes(savedBuyerMode)) return savedBuyerMode;
+        return enabledDeliveryModes[0] || 'metro';
+    })();
+
+    let districtLocations = (() => {
+        try {
+            const parsed = JSON.parse(localStorage.getItem('monkey_district_locations') || 'null');
+            if (Array.isArray(parsed)) return parsed;
+        } catch (_) {}
+        return ['Центральный район', 'Советский район', 'Первомайский район'];
+    })();
+
+    let pickupLocations = (() => {
+        try {
+            const parsed = JSON.parse(localStorage.getItem('monkey_pickup_locations') || 'null');
+            if (Array.isArray(parsed)) return parsed;
+        } catch (_) {}
+        const legacyLocs = JSON.parse(localStorage.getItem('monkey_delivery_locations') || 'null');
+        return Array.isArray(legacyLocs) && legacyLocs.length ? legacyLocs : ['ТЦ Призма'];
+    })();
+
+    let deliveryLocations = [...pickupLocations];
+    let selectedMetroStation = localStorage.getItem('monkey_selected_metro_station') || localStorage.getItem('monkey_selected_station') || 'Партизанская';
+    let selectedDistrictLocation = localStorage.getItem('monkey_selected_district_location') || (districtLocations[0] || '');
+    let selectedPickupLocation = localStorage.getItem('monkey_selected_pickup_location') || (pickupLocations[0] || '');
+
     let minOrderAmount = Number(localStorage.getItem('monkey_min_order_amount') || 0);
     let deliveryFee = Number(localStorage.getItem('monkey_delivery_fee') || 0);
     let freeDeliveryThreshold = Number(localStorage.getItem('monkey_free_delivery_threshold') || 0);
     let freeAddressDraft = localStorage.getItem('monkey_free_address_draft') || '';
     let isRegionSettingsDirty = false;
+
+    function getActiveModeLocationsList(mode = deliveryMode) {
+        if (mode === 'districts') return districtLocations;
+        if (mode === 'pickup') return pickupLocations;
+        return [];
+    }
 
     let autoScheduleEnabled = localStorage.getItem('monkey_auto_schedule_enabled') === '1';
     let shopOpenTime = localStorage.getItem('monkey_open_time') || '10:00';
@@ -3627,9 +4450,28 @@
     }
 
     function getDeliveryMeta(mode = deliveryMode) {
-        if (mode === 'pickup' || mode === 'districts') {
+        if (mode === 'districts') {
+            return {
+                badge: '🏙',
+                modeName: 'По районам',
+                subLabel: 'Район города',
+                modalTitle: 'Выбрать локацию',
+                modalSubtitle: 'Выберите район города для доставки заказа',
+                modalConfirmText: 'Подтвердить район',
+                checkoutTitle: 'Доставка по районам',
+                checkoutDesc: 'Курьер привезёт заказ в выбранный район города',
+                checkoutHeading: 'Район доставки',
+                cartRowLabel: 'Район доставки:',
+                orderRowLabel: '🏙 Район:',
+                emptyFallback: 'Выбрать район',
+                formatLocation: (val) => val ? escapeHtml(val) : 'Выбрать район'
+            };
+        }
+        if (mode === 'pickup') {
             return {
                 badge: '📦',
+                modeName: 'Пункт выдачи',
+                subLabel: 'Пункт выдачи',
                 modalTitle: 'Выбрать локацию',
                 modalSubtitle: 'Выберите пункт выдачи для получения заказа',
                 modalConfirmText: 'Подтвердить пункт выдачи',
@@ -3638,13 +4480,15 @@
                 checkoutHeading: 'Пункт выдачи',
                 cartRowLabel: 'Пункт выдачи:',
                 orderRowLabel: '📦 Пункт выдачи:',
-                emptyFallback: 'Выбрать локацию',
-                formatLocation: (val) => val ? escapeHtml(val) : 'Выбрать локацию'
+                emptyFallback: 'Выбрать пункт выдачи',
+                formatLocation: (val) => val ? escapeHtml(val) : 'Выбрать пункт выдачи'
             };
         }
         if (mode === 'free_address') {
             return {
                 badge: '🏠',
+                modeName: 'Доставка по адресу',
+                subLabel: 'Адрес доставки',
                 modalTitle: 'Выбрать локацию',
                 modalSubtitle: 'Укажите улицу, дом, подъезд или ориентир',
                 modalConfirmText: 'Сохранить адрес',
@@ -3653,12 +4497,14 @@
                 checkoutHeading: 'Адрес доставки',
                 cartRowLabel: 'Адрес доставки:',
                 orderRowLabel: '📍 Адрес:',
-                emptyFallback: 'Выбрать локацию',
+                emptyFallback: 'Указать адрес',
                 formatLocation: (val) => val ? escapeHtml(val) : 'Указывается при оформлении'
             };
         }
         return {
             badge: 'M',
+            modeName: 'Встреча в метро',
+            subLabel: 'Станция метро',
             modalTitle: 'Выбрать локацию',
             modalSubtitle: 'Выберите ветку и станцию метро для передачи заказа',
             modalConfirmText: 'Выбрать эту станцию',
@@ -3667,9 +4513,44 @@
             checkoutHeading: 'Ветка и станция встречи',
             cartRowLabel: 'Станция встречи:',
             orderRowLabel: '🚇 Станция:',
-            emptyFallback: 'Выбрать локацию',
-            formatLocation: (val) => val ? (String(val).startsWith('м.') ? escapeHtml(val) : 'м. ' + escapeHtml(val)) : 'Выбрать локацию'
+            emptyFallback: 'Выбрать станцию',
+            formatLocation: (val) => val ? (String(val).startsWith('м.') ? escapeHtml(val) : 'м. ' + escapeHtml(val)) : 'Выбрать станцию'
         };
+    }
+
+    function renderBuyerDeliveryModeButtons() {
+        const modes = Array.isArray(enabledDeliveryModes) && enabledDeliveryModes.length > 0
+            ? enabledDeliveryModes
+            : ['metro'];
+        const showSwitcher = modes.length > 1;
+        const buttonsHtml = showSwitcher
+            ? modes.map((mId, idx) => {
+                const opt = DELIVERY_MODE_OPTIONS.find(o => o.id === mId) || { id: mId, shortLabel: mId };
+                const isAct = deliveryMode === mId;
+                const spanLast = (modes.length % 2 === 1 && idx === modes.length - 1) ? 'grid-column: span 2;' : '';
+                return `<button type="button" class="checkout-mode-btn ${isAct ? 'active' : ''}" style="${spanLast}" onclick="selectBuyerDeliveryMode('${mId}')">${opt.shortLabel}</button>`;
+            }).join('')
+            : '';
+
+        ['checkout-delivery-modes-grid', 'modal-delivery-modes-grid'].forEach(elId => {
+            const box = document.getElementById(elId);
+            if (!box) return;
+            box.style.display = showSwitcher ? 'grid' : 'none';
+            box.innerHTML = buttonsHtml;
+        });
+    }
+
+    function selectBuyerDeliveryMode(mode) {
+        if (!ALL_DELIVERY_MODE_IDS.includes(mode)) return;
+        if (Array.isArray(enabledDeliveryModes) && enabledDeliveryModes.length > 0 && !enabledDeliveryModes.includes(mode)) {
+            return;
+        }
+        deliveryMode = mode;
+        try { localStorage.setItem('monkey_selected_delivery_mode', deliveryMode); } catch (_) {}
+        ensureValidSelectedStationAndTime();
+        renderModalStations(modalCurrentLine);
+        renderStations(currentLine);
+        renderCart();
     }
 
     function updateCurrencyLabelsUI() {
@@ -3678,6 +4559,9 @@
     }
 
     function updateLocationModeUI() {
+        if (Array.isArray(enabledDeliveryModes) && enabledDeliveryModes.length > 0 && !enabledDeliveryModes.includes(deliveryMode)) {
+            deliveryMode = enabledDeliveryModes[0];
+        }
         const meta = getDeliveryMeta(deliveryMode);
         const topBtn = document.getElementById('topbar-metro-btn');
         const topBadge = document.getElementById('topbar-loc-badge');
@@ -3695,8 +4579,10 @@
 
         const metroAdminTab = document.getElementById('admin-subtab-metro');
         if (metroAdminTab) {
-            metroAdminTab.style.display = deliveryMode === 'metro' ? 'block' : 'none';
+            metroAdminTab.style.display = enabledDeliveryModes.includes('metro') ? 'block' : 'none';
         }
+
+        renderBuyerDeliveryModeButtons();
 
         const cTitle = document.getElementById('checkout-method-title');
         const cDesc = document.getElementById('checkout-method-desc');
@@ -3938,20 +4824,54 @@
         renderMultiCatsPicker('edit-prod-cats-picker', editingProductCats, 'edit');
     }
 
-    function ensureValidSelectedStationAndTime() {
-        if (deliveryMode === 'metro') {
-            const allSt = [...(metroStations.green || []), ...(metroStations.blue || []), ...(metroStations.red || [])];
-            if (!allSt.some(s => s.name === selectedStation) || disabledStations.includes(selectedStation)) {
-                const firstAvail = allSt.find(s => !disabledStations.includes(s.name));
-                selectedStation = firstAvail ? firstAvail.name : '';
-                localStorage.setItem('monkey_selected_station', selectedStation);
-            }
-        } else if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
-            if (!deliveryLocations.includes(selectedStation)) {
-                selectedStation = deliveryLocations[0] || '';
-                localStorage.setItem('monkey_selected_station', selectedStation);
-            }
+    function setBuyerLocationForMode(mode, locValue) {
+        const cleanVal = String(locValue || '');
+        if (mode === 'metro') {
+            selectedMetroStation = cleanVal;
+            try { localStorage.setItem('monkey_selected_metro_station', cleanVal); } catch (_) {}
+        } else if (mode === 'districts') {
+            selectedDistrictLocation = cleanVal;
+            try { localStorage.setItem('monkey_selected_district_location', cleanVal); } catch (_) {}
+        } else if (mode === 'pickup') {
+            selectedPickupLocation = cleanVal;
+            try { localStorage.setItem('monkey_selected_pickup_location', cleanVal); } catch (_) {}
         }
+        selectedStation = cleanVal;
+        try { localStorage.setItem('monkey_selected_station', cleanVal); } catch (_) {}
+    }
+
+    function ensureValidSelectedStationAndTime() {
+        if (Array.isArray(enabledDeliveryModes) && enabledDeliveryModes.length > 0 && !enabledDeliveryModes.includes(deliveryMode)) {
+            deliveryMode = enabledDeliveryModes[0];
+            try { localStorage.setItem('monkey_selected_delivery_mode', deliveryMode); } catch (_) {}
+        }
+
+        const allSt = [...(metroStations.green || []), ...(metroStations.blue || []), ...(metroStations.red || [])];
+        if (!allSt.some(s => s.name === selectedMetroStation) || disabledStations.includes(selectedMetroStation)) {
+            const firstAvail = allSt.find(s => !disabledStations.includes(s.name));
+            selectedMetroStation = firstAvail ? firstAvail.name : '';
+            try { localStorage.setItem('monkey_selected_metro_station', selectedMetroStation); } catch (_) {}
+        }
+
+        if (!districtLocations.includes(selectedDistrictLocation)) {
+            selectedDistrictLocation = districtLocations[0] || '';
+            try { localStorage.setItem('monkey_selected_district_location', selectedDistrictLocation); } catch (_) {}
+        }
+
+        if (!pickupLocations.includes(selectedPickupLocation)) {
+            selectedPickupLocation = pickupLocations[0] || '';
+            try { localStorage.setItem('monkey_selected_pickup_location', selectedPickupLocation); } catch (_) {}
+        }
+
+        if (deliveryMode === 'metro') {
+            selectedStation = selectedMetroStation;
+        } else if (deliveryMode === 'districts') {
+            selectedStation = selectedDistrictLocation;
+        } else if (deliveryMode === 'pickup') {
+            selectedStation = selectedPickupLocation;
+        }
+        try { localStorage.setItem('monkey_selected_station', selectedStation); } catch (_) {}
+
         if (!ALL_TIME_SLOTS.includes(selectedTime) || disabledTimes.includes(selectedTime)) {
             selectedTime = ALL_TIME_SLOTS.find(t => !disabledTimes.includes(t)) || '';
         }
@@ -4017,7 +4937,12 @@
                     applyLogoBranding();
                 }
 
-                if (!isMusicDirty && (cfg.music_enabled !== undefined || cfg.music_paused !== undefined || cfg.music_url !== undefined || cfg.music_title !== undefined || cfg.music_volume !== undefined)) {
+                if (!isMusicDirty && (
+                    cfg.music_enabled !== undefined || cfg.music_paused !== undefined ||
+                    cfg.music_url !== undefined || cfg.music_title !== undefined ||
+                    cfg.music_volume !== undefined || cfg.audio_tracks !== undefined ||
+                    cfg.audio_loop_mode !== undefined || cfg.audio_default_volume !== undefined
+                )) {
                     const prevUrl = musicUrl;
                     if (cfg.music_enabled !== undefined) {
                         musicEnabled = Boolean(cfg.music_enabled);
@@ -4026,6 +4951,18 @@
                     if (cfg.music_paused !== undefined) {
                         adminMusicPaused = Boolean(cfg.music_paused);
                         try { localStorage.setItem('monkey_music_paused', adminMusicPaused ? '1' : '0'); } catch (_) {}
+                    }
+                    if (Array.isArray(cfg.audio_tracks)) {
+                        audioTracks = cfg.audio_tracks;
+                        try { localStorage.setItem('monkey_audio_tracks', JSON.stringify(audioTracks)); } catch (_) {}
+                    }
+                    if (cfg.audio_loop_mode === 'sequence' || cfg.audio_loop_mode === 'single') {
+                        audioLoopMode = cfg.audio_loop_mode;
+                        try { localStorage.setItem('monkey_audio_loop_mode', audioLoopMode); } catch (_) {}
+                    }
+                    if (cfg.audio_active_track_id !== undefined) {
+                        audioActiveTrackId = String(cfg.audio_active_track_id || '');
+                        try { localStorage.setItem('monkey_audio_active_track_id', audioActiveTrackId); } catch (_) {}
                     }
                     if (cfg.music_url !== undefined) {
                         const srvUrl = (cfg.music_url || '').trim();
@@ -4036,9 +4973,22 @@
                         musicTitle = (cfg.music_title || 'Фоновый трек').trim() || 'Фоновый трек';
                         try { localStorage.setItem('monkey_music_title', musicTitle); } catch (_) {}
                     }
-                    if (cfg.music_volume !== undefined && !isNaN(Number(cfg.music_volume))) {
-                        musicVolume = Math.max(0, Math.min(1, Number(cfg.music_volume)));
-                        try { localStorage.setItem('monkey_music_volume', String(musicVolume)); } catch (_) {}
+                    let srvDefPct = null;
+                    if (cfg.audio_default_volume !== undefined && !isNaN(Number(cfg.audio_default_volume))) {
+                        srvDefPct = Math.max(0, Math.min(100, Math.round(Number(cfg.audio_default_volume))));
+                    } else if (cfg.music_volume !== undefined && !isNaN(Number(cfg.music_volume))) {
+                        srvDefPct = Math.max(0, Math.min(100, Math.round(Number(cfg.music_volume) * 100)));
+                    }
+                    if (srvDefPct !== null) {
+                        adminDefaultVolumePct = srvDefPct;
+                        musicVolume = srvDefPct / 100;
+                        try {
+                            localStorage.setItem('monkey_admin_default_volume', String(adminDefaultVolumePct));
+                            localStorage.setItem('monkey_music_volume', String(musicVolume));
+                        } catch (_) {}
+                        if (!hasUserCustomVolume) {
+                            userAudioVolumePct = adminDefaultVolumePct;
+                        }
                     }
                     if (musicUrl && musicUrl !== prevUrl && musicUrl !== lastSyncedMusicUrl) {
                         lastSyncedMusicUrl = musicUrl;
@@ -4048,14 +4998,46 @@
                     applyMusicPlayerUI();
                 }
 
-                if (cfg.banner) {
-                    promoBanner = {
-                        enabled: Boolean(cfg.banner.enabled),
-                        title: cfg.banner.title || '',
-                        desc: cfg.banner.desc || '',
-                        badge: cfg.banner.badge || ''
-                    };
-                    localStorage.setItem('monkey_promo_banner', JSON.stringify(promoBanner));
+                if (!isBannerDirty) {
+                    if (cfg.top_notice && typeof cfg.top_notice === 'object') {
+                        topNotice = {
+                            enabled: Boolean(cfg.top_notice.enabled),
+                            text: String(cfg.top_notice.text || '').trim() || 'Возьми две жижи в подарок'
+                        };
+                        try { localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice)); } catch (_) {}
+                    }
+                    if (cfg.banner_interval !== undefined && !isNaN(Number(cfg.banner_interval))) {
+                        bannerIntervalSec = Math.max(0, Math.min(120, parseInt(cfg.banner_interval, 10)));
+                        try { localStorage.setItem('monkey_banner_interval', String(bannerIntervalSec)); } catch (_) {}
+                    } else if (cfg.banner?.interval !== undefined && !isNaN(Number(cfg.banner.interval))) {
+                        bannerIntervalSec = Math.max(0, Math.min(120, parseInt(cfg.banner.interval, 10)));
+                        try { localStorage.setItem('monkey_banner_interval', String(bannerIntervalSec)); } catch (_) {}
+                    }
+                    if (cfg.banner && cfg.banner.enabled !== undefined) {
+                        bannerCarouselEnabled = Boolean(cfg.banner.enabled);
+                        try { localStorage.setItem('monkey_banner_enabled', bannerCarouselEnabled ? '1' : '0'); } catch (_) {}
+                    }
+                    const incomingBanners = Array.isArray(cfg.banners)
+                        ? cfg.banners
+                        : (Array.isArray(cfg.banner?.banners) ? cfg.banner.banners : null);
+                    if (incomingBanners) {
+                        const prevJson = JSON.stringify(bannerSlides);
+                        const nextSlides = incomingBanners.map((b, i) => normalizeClientBannerSlide(b, i));
+                        if (JSON.stringify(nextSlides) !== prevJson) {
+                            bannerSlides = nextSlides;
+                            try { localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides)); } catch (_) {}
+                        }
+                    } else if (cfg.banner) {
+                        bannerSlides = [normalizeClientBannerSlide({
+                            id: 'banner_legacy_1',
+                            title: cfg.banner.title || '',
+                            desc: cfg.banner.desc || '',
+                            style: 'emerald',
+                            btn_text: 'Скопировать',
+                            promo_code: cfg.banner.badge || ''
+                        }, 0)];
+                        try { localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides)); } catch (_) {}
+                    }
                     applyPromoBannerUI();
                 }
 
@@ -4117,9 +5099,27 @@
                         shopCurrency = cfg.currency;
                         localStorage.setItem('monkey_currency', shopCurrency);
                     }
-                    if (cfg.delivery_mode && ['metro', 'districts', 'pickup', 'free_address'].includes(cfg.delivery_mode)) {
-                        deliveryMode = cfg.delivery_mode === 'districts' ? 'pickup' : cfg.delivery_mode;
-                        localStorage.setItem('monkey_delivery_mode', deliveryMode);
+                    if (Array.isArray(cfg.enabled_delivery_modes)) {
+                        const cleanedModes = cfg.enabled_delivery_modes.filter(m => ALL_DELIVERY_MODE_IDS.includes(m));
+                        if (cleanedModes.length > 0) {
+                            enabledDeliveryModes = cleanedModes;
+                            localStorage.setItem('monkey_enabled_delivery_modes', JSON.stringify(enabledDeliveryModes));
+                        }
+                    } else if (cfg.delivery_mode && ALL_DELIVERY_MODE_IDS.includes(cfg.delivery_mode)) {
+                        enabledDeliveryModes = [cfg.delivery_mode];
+                        localStorage.setItem('monkey_enabled_delivery_modes', JSON.stringify(enabledDeliveryModes));
+                    }
+                    if (!enabledDeliveryModes.includes(deliveryMode)) {
+                        deliveryMode = enabledDeliveryModes[0] || 'metro';
+                        localStorage.setItem('monkey_selected_delivery_mode', deliveryMode);
+                    }
+                    if (Array.isArray(cfg.district_locations)) {
+                        districtLocations = cfg.district_locations;
+                        localStorage.setItem('monkey_district_locations', JSON.stringify(districtLocations));
+                    }
+                    if (Array.isArray(cfg.pickup_locations)) {
+                        pickupLocations = cfg.pickup_locations;
+                        localStorage.setItem('monkey_pickup_locations', JSON.stringify(pickupLocations));
                     }
                     if (Array.isArray(cfg.delivery_locations)) {
                         deliveryLocations = cfg.delivery_locations;
@@ -4172,7 +5172,7 @@
                 renderCheckoutTimeSlots(); renderChangeTimeSlots();
 
                 const activeEl = document.activeElement;
-                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-open-time-input', 'admin-close-time-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-splash-emoji', 'admin-welcome-text', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input', 'admin-required-channel-input', 'admin-new-delivery-loc-input', 'admin-min-order-input', 'admin-delivery-fee-input', 'admin-free-delivery-input', 'checkout-free-address-input'].includes(activeEl.id);
+                const skipCartRender = activeEl && ['promo-input', 'admin-closed-msg-input', 'admin-open-time-input', 'admin-close-time-input', 'admin-logo-part1', 'admin-logo-part2', 'admin-splash-emoji', 'admin-welcome-text', 'admin-top-notice-text', 'admin-banner-interval', 'admin-banner-title', 'admin-banner-desc', 'admin-banner-badge', 'admin-news-channel-input', 'admin-reviews-channel-input', 'admin-support-input', 'admin-required-channel-input', 'admin-new-delivery-loc-input', 'admin-new-district-loc-input', 'admin-min-order-input', 'admin-delivery-fee-input', 'admin-free-delivery-input', 'checkout-free-address-input'].includes(activeEl.id);
                 if (!skipCartRender) renderCart();
                 showRoleTabsIfAllowed(false); updateProfileAvatarUI();
             }
@@ -4586,8 +5586,13 @@
         if (BANNED_USER_IDS.includes(Number(currentUserId))) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🚫 Ваш аккаунт заблокирован в магазине.</div>`;
         else if (!isShopOpen) checkoutActionHtml = `<div class="closed-shop-banner" style="text-align:center;">🔴 ${escapeHtml(shopClosedMessage)}<br><button type="button" onclick="subscribeShopOpenNotify()" style="margin-top:9px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green); padding:8px 14px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔔 Уведомить, когда магазин откроется</button></div>`;
 
+        const modeSummaryRowHtml = enabledDeliveryModes.length > 1
+            ? `<div class="summary-row" style="gap:10px;"><span style="flex-shrink:0;">Формат получения:</span><span style="color:var(--text-main); font-weight:700; text-align:right;">${escapeHtml(meta.modeName)}</span></div>`
+            : '';
+
         container.innerHTML = itemsHtml + promoBlockHtml + `
             <div class="cart-summary">
+                ${modeSummaryRowHtml}
                 <div class="summary-row" style="gap:10px;"><span style="flex-shrink:0;">${meta.cartRowLabel}</span><span style="color:var(--accent-green); font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right;">${locValueDisplay}</span></div>
                 <div class="summary-row"><span>Позиций (${items.reduce((s,i)=>s+i.qty,0)})</span><span>${formatMoney(subtotal)}</span></div>
                 ${discountRowHtml}
@@ -4623,19 +5628,19 @@
         if (deliveryMode === 'free_address') return;
 
         if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
-            const subLabel = 'Пункт выдачи';
-            if (!deliveryLocations.length) {
+            const meta = getDeliveryMeta(deliveryMode);
+            const listItems = getActiveModeLocationsList(deliveryMode);
+            if (!listItems.length) {
                 container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:16px;">Список локаций пока пуст</div>';
                 return;
             }
-            deliveryLocations.forEach(locName => {
+            listItems.forEach(locName => {
                 const isSel = locName === selectedStation;
                 const div = document.createElement('div');
                 div.className = `station-item ${isSel ? 'selected' : ''}`;
-                div.innerHTML = `<span>${escapeHtml(locName)}</span><span style="font-size:11px; color:var(--text-secondary);">${subLabel}</span>`;
+                div.innerHTML = `<span>${escapeHtml(locName)}</span><span style="font-size:11px; color:var(--text-secondary);">${meta.subLabel}</span>`;
                 div.onclick = () => {
-                    selectedStation = locName;
-                    localStorage.setItem('monkey_selected_station', selectedStation);
+                    setBuyerLocationForMode(deliveryMode, locName);
                     ensureValidSelectedStationAndTime();
                     renderModalStations(line);
                     renderStations(currentLine);
@@ -4654,7 +5659,7 @@
             div.innerHTML = `<span>${escapeHtml(st.name)}</span>${isDisabled ? `<span class="unavail-pill">Недоступно</span>` : `<span style="font-size:11px; color:var(--text-secondary);">${escapeHtml(st.line)}</span>`}`;
             if (!isDisabled) {
                 div.onclick = () => {
-                    selectedStation = st.name; localStorage.setItem('monkey_selected_station', selectedStation);
+                    setBuyerLocationForMode('metro', st.name);
                     ensureValidSelectedStationAndTime(); renderModalStations(line); renderStations(currentLine); renderCart();
                 };
             }
@@ -4691,19 +5696,19 @@
         if (deliveryMode === 'free_address') return;
 
         if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
-            const subLabel = 'Пункт выдачи';
-            if (!deliveryLocations.length) {
+            const meta = getDeliveryMeta(deliveryMode);
+            const listItems = getActiveModeLocationsList(deliveryMode);
+            if (!listItems.length) {
                 container.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:16px;">Список локаций пока пуст</div>';
                 return;
             }
-            deliveryLocations.forEach(locName => {
+            listItems.forEach(locName => {
                 const isSel = locName === selectedStation;
                 const div = document.createElement('div');
                 div.className = `station-item ${isSel ? 'selected' : ''}`;
-                div.innerHTML = `<span>${escapeHtml(locName)}</span><span style="font-size:11px; color:var(--text-secondary);">${subLabel}</span>`;
+                div.innerHTML = `<span>${escapeHtml(locName)}</span><span style="font-size:11px; color:var(--text-secondary);">${meta.subLabel}</span>`;
                 div.onclick = () => {
-                    selectedStation = locName;
-                    localStorage.setItem('monkey_selected_station', selectedStation);
+                    setBuyerLocationForMode(deliveryMode, locName);
                     ensureValidSelectedStationAndTime();
                     renderStations(line);
                     renderCart();
@@ -4721,7 +5726,7 @@
             div.innerHTML = `<span>${escapeHtml(st.name)}</span>${isDisabled ? `<span class="unavail-pill">Недоступно</span>` : `<span style="font-size:11px; color:var(--text-secondary);">${escapeHtml(st.line)}</span>`}`;
             if (!isDisabled) {
                 div.onclick = () => {
-                    selectedStation = st.name; localStorage.setItem('monkey_selected_station', selectedStation);
+                    setBuyerLocationForMode('metro', st.name);
                     ensureValidSelectedStationAndTime(); renderStations(line); renderCart();
                 };
             }
@@ -4787,8 +5792,13 @@
             freeAddressDraft = addrVal;
             localStorage.setItem('monkey_free_address_draft', freeAddressDraft);
             finalLocation = addrVal;
-        } else if (deliveryMode === 'districts' || deliveryMode === 'pickup') {
-            if (!finalLocation || !deliveryLocations.includes(finalLocation)) {
+        } else if (deliveryMode === 'districts') {
+            if (!finalLocation || !districtLocations.includes(finalLocation)) {
+                showToast("Выберите район доставки", true);
+                return;
+            }
+        } else if (deliveryMode === 'pickup') {
+            if (!finalLocation || !pickupLocations.includes(finalLocation)) {
                 showToast("Выберите пункт выдачи", true);
                 return;
             }
@@ -4817,7 +5827,7 @@
         const orderData = {
             id: orderId, user_id: currentUserId, user_name: currentUserName,
             items: items.map(i => ({ title: `${i.title} (${i.optionName})`, price: i.price, qty: i.qty })),
-            total, station: finalLocation, time: selectedTime, status: 'active', time_changed: false,
+            total, delivery_mode: deliveryMode, station: finalLocation, time: selectedTime, status: 'active', time_changed: false,
             promo_code: actualDiscount > 0 ? appliedPromoCode : '', discount: actualDiscount,
             delivery_fee: appliedDeliveryFee, created_at: createdAt,
             cancelled_by: '', claimed_by_id: 0, claimed_by_name: ''
@@ -4829,6 +5839,7 @@
             });
             const resData = await res.json();
             if (resData?.order_id) orderData.id = String(resData.order_id);
+            if (resData?.delivery_mode) orderData.delivery_mode = String(resData.delivery_mode);
             if (resData?.total !== undefined) orderData.total = Number(resData.total);
             if (resData?.delivery_fee !== undefined) orderData.delivery_fee = Number(resData.delivery_fee);
         } catch (e) {
@@ -4984,7 +5995,8 @@
             if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
             else if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
 
-            const meta = getDeliveryMeta(deliveryMode);
+            const ordMode = (ord.delivery_mode || '').trim() || deliveryMode;
+            const meta = getDeliveryMeta(ordMode);
             let itemsList = ord.items.map(i => `<div>• ${escapeHtml(i.title)} × ${i.qty}</div>`).join('');
             let promoNote = ord.promo_code ? `<div style="font-size:11.5px; color:var(--accent-green); margin-top:4px;">🎟 Промокод ${escapeHtml(ord.promo_code)} (-${formatMoney(ord.discount || 0)})</div>` : '';
             let delivNote = Number(ord.delivery_fee || 0) > 0 ? `<div style="font-size:11.5px; color:var(--text-secondary); margin-top:3px;">🚚 Доставка: ${formatMoney(ord.delivery_fee)}</div>` : '';
@@ -4994,11 +6006,12 @@
             let timeNote = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
             let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${escapeHtml(ord.created_at)}</b></div>` : '';
             let courierInfoHtml = ord.claimed_by_name ? `<div class="order-meta-row"><span>🛵 Курьер:</span> <b style="color:var(--accent-green);">${escapeHtml(ord.claimed_by_name)}</b></div>` : '';
+            let formatRowHtml = `<div class="order-meta-row"><span>🚚 Формат:</span> <b>${escapeHtml(meta.modeName)}</b></div>`;
 
             html += `
                 <div class="order-card">
                     <div class="order-card-header"><span class="order-id-label">Заказ #${escapeHtml(ord.id)}</span>${statusHtml}</div>
-                    <div class="order-meta-grid">${createdAtHtml}${courierInfoHtml}<div class="order-meta-row"><span>${meta.orderRowLabel}</span> <b>${meta.formatLocation(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNote}</div></div>
+                    <div class="order-meta-grid">${createdAtHtml}${courierInfoHtml}${formatRowHtml}<div class="order-meta-row"><span>${meta.orderRowLabel}</span> <b>${meta.formatLocation(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNote}</div></div>
                     <div class="order-items-box">${itemsList}${promoNote}${delivNote}</div>
                     <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">К оплате:</span><span class="order-total-price">${formatMoney(ord.total)}</span></div>
                     ${actionButtons}
@@ -5569,17 +6582,35 @@
         const modeGrid = document.getElementById('admin-delivery-mode-grid');
         if (modeGrid) {
             modeGrid.innerHTML = DELIVERY_MODE_OPTIONS.map(m => {
-                const isAct = deliveryMode === m.id;
-                const spanFull = m.id === 'free_address' ? 'grid-column: span 2;' : '';
-                return `<button type="button" class="toggle-pill ${isAct ? 'on' : ''}" style="${spanFull} min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:9px 8px; font-size:11px; text-align:center; ${!isAct ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="selectAdminDeliveryMode('${m.id}')">${m.label}</button>`;
+                const isAct = enabledDeliveryModes.includes(m.id);
+                const prefix = isAct ? '✓ ' : '';
+                return `<button type="button" class="toggle-pill ${isAct ? 'on' : ''}" style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:9px 8px; font-size:11px; text-align:center; ${!isAct ? 'background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);' : ''}" onclick="toggleAdminDeliveryMode('${m.id}')">${prefix}${m.label}</button>`;
             }).join('');
         }
 
-        const locsWrapper = document.getElementById('admin-delivery-locs-wrapper');
+        const distWrapper = document.getElementById('admin-district-locs-wrapper');
+        if (distWrapper) {
+            distWrapper.style.display = enabledDeliveryModes.includes('districts') ? 'block' : 'none';
+        }
+        const distList = document.getElementById('admin-district-locs-list');
+        if (distList) {
+            if (!districtLocations.length) {
+                distList.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">Список районов пуст — добавьте хотя бы один район</div>';
+            } else {
+                distList.innerHTML = districtLocations.map((loc, idx) => `
+                    <div class="admin-toggle-row">
+                        <span style="flex:1; font-weight:600;">${escapeHtml(loc)}</span>
+                        <button type="button" class="toggle-pill off" onclick="adminRemoveDistrictLocation(${idx})">✕</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        const locsWrapper = document.getElementById('admin-pickup-locs-wrapper');
         const locsTitle = document.getElementById('admin-delivery-locs-title');
         const locsInp = document.getElementById('admin-new-delivery-loc-input');
         if (locsWrapper) {
-            locsWrapper.style.display = (deliveryMode === 'districts' || deliveryMode === 'pickup') ? 'block' : 'none';
+            locsWrapper.style.display = enabledDeliveryModes.includes('pickup') ? 'block' : 'none';
         }
         if (locsTitle) {
             locsTitle.innerText = '📦 Список пунктов выдачи:';
@@ -5590,10 +6621,10 @@
 
         const locsList = document.getElementById('admin-delivery-locs-list');
         if (locsList) {
-            if (!deliveryLocations.length) {
-                locsList.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">Список пока пуст — добавьте хотя бы один вариант</div>';
+            if (!pickupLocations.length) {
+                locsList.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:6px;">Список пунктов выдачи пуст — добавьте хотя бы один вариант</div>';
             } else {
-                locsList.innerHTML = deliveryLocations.map((loc, idx) => `
+                locsList.innerHTML = pickupLocations.map((loc, idx) => `
                     <div class="admin-toggle-row">
                         <span style="flex:1; font-weight:600;">${escapeHtml(loc)}</span>
                         <button type="button" class="toggle-pill off" onclick="adminRemoveDeliveryLocation(${idx})">✕</button>
@@ -5623,25 +6654,73 @@
         if (document.getElementById('admin-tab-promos')?.style.display !== 'none') renderAdminPromos();
     }
 
-    function selectAdminDeliveryMode(mode) {
+    function toggleAdminDeliveryMode(mode) {
+        if (!ALL_DELIVERY_MODE_IDS.includes(mode)) return;
+        const idx = enabledDeliveryModes.indexOf(mode);
+        if (idx >= 0) {
+            if (enabledDeliveryModes.length <= 1) {
+                showToast("Должен остаться включённым хотя бы один формат доставки", true);
+                return;
+            }
+            enabledDeliveryModes.splice(idx, 1);
+        } else {
+            const ordered = ALL_DELIVERY_MODE_IDS.filter(id => id === mode || enabledDeliveryModes.includes(id));
+            enabledDeliveryModes = ordered;
+        }
         isRegionSettingsDirty = true;
-        deliveryMode = mode;
-        localStorage.setItem('monkey_delivery_mode', deliveryMode);
+        if (!enabledDeliveryModes.includes(deliveryMode)) {
+            deliveryMode = enabledDeliveryModes[0];
+            try { localStorage.setItem('monkey_selected_delivery_mode', deliveryMode); } catch (_) {}
+        }
+        try {
+            localStorage.setItem('monkey_enabled_delivery_modes', JSON.stringify(enabledDeliveryModes));
+            localStorage.setItem('monkey_delivery_mode', enabledDeliveryModes[0]);
+        } catch (_) {}
         ensureValidSelectedStationAndTime();
         renderAdminRegionTab();
         renderCart();
+    }
+
+    function selectAdminDeliveryMode(mode) {
+        toggleAdminDeliveryMode(mode);
+    }
+
+    function adminAddDistrictLocation() {
+        const inp = document.getElementById('admin-new-district-loc-input');
+        const val = (inp?.value || '').trim();
+        if (!val) return;
+        if (districtLocations.some(x => x.toLowerCase() === val.toLowerCase())) {
+            showToast("Такой район уже есть в списке", true);
+            return;
+        }
+        isRegionSettingsDirty = true;
+        districtLocations.push(val);
+        localStorage.setItem('monkey_district_locations', JSON.stringify(districtLocations));
+        inp.value = '';
+        ensureValidSelectedStationAndTime();
+        renderAdminRegionTab();
+    }
+
+    function adminRemoveDistrictLocation(idx) {
+        isRegionSettingsDirty = true;
+        districtLocations.splice(idx, 1);
+        localStorage.setItem('monkey_district_locations', JSON.stringify(districtLocations));
+        ensureValidSelectedStationAndTime();
+        renderAdminRegionTab();
     }
 
     function adminAddDeliveryLocation() {
         const inp = document.getElementById('admin-new-delivery-loc-input');
         const val = (inp?.value || '').trim();
         if (!val) return;
-        if (deliveryLocations.some(x => x.toLowerCase() === val.toLowerCase())) {
+        if (pickupLocations.some(x => x.toLowerCase() === val.toLowerCase())) {
             showToast("Такой пункт уже есть в списке", true);
             return;
         }
         isRegionSettingsDirty = true;
-        deliveryLocations.push(val);
+        pickupLocations.push(val);
+        deliveryLocations = [...pickupLocations];
+        localStorage.setItem('monkey_pickup_locations', JSON.stringify(pickupLocations));
         localStorage.setItem('monkey_delivery_locations', JSON.stringify(deliveryLocations));
         inp.value = '';
         ensureValidSelectedStationAndTime();
@@ -5650,7 +6729,9 @@
 
     function adminRemoveDeliveryLocation(idx) {
         isRegionSettingsDirty = true;
-        deliveryLocations.splice(idx, 1);
+        pickupLocations.splice(idx, 1);
+        deliveryLocations = [...pickupLocations];
+        localStorage.setItem('monkey_pickup_locations', JSON.stringify(pickupLocations));
         localStorage.setItem('monkey_delivery_locations', JSON.stringify(deliveryLocations));
         ensureValidSelectedStationAndTime();
         renderAdminRegionTab();
@@ -5658,14 +6739,19 @@
 
     async function adminSaveLocalization() {
         document.activeElement?.blur();
+        const primaryMode = enabledDeliveryModes[0] || 'metro';
+        const compatLocations = primaryMode === 'districts' ? districtLocations : pickupLocations;
         try {
-            await apiFetch(`/api/admin/localization`, {
+            const res = await apiFetch(`/api/admin/localization`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: Number(currentUserId),
                     currency: shopCurrency,
-                    delivery_mode: deliveryMode,
-                    delivery_locations: deliveryLocations,
+                    delivery_mode: primaryMode,
+                    enabled_delivery_modes: enabledDeliveryModes,
+                    district_locations: districtLocations,
+                    pickup_locations: pickupLocations,
+                    delivery_locations: compatLocations,
                     splash_emoji: splashEmoji,
                     welcome_text: welcomeText,
                     min_order_amount: minOrderAmount,
@@ -5673,6 +6759,21 @@
                     free_delivery_threshold: freeDeliveryThreshold
                 })
             });
+            const data = await res.json();
+            if (Array.isArray(data?.enabled_delivery_modes) && data.enabled_delivery_modes.length > 0) {
+                enabledDeliveryModes = data.enabled_delivery_modes;
+                localStorage.setItem('monkey_enabled_delivery_modes', JSON.stringify(enabledDeliveryModes));
+            }
+            if (Array.isArray(data?.district_locations)) {
+                districtLocations = data.district_locations;
+                localStorage.setItem('monkey_district_locations', JSON.stringify(districtLocations));
+            }
+            if (Array.isArray(data?.pickup_locations)) {
+                pickupLocations = data.pickup_locations;
+                deliveryLocations = [...pickupLocations];
+                localStorage.setItem('monkey_pickup_locations', JSON.stringify(pickupLocations));
+                localStorage.setItem('monkey_delivery_locations', JSON.stringify(deliveryLocations));
+            }
             isRegionSettingsDirty = false;
             ensureValidSelectedStationAndTime();
             filterProducts();
@@ -5758,32 +6859,48 @@
 
     async function adminToggleBannerEnabled() {
         document.activeElement?.blur();
-        promoBanner.enabled = !promoBanner.enabled;
+        isBannerDirty = true;
+        bannerCarouselEnabled = !bannerCarouselEnabled;
+        try { localStorage.setItem('monkey_banner_enabled', bannerCarouselEnabled ? '1' : '0'); } catch (_) {}
         applyPromoBannerUI();
         await adminSaveBanner(true);
     }
 
     async function adminSaveBanner(silent = false) {
         document.activeElement?.blur();
-        const title = (document.getElementById('admin-banner-title')?.value || '').trim();
-        const desc = (document.getElementById('admin-banner-desc')?.value || '').trim();
-        const badge = (document.getElementById('admin-banner-badge')?.value || '').trim();
-        promoBanner.title = title;
-        promoBanner.desc = desc;
-        promoBanner.badge = badge;
-        localStorage.setItem('monkey_promo_banner', JSON.stringify(promoBanner));
+        const intVal = parseInt(document.getElementById('admin-banner-interval')?.value ?? String(bannerIntervalSec), 10);
+        bannerIntervalSec = isNaN(intVal) ? 5 : Math.max(0, Math.min(120, intVal));
+        const tnInp = document.getElementById('admin-top-notice-text');
+        if (tnInp) {
+            topNotice.text = tnInp.value.trim() || 'Возьми две жижи в подарок';
+        }
+        const first = bannerSlides[0] || { title: '', desc: '', promo_code: '' };
+        try {
+            localStorage.setItem('monkey_banner_enabled', bannerCarouselEnabled ? '1' : '0');
+            localStorage.setItem('monkey_banner_interval', String(bannerIntervalSec));
+            localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides));
+            localStorage.setItem('monkey_top_notice', JSON.stringify(topNotice));
+        } catch (_) {}
         applyPromoBannerUI();
         try {
             await apiFetch(`/api/admin/banner`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: Number(currentUserId),
-                    enabled: promoBanner.enabled,
-                    title, desc, badge
+                    enabled: bannerCarouselEnabled,
+                    title: first.title || '',
+                    desc: first.desc || '',
+                    badge: first.promo_code || '',
+                    banner_interval: bannerIntervalSec,
+                    banners: bannerSlides,
+                    top_notice: topNotice
                 })
             });
-            if (!silent) showToast("✅ Баннер на витрине обновлён!");
-        } catch (e) { if (!silent) showToast("Ошибка сохранения баннера", true); }
+            isBannerDirty = false;
+            if (!silent) showToast("✅ Баннеры и настройки витрины сохранены!");
+        } catch (e) {
+            if (!silent) showToast("Ошибка сохранения баннеров на сервере", true);
+        }
     }
 
     function renderAdminChannelsTab() {
@@ -6629,7 +7746,8 @@
             const isClaimedByMe = claimedId && claimedId === Number(currentUserId);
             const isClaimedByOther = claimedId && claimedId !== Number(currentUserId);
 
-            const meta = getDeliveryMeta(deliveryMode);
+            const ordMode = (ord.delivery_mode || '').trim() || deliveryMode;
+            const meta = getDeliveryMeta(ordMode);
             let itemsList = ord.items.map(i => `<div>• ${escapeHtml(i.title)} × ${i.qty} (${formatMoney(i.price * i.qty)})</div>`).join('');
             let promoBadgeCourier = ord.promo_code ? `<div style="color:var(--accent-green); margin-top:4px;">🎟 Промокод: ${escapeHtml(ord.promo_code)} (-${formatMoney(ord.discount || 0)})</div>` : '';
             let delivBadgeCourier = Number(ord.delivery_fee || 0) > 0 ? `<div style="color:var(--text-secondary); margin-top:3px;">🚚 Доставка: ${formatMoney(ord.delivery_fee)}</div>` : '';
@@ -6666,6 +7784,7 @@
 
             let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
             let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${escapeHtml(ord.created_at)}</b></div>` : '';
+            let formatRowCourierHtml = `<div class="order-meta-row"><span>🚚 Формат:</span> <b>${escapeHtml(meta.modeName)}</b></div>`;
 
             html += `
                 <div class="order-card">
@@ -6678,7 +7797,7 @@
                         <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">${statusHtml}${deleteBtn}</div>
                     </div>
                     ${claimedBanner}
-                    <div class="order-meta-grid">${createdAtHtml}<div class="order-meta-row"><span>${meta.orderRowLabel}</span> <b>${meta.formatLocation(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNoteCourier}</div></div>
+                    <div class="order-meta-grid">${createdAtHtml}${formatRowCourierHtml}<div class="order-meta-row"><span>${meta.orderRowLabel}</span> <b>${meta.formatLocation(ord.station)}</b></div><div class="order-meta-row"><span>⏰ Время:</span> <b>${escapeHtml(ord.time)}</b> ${timeNoteCourier}</div></div>
                     <div class="order-items-box">${itemsList}${promoBadgeCourier}${delivBadgeCourier}</div>
                     <div class="order-card-footer"><span style="font-size:12px; color:var(--text-secondary);">Итого к оплате:</span><span class="order-total-price">${formatMoney(ord.total)}</span></div>
                     ${courierActions}
