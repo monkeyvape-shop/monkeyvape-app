@@ -3320,11 +3320,11 @@
                 return cleanApi;
             }
             const savedApi = localStorage.getItem('monkey_runtime_api_url');
-            if (savedApi && savedApi.trim().startsWith('http')) {
+            if (savedApi && savedApi.trim().startsWith('http') && !savedApi.includes('ngrok')) {
                 return savedApi.trim().replace(/\/+$/, '');
             }
         } catch (_) {}
-        return 'https://grandma-unrefined-ecosystem.ngrok-free.dev';
+        return 'https://api.monkeyshop.org';
     }
     function normalizeBackendAudioUrl(rawUrl) {
         const clean = (rawUrl || '').trim();
