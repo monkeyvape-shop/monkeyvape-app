@@ -52,6 +52,13 @@ def load_token_from_env() -> str | None:
             return val
     return None
 
+def load_public_api_url_from_env() -> str:
+    for k in ("PUBLIC_API_URL", "API_URL", "BACKEND_URL", "BASE_URL"):
+        val = (ENV_CFG.get(k) or "").strip().rstrip("/")
+        if val.startswith("https://") or val.startswith("http://"):
+            return val
+    return ""
+
 def load_primary_owner_ids_from_env() -> list[int]:
     if "PRIMARY_OWNER_IDS" in ENV_CFG:
         raw = ENV_CFG["PRIMARY_OWNER_IDS"]
@@ -73,16 +80,19 @@ WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 TUNNEL_FILE = os.path.join(BASE_DIR, "tunnel_url.txt")
 
 def load_tunnel_url() -> str:
+    env_url = load_public_api_url_from_env()
+    if env_url:
+        return env_url
     for candidate in (TUNNEL_FILE, "tunnel_url.txt"):
         if os.path.exists(candidate):
             try:
                 with open(candidate, "r", encoding="utf-8") as f:
-                    saved = f.read().strip()
+                    saved = f.read().strip().rstrip("/")
                     if saved.startswith("http"):
                         return saved
             except Exception:
                 pass
-    return "https://nemeses-july-concrete.ngrok-free.dev"
+    return "https://api.monkeyshop.org"
 
 PUBLIC_TUNNEL_URL = load_tunnel_url()
 
