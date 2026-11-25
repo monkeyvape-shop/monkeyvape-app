@@ -24,21 +24,31 @@ from aiogram.types import (
     WebAppInfo, MenuButtonWebApp, BufferedInputFile, CallbackQuery
 )
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_API_URL = "https://api.monkeyshop.org"
+WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
+TUNNEL_FILE = os.path.join(BASE_DIR, "tunnel_url.txt")
+
+def is_legacy_tunnel_url(url: str) -> bool:
+    return "ngrok" in (url or "").lower()
+
 def load_env_config() -> dict[str, str]:
     cfg: dict[str, str] = {}
     for k, v in os.environ.items():
         cfg[k.upper()] = v
-    if os.path.exists(".env"):
-        try:
-            with open(".env", "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, val = line.split("=", 1)
-                        clean_val = val.strip().strip('"').strip("'")
-                        cfg[key.strip().upper()] = clean_val
-        except Exception:
-            pass
+    for env_path in (os.path.join(BASE_DIR, ".env"), ".env"):
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            key, val = line.split("=", 1)
+                            clean_val = val.strip().strip('"').strip("'")
+                            cfg[key.strip().upper()] = clean_val
+                break
+            except Exception:
+                pass
     return cfg
 
 ENV_CFG = load_env_config()
@@ -55,7 +65,7 @@ def load_token_from_env() -> str | None:
 def load_public_api_url_from_env() -> str:
     for k in ("PUBLIC_API_URL", "API_URL", "BACKEND_URL", "BASE_URL"):
         val = (ENV_CFG.get(k) or "").strip().rstrip("/")
-        if val.startswith("https://") or val.startswith("http://"):
+        if (val.startswith("https://") or val.startswith("http://")) and not is_legacy_tunnel_url(val):
             return val
     return ""
 
@@ -75,9 +85,6 @@ def load_primary_owner_ids_from_env() -> list[int]:
 FALLBACK_TOKEN = "ВСТАВЬ_СВОЙ_ТОКЕН_ЕСЛИ_ЕГО_НЕТ_В_ENV"
 TOKEN = load_token_from_env() or FALLBACK_TOKEN
 CLAIM_SECRET = ENV_CFG.get("CLAIM_SECRET", "").strip()
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
-TUNNEL_FILE = os.path.join(BASE_DIR, "tunnel_url.txt")
 
 def load_tunnel_url() -> str:
     env_url = load_public_api_url_from_env()
@@ -88,13 +95,22 @@ def load_tunnel_url() -> str:
             try:
                 with open(candidate, "r", encoding="utf-8") as f:
                     saved = f.read().strip().rstrip("/")
-                    if saved.startswith("http"):
+                    if saved.startswith("http") and not is_legacy_tunnel_url(saved):
                         return saved
             except Exception:
                 pass
-    return "https://api.monkeyshop.org"
+    return DEFAULT_API_URL
 
 PUBLIC_TUNNEL_URL = load_tunnel_url()
+
+def normalize_public_asset_url(raw_url: str) -> str:
+    clean = (raw_url or "").strip()
+    if not clean or clean.startswith("data:") or clean.startswith("blob:"):
+        return clean
+    base = PUBLIC_TUNNEL_URL.strip().rstrip("/") or DEFAULT_API_URL
+    if is_legacy_tunnel_url(clean):
+        clean = re.sub(r"^https?://[^/]+", base, clean)
+    return clean
 
 PRIMARY_OWNER_IDS = load_primary_owner_ids_from_env()
 DEFAULT_COURIER_IDS = [6658906694, 7280921605]
@@ -251,7 +267,6 @@ def extract_tg_chat_target(raw_link: str) -> str:
             return f"@{slug}"
     return ""
 
-
 def get_location_label(delivery_mode: str) -> str:
     mapping = {
         "metro": "Станция метро",
@@ -320,7 +335,7 @@ def sanitize_string_list(raw_items: list | None) -> list[str]:
 def normalize_audio_track(raw_item: dict, idx: int = 0) -> dict | None:
     if not isinstance(raw_item, dict):
         return None
-    url = str(raw_item.get("url") or "").strip()
+    url = normalize_public_asset_url(str(raw_item.get("url") or "").strip())
     if not url:
         return None
     tid = str(raw_item.get("id") or f"trk_{int(time.time() * 1000)}_{idx}").strip()
@@ -358,7 +373,7 @@ async def get_audio_library_state(db) -> dict:
         except Exception:
             pass
 
-    legacy_url = (await get_setting_raw(db, "music_url", "")).strip()
+    legacy_url = normalize_public_asset_url((await get_setting_raw(db, "music_url", "")).strip())
     legacy_title = (await get_setting_raw(db, "music_title", "Фоновый трек")).strip() or "Фоновый трек"
     if not tracks and legacy_url:
         tracks = [{"id": "trk_legacy_1", "title": legacy_title, "url": legacy_url}]
@@ -651,10 +666,10 @@ def build_personal_url(uid: int, uname: str = "User", is_owner: bool = False, is
         role = "owner"
     elif is_courier:
         role = "courier"
-    url = f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}"
-    if PUBLIC_TUNNEL_URL:
-        url += f"&api={quote(PUBLIC_TUNNEL_URL.strip())}"
-    return url
+    api_base = (PUBLIC_TUNNEL_URL or DEFAULT_API_URL).strip().rstrip("/")
+    if is_legacy_tunnel_url(api_base):
+        api_base = DEFAULT_API_URL
+    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}"
 
 def parse_product_options(raw_json: str, category: str) -> list:
     if raw_json:
@@ -715,6 +730,12 @@ async def notify_stock_subscribers(db, product_id: int, product_title: str, avai
         await db.execute("DELETE FROM stock_notifications WHERE id = ?", (sub_id,))
 
 async def init_db():
+    try:
+        with open(TUNNEL_FILE, "w", encoding="utf-8") as f:
+            f.write(PUBLIC_TUNNEL_URL)
+    except Exception:
+        pass
+
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -835,6 +856,28 @@ async def init_db():
         """)
         await db.execute("CREATE TABLE IF NOT EXISTS shop_settings (key TEXT PRIMARY KEY, value TEXT)")
 
+        # Очистка старых ngrok-ссылок из базы товаров и настроек
+        async with db.execute("SELECT id, image_url FROM products WHERE image_url LIKE '%ngrok%'") as pcur:
+            for pid, old_img in await pcur.fetchall():
+                await db.execute("UPDATE products SET image_url = ? WHERE id = ?", (normalize_public_asset_url(old_img), pid))
+
+        for s_key_clean in ("music_url", "logo_image", "splash_image"):
+            old_val = await get_setting_raw(db, s_key_clean, "")
+            if is_legacy_tunnel_url(old_val):
+                await set_setting_raw(db, s_key_clean, normalize_public_asset_url(old_val))
+
+        raw_tracks_clean = await get_setting_raw(db, "audio_tracks", "")
+        if is_legacy_tunnel_url(raw_tracks_clean):
+            try:
+                parsed_t = json.loads(raw_tracks_clean)
+                if isinstance(parsed_t, list):
+                    for item in parsed_t:
+                        if isinstance(item, dict) and item.get("url"):
+                            item["url"] = normalize_public_asset_url(item["url"])
+                    await set_setting_raw(db, "audio_tracks", json.dumps(parsed_t, ensure_ascii=False))
+            except Exception:
+                pass
+
         default_shop_settings = [
             ("currency", "р."),
             ("delivery_mode", "metro"),
@@ -954,6 +997,13 @@ async def auto_schedule_worker():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    try:
+        default_menu_url = f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}"
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=default_menu_url))
+        )
+    except Exception:
+        pass
     sched_task = asyncio.create_task(auto_schedule_worker())
     try:
         yield
@@ -989,7 +1039,6 @@ async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
         return False
 
     print(f"[TG_DM] Sending message to chat_id={cid}")
-    # Attempt 1: main bot instance with markup
     try:
         await bot.send_message(chat_id=cid, text=text, parse_mode="HTML", reply_markup=reply_markup)
         print(f"[TG_DM_OK] Delivered to {cid}")
@@ -997,7 +1046,6 @@ async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
     except Exception as e1:
         print(f"[TG_DM_WARN] Attempt 1 failed for {cid}: {e1}")
 
-    # Attempt 2: main bot instance without reply_markup (in case BUTTON_URL_INVALID)
     if reply_markup is not None:
         try:
             await bot.send_message(chat_id=cid, text=text, parse_mode="HTML")
@@ -1006,7 +1054,6 @@ async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
         except Exception as e2:
             print(f"[TG_DM_WARN] Attempt 2 failed for {cid}: {e2}")
 
-    # Attempt 3: fresh Bot session bound strictly to current running event loop
     try:
         async with Bot(token=TOKEN) as temp_bot:
             try:
@@ -1018,6 +1065,7 @@ async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
     except Exception as e3:
         print(f"[TG_DM_ERR] All attempts failed for {cid}: {e3}")
         return False
+
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
@@ -1358,7 +1406,7 @@ async def get_shop_config():
         hit_color = await get_setting_raw(db, "hit_color", "#ffcc00")
         logo_part1 = await get_setting_raw(db, "logo_part1", "MONKEY")
         logo_part2 = await get_setting_raw(db, "logo_part2", "VAPE")
-        logo_image = (await get_setting_raw(db, "logo_image", "")).strip()
+        logo_image = normalize_public_asset_url((await get_setting_raw(db, "logo_image", "")).strip())
         splash_style = (await get_setting_raw(db, "splash_style", "neon")).strip() or "neon"
         music_enabled = (await get_setting_raw(db, "music_enabled", "0")) == "1"
         music_paused = (await get_setting_raw(db, "music_paused", "0")) == "1"
@@ -1380,7 +1428,7 @@ async def get_shop_config():
         delivery_locations = deliv_state["delivery_locations"]
 
         splash_emoji = (await get_setting_raw(db, "splash_emoji", "🐵")).strip() or "🐵"
-        splash_image = (await get_setting_raw(db, "splash_image", "")).strip()
+        splash_image = normalize_public_asset_url((await get_setting_raw(db, "splash_image", "")).strip())
         welcome_text = await get_setting_raw(db, "welcome_text", DEFAULT_WELCOME_TEXT)
         min_order_amount = float(await get_setting_raw(db, "min_order_amount", "0") or 0)
         delivery_fee = float(await get_setting_raw(db, "delivery_fee", "0") or 0)
@@ -1459,7 +1507,7 @@ async def get_shop_config():
                     "tag": pr[5] or "",
                     "icon": pr[6] or "🧪",
                     "available": bool(pr[7]),
-                    "image_url": pr[8] or "",
+                    "image_url": normalize_public_asset_url(pr[8] or ""),
                     "has_discount": bool(pr[9]),
                     "low_stock": bool(pr[10]),
                     "options": parse_product_options(pr[11] or "", primary_c)
@@ -1617,11 +1665,11 @@ async def update_admin_branding(data: AdminBrandingSchema):
         await set_setting_raw(db, "logo_part1", p1)
         await set_setting_raw(db, "logo_part2", p2)
         if data.logo_image is not None:
-            await set_setting_raw(db, "logo_image", data.logo_image.strip())
+            await set_setting_raw(db, "logo_image", normalize_public_asset_url(data.logo_image.strip()))
         if data.splash_emoji.strip():
             await set_setting_raw(db, "splash_emoji", data.splash_emoji.strip())
         if data.splash_image is not None:
-            await set_setting_raw(db, "splash_image", data.splash_image.strip())
+            await set_setting_raw(db, "splash_image", normalize_public_asset_url(data.splash_image.strip()))
         if data.splash_style is not None:
             st_clean = data.splash_style.strip()
             if st_clean in ("neon", "minimal", "orbit", "pulse", "glass"):
@@ -1876,7 +1924,7 @@ async def update_admin_music(data: AdminMusicSchema):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, data.user_id):
             raise HTTPException(status_code=403, detail="Only owner")
-        m_url = (data.music_url or "").strip()
+        m_url = normalize_public_asset_url((data.music_url or "").strip())
         m_title = (data.music_title or "").strip() or "Фоновый трек"
         m_vol = max(0.0, min(1.0, round(float(data.music_volume if data.music_volume is not None else 0.35), 2)))
         def_vol_100 = max(0, min(100, int(round(m_vol * 100))))
@@ -1971,7 +2019,7 @@ async def update_admin_localization(data: AdminLocalizationSchema):
         await set_setting_list(db, "pickup_locations", pickup_locs)
         await set_setting_raw(db, "splash_emoji", emoji)
         if data.splash_image is not None:
-            await set_setting_raw(db, "splash_image", data.splash_image.strip())
+            await set_setting_raw(db, "splash_image", normalize_public_asset_url(data.splash_image.strip()))
         await set_setting_raw(db, "welcome_text", w_text)
 
         if data.min_order_amount is not None:
@@ -2409,6 +2457,7 @@ async def admin_save_product(data: AdminProductSaveSchema):
     if not clean_opts:
         clean_opts = [{"name": o, "available": True} for o in DEFAULT_OPTIONS_BY_CAT.get(primary_cat, ["Стандарт"])]
     opts_json = json.dumps(clean_opts, ensure_ascii=False)
+    clean_img_url = normalize_public_asset_url(data.image_url.strip())
 
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, data.user_id):
@@ -2424,7 +2473,7 @@ async def admin_save_product(data: AdminProductSaveSchema):
                 (
                     data.title.strip(), primary_cat, cats_json, float(data.price), float(data.old_price or 0.0),
                     data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0,
-                    data.image_url.strip(), 1 if data.has_discount else 0, 1 if data.low_stock else 0,
+                    clean_img_url, 1 if data.has_discount else 0, 1 if data.low_stock else 0,
                     opts_json, data.id
                 )
             )
@@ -2438,7 +2487,7 @@ async def admin_save_product(data: AdminProductSaveSchema):
                 (
                     data.title.strip(), primary_cat, cats_json, float(data.price), float(data.old_price or 0.0),
                     data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0,
-                    data.image_url.strip(), 1 if data.has_discount else 0, 1 if data.low_stock else 0,
+                    clean_img_url, 1 if data.has_discount else 0, 1 if data.low_stock else 0,
                     opts_json
                 )
             )
@@ -3209,7 +3258,7 @@ async def handle_owner_photo_upload(message: Message):
         if not await check_is_owner(db, message.from_user.id):
             return
     file_id = message.photo[-1].file_id
-    base = PUBLIC_TUNNEL_URL.strip().rstrip("/")
+    base = PUBLIC_TUNNEL_URL.strip().rstrip("/") or DEFAULT_API_URL
     photo_url = f"{base}/api/tg_photo/{file_id}"
     await message.answer(
         f"🖼 <b>Прямая ссылка на фото готова!</b>\n\n"
@@ -3260,7 +3309,7 @@ async def cmd_set_tunnel_url(message: Message):
             return
     new_url = message.text[7:].strip().rstrip("/")
     if not new_url.startswith("http"):
-        await message.answer("Укажи ссылку после команды, например:\n<code>/seturl https://твой-адрес</code>", parse_mode="HTML")
+        await message.answer("Укажи ссылку после команды, например:\n<code>/seturl https://api.monkeyshop.org</code>", parse_mode="HTML")
         return
     PUBLIC_TUNNEL_URL = new_url
     try:
