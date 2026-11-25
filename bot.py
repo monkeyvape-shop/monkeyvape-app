@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import csv
+import hashlib
 import hmac
 import html
 import io
@@ -8,12 +9,13 @@ import json
 import os
 import re
 import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 from urllib.parse import quote, parse_qs
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import aiosqlite
@@ -28,13 +30,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_API_URL = "https://api.monkeyshop.org"
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 TUNNEL_FILE = os.path.join(BASE_DIR, "tunnel_url.txt")
-WEBAPP_CACHE_VER = str(int(time.time()))
 
-LEGACY_TUNNEL_MARKERS = ("ngrok", "pinggy", "trycloudflare", "loca.lt")
+ALLOWED_ORIGINS = {
+    "https://monkeyvape-shop.github.io",
+    "https://api.monkeyshop.org",
+    "https://web.telegram.org",
+}
 
 def is_legacy_tunnel_url(url: str) -> bool:
-    low = (url or "").lower()
-    return any(marker in low for marker in LEGACY_TUNNEL_MARKERS)
+    return "ngrok" in (url or "").lower()
 
 def load_env_config() -> dict[str, str]:
     cfg: dict[str, str] = {}
@@ -673,7 +677,7 @@ def build_personal_url(uid: int, uname: str = "User", is_owner: bool = False, is
     api_base = (PUBLIC_TUNNEL_URL or DEFAULT_API_URL).strip().rstrip("/")
     if is_legacy_tunnel_url(api_base):
         api_base = DEFAULT_API_URL
-    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}&v={WEBAPP_CACHE_VER}"
+    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}"
 
 def parse_product_options(raw_json: str, category: str) -> list:
     if raw_json:
@@ -860,11 +864,9 @@ async def init_db():
         """)
         await db.execute("CREATE TABLE IF NOT EXISTS shop_settings (key TEXT PRIMARY KEY, value TEXT)")
 
-        # Автоматическая замена старых туннельных ссылок на актуальный домен
-        async with db.execute("SELECT id, image_url FROM products WHERE image_url LIKE 'http%'") as pcur:
+        async with db.execute("SELECT id, image_url FROM products WHERE image_url LIKE '%ngrok%'") as pcur:
             for pid, old_img in await pcur.fetchall():
-                if is_legacy_tunnel_url(old_img):
-                    await db.execute("UPDATE products SET image_url = ? WHERE id = ?", (normalize_public_asset_url(old_img), pid))
+                await db.execute("UPDATE products SET image_url = ? WHERE id = ?", (normalize_public_asset_url(old_img), pid))
 
         for s_key_clean in ("music_url", "logo_image", "splash_image"):
             old_val = await get_setting_raw(db, s_key_clean, "")
@@ -1003,7 +1005,7 @@ async def auto_schedule_worker():
 async def lifespan(app: FastAPI):
     await init_db()
     try:
-        default_menu_url = f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}&v={WEBAPP_CACHE_VER}"
+        default_menu_url = f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}"
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=default_menu_url))
         )
@@ -1018,12 +1020,33 @@ async def lifespan(app: FastAPI):
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-def extract_user_from_init_data(init_data: str) -> tuple[int, str]:
+def verify_telegram_init_data(init_data: str, max_age_sec: int = 86400 * 3) -> tuple[int, str]:
     raw = (init_data or "").strip()
-    if not raw:
+    if not raw or not TOKEN or TOKEN == FALLBACK_TOKEN:
         return 0, ""
     try:
-        parsed = parse_qs(raw, keep_blank_values=False)
+        parsed = parse_qs(raw, keep_blank_values=True)
+        received_hash = (parsed.get("hash") or [""])[0]
+        if not received_hash:
+            return 0, ""
+
+        auth_date = int((parsed.get("auth_date") or ["0"])[0])
+        if auth_date <= 0 or (time.time() - auth_date) > max_age_sec:
+            return 0, ""
+
+        data_check_lines = []
+        for k in sorted(parsed.keys()):
+            if k == "hash":
+                continue
+            data_check_lines.append(f"{k}={parsed[k][0]}")
+        data_check_string = "\n".join(data_check_lines)
+
+        secret_key = hmac.new(b"WebAppData", TOKEN.encode("utf-8"), hashlib.sha256).digest()
+        calculated_hash = hmac.new(secret_key, data_check_string.encode("utf-8"), hashlib.sha256).hexdigest()
+
+        if not hmac.compare_digest(calculated_hash, received_hash):
+            return 0, ""
+
         user_json_str = (parsed.get("user") or [""])[0]
         if user_json_str:
             uobj = json.loads(user_json_str)
@@ -1034,30 +1057,48 @@ def extract_user_from_init_data(init_data: str) -> tuple[int, str]:
         pass
     return 0, ""
 
+async def require_verified_owner(db, request: Request, claimed_uid: int = 0) -> int:
+    init_data = request.headers.get("X-Telegram-Init-Data", "")
+    v_uid, _ = verify_telegram_init_data(init_data)
+    if v_uid <= 0:
+        raise HTTPException(status_code=401, detail="Требуется вход через Telegram Mini App")
+    if claimed_uid and int(claimed_uid) != v_uid:
+        raise HTTPException(status_code=403, detail="Несоответствие Telegram ID")
+    if not await check_is_owner(db, v_uid):
+        raise HTTPException(status_code=403, detail="Доступ только для владельца")
+    return v_uid
+
+async def require_verified_courier(db, request: Request, claimed_uid: int = 0) -> int:
+    init_data = request.headers.get("X-Telegram-Init-Data", "")
+    v_uid, _ = verify_telegram_init_data(init_data)
+    if v_uid <= 0:
+        raise HTTPException(status_code=401, detail="Требуется вход через Telegram Mini App")
+    if claimed_uid and int(claimed_uid) != v_uid:
+        raise HTTPException(status_code=403, detail="Несоответствие Telegram ID")
+    if not await check_is_courier(db, v_uid):
+        raise HTTPException(status_code=403, detail="Доступ только для курьера или владельца")
+    return v_uid
+
 async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
     try:
         cid = int(chat_id or 0)
     except Exception:
         cid = 0
     if cid <= 0:
-        print(f"[TG_DM_SKIP] Invalid chat_id: {chat_id}")
         return False
 
-    print(f"[TG_DM] Sending message to chat_id={cid}")
     try:
         await bot.send_message(chat_id=cid, text=text, parse_mode="HTML", reply_markup=reply_markup)
-        print(f"[TG_DM_OK] Delivered to {cid}")
         return True
-    except Exception as e1:
-        print(f"[TG_DM_WARN] Attempt 1 failed for {cid}: {e1}")
+    except Exception:
+        pass
 
     if reply_markup is not None:
         try:
             await bot.send_message(chat_id=cid, text=text, parse_mode="HTML")
-            print(f"[TG_DM_OK] Delivered (without markup) to {cid}")
             return True
-        except Exception as e2:
-            print(f"[TG_DM_WARN] Attempt 2 failed for {cid}: {e2}")
+        except Exception:
+            pass
 
     try:
         async with Bot(token=TOKEN) as temp_bot:
@@ -1065,32 +1106,78 @@ async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
                 await temp_bot.send_message(chat_id=cid, text=text, parse_mode="HTML", reply_markup=reply_markup)
             except Exception:
                 await temp_bot.send_message(chat_id=cid, text=text, parse_mode="HTML")
-        print(f"[TG_DM_OK] Delivered (via fresh session) to {cid}")
         return True
-    except Exception as e3:
-        print(f"[TG_DM_ERR] All attempts failed for {cid}: {e3}")
+    except Exception:
         return False
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=list(ALLOWED_ORIGINS),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
+RATE_LIMIT_GENERAL: dict[str, list[float]] = defaultdict(list)
+RATE_LIMIT_SENSITIVE: dict[str, list[float]] = defaultdict(list)
+SENSITIVE_PATHS = {
+    "/api/create_order",
+    "/api/admin/upload_image",
+    "/api/admin/upload_music",
+    "/api/admin/broadcast",
+    "/api/admin/send_backup",
+}
+
+def _get_client_ip(request: Request) -> str:
+    cf_ip = request.headers.get("CF-Connecting-IP", "").strip()
+    if cf_ip:
+        return cf_ip
+    xff = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    if xff:
+        return xff
+    return request.client.host if request.client else "unknown"
+
 @app.middleware("http")
-async def add_private_network_header(request: Request, call_next):
+async def security_and_rate_limit_middleware(request: Request, call_next):
+    origin = (request.headers.get("origin") or "").strip()
+    allow_origin = origin if origin in ALLOWED_ORIGINS else "https://monkeyvape-shop.github.io"
+
     if request.method == "OPTIONS":
         response = Response(status_code=200)
-    else:
-        response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Origin"] = allow_origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+        return response
+
+    now_ts = time.time()
+    client_ip = _get_client_ip(request)
+    path = request.url.path
+
+    if path.startswith("/api/"):
+        gen_hits = [t for t in RATE_LIMIT_GENERAL[client_ip] if now_ts - t < 60.0]
+        if len(gen_hits) >= 150:
+            return JSONResponse(status_code=429, content={"detail": "Слишком много запросов. Попробуйте через минуту."})
+        gen_hits.append(now_ts)
+        RATE_LIMIT_GENERAL[client_ip] = gen_hits
+
+        if path in SENSITIVE_PATHS:
+            sens_hits = [t for t in RATE_LIMIT_SENSITIVE[client_ip] if now_ts - t < 60.0]
+            if len(sens_hits) >= 15:
+                return JSONResponse(status_code=429, content={"detail": "Превышен лимит запросов. Подождите минуту."})
+            sens_hits.append(now_ts)
+            RATE_LIMIT_SENSITIVE[client_ip] = sens_hits
+
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = allow_origin
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "*"
     response.headers["Access-Control-Allow-Private-Network"] = "true"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
 class OrderSchema(BaseModel):
@@ -1368,6 +1455,8 @@ async def get_user_avatar(user_id: int):
 
 @app.get("/api/tg_photo/{file_id}")
 async def get_tg_photo(file_id: str):
+    if not re.match(r"^[A-Za-z0-9_-]{10,200}$", file_id or ""):
+        raise HTTPException(status_code=400, detail="Invalid file id")
     try:
         tg_file = await bot.get_file(file_id)
         file_bytes_io = await bot.download_file(tg_file.file_path)
@@ -1377,6 +1466,8 @@ async def get_tg_photo(file_id: str):
 
 @app.get("/api/tg_audio/{file_id}")
 async def get_tg_audio(file_id: str):
+    if not re.match(r"^[A-Za-z0-9_-]{10,200}$", file_id or ""):
+        raise HTTPException(status_code=400, detail="Invalid file id")
     try:
         tg_file = await bot.get_file(file_id)
         file_bytes_io = await bot.download_file(tg_file.file_path)
@@ -1591,10 +1682,9 @@ async def get_shop_config():
         }
 
 @app.post("/api/admin/ui_theme")
-async def update_admin_ui_theme(data: AdminUiThemeSchema):
+async def update_admin_ui_theme(data: AdminUiThemeSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         if data.reset:
             new_theme = dict(DEFAULT_UI_THEME)
         else:
@@ -1607,10 +1697,9 @@ async def update_admin_ui_theme(data: AdminUiThemeSchema):
     return {"success": True, "ui_theme": new_theme}
 
 @app.post("/api/admin/saved_ui_themes")
-async def update_admin_saved_ui_themes(data: AdminSavedUiThemesSchema):
+async def update_admin_saved_ui_themes(data: AdminSavedUiThemesSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         themes_list = await get_setting_list(db, "saved_ui_themes", [])
         if not isinstance(themes_list, list):
             themes_list = []
@@ -1635,10 +1724,9 @@ async def update_admin_saved_ui_themes(data: AdminSavedUiThemesSchema):
     return {"success": True, "saved_ui_themes": themes_list}
 
 @app.post("/api/admin/age_settings")
-async def update_admin_age_settings(data: AdminAgeSettingsSchema):
+async def update_admin_age_settings(data: AdminAgeSettingsSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         min_y = max(14, min(99, int(data.min_years or 18)))
         bg_c = (data.bg_color or "").strip() or "#131b14"
         op_pct = max(10, min(100, int(data.opacity if data.opacity is not None else 95)))
@@ -1658,10 +1746,9 @@ async def update_admin_age_settings(data: AdminAgeSettingsSchema):
     }
 
 @app.post("/api/admin/branding")
-async def update_admin_branding(data: AdminBrandingSchema):
+async def update_admin_branding(data: AdminBrandingSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         p1 = data.logo_part1.strip()
         p2 = data.logo_part2.strip()
         logo_img = (data.logo_image or "").strip() if data.logo_image is not None else (await get_setting_raw(db, "logo_image", "")).strip()
@@ -1714,10 +1801,9 @@ def _sanitize_audio_ext(filename: str, raw_b64: str) -> str:
     return ".mp3"
 
 @app.post("/api/admin/upload_music")
-async def upload_admin_music(data: AdminMusicUploadSchema):
+async def upload_admin_music(data: AdminMusicUploadSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         raw_payload = (data.data_base64 or "").strip()
         if not raw_payload:
             raise HTTPException(status_code=400, detail="Пустой аудиофайл")
@@ -1777,10 +1863,9 @@ async def upload_admin_music(data: AdminMusicUploadSchema):
     }
 
 @app.post("/api/admin/audio")
-async def update_admin_audio(data: AdminAudioSchema):
+async def update_admin_audio(data: AdminAudioSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
 
         audio_state = await get_audio_library_state(db)
         tracks = list(audio_state["audio_tracks"])
@@ -1877,19 +1962,22 @@ async def serve_uploaded_music(filename: str):
         }
     )
 
+def _detect_valid_image_ext(img_bytes: bytes) -> str | None:
+    if len(img_bytes) >= 3 and img_bytes[:3] == b"\xff\xd8\xff":
+        return ".jpg"
+    if len(img_bytes) >= 8 and img_bytes[:8] == b"\x89PNG\r\n\x1a\n":
+        return ".png"
+    if len(img_bytes) >= 12 and img_bytes[:4] == b"RIFF" and img_bytes[8:12] == b"WEBP":
+        return ".webp"
+    return None
+
 @app.post("/api/admin/upload_image")
-async def upload_admin_image(data: AdminImageUploadSchema):
+async def upload_admin_image(data: AdminImageUploadSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
     raw_payload = (data.data_base64 or "").strip()
     if not raw_payload:
         raise HTTPException(status_code=400, detail="Пустой файл изображения")
-    ext = ".jpg"
-    if raw_payload.startswith("data:image/png"):
-        ext = ".png"
-    elif raw_payload.startswith("data:image/webp"):
-        ext = ".webp"
     if "," in raw_payload and raw_payload.startswith("data:"):
         raw_payload = raw_payload.split(",", 1)[1]
     try:
@@ -1898,6 +1986,10 @@ async def upload_admin_image(data: AdminImageUploadSchema):
         raise HTTPException(status_code=400, detail="Некорректный формат изображения")
     if not img_bytes or len(img_bytes) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Размер изображения должен быть до 10 МБ")
+
+    ext = _detect_valid_image_ext(img_bytes)
+    if not ext:
+        raise HTTPException(status_code=400, detail="Разрешены только изображения JPG, PNG или WEBP")
 
     os.makedirs(IMAGES_DIR, exist_ok=True)
     stored_name = f"prod_{int(time.time() * 1000)}_{os.urandom(3).hex()}{ext}"
@@ -1925,10 +2017,9 @@ async def serve_uploaded_product_image(filename: str):
     )
 
 @app.post("/api/admin/music")
-async def update_admin_music(data: AdminMusicSchema):
+async def update_admin_music(data: AdminMusicSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         m_url = normalize_public_asset_url((data.music_url or "").strip())
         m_title = (data.music_title or "").strip() or "Фоновый трек"
         m_vol = max(0.0, min(1.0, round(float(data.music_volume if data.music_volume is not None else 0.35), 2)))
@@ -1973,10 +2064,9 @@ async def update_admin_music(data: AdminMusicSchema):
     }
 
 @app.post("/api/admin/localization")
-async def update_admin_localization(data: AdminLocalizationSchema):
+async def update_admin_localization(data: AdminLocalizationSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
 
         cur = data.currency.strip() if data.currency.strip() in ALLOWED_CURRENCIES else "р."
         dmode = data.delivery_mode.strip() if data.delivery_mode.strip() in ALLOWED_DELIVERY_MODES else "metro"
@@ -2049,10 +2139,9 @@ async def update_admin_localization(data: AdminLocalizationSchema):
     }
 
 @app.post("/api/admin/delivery_pricing")
-async def update_admin_delivery_pricing(data: AdminDeliveryPricingSchema):
+async def update_admin_delivery_pricing(data: AdminDeliveryPricingSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         min_amt = max(0.0, round(float(data.min_order_amount or 0.0), 2))
         d_fee = max(0.0, round(float(data.delivery_fee or 0.0), 2))
         free_thr = max(0.0, round(float(data.free_delivery_threshold or 0.0), 2))
@@ -2075,10 +2164,9 @@ async def update_admin_delivery_pricing(data: AdminDeliveryPricingSchema):
     }
 
 @app.post("/api/admin/smart_bar")
-async def update_admin_smart_bar(data: AdminSmartBarSchema):
+async def update_admin_smart_bar(data: AdminSmartBarSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         sb_target = max(0.0, round(float(data.target or 0.0), 2))
         sb_reward = (data.reward or "").strip() or "Бесплатная доставка"
         await set_setting_raw(db, "smart_bar_enabled", "1" if data.enabled else "0")
@@ -2095,10 +2183,9 @@ async def update_admin_smart_bar(data: AdminSmartBarSchema):
     }
 
 @app.post("/api/admin/channels")
-async def update_admin_channels(data: AdminChannelsSchema):
+async def update_admin_channels(data: AdminChannelsSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         news_url = normalize_tg_link(data.news_channel_url)
         reviews_url = normalize_tg_link(data.reviews_channel_url)
         supp = data.support_username.strip() or "@warat_24"
@@ -2111,10 +2198,9 @@ async def update_admin_channels(data: AdminChannelsSchema):
     return {"success": True, "news_channel_url": news_url, "reviews_channel_url": reviews_url, "support_username": supp}
 
 @app.post("/api/admin/manage_category")
-async def admin_manage_category(data: AdminCategoryManageSchema):
+async def admin_manage_category(data: AdminCategoryManageSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         cats = await get_categories_list(db)
         if data.action == "add":
             c_name = data.name.strip()
@@ -2139,10 +2225,9 @@ async def admin_manage_category(data: AdminCategoryManageSchema):
     return {"success": True, "categories": cats}
 
 @app.post("/api/admin/top_notice")
-async def update_admin_top_notice(data: AdminTopNoticeSchema):
+async def update_admin_top_notice(data: AdminTopNoticeSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         cur_state = await get_top_notice_state(db)
         if data.interval is not None:
             try:
@@ -2258,59 +2343,58 @@ async def _save_banner_settings_db(db, data: CourierBannerSchema) -> dict:
     }
 
 @app.post("/api/admin/banner")
-async def update_admin_banner(data: CourierBannerSchema):
+async def update_admin_banner(data: CourierBannerSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         saved = await _save_banner_settings_db(db, data)
         await db.commit()
     return {"success": True, **saved}
 
 @app.post("/api/courier/banner")
-async def update_courier_banner(data: CourierBannerSchema):
+async def update_courier_banner(data: CourierBannerSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_courier(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only courier or owner")
+        await require_verified_courier(db, request, data.user_id)
         saved = await _save_banner_settings_db(db, data)
         await db.commit()
     return {"success": True, **saved}
 
 @app.post("/api/subscribe_stock")
-async def subscribe_stock(data: StockNotifySchema):
-    if not data.user_id:
-        raise HTTPException(status_code=400, detail="No user id")
+async def subscribe_stock(data: StockNotifySchema, request: Request):
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    if v_uid <= 0:
+        raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
         async with db.execute(
             "SELECT id FROM stock_notifications WHERE user_id = ? AND product_id = ? AND option_name = ?",
-            (data.user_id, data.product_id, data.option_name.strip())
+            (v_uid, data.product_id, data.option_name.strip())
         ) as cur:
             if not await cur.fetchone():
                 await db.execute(
                     "INSERT INTO stock_notifications (user_id, product_id, option_name) VALUES (?, ?, ?)",
-                    (data.user_id, data.product_id, data.option_name.strip())
+                    (v_uid, data.product_id, data.option_name.strip())
                 )
                 await db.commit()
     return {"success": True}
 
 @app.post("/api/subscribe_shop_open")
-async def subscribe_shop_open(data: ShopOpenNotifySchema):
-    if not data.user_id:
-        raise HTTPException(status_code=400, detail="No user id")
+async def subscribe_shop_open(data: ShopOpenNotifySchema, request: Request):
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    if v_uid <= 0:
+        raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
         subs = [int(x) for x in await get_setting_list(db, "shop_open_subscribers")]
-        if int(data.user_id) not in subs:
-            subs.append(int(data.user_id))
+        if v_uid not in subs:
+            subs.append(v_uid)
             await set_setting_list(db, "shop_open_subscribers", subs)
             await db.commit()
     return {"success": True}
 
 @app.post("/api/admin/shop_status")
-async def admin_shop_status(data: AdminShopStatusSchema):
+async def admin_shop_status(data: AdminShopStatusSchema, request: Request):
     notify_uids = []
     brand_name = "Monkey Vape"
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         brand_name = await get_shop_brand_name(db)
         was_open = (await get_setting_raw(db, "shop_open", "1")) == "1"
         await set_setting_raw(db, "shop_open", "1" if data.is_open else "0")
@@ -2336,10 +2420,9 @@ async def admin_shop_status(data: AdminShopStatusSchema):
     return {"success": True}
 
 @app.post("/api/admin/appearance")
-async def admin_appearance(data: AdminAppearanceSchema):
+async def admin_appearance(data: AdminAppearanceSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         season = data.season_effect if data.season_effect in ("none", "winter", "autumn", "spring", "summer", "rain", "garland", "fireworks", "aurora", "bokeh") else "none"
         color = data.hit_color.strip() or "#ffcc00"
         await set_setting_raw(db, "season_effect", season)
@@ -2348,10 +2431,9 @@ async def admin_appearance(data: AdminAppearanceSchema):
     return {"success": True}
 
 @app.post("/api/admin/manage_metro")
-async def admin_manage_metro(data: AdminMetroManageSchema):
+async def admin_manage_metro(data: AdminMetroManageSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         if data.line not in ("green", "blue", "red"):
             raise HTTPException(status_code=400, detail="Invalid line")
         st_name = data.station.strip()
@@ -2368,10 +2450,9 @@ async def admin_manage_metro(data: AdminMetroManageSchema):
     return {"success": True}
 
 @app.post("/api/admin/manage_time")
-async def admin_manage_time(data: AdminTimeManageSchema):
+async def admin_manage_time(data: AdminTimeManageSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         t_str = data.time.strip()
         if not t_str:
             raise HTTPException(status_code=400, detail="Empty time")
@@ -2387,10 +2468,9 @@ async def admin_manage_time(data: AdminTimeManageSchema):
     return {"success": True}
 
 @app.post("/api/admin/toggle_station")
-async def admin_toggle_station(data: AdminStationToggleSchema):
+async def admin_toggle_station(data: AdminStationToggleSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         stations = await get_setting_list(db, "disabled_stations")
         if data.station in stations:
             stations.remove(data.station)
@@ -2401,10 +2481,9 @@ async def admin_toggle_station(data: AdminStationToggleSchema):
     return {"success": True, "disabled_stations": stations}
 
 @app.post("/api/admin/toggle_time")
-async def admin_toggle_time(data: AdminTimeToggleSchema):
+async def admin_toggle_time(data: AdminTimeToggleSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         times = await get_setting_list(db, "disabled_times")
         if data.time in times:
             times.remove(data.time)
@@ -2415,10 +2494,9 @@ async def admin_toggle_time(data: AdminTimeToggleSchema):
     return {"success": True, "disabled_times": times}
 
 @app.post("/api/admin/save_promo")
-async def admin_save_promo(data: AdminPromoSaveSchema):
+async def admin_save_promo(data: AdminPromoSaveSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         code = data.code.strip().upper()
         dtype = data.discount_type if data.discount_type in ("rub", "percent") else "rub"
         max_uses = max(0, int(data.max_uses or 0))
@@ -2435,17 +2513,16 @@ async def admin_save_promo(data: AdminPromoSaveSchema):
     return {"success": True}
 
 @app.post("/api/admin/delete_promo")
-async def admin_delete_promo(data: AdminPromoDeleteSchema):
+async def admin_delete_promo(data: AdminPromoDeleteSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         code = data.code.strip().upper()
         await db.execute("DELETE FROM promocodes WHERE code = ?", (code,))
         await db.commit()
     return {"success": True}
 
 @app.post("/api/admin/save_product")
-async def admin_save_product(data: AdminProductSaveSchema):
+async def admin_save_product(data: AdminProductSaveSchema, request: Request):
     clean_cats: list[str] = []
     for c in (data.categories or []):
         cid = str(c or "").strip()
@@ -2465,8 +2542,7 @@ async def admin_save_product(data: AdminProductSaveSchema):
     clean_img_url = normalize_public_asset_url(data.image_url.strip())
 
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         if data.id and data.id > 0:
             async with db.execute("SELECT available FROM products WHERE id = ?", (data.id,)) as cur:
                 old_row = await cur.fetchone()
@@ -2500,10 +2576,9 @@ async def admin_save_product(data: AdminProductSaveSchema):
     return {"success": True}
 
 @app.post("/api/admin/toggle_product")
-async def admin_toggle_product(data: AdminProductToggleSchema):
+async def admin_toggle_product(data: AdminProductToggleSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         if data.field == "available":
             async with db.execute("SELECT title, available, category, options_json FROM products WHERE id = ?", (data.product_id,)) as cur:
                 row = await cur.fetchone()
@@ -2522,21 +2597,19 @@ async def admin_toggle_product(data: AdminProductToggleSchema):
     return {"success": True}
 
 @app.post("/api/admin/delete_product")
-async def admin_delete_product(data: AdminProductDeleteSchema):
+async def admin_delete_product(data: AdminProductDeleteSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         await db.execute("DELETE FROM products WHERE id = ?", (data.product_id,))
         await db.execute("DELETE FROM stock_notifications WHERE product_id = ?", (data.product_id,))
         await db.commit()
     return {"success": True}
 
 @app.post("/api/admin/manage_role")
-async def admin_manage_role(data: AdminRoleManageSchema):
+async def admin_manage_role(data: AdminRoleManageSchema, request: Request):
     tid = int(data.target_id)
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         primary_owners = await get_primary_owner_ids(db)
         if data.action == "add_owner":
             owners = [int(x) for x in await get_setting_list(db, "extra_owners")]
@@ -2576,10 +2649,9 @@ async def admin_manage_role(data: AdminRoleManageSchema):
     return {"success": True}
 
 @app.post("/api/admin/schedule")
-async def update_admin_schedule(data: AdminScheduleSchema):
+async def update_admin_schedule(data: AdminScheduleSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         open_t = normalize_hhmm(data.open_time, "10:00")
         close_t = normalize_hhmm(data.close_time, "22:00")
         await set_setting_raw(db, "auto_schedule_enabled", "1" if data.auto_schedule_enabled else "0")
@@ -2729,21 +2801,19 @@ async def send_backup_files_to_owner(target_uid: int):
     )
 
 @app.post("/api/admin/send_backup")
-async def admin_send_backup(data: AdminUserActionSchema):
+async def admin_send_backup(data: AdminUserActionSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        v_uid = await require_verified_owner(db, request, data.user_id)
     try:
-        await send_backup_files_to_owner(int(data.user_id))
+        await send_backup_files_to_owner(v_uid)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Не удалось отправить файлы в Telegram: {e}")
     return {"success": True}
 
 @app.post("/api/admin/clear_test_orders")
-async def admin_clear_test_orders(data: AdminUserActionSchema):
+async def admin_clear_test_orders(data: AdminUserActionSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         await db.execute("DELETE FROM orders")
         await db.execute("UPDATE promocodes SET used_count = 0")
         await db.execute("DELETE FROM broadcasts")
@@ -2751,7 +2821,7 @@ async def admin_clear_test_orders(data: AdminUserActionSchema):
     return {"success": True}
 
 @app.get("/api/admin/stats/{user_id}")
-async def admin_stats(user_id: int):
+async def admin_stats(user_id: int, request: Request):
     now = datetime.now()
     today_prefix = now.strftime("%d.%m.%Y")
     week_ago = now - timedelta(days=7)
@@ -2761,8 +2831,7 @@ async def admin_stats(user_id: int):
     item_counts, station_counts, courier_map = {}, {}, {}
 
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, user_id)
         async with db.execute("SELECT total, status, created_at, items, station, claimed_by_id, claimed_by_name FROM orders") as cursor:
             rows = await cursor.fetchall()
 
@@ -2816,10 +2885,9 @@ async def admin_stats(user_id: int):
     }
 
 @app.get("/api/admin/broadcast_history/{user_id}")
-async def admin_broadcast_history(user_id: int):
+async def admin_broadcast_history(user_id: int, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, user_id)
         async with db.execute("SELECT COUNT(*) FROM users WHERE user_id > 0") as cur:
             u_row = await cur.fetchone()
             subscribers_count = u_row[0] if u_row else 0
@@ -2830,14 +2898,13 @@ async def admin_broadcast_history(user_id: int):
     return {"subscribers_count": subscribers_count, "history": history}
 
 @app.post("/api/admin/broadcast")
-async def admin_broadcast(data: AdminBroadcastSchema):
+async def admin_broadcast(data: AdminBroadcastSchema, request: Request):
     text = data.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Empty text")
 
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, data.user_id):
-            raise HTTPException(status_code=403, detail="Only owner")
+        await require_verified_owner(db, request, data.user_id)
         async with db.execute("SELECT user_id FROM users WHERE user_id > 0") as cursor:
             rows = await cursor.fetchall()
 
@@ -2864,13 +2931,11 @@ async def admin_broadcast(data: AdminBroadcastSchema):
 async def create_order(order: OrderSchema, request: Request):
     order_id = str(order.id).strip()
     created_at = order.created_at or datetime.now().strftime("%d.%m.%Y, %H:%M")
-    init_uid, init_uname = extract_user_from_init_data(request.headers.get("X-Telegram-Init-Data", ""))
-    effective_user_id = int(order.user_id or 0) if int(order.user_id or 0) > 0 else init_uid
-    effective_user_name = (order.user_name or "").strip()
-    if (not effective_user_name or effective_user_name == "User") and init_uname:
-        effective_user_name = init_uname
-    if not effective_user_name:
-        effective_user_name = "User"
+    init_uid, init_uname = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    if init_uid <= 0:
+        raise HTTPException(status_code=401, detail="Оформление заказа доступно только внутри Telegram")
+    effective_user_id = init_uid
+    effective_user_name = init_uname or (order.user_name or "").strip() or "User"
     order.user_id = effective_user_id
     order.user_name = effective_user_name
 
@@ -2911,7 +2976,25 @@ async def create_order(order: OrderSchema, request: Request):
         if not station_clean:
             raise HTTPException(status_code=400, detail=f"Укажите: {get_location_label(delivery_mode).lower()}.")
 
-        items_subtotal = round(sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in order.items), 2)
+        verified_items = []
+        items_subtotal = 0.0
+        for raw_it in order.items:
+            pid = int(raw_it.get("id") or 0)
+            qty = max(1, min(50, int(raw_it.get("qty") or 1)))
+            async with db.execute("SELECT title, price, available FROM products WHERE id = ?", (pid,)) as pcur:
+                prow = await pcur.fetchone()
+            if not prow:
+                raise HTTPException(status_code=400, detail="Один из товаров не найден в каталоге.")
+            if not bool(prow[2]):
+                raise HTTPException(status_code=400, detail=f"Товар «{prow[0]}» сейчас недоступен.")
+            real_price = round(float(prow[1]), 2)
+            item_copy = dict(raw_it)
+            item_copy["title"] = prow[0]
+            item_copy["price"] = real_price
+            item_copy["qty"] = qty
+            verified_items.append(item_copy)
+            items_subtotal = round(items_subtotal + real_price * qty, 2)
+
         if min_order_amount > 0 and items_subtotal + 1e-6 < min_order_amount:
             raise HTTPException(
                 status_code=400,
@@ -2926,7 +3009,7 @@ async def create_order(order: OrderSchema, request: Request):
         else:
             applied_delivery_fee = 0.0
 
-        applied_discount = max(0.0, min(items_subtotal, round(float(order.discount or 0.0), 2)))
+        applied_discount = 0.0
         if order.promo_code:
             code_up = order.promo_code.strip().upper()
             async with db.execute("SELECT discount, discount_type, max_uses, used_count FROM promocodes WHERE code = ?", (code_up,)) as cur:
@@ -2936,7 +3019,7 @@ async def create_order(order: OrderSchema, request: Request):
                     m_uses, u_cnt = int(p_row[2] or 0), int(p_row[3] or 0)
                     if m_uses > 0 and u_cnt >= m_uses:
                         raise HTTPException(status_code=400, detail="Лимит использований промокода исчерпан.")
-                    if applied_discount <= 0 and p_disc > 0:
+                    if p_disc > 0:
                         if p_type == "percent":
                             applied_discount = min(items_subtotal, round(items_subtotal * (p_disc / 100.0), 2))
                         else:
@@ -2955,10 +3038,10 @@ async def create_order(order: OrderSchema, request: Request):
         await db.execute(
             """INSERT OR REPLACE INTO orders 
                (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, delivery_fee, created_at, cancelled_by, claimed_by_id, claimed_by_name, delivery_mode)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, '', 0, '', ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, 0, ?, ?, ?, ?, '', 0, '', ?)""",
             (
                 order_id, order.user_id, order.user_name, station_clean, order.time,
-                final_total, json.dumps(order.items), order.status, order.promo_code, applied_discount, applied_delivery_fee, created_at, delivery_mode
+                final_total, json.dumps(verified_items), order.promo_code, applied_discount, applied_delivery_fee, created_at, delivery_mode
             )
         )
         all_couriers = await get_all_courier_ids(db)
@@ -2971,7 +3054,7 @@ async def create_order(order: OrderSchema, request: Request):
     loc_label = html.escape(get_location_label(delivery_mode))
     loc_value = html.escape(format_location_value(station_clean, delivery_mode))
     safe_time = html.escape(order.time or "")
-    items_str = "\n".join([f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} {safe_cur}" for i in order.items])
+    items_str = "\n".join([f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} {safe_cur}" for i in verified_items])
     promo_line = f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{applied_discount:.2f} {safe_cur})" if order.promo_code and applied_discount > 0 else ""
     if applied_delivery_fee > 0:
         deliv_line = f"\n🚚 <b>Доставка:</b> {applied_delivery_fee:.2f} {safe_cur}"
@@ -3022,11 +3105,10 @@ async def create_order(order: OrderSchema, request: Request):
     }
 
 @app.post("/api/courier/claim_order")
-async def courier_claim_order(data: CourierClaimSchema):
+async def courier_claim_order(data: CourierClaimSchema, request: Request):
     oid = str(data.order_id).strip()
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_courier(db, data.courier_id):
-            raise HTTPException(status_code=403, detail="Нет прав курьера")
+        v_uid = await require_verified_courier(db, request, data.courier_id)
         default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
         async with db.execute("SELECT user_id, claimed_by_id, claimed_by_name, station, time, status, delivery_mode FROM orders WHERE id = ?", (oid,)) as cur:
             row = await cur.fetchone()
@@ -3036,12 +3118,12 @@ async def courier_claim_order(data: CourierClaimSchema):
         delivery_mode = (row[6] or "").strip() or default_dmode
         if status != "active":
             raise HTTPException(status_code=400, detail="Заказ уже завершён")
-        if current_cid != 0 and current_cid != int(data.courier_id):
+        if current_cid != 0 and current_cid != v_uid:
             raise HTTPException(status_code=409, detail=f"Заказ уже взял {current_cname}")
 
         await db.execute(
             "UPDATE orders SET claimed_by_id = ?, claimed_by_name = ? WHERE id = ?",
-            (int(data.courier_id), data.courier_name.strip() or f"Курьер {data.courier_id}", oid)
+            (v_uid, data.courier_name.strip() or f"Курьер {v_uid}", oid)
         )
         await db.commit()
 
@@ -3057,9 +3139,10 @@ async def courier_claim_order(data: CourierClaimSchema):
     return {"success": True}
 
 @app.post("/api/courier/arrived")
-async def courier_arrived(data: CourierArrivedSchema):
+async def courier_arrived(data: CourierArrivedSchema, request: Request):
     oid = str(data.order_id).strip()
     async with aiosqlite.connect(DB_FILE) as db:
+        v_uid = await require_verified_courier(db, request, data.courier_id)
         default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
         async with db.execute("SELECT user_id, station, claimed_by_id, delivery_mode FROM orders WHERE id = ?", (oid,)) as cur:
             row = await cur.fetchone()
@@ -3067,7 +3150,7 @@ async def courier_arrived(data: CourierArrivedSchema):
         raise HTTPException(status_code=404, detail="Заказ не найден")
     buyer_id, station, claimed_id = row[0], row[1], int(row[2] or 0)
     delivery_mode = (row[3] or "").strip() or default_dmode
-    if claimed_id != 0 and data.courier_id and claimed_id != int(data.courier_id):
+    if claimed_id != 0 and claimed_id != v_uid:
         raise HTTPException(status_code=403, detail="Этот заказ ведёт другой курьер")
 
     loc_value = html.escape(format_location_value(station, delivery_mode))
@@ -3080,8 +3163,10 @@ async def courier_arrived(data: CourierArrivedSchema):
     return {"success": True}
 
 @app.get("/api/orders")
-async def get_orders(courier_id: int = 0):
+async def get_orders(request: Request, courier_id: int = 0):
     async with aiosqlite.connect(DB_FILE) as db:
+        v_uid = await require_verified_courier(db, request, courier_id)
+        is_owner = await check_is_owner(db, v_uid)
         default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM orders WHERE hidden_by_courier = 0 ORDER BY rowid DESC") as cursor:
@@ -3089,7 +3174,7 @@ async def get_orders(courier_id: int = 0):
             result = []
             for row in rows:
                 c_id = int(row["claimed_by_id"] or 0)
-                if courier_id and c_id != 0 and c_id != int(courier_id):
+                if not is_owner and c_id != 0 and c_id != v_uid:
                     continue
                 eff_dmode = (row["delivery_mode"] or "").strip() or default_dmode
                 result.append({
@@ -3106,8 +3191,13 @@ async def get_orders(courier_id: int = 0):
             return result
 
 @app.get("/api/user_orders/{user_id}")
-async def get_user_orders(user_id: int):
+async def get_user_orders(user_id: int, request: Request):
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    if v_uid <= 0:
+        raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
+        if v_uid != int(user_id) and not await check_is_courier(db, v_uid):
+            raise HTTPException(status_code=403, detail="Нет доступа к заказам другого пользователя")
         default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM orders WHERE user_id = ? ORDER BY rowid DESC", (user_id,)) as cursor:
@@ -3124,7 +3214,10 @@ async def get_user_orders(user_id: int):
             } for row in await cursor.fetchall()]
 
 @app.post("/api/update_order_status")
-async def update_order_status(data: StatusUpdateSchema):
+async def update_order_status(data: StatusUpdateSchema, request: Request):
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    if v_uid <= 0:
+        raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     cancelled_by = data.cancelled_by if data.status == 'cancelled' else ''
     async with aiosqlite.connect(DB_FILE) as db:
         default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
@@ -3135,17 +3228,24 @@ async def update_order_status(data: StatusUpdateSchema):
 
         user_id, user_name, station, time_val, existing_claimed_id = row[0], row[1], row[2], row[3], int(row[4] or 0)
         delivery_mode = (row[5] or "").strip() or default_dmode
+        is_cour = await check_is_courier(db, v_uid)
 
-        if cancelled_by != 'client' and existing_claimed_id != 0 and data.courier_id and existing_claimed_id != int(data.courier_id):
-            raise HTTPException(status_code=403, detail="Этот заказ закреплён за другим курьером")
+        if cancelled_by == 'client':
+            if v_uid != int(user_id or 0) and not is_cour:
+                raise HTTPException(status_code=403, detail="Вы не можете отменить чужой заказ")
+        else:
+            if not is_cour:
+                raise HTTPException(status_code=403, detail="Нет прав курьера")
+            if existing_claimed_id != 0 and existing_claimed_id != v_uid and not await check_is_owner(db, v_uid):
+                raise HTTPException(status_code=403, detail="Этот заказ закреплён за другим курьером")
 
-        if data.courier_id:
+        if is_cour and cancelled_by != 'client':
             await db.execute(
                 """UPDATE orders SET status = ?, cancelled_by = ?,
                    claimed_by_id = CASE WHEN claimed_by_id = 0 THEN ? ELSE claimed_by_id END,
                    claimed_by_name = CASE WHEN claimed_by_name = '' THEN ? ELSE claimed_by_name END
                    WHERE id = ?""",
-                (data.status, cancelled_by, int(data.courier_id), data.courier_name, str(data.order_id))
+                (data.status, cancelled_by, v_uid, data.courier_name, str(data.order_id))
             )
         else:
             await db.execute("UPDATE orders SET status = ?, cancelled_by = ? WHERE id = ?", (data.status, cancelled_by, str(data.order_id)))
@@ -3207,53 +3307,64 @@ async def update_order_status(data: StatusUpdateSchema):
     return {"success": True}
 
 @app.post("/api/delete_completed_order")
-async def delete_completed_order(data: DeleteOrderSchema):
+async def delete_completed_order(data: DeleteOrderSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
+        await require_verified_courier(db, request)
         await db.execute("UPDATE orders SET hidden_by_courier = 1 WHERE id = ? AND status IN ('completed', 'cancelled')", (str(data.order_id),))
         await db.commit()
     return {"success": True}
 
 @app.post("/api/update_order_time")
-async def update_order_time(data: TimeUpdateSchema):
+async def update_order_time(data: TimeUpdateSchema, request: Request):
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    if v_uid <= 0:
+        raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
         default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
+        async with db.execute("SELECT user_id, user_name, station, claimed_by_id, delivery_mode FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
+            row = await cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Заказ не найден")
+
+        user_id, user_name, station, claimed_id = row[0], row[1], row[2], int(row[3] or 0)
+        if v_uid != int(user_id or 0) and not await check_is_courier(db, v_uid):
+            raise HTTPException(status_code=403, detail="Нет доступа к этому заказу")
+
         await db.execute("UPDATE orders SET time = ?, time_changed = 1 WHERE id = ?", (data.time, str(data.order_id)))
         all_couriers = await get_all_courier_ids(db)
         await db.commit()
 
-        async with db.execute("SELECT user_id, user_name, station, claimed_by_id, delivery_mode FROM orders WHERE id = ?", (str(data.order_id),)) as cursor:
-            row = await cursor.fetchone()
-            if row:
-                user_id, user_name, station, claimed_id = row[0], row[1], row[2], int(row[3] or 0)
-                delivery_mode = (row[4] or "").strip() or default_dmode
-                safe_user = html.escape(user_name or "User")
-                loc_label = html.escape(get_location_label(delivery_mode))
-                loc_value = html.escape(format_location_value(station, delivery_mode))
-                targets = [claimed_id] if claimed_id != 0 else all_couriers
-                for cid in targets:
-                    if cid:
-                        await send_tg_dm(
-                            int(cid),
-                            f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n"
-                            f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
-                            f"📍 {loc_label}: {loc_value}\n"
-                            f"🕒 Новое время: <b>{html.escape(data.time)}</b>"
-                        )
-                if user_id:
-                    await send_tg_dm(
-                        int(user_id),
-                        f"⏰ <b>Время встречи по заказу #{html.escape(str(data.order_id))} обновлено!</b>\n"
-                        f"📍 {loc_label}: {loc_value}\n"
-                        f"🕒 Новое время: <b>{html.escape(data.time)}</b>"
-                    )
+        delivery_mode = (row[4] or "").strip() or default_dmode
+        safe_user = html.escape(user_name or "User")
+        loc_label = html.escape(get_location_label(delivery_mode))
+        loc_value = html.escape(format_location_value(station, delivery_mode))
+        targets = [claimed_id] if claimed_id != 0 else all_couriers
+        for cid in targets:
+            if cid:
+                await send_tg_dm(
+                    int(cid),
+                    f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n"
+                    f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
+                    f"📍 {loc_label}: {loc_value}\n"
+                    f"🕒 Новое время: <b>{html.escape(data.time)}</b>"
+                )
+        if user_id:
+            await send_tg_dm(
+                int(user_id),
+                f"⏰ <b>Время встречи по заказу #{html.escape(str(data.order_id))} обновлено!</b>\n"
+                f"📍 {loc_label}: {loc_value}\n"
+                f"🕒 Новое время: <b>{html.escape(data.time)}</b>"
+            )
     return {"success": True}
 
 @app.get("/api/check_role/{user_id}")
-async def check_role(user_id: int):
+async def check_role(user_id: int, request: Request):
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    target_uid = v_uid if v_uid > 0 else int(user_id)
     async with aiosqlite.connect(DB_FILE) as db:
-        if await check_is_owner(db, user_id):
+        if await check_is_owner(db, target_uid):
             return {"role": "owner"}
-        if await check_is_courier(db, user_id):
+        if await check_is_courier(db, target_uid):
             return {"role": "courier"}
     return {"role": "client"}
 
@@ -3308,7 +3419,7 @@ async def handle_owner_audio_upload(message: Message):
 
 @dp.message(F.text.startswith("/seturl"))
 async def cmd_set_tunnel_url(message: Message):
-    global PUBLIC_TUNNEL_URL, WEBAPP_CACHE_VER
+    global PUBLIC_TUNNEL_URL
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, message.from_user.id):
             return
@@ -3317,24 +3428,12 @@ async def cmd_set_tunnel_url(message: Message):
         await message.answer("Укажи ссылку после команды, например:\n<code>/seturl https://api.monkeyshop.org</code>", parse_mode="HTML")
         return
     PUBLIC_TUNNEL_URL = new_url
-    WEBAPP_CACHE_VER = str(int(time.time()))
     try:
         with open(TUNNEL_FILE, "w", encoding="utf-8") as f:
             f.write(new_url)
     except Exception:
         pass
-    try:
-        default_menu_url = f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}&v={WEBAPP_CACHE_VER}"
-        await bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=default_menu_url))
-        )
-    except Exception:
-        pass
-    await message.answer(
-        f"✅ Новый адрес сервера сохранён:\n<code>{html.escape(new_url)}</code>\n\n"
-        f"Кнопка меню обновлена. Нажми /start, чтобы обновить нижнюю кнопку чата.",
-        parse_mode="HTML"
-    )
+    await message.answer(f"✅ Новый адрес сервера сохранён:\n<code>{html.escape(new_url)}</code>\n\nНажми /start, чтобы обновить кнопку.", parse_mode="HTML")
 
 @dp.message(F.text == "/stats")
 async def cmd_owner_stats(message: Message):
@@ -3470,9 +3569,18 @@ async def cmd_post_broadcast(message: Message):
         parse_mode="HTML"
     )
 
+CLAIM_FAILED_ATTEMPTS: dict[int, list[float]] = defaultdict(list)
+
 @dp.message(F.text.startswith("/claim"))
 async def cmd_claim_owner(message: Message):
     uid = message.from_user.id
+    now_ts = time.time()
+    recent_fails = [t for t in CLAIM_FAILED_ATTEMPTS[uid] if now_ts - t < 3600]
+    CLAIM_FAILED_ATTEMPTS[uid] = recent_fails
+    if len(recent_fails) >= 5:
+        await message.answer("⛔ Превышено число попыток ввода ключа. Повторите через 1 час.")
+        return
+
     first_name = message.from_user.first_name or "Владелец"
     uname = f"@{message.from_user.username}" if message.from_user.username else first_name
     secret_arg = message.text[6:].strip()
@@ -3492,9 +3600,11 @@ async def cmd_claim_owner(message: Message):
         return
 
     if not hmac.compare_digest(secret_arg, CLAIM_SECRET):
+        CLAIM_FAILED_ATTEMPTS[uid].append(now_ts)
         await message.answer("❌ Неверный секретный ключ активации.")
         return
 
+    CLAIM_FAILED_ATTEMPTS.pop(uid, None)
     now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
     async with aiosqlite.connect(DB_FILE) as db:
         await db.execute(
