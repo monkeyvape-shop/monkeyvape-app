@@ -28,9 +28,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_API_URL = "https://api.monkeyshop.org"
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 TUNNEL_FILE = os.path.join(BASE_DIR, "tunnel_url.txt")
+WEBAPP_CACHE_VER = str(int(time.time()))
+
+LEGACY_TUNNEL_MARKERS = ("ngrok", "pinggy", "trycloudflare", "loca.lt")
 
 def is_legacy_tunnel_url(url: str) -> bool:
-    return "ngrok" in (url or "").lower()
+    low = (url or "").lower()
+    return any(marker in low for marker in LEGACY_TUNNEL_MARKERS)
 
 def load_env_config() -> dict[str, str]:
     cfg: dict[str, str] = {}
@@ -669,7 +673,7 @@ def build_personal_url(uid: int, uname: str = "User", is_owner: bool = False, is
     api_base = (PUBLIC_TUNNEL_URL or DEFAULT_API_URL).strip().rstrip("/")
     if is_legacy_tunnel_url(api_base):
         api_base = DEFAULT_API_URL
-    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}"
+    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}&v={WEBAPP_CACHE_VER}"
 
 def parse_product_options(raw_json: str, category: str) -> list:
     if raw_json:
@@ -856,10 +860,11 @@ async def init_db():
         """)
         await db.execute("CREATE TABLE IF NOT EXISTS shop_settings (key TEXT PRIMARY KEY, value TEXT)")
 
-        # Очистка старых ngrok-ссылок из базы товаров и настроек
-        async with db.execute("SELECT id, image_url FROM products WHERE image_url LIKE '%ngrok%'") as pcur:
+        # Автоматическая замена старых туннельных ссылок на актуальный домен
+        async with db.execute("SELECT id, image_url FROM products WHERE image_url LIKE 'http%'") as pcur:
             for pid, old_img in await pcur.fetchall():
-                await db.execute("UPDATE products SET image_url = ? WHERE id = ?", (normalize_public_asset_url(old_img), pid))
+                if is_legacy_tunnel_url(old_img):
+                    await db.execute("UPDATE products SET image_url = ? WHERE id = ?", (normalize_public_asset_url(old_img), pid))
 
         for s_key_clean in ("music_url", "logo_image", "splash_image"):
             old_val = await get_setting_raw(db, s_key_clean, "")
@@ -998,7 +1003,7 @@ async def auto_schedule_worker():
 async def lifespan(app: FastAPI):
     await init_db()
     try:
-        default_menu_url = f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}"
+        default_menu_url = f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}&v={WEBAPP_CACHE_VER}"
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=default_menu_url))
         )
@@ -3303,7 +3308,7 @@ async def handle_owner_audio_upload(message: Message):
 
 @dp.message(F.text.startswith("/seturl"))
 async def cmd_set_tunnel_url(message: Message):
-    global PUBLIC_TUNNEL_URL
+    global PUBLIC_TUNNEL_URL, WEBAPP_CACHE_VER
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, message.from_user.id):
             return
@@ -3312,12 +3317,24 @@ async def cmd_set_tunnel_url(message: Message):
         await message.answer("Укажи ссылку после команды, например:\n<code>/seturl https://api.monkeyshop.org</code>", parse_mode="HTML")
         return
     PUBLIC_TUNNEL_URL = new_url
+    WEBAPP_CACHE_VER = str(int(time.time()))
     try:
         with open(TUNNEL_FILE, "w", encoding="utf-8") as f:
             f.write(new_url)
     except Exception:
         pass
-    await message.answer(f"✅ Новый адрес сервера сохранён:\n<code>{html.escape(new_url)}</code>\n\nНажми /start, чтобы обновить кнопку.", parse_mode="HTML")
+    try:
+        default_menu_url = f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}&v={WEBAPP_CACHE_VER}"
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=default_menu_url))
+        )
+    except Exception:
+        pass
+    await message.answer(
+        f"✅ Новый адрес сервера сохранён:\n<code>{html.escape(new_url)}</code>\n\n"
+        f"Кнопка меню обновлена. Нажми /start, чтобы обновить нижнюю кнопку чата.",
+        parse_mode="HTML"
+    )
 
 @dp.message(F.text == "/stats")
 async def cmd_owner_stats(message: Message):
