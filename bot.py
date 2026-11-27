@@ -1120,6 +1120,13 @@ class AdminChannelsSchema(BaseModel):
     news_channel_url: str = ""
     reviews_channel_url: str = ""
     support_username: str = "@warat_24"
+    channel_check_enabled: bool | None = None
+    required_channel: str | None = None
+
+class AdminChannelCheckSchema(BaseModel):
+    user_id: int
+    channel_check_enabled: bool = False
+    required_channel: str = ""
 
 class AdminDonateConfigSchema(BaseModel):
     user_id: int
@@ -1326,6 +1333,8 @@ async def get_shop_config():
         news_channel_url = await get_setting_raw(db, "news_channel_url", "")
         reviews_channel_url = await get_setting_raw(db, "reviews_channel_url", "")
         support_username = await get_setting_raw(db, "support_username", "@warat_24")
+        channel_check_enabled = (await get_setting_raw(db, "channel_check_enabled", "0")) == "1"
+        required_channel = await get_setting_raw(db, "required_channel", "")
         donate_cfg = await get_donate_config_state(db)
 
         top_notice_state = await get_top_notice_state(db)
@@ -1396,6 +1405,7 @@ async def get_shop_config():
             "min_order_amount": min_order_amount, "delivery_fee": delivery_fee, "free_delivery_threshold": free_delivery_threshold,
             "auto_schedule_enabled": auto_schedule_enabled, "open_time": open_time, "close_time": close_time,
             "news_channel_url": news_channel_url, "reviews_channel_url": reviews_channel_url, "support_username": support_username,
+            "channel_check_enabled": channel_check_enabled, "required_channel": required_channel,
             "donate_config": donate_cfg,
             "categories": categories, "top_notice": top_notice_state,
             "banner_interval": banner_interval, "banners": banners_list,
@@ -1848,8 +1858,22 @@ async def update_admin_channels(data: AdminChannelsSchema, request: Request):
         await set_setting_raw(db, "news_channel_url", news_url)
         await set_setting_raw(db, "reviews_channel_url", reviews_url)
         await set_setting_raw(db, "support_username", supp)
+        if data.channel_check_enabled is not None:
+            await set_setting_raw(db, "channel_check_enabled", "1" if data.channel_check_enabled else "0")
+        if data.required_channel is not None:
+            await set_setting_raw(db, "required_channel", data.required_channel.strip())
         await db.commit()
     return {"success": True, "news_channel_url": news_url, "reviews_channel_url": reviews_url, "support_username": supp}
+
+@app.post("/api/admin/channel_check")
+async def update_admin_channel_check(data: AdminChannelCheckSchema, request: Request):
+    async with aiosqlite.connect(DB_FILE) as db:
+        await require_verified_owner(db, request, data.user_id)
+        req_ch = (data.required_channel or "").strip()
+        await set_setting_raw(db, "channel_check_enabled", "1" if data.channel_check_enabled else "0")
+        await set_setting_raw(db, "required_channel", req_ch)
+        await db.commit()
+    return {"success": True, "channel_check_enabled": bool(data.channel_check_enabled), "required_channel": req_ch}
 
 @app.post("/api/admin/manage_category")
 async def admin_manage_category(data: AdminCategoryManageSchema, request: Request):
@@ -2396,20 +2420,59 @@ async def create_order(order: OrderSchema, request: Request):
         if not station_clean:
             raise HTTPException(status_code=400, detail=f"Укажите: {get_location_label(delivery_mode).lower()}.")
 
+        if (await get_setting_raw(db, "channel_check_enabled", "0")) == "1" and not await check_is_owner(db, order.user_id):
+            req_ch_raw = (await get_setting_raw(db, "required_channel", "")).strip() or (await get_setting_raw(db, "news_channel_url", "")).strip()
+            chat_target = extract_tg_chat_target(req_ch_raw)
+            if chat_target:
+                try:
+                    member = await bot.get_chat_member(chat_id=chat_target, user_id=int(order.user_id))
+                    st_val = getattr(member, "status", "")
+                    if hasattr(st_val, "value"):
+                        st_val = st_val.value
+                    if str(st_val) in ("left", "kicked", "banned"):
+                        ch_link = normalize_tg_link(req_ch_raw)
+                        raise HTTPException(status_code=403, detail=f"Для оформления заказа подпишитесь на наш канал: {ch_link}")
+                except HTTPException:
+                    raise
+                except Exception:
+                    pass
+
         verified_items = []
         items_subtotal = 0.0
         for raw_it in order.items:
-            pid = int(raw_it.get("id") or 0)
+            try:
+                pid = int(raw_it.get("id") or 0)
+            except Exception:
+                pid = 0
             qty = max(1, min(50, int(raw_it.get("qty") or 1)))
-            async with db.execute("SELECT title, price, available FROM products WHERE id = ?", (pid,)) as pcur:
-                prow = await pcur.fetchone()
+            raw_title = str(raw_it.get("title") or "").strip()
+            opt_name = str(raw_it.get("optionName") or "").strip()
+            m_opt = re.match(r"^(.+?)\s*\(([^()]+)\)\s*$", raw_title)
+            base_title = m_opt.group(1).strip() if m_opt else raw_title
+            if not opt_name and m_opt:
+                opt_name = m_opt.group(2).strip()
+
+            prow = None
+            if pid > 0:
+                async with db.execute("SELECT id, title, price, available FROM products WHERE id = ?", (pid,)) as pcur:
+                    prow = await pcur.fetchone()
+            if not prow and base_title:
+                async with db.execute("SELECT id, title, price, available FROM products WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) LIMIT 1", (base_title,)) as pcur:
+                    prow = await pcur.fetchone()
+            if not prow and raw_title and raw_title != base_title:
+                async with db.execute("SELECT id, title, price, available FROM products WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) LIMIT 1", (raw_title,)) as pcur:
+                    prow = await pcur.fetchone()
             if not prow:
                 raise HTTPException(status_code=400, detail="Один из товаров не найден в каталоге.")
-            if not bool(prow[2]):
-                raise HTTPException(status_code=400, detail=f"Товар «{prow[0]}» сейчас недоступен.")
-            real_price = round(float(prow[1]), 2)
+            db_pid, db_title, db_price, db_avail = int(prow[0]), str(prow[1]), float(prow[2]), bool(prow[3])
+            if not db_avail:
+                raise HTTPException(status_code=400, detail=f"Товар «{db_title}» сейчас недоступен.")
+            real_price = round(db_price, 2)
+            display_title = f"{db_title} ({opt_name})" if opt_name else db_title
             item_copy = dict(raw_it)
-            item_copy["title"] = prow[0]
+            item_copy["id"] = db_pid
+            item_copy["title"] = display_title
+            item_copy["optionName"] = opt_name
             item_copy["price"] = real_price
             item_copy["qty"] = qty
             verified_items.append(item_copy)
