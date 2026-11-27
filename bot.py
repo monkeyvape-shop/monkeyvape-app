@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import base64
 import csv
@@ -23,14 +24,17 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import (
     Message, ReplyKeyboardMarkup, KeyboardButton,
     InlineKeyboardMarkup, InlineKeyboardButton,
-    WebAppInfo, MenuButtonWebApp, BufferedInputFile, CallbackQuery
+    WebAppInfo, MenuButtonWebApp, BufferedInputFile, CallbackQuery,
+    PreCheckoutQuery, LabeledPrice
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_API_URL = "https://api.monkeyshop.org"
 WEBAPP_URL = "https://monkeyvape-shop.github.io/monkeyvape-app/"
 TUNNEL_FILE = os.path.join(BASE_DIR, "tunnel_url.txt")
+WEBAPP_CACHE_VER = str(int(time.time()))
 
+LEGACY_TUNNEL_MARKERS = ("ngrok", "pinggy", "trycloudflare", "loca.lt")
 ALLOWED_ORIGINS = {
     "https://monkeyvape-shop.github.io",
     "https://api.monkeyshop.org",
@@ -38,7 +42,8 @@ ALLOWED_ORIGINS = {
 }
 
 def is_legacy_tunnel_url(url: str) -> bool:
-    return "ngrok" in (url or "").lower()
+    low = (url or "").lower()
+    return any(m in low for m in LEGACY_TUNNEL_MARKERS)
 
 def load_env_config() -> dict[str, str]:
     cfg: dict[str, str] = {}
@@ -52,8 +57,7 @@ def load_env_config() -> dict[str, str]:
                         line = line.strip()
                         if line and not line.startswith("#") and "=" in line:
                             key, val = line.split("=", 1)
-                            clean_val = val.strip().strip('"').strip("'")
-                            cfg[key.strip().upper()] = clean_val
+                            cfg[key.strip().upper()] = val.strip().strip('"').strip("'")
                 break
             except Exception:
                 pass
@@ -79,9 +83,8 @@ def load_public_api_url_from_env() -> str:
 
 def load_primary_owner_ids_from_env() -> list[int]:
     if "PRIMARY_OWNER_IDS" in ENV_CFG:
-        raw = ENV_CFG["PRIMARY_OWNER_IDS"]
         ids: list[int] = []
-        for part in re.split(r"[,;\s\[\]]+", raw):
+        for part in re.split(r"[,;\s\[\]]+", ENV_CFG["PRIMARY_OWNER_IDS"]):
             part = part.strip()
             if part.isdigit():
                 uid = int(part)
@@ -129,25 +132,10 @@ IMAGES_DIR = os.path.join(BASE_DIR, "uploaded_images")
 ALLOWED_CURRENCIES = ("р.", "₽", "₸", "$", "₴")
 ALLOWED_DELIVERY_MODES = ("metro", "districts", "pickup", "free_address")
 
-DEFAULT_DELIVERY_LOCATIONS = [
-    "Центральный район",
-    "Советский район",
-    "Первомайский район"
-]
-
-DEFAULT_PICKUP_LOCATIONS = [
-    "ТЦ Призма"
-]
-
+DEFAULT_DELIVERY_LOCATIONS = ["Центральный район", "Советский район", "Первомайский район"]
+DEFAULT_PICKUP_LOCATIONS = ["ТЦ Призма"]
 DEFAULT_TOP_NOTICE_TEXT = "Возьми две жижи в подарок"
-DEFAULT_TOP_NOTICE_SLIDES = [
-    {
-        "id": "tn_default_1",
-        "icon": "🎁",
-        "text": DEFAULT_TOP_NOTICE_TEXT,
-        "style": "emerald"
-    }
-]
+DEFAULT_TOP_NOTICE_SLIDES = [{"id": "tn_default_1", "icon": "🎁", "text": DEFAULT_TOP_NOTICE_TEXT, "style": "emerald"}]
 
 DEFAULT_WELCOME_TEXT = (
     "Здравствуйте, <b>{user}</b>! Добро пожаловать в <b>{brand}</b> 👋\n\n"
@@ -156,18 +144,11 @@ DEFAULT_WELCOME_TEXT = (
 )
 
 DEFAULT_UI_THEME = {
-    "bg_color": "#0b0f0c",
-    "topbar_bg": "#0b0f0c",
-    "bottomnav_bg": "#0b0f0c",
-    "card_bg": "#131b14",
-    "banner_bg": "#132b17",
-    "border_color": "#223525",
-    "accent_color": "#00ff66",
-    "icon_color": "#00ff66",
-    "logo_color_1": "#ffffff",
-    "logo_color_2": "#00ff66",
-    "text_main": "#ffffff",
-    "text_secondary": "#9ca3af"
+    "bg_color": "#0b0f0c", "topbar_bg": "#0b0f0c", "bottomnav_bg": "#0b0f0c",
+    "card_bg": "#131b14", "banner_bg": "#132b17", "border_color": "#223525",
+    "accent_color": "#00ff66", "icon_color": "#00ff66",
+    "logo_color_1": "#ffffff", "logo_color_2": "#00ff66",
+    "text_main": "#ffffff", "text_secondary": "#9ca3af"
 }
 
 DEFAULT_CATEGORIES = [
@@ -203,46 +184,29 @@ DEFAULT_TIME_SLOTS = ["12:00", "14:30", "16:30", "18:10", "21:00"]
 
 DEFAULT_METRO_STATIONS = {
     "green": [
-        {"name": "Юбилейная площадь", "line": "Зеленая ветка"},
-        {"name": "Площадь Франтишка Богушевича", "line": "Зеленая ветка"},
-        {"name": "Вокзальная", "line": "Зеленая ветка"},
-        {"name": "Ковальская Слобода", "line": "Зеленая ветка"},
-        {"name": "Аэродромная", "line": "Зеленая ветка"},
-        {"name": "Неморшанский Сад", "line": "Зеленая ветка"},
+        {"name": "Юбилейная площадь", "line": "Зеленая ветка"}, {"name": "Площадь Франтишка Богушевича", "line": "Зеленая ветка"},
+        {"name": "Вокзальная", "line": "Зеленая ветка"}, {"name": "Ковальская Слобода", "line": "Зеленая ветка"},
+        {"name": "Аэродромная", "line": "Зеленая ветка"}, {"name": "Неморшанский Сад", "line": "Зеленая ветка"},
         {"name": "Слуцкий Гостинец", "line": "Зеленая ветка"}
     ],
     "blue": [
-        {"name": "Уручье", "line": "Синяя ветка"},
-        {"name": "Борисовский тракт", "line": "Синяя ветка"},
-        {"name": "Восток", "line": "Синяя ветка"},
-        {"name": "Московская", "line": "Синяя ветка"},
-        {"name": "Парк Челюскинцев", "line": "Синяя ветка"},
-        {"name": "Академия наук", "line": "Синяя ветка"},
-        {"name": "Площадь Якуба Коласа", "line": "Синяя ветка"},
-        {"name": "Площадь Победы", "line": "Синяя ветка"},
-        {"name": "Октябрьская", "line": "Синяя ветка"},
-        {"name": "Площадь Ленина", "line": "Синяя ветка"},
-        {"name": "Институт культуры", "line": "Синяя ветка"},
-        {"name": "Грушевка", "line": "Синяя ветка"},
-        {"name": "Михалово", "line": "Синяя ветка"},
-        {"name": "Петровщина", "line": "Синяя ветка"},
+        {"name": "Уручье", "line": "Синяя ветка"}, {"name": "Борисовский тракт", "line": "Синяя ветка"},
+        {"name": "Восток", "line": "Синяя ветка"}, {"name": "Московская", "line": "Синяя ветка"},
+        {"name": "Парк Челюскинцев", "line": "Синяя ветка"}, {"name": "Академия наук", "line": "Синяя ветка"},
+        {"name": "Площадь Якуба Коласа", "line": "Синяя ветка"}, {"name": "Площадь Победы", "line": "Синяя ветка"},
+        {"name": "Октябрьская", "line": "Синяя ветка"}, {"name": "Площадь Ленина", "line": "Синяя ветка"},
+        {"name": "Институт культуры", "line": "Синяя ветка"}, {"name": "Грушевка", "line": "Синяя ветка"},
+        {"name": "Михалово", "line": "Синяя ветка"}, {"name": "Петровщина", "line": "Синяя ветка"},
         {"name": "Малиновка", "line": "Синяя ветка"}
     ],
     "red": [
-        {"name": "Каменная Горка", "line": "Красная ветка"},
-        {"name": "Кунцевщина", "line": "Красная ветка"},
-        {"name": "Спортивная", "line": "Красная ветка"},
-        {"name": "Пушкинская", "line": "Красная ветка"},
-        {"name": "Молодежная", "line": "Красная ветка"},
-        {"name": "Фрунзенская", "line": "Красная ветка"},
-        {"name": "Немига", "line": "Красная ветка"},
-        {"name": "Купаловская", "line": "Красная ветка"},
-        {"name": "Первомайская", "line": "Красная ветка"},
-        {"name": "Пролетарская", "line": "Красная ветка"},
-        {"name": "Тракторный завод", "line": "Красная ветка"},
-        {"name": "Партизанская", "line": "Красная ветка"},
-        {"name": "Автозаводская", "line": "Красная ветка"},
-        {"name": "Могилевская", "line": "Красная ветка"}
+        {"name": "Каменная Горка", "line": "Красная ветка"}, {"name": "Кунцевщина", "line": "Красная ветка"},
+        {"name": "Спортивная", "line": "Красная ветка"}, {"name": "Пушкинская", "line": "Красная ветка"},
+        {"name": "Молодежная", "line": "Красная ветка"}, {"name": "Фрунзенская", "line": "Красная ветка"},
+        {"name": "Немига", "line": "Красная ветка"}, {"name": "Купаловская", "line": "Красная ветка"},
+        {"name": "Первомайская", "line": "Красная ветка"}, {"name": "Пролетарская", "line": "Красная ветка"},
+        {"name": "Тракторный завод", "line": "Красная ветка"}, {"name": "Партизанская", "line": "Красная ветка"},
+        {"name": "Автозаводская", "line": "Красная ветка"}, {"name": "Могилевская", "line": "Красная ветка"}
     ]
 }
 
@@ -276,22 +240,10 @@ def extract_tg_chat_target(raw_link: str) -> str:
     return ""
 
 def get_location_label(delivery_mode: str) -> str:
-    mapping = {
-        "metro": "Станция метро",
-        "districts": "Район города",
-        "pickup": "Пункт выдачи",
-        "free_address": "Адрес доставки"
-    }
-    return mapping.get(delivery_mode, "Локация")
+    return {"metro": "Станция метро", "districts": "Район города", "pickup": "Пункт выдачи", "free_address": "Адрес доставки"}.get(delivery_mode, "Локация")
 
 def get_delivery_mode_title(delivery_mode: str) -> str:
-    mapping = {
-        "metro": "Метро",
-        "districts": "По районам",
-        "pickup": "Пункт выдачи",
-        "free_address": "Доставка по адресу"
-    }
-    return mapping.get(delivery_mode, delivery_mode or "Метро")
+    return {"metro": "Метро", "districts": "По районам", "pickup": "Пункт выдачи", "free_address": "Доставка по адресу"}.get(delivery_mode, delivery_mode or "Метро")
 
 def format_location_value(station: str, delivery_mode: str) -> str:
     st = (station or "").strip()
@@ -303,9 +255,7 @@ def format_location_value(station: str, delivery_mode: str) -> str:
 
 def render_welcome_message(template_text: str, user_first_name: str, brand_name: str) -> str:
     tpl = (template_text or "").strip() or DEFAULT_WELCOME_TEXT
-    safe_user = html.escape(user_first_name or "друг")
-    safe_brand = html.escape(brand_name or "Monkey Vape")
-    return tpl.replace("{user}", safe_user).replace("{brand}", safe_brand)
+    return tpl.replace("{user}", html.escape(user_first_name or "друг")).replace("{brand}", html.escape(brand_name or "Monkey Vape"))
 
 async def get_setting_raw(db, key: str, default: str = "") -> str:
     async with db.execute("SELECT value FROM shop_settings WHERE key = ?", (key,)) as cursor:
@@ -380,22 +330,18 @@ async def get_audio_library_state(db) -> dict:
                         tracks.append(norm)
         except Exception:
             pass
-
     legacy_url = normalize_public_asset_url((await get_setting_raw(db, "music_url", "")).strip())
     legacy_title = (await get_setting_raw(db, "music_title", "Фоновый трек")).strip() or "Фоновый трек"
     if not tracks and legacy_url:
         tracks = [{"id": "trk_legacy_1", "title": legacy_title, "url": legacy_url}]
-
     loop_mode = (await get_setting_raw(db, "audio_loop_mode", "sequence")).strip()
     if loop_mode not in ("sequence", "single"):
         loop_mode = "sequence"
-
     active_id = (await get_setting_raw(db, "audio_active_track_id", "")).strip()
     active_track = next((t for t in tracks if t["id"] == active_id), None)
     if not active_track and tracks:
         active_track = tracks[0]
         active_id = active_track["id"]
-
     raw_def_vol = await get_setting_raw(db, "audio_default_volume", "")
     if raw_def_vol != "":
         try:
@@ -408,35 +354,30 @@ async def get_audio_library_state(db) -> dict:
             default_vol_100 = max(0, min(100, int(round(legacy_vol * 100))))
         except Exception:
             default_vol_100 = 35
-
-    eff_url = active_track["url"] if active_track else legacy_url
-    eff_title = active_track["title"] if active_track else legacy_title
-    eff_vol_float = round(default_vol_100 / 100.0, 2)
-
     return {
         "audio_tracks": tracks,
         "audio_loop_mode": loop_mode,
         "audio_active_track_id": active_id,
         "audio_default_volume": default_vol_100,
-        "music_url": eff_url,
-        "music_title": eff_title,
-        "music_volume": eff_vol_float
+        "music_url": active_track["url"] if active_track else legacy_url,
+        "music_title": active_track["title"] if active_track else legacy_title,
+        "music_volume": round(default_vol_100 / 100.0, 2)
     }
 
 def normalize_banner_item(raw_item: dict, idx: int = 0) -> dict:
-    b_id = str(raw_item.get("id") or f"banner_{int(time.time() * 1000)}_{idx}").strip()
-    title = str(raw_item.get("title") or "").strip()
-    desc = str(raw_item.get("desc") or "").strip()
-    style = str(raw_item.get("style") or "emerald").strip() or "emerald"
-    btn_text = str(raw_item.get("btn_text") or "").strip() or "Скопировать"
-    promo_code = str(raw_item.get("promo_code") or "").strip()
+    valid_layouts = ("classic", "split", "centered", "badge_top", "vertical", "reverse")
+    lay = str(raw_item.get("layout") or "classic").strip()
+    if lay not in valid_layouts:
+        lay = "classic"
     return {
-        "id": b_id,
-        "title": title,
-        "desc": desc,
-        "style": style,
-        "btn_text": btn_text,
-        "promo_code": promo_code
+        "id": str(raw_item.get("id") or f"banner_{int(time.time() * 1000)}_{idx}").strip(),
+        "title": str(raw_item.get("title") or "").strip(),
+        "desc": str(raw_item.get("desc") or "").strip(),
+        "style": str(raw_item.get("style") or "emerald").strip() or "emerald",
+        "layout": lay,
+        "badge_text": str(raw_item.get("badge_text") or "АКЦИЯ").strip(),
+        "btn_text": str(raw_item.get("btn_text") or "").strip() or "Скопировать",
+        "promo_code": str(raw_item.get("promo_code") or "").strip()
     }
 
 async def get_banners_list(db) -> list[dict]:
@@ -451,27 +392,18 @@ async def get_banners_list(db) -> list[dict]:
     legacy_title = await get_setting_raw(db, "banner_title", "СКИДКА НЕДЕЛИ -20%")
     legacy_desc = await get_setting_raw(db, "banner_desc", "Популярные товары и новинки уже в каталоге")
     legacy_badge = await get_setting_raw(db, "banner_badge", "-20%")
-    return [
-        normalize_banner_item({
-            "id": "banner_default_1",
-            "title": legacy_title,
-            "desc": legacy_desc,
-            "style": "emerald",
-            "btn_text": "Скопировать",
-            "promo_code": legacy_badge if legacy_badge and not legacy_badge.startswith("-") else "MONKEY3"
-        }, 0)
-    ]
+    return [normalize_banner_item({
+        "id": "banner_default_1", "title": legacy_title, "desc": legacy_desc,
+        "style": "emerald", "layout": "classic", "badge_text": "АКЦИЯ",
+        "btn_text": "Скопировать", "promo_code": legacy_badge if legacy_badge and not legacy_badge.startswith("-") else "MONKEY3"
+    }, 0)]
 
 def normalize_top_notice_slide(raw_item: dict, idx: int = 0) -> dict:
-    s_id = str(raw_item.get("id") or f"tn_{int(time.time() * 1000)}_{idx}").strip()
-    icon = str(raw_item.get("icon") if raw_item.get("icon") is not None else "🎁").strip()
-    text = str(raw_item.get("text") or "").strip() or DEFAULT_TOP_NOTICE_TEXT
-    style = str(raw_item.get("style") or "emerald").strip() or "emerald"
     return {
-        "id": s_id,
-        "icon": icon,
-        "text": text,
-        "style": style
+        "id": str(raw_item.get("id") or f"tn_{int(time.time() * 1000)}_{idx}").strip(),
+        "icon": str(raw_item.get("icon") if raw_item.get("icon") is not None else "🎁").strip(),
+        "text": str(raw_item.get("text") or "").strip() or DEFAULT_TOP_NOTICE_TEXT,
+        "style": str(raw_item.get("style") or "emerald").strip() or "emerald"
     }
 
 async def get_top_notice_state(db) -> dict:
@@ -492,19 +424,62 @@ async def get_top_notice_state(db) -> dict:
             pass
     if not slides:
         slides = [normalize_top_notice_slide({"id": "tn_default_1", "icon": "🎁", "text": legacy_text, "style": "emerald"}, 0)]
-    first_text = slides[0]["text"] if slides else legacy_text
+    return {"enabled": enabled, "text": slides[0]["text"], "interval": interval, "slides": slides}
+
+def normalize_donate_wallet(raw_w: dict, idx: int = 0) -> dict | None:
+    if not isinstance(raw_w, dict):
+        return None
+    coin = str(raw_w.get("coin") or "").strip() or f"CRYPTO #{idx + 1}"
+    network = str(raw_w.get("network") or "").strip()
+    address = str(raw_w.get("address") or "").strip()
+    pay_url = str(raw_w.get("pay_url") or "").strip()
+    if not address and not pay_url:
+        return None
     return {
-        "enabled": enabled,
-        "text": first_text,
-        "interval": interval,
-        "slides": slides
+        "id": str(raw_w.get("id") or f"w_{int(time.time() * 1000)}_{idx}").strip(),
+        "coin": coin,
+        "network": network,
+        "address": address,
+        "pay_url": pay_url
+    }
+
+async def get_donate_config_state(db) -> dict:
+    raw = await get_setting_raw(db, "donate_config", "")
+    supp_default = (await get_setting_raw(db, "support_username", "@warat_24")).strip() or "@warat_24"
+    if raw:
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                wallets_clean = []
+                for i, w in enumerate(parsed.get("wallets") or []):
+                    nw = normalize_donate_wallet(w, i)
+                    if nw:
+                        wallets_clean.append(nw)
+                return {
+                    "enabled": bool(parsed.get("enabled", True)),
+                    "title": str(parsed.get("title") or "Поддержать проект").strip() or "Поддержать проект",
+                    "subtitle": str(parsed.get("subtitle") or "Звёзды Telegram или криптовалюта на развитие магазина").strip(),
+                    "stars_enabled": bool(parsed.get("stars_enabled", True)),
+                    "stars_username": str(parsed.get("stars_username") or supp_default).strip(),
+                    "stars_bot_invoice": bool(parsed.get("stars_bot_invoice", True)),
+                    "wallets": wallets_clean
+                }
+        except Exception:
+            pass
+    return {
+        "enabled": True,
+        "title": "Поддержать проект",
+        "subtitle": "Звёзды Telegram или криптовалюта на развитие магазина",
+        "stars_enabled": True,
+        "stars_username": supp_default,
+        "stars_bot_invoice": True,
+        "wallets": []
     }
 
 async def get_delivery_settings_state(db) -> dict:
     primary_mode = await get_setting_raw(db, "delivery_mode", "metro")
     if primary_mode not in ALLOWED_DELIVERY_MODES:
         primary_mode = "metro"
-
     raw_enabled = await get_setting_raw(db, "enabled_delivery_modes", "")
     enabled_modes: list[str] = []
     if raw_enabled:
@@ -519,33 +494,14 @@ async def get_delivery_settings_state(db) -> dict:
             pass
     if not enabled_modes:
         enabled_modes = [primary_mode]
-
     legacy_locs = await get_setting_list(db, "delivery_locations", DEFAULT_DELIVERY_LOCATIONS)
-
     raw_districts = await get_setting_raw(db, "district_locations", "")
-    if raw_districts != "":
-        try:
-            district_locs = sanitize_string_list(json.loads(raw_districts))
-        except Exception:
-            district_locs = list(DEFAULT_DELIVERY_LOCATIONS)
-    else:
-        district_locs = list(legacy_locs) if primary_mode == "districts" else list(DEFAULT_DELIVERY_LOCATIONS)
-
+    district_locs = sanitize_string_list(json.loads(raw_districts)) if raw_districts != "" else (list(legacy_locs) if primary_mode == "districts" else list(DEFAULT_DELIVERY_LOCATIONS))
     raw_pickups = await get_setting_raw(db, "pickup_locations", "")
-    if raw_pickups != "":
-        try:
-            pickup_locs = sanitize_string_list(json.loads(raw_pickups))
-        except Exception:
-            pickup_locs = list(DEFAULT_PICKUP_LOCATIONS)
-    else:
-        pickup_locs = list(legacy_locs) if primary_mode == "pickup" else list(DEFAULT_PICKUP_LOCATIONS)
-
+    pickup_locs = sanitize_string_list(json.loads(raw_pickups)) if raw_pickups != "" else (list(legacy_locs) if primary_mode == "pickup" else list(DEFAULT_PICKUP_LOCATIONS))
     return {
-        "delivery_mode": enabled_modes[0],
-        "enabled_delivery_modes": enabled_modes,
-        "district_locations": district_locs,
-        "pickup_locations": pickup_locs,
-        "delivery_locations": legacy_locs
+        "delivery_mode": enabled_modes[0], "enabled_delivery_modes": enabled_modes,
+        "district_locations": district_locs, "pickup_locations": pickup_locs, "delivery_locations": legacy_locs
     }
 
 async def get_ui_theme_dict(db) -> dict:
@@ -565,8 +521,7 @@ async def get_ui_theme_dict(db) -> dict:
 async def get_shop_brand_name(db) -> str:
     p1 = (await get_setting_raw(db, "logo_part1", "MONKEY")).strip()
     p2 = (await get_setting_raw(db, "logo_part2", "VAPE")).strip()
-    full = f"{p1} {p2}".strip()
-    return full if full else "Monkey Vape"
+    return f"{p1} {p2}".strip() or "Monkey Vape"
 
 async def get_categories_list(db) -> list:
     raw = await get_setting_raw(db, "categories", "")
@@ -619,18 +574,14 @@ def normalize_hhmm(raw: str, fallback: str) -> str:
     if not m:
         return fallback
     hh, mm = int(m.group(1)), int(m.group(2))
-    if 0 <= hh <= 23 and 0 <= mm <= 59:
-        return f"{hh:02d}:{mm:02d}"
-    return fallback
+    return f"{hh:02d}:{mm:02d}" if (0 <= hh <= 23 and 0 <= mm <= 59) else fallback
 
 def hhmm_to_minutes(hhmm: str, default_mins: int) -> int:
     m = re.match(r"^(\d{1,2}):(\d{2})$", (hhmm or "").strip())
     if not m:
         return default_mins
     hh, mm = int(m.group(1)), int(m.group(2))
-    if 0 <= hh <= 23 and 0 <= mm <= 59:
-        return hh * 60 + mm
-    return default_mins
+    return (hh * 60 + mm) if (0 <= hh <= 23 and 0 <= mm <= 59) else default_mins
 
 def is_within_schedule(now_dt: datetime, open_time_str: str, close_time_str: str) -> bool:
     open_mins = hhmm_to_minutes(open_time_str, 10 * 60)
@@ -644,12 +595,7 @@ def is_within_schedule(now_dt: datetime, open_time_str: str, close_time_str: str
 
 async def get_all_courier_ids(db) -> list[int]:
     extra = await get_setting_list(db, "extra_couriers")
-    removed_list = set()
-    for x in await get_setting_list(db, "removed_default_couriers"):
-        try:
-            removed_list.add(int(x))
-        except Exception:
-            pass
+    removed_list = {int(x) for x in await get_setting_list(db, "removed_default_couriers") if str(x).isdigit()}
     owners = await get_all_owner_ids(db)
     base_defaults = [cid for cid in DEFAULT_COURIER_IDS if cid not in removed_list]
     combined = set(base_defaults + owners)
@@ -677,7 +623,7 @@ def build_personal_url(uid: int, uname: str = "User", is_owner: bool = False, is
     api_base = (PUBLIC_TUNNEL_URL or DEFAULT_API_URL).strip().rstrip("/")
     if is_legacy_tunnel_url(api_base):
         api_base = DEFAULT_API_URL
-    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}"
+    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}&v={WEBAPP_CACHE_VER}"
 
 def parse_product_options(raw_json: str, category: str) -> list:
     if raw_json:
@@ -710,30 +656,16 @@ async def notify_stock_subscribers(db, product_id: int, product_title: str, avai
     brand_name = await get_shop_brand_name(db)
     async with db.execute("SELECT id, user_id, option_name FROM stock_notifications WHERE product_id = ?", (product_id,)) as cur:
         rows = await cur.fetchall()
-
     to_delete = []
     for sub_id, uid, opt_name in rows:
-        should_notify = False
-        if all_restocked and not opt_name:
-            should_notify = True
-        elif opt_name and available_options and opt_name in available_options:
-            should_notify = True
-        elif all_restocked and opt_name and (not available_options or opt_name in available_options):
-            should_notify = True
-
+        should_notify = (all_restocked and not opt_name) or (opt_name and available_options and opt_name in available_options) or (all_restocked and opt_name and (not available_options or opt_name in available_options))
         if should_notify:
             to_delete.append(sub_id)
             opt_part = f" • {html.escape(opt_name)}" if opt_name else ""
             try:
-                await bot.send_message(
-                    uid,
-                    f"🔔 <b>Пополнение на витрине {html.escape(brand_name)}!</b>\n\n"
-                    f"✨ <b>{html.escape(product_title)}{opt_part}</b> снова в наличии и доступен для заказа.",
-                    parse_mode="HTML"
-                )
+                await bot.send_message(uid, f"🔔 <b>Пополнение на витрине {html.escape(brand_name)}!</b>\n\n✨ <b>{html.escape(product_title)}{opt_part}</b> снова в наличии.", parse_mode="HTML")
             except Exception:
                 pass
-
     for sub_id in to_delete:
         await db.execute("DELETE FROM stock_notifications WHERE id = ?", (sub_id,))
 
@@ -743,59 +675,16 @@ async def init_db():
             f.write(PUBLIC_TUNNEL_URL)
     except Exception:
         pass
-
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY,
-                user_name TEXT DEFAULT '',
-                joined_at TEXT DEFAULT ''
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS broadcasts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                created_at TEXT,
-                text TEXT,
-                sent INTEGER DEFAULT 0,
-                failed INTEGER DEFAULT 0,
-                total INTEGER DEFAULT 0
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS stock_notifications (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                product_id INTEGER,
-                option_name TEXT DEFAULT ''
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS reviews (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                order_id TEXT,
-                user_id INTEGER,
-                user_name TEXT DEFAULT '',
-                stars INTEGER DEFAULT 5,
-                comment TEXT DEFAULT '',
-                items_summary TEXT DEFAULT '',
-                created_at TEXT DEFAULT ''
-            )
-        """)
+        await db.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, user_name TEXT DEFAULT '', joined_at TEXT DEFAULT '')")
+        await db.execute("CREATE TABLE IF NOT EXISTS broadcasts (id INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT, text TEXT, sent INTEGER DEFAULT 0, failed INTEGER DEFAULT 0, total INTEGER DEFAULT 0)")
+        await db.execute("CREATE TABLE IF NOT EXISTS stock_notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, option_name TEXT DEFAULT '')")
+        await db.execute("CREATE TABLE IF NOT EXISTS reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT, user_id INTEGER, user_name TEXT DEFAULT '', stars INTEGER DEFAULT 5, comment TEXT DEFAULT '', items_summary TEXT DEFAULT '', created_at TEXT DEFAULT '')")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS products (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT,
-                category TEXT,
-                price REAL,
-                old_price REAL DEFAULT 0,
-                tag TEXT DEFAULT '',
-                icon TEXT DEFAULT '🧪',
-                available INTEGER DEFAULT 1,
-                image_url TEXT DEFAULT '',
-                has_discount INTEGER DEFAULT 0,
-                low_stock INTEGER DEFAULT 0,
-                options_json TEXT DEFAULT ''
+                id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, category TEXT, price REAL, old_price REAL DEFAULT 0,
+                tag TEXT DEFAULT '', icon TEXT DEFAULT '🧪', available INTEGER DEFAULT 1, image_url TEXT DEFAULT '',
+                has_discount INTEGER DEFAULT 0, low_stock INTEGER DEFAULT 0, options_json TEXT DEFAULT ''
             )
         """)
         for col_sql in [
@@ -810,36 +699,19 @@ async def init_db():
                 await db.execute(col_sql)
             except Exception:
                 pass
-
         async with db.execute("SELECT COUNT(*) FROM products") as cur:
             row = await cur.fetchone()
             if row and row[0] == 0:
                 await db.executemany(
-                    """INSERT INTO products (id, title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    "INSERT INTO products (id, title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     INITIAL_PRODUCTS
                 )
-
         await db.execute("""
             CREATE TABLE IF NOT EXISTS orders (
-                id TEXT PRIMARY KEY,
-                user_id INTEGER,
-                user_name TEXT,
-                station TEXT,
-                time TEXT,
-                total REAL,
-                items TEXT,
-                status TEXT DEFAULT 'active',
-                time_changed INTEGER DEFAULT 0,
-                hidden_by_courier INTEGER DEFAULT 0,
-                promo_code TEXT DEFAULT '',
-                discount REAL DEFAULT 0,
-                delivery_fee REAL DEFAULT 0,
-                created_at TEXT DEFAULT '',
-                cancelled_by TEXT DEFAULT '',
-                claimed_by_id INTEGER DEFAULT 0,
-                claimed_by_name TEXT DEFAULT '',
-                delivery_mode TEXT DEFAULT ''
+                id TEXT PRIMARY KEY, user_id INTEGER, user_name TEXT, station TEXT, time TEXT, total REAL, items TEXT,
+                status TEXT DEFAULT 'active', time_changed INTEGER DEFAULT 0, hidden_by_courier INTEGER DEFAULT 0,
+                promo_code TEXT DEFAULT '', discount REAL DEFAULT 0, delivery_fee REAL DEFAULT 0, created_at TEXT DEFAULT '',
+                cancelled_by TEXT DEFAULT '', claimed_by_id INTEGER DEFAULT 0, claimed_by_name TEXT DEFAULT '', delivery_mode TEXT DEFAULT ''
             )
         """)
         for col_sql in [
@@ -857,104 +729,50 @@ async def init_db():
                 await db.execute(col_sql)
             except Exception:
                 pass
-
-        await db.execute("""
-            INSERT OR IGNORE INTO users (user_id, user_name, joined_at)
-            SELECT DISTINCT user_id, user_name, '' FROM orders WHERE user_id > 0
-        """)
+        await db.execute("INSERT OR IGNORE INTO users (user_id, user_name, joined_at) SELECT DISTINCT user_id, user_name, '' FROM orders WHERE user_id > 0")
         await db.execute("CREATE TABLE IF NOT EXISTS shop_settings (key TEXT PRIMARY KEY, value TEXT)")
 
-        async with db.execute("SELECT id, image_url FROM products WHERE image_url LIKE '%ngrok%'") as pcur:
+        async with db.execute("SELECT id, image_url FROM products WHERE image_url LIKE 'http%'") as pcur:
             for pid, old_img in await pcur.fetchall():
-                await db.execute("UPDATE products SET image_url = ? WHERE id = ?", (normalize_public_asset_url(old_img), pid))
-
-        for s_key_clean in ("music_url", "logo_image", "splash_image"):
-            old_val = await get_setting_raw(db, s_key_clean, "")
-            if is_legacy_tunnel_url(old_val):
-                await set_setting_raw(db, s_key_clean, normalize_public_asset_url(old_val))
-
-        raw_tracks_clean = await get_setting_raw(db, "audio_tracks", "")
-        if is_legacy_tunnel_url(raw_tracks_clean):
-            try:
-                parsed_t = json.loads(raw_tracks_clean)
-                if isinstance(parsed_t, list):
-                    for item in parsed_t:
-                        if isinstance(item, dict) and item.get("url"):
-                            item["url"] = normalize_public_asset_url(item["url"])
-                    await set_setting_raw(db, "audio_tracks", json.dumps(parsed_t, ensure_ascii=False))
-            except Exception:
-                pass
+                if is_legacy_tunnel_url(old_img):
+                    await db.execute("UPDATE products SET image_url = ? WHERE id = ?", (normalize_public_asset_url(old_img), pid))
 
         default_shop_settings = [
-            ("currency", "р."),
-            ("delivery_mode", "metro"),
+            ("currency", "р."), ("delivery_mode", "metro"),
             ("enabled_delivery_modes", json.dumps(["metro"], ensure_ascii=False)),
             ("delivery_locations", json.dumps(DEFAULT_DELIVERY_LOCATIONS, ensure_ascii=False)),
             ("district_locations", json.dumps(DEFAULT_DELIVERY_LOCATIONS, ensure_ascii=False)),
             ("pickup_locations", json.dumps(DEFAULT_PICKUP_LOCATIONS, ensure_ascii=False)),
-            ("splash_emoji", "🐵"),
-            ("splash_image", ""),
-            ("welcome_text", DEFAULT_WELCOME_TEXT),
-            ("min_order_amount", "0"),
-            ("delivery_fee", "0"),
-            ("free_delivery_threshold", "0"),
-            ("auto_schedule_enabled", "0"),
-            ("open_time", "10:00"),
-            ("close_time", "22:00"),
-            ("logo_image", ""),
-            ("splash_style", "neon"),
-            ("music_enabled", "0"),
-            ("music_paused", "0"),
-            ("music_url", ""),
-            ("music_title", "Фоновый трек"),
-            ("music_volume", "0.35"),
-            ("audio_tracks", "[]"),
-            ("audio_loop_mode", "sequence"),
-            ("audio_active_track_id", ""),
-            ("audio_default_volume", "35"),
-            ("top_notice_enabled", "1"),
-            ("top_notice_text", DEFAULT_TOP_NOTICE_TEXT),
-            ("top_notice_interval", "4"),
-            ("top_notice_slides", json.dumps(DEFAULT_TOP_NOTICE_SLIDES, ensure_ascii=False)),
-            ("banner_interval", "5"),
-            ("saved_ui_themes", "[]"),
-            ("age_check_enabled", "1"),
-            ("age_min_years", "18"),
-            ("age_modal_bg", "#131b14"),
-            ("age_modal_opacity", "95"),
-            ("smart_bar_enabled", "1"),
-            ("smart_bar_target", "0"),
-            ("smart_bar_reward", "Бесплатная доставка"),
+            ("splash_emoji", "🐵"), ("splash_image", ""), ("welcome_text", DEFAULT_WELCOME_TEXT),
+            ("min_order_amount", "0"), ("delivery_fee", "0"), ("free_delivery_threshold", "0"),
+            ("auto_schedule_enabled", "0"), ("open_time", "10:00"), ("close_time", "22:00"),
+            ("logo_image", ""), ("splash_style", "neon"),
+            ("music_enabled", "0"), ("music_paused", "0"), ("music_url", ""), ("music_title", "Фоновый трек"),
+            ("music_volume", "0.35"), ("audio_tracks", "[]"), ("audio_loop_mode", "sequence"),
+            ("audio_active_track_id", ""), ("audio_default_volume", "35"),
+            ("top_notice_enabled", "1"), ("top_notice_text", DEFAULT_TOP_NOTICE_TEXT),
+            ("top_notice_interval", "4"), ("top_notice_slides", json.dumps(DEFAULT_TOP_NOTICE_SLIDES, ensure_ascii=False)),
+            ("banner_interval", "5"), ("saved_ui_themes", "[]"),
+            ("age_check_enabled", "1"), ("age_min_years", "18"), ("age_modal_bg", "#131b14"), ("age_modal_opacity", "95"),
+            ("smart_bar_enabled", "1"), ("smart_bar_target", "0"), ("smart_bar_reward", "Бесплатная доставка"),
+            ("donate_config", json.dumps({
+                "enabled": True,
+                "title": "Поддержать проект",
+                "subtitle": "Звёзды Telegram или криптовалюта на развитие магазина",
+                "stars_enabled": True,
+                "stars_username": "@warat_24",
+                "stars_bot_invoice": True,
+                "wallets": []
+            }, ensure_ascii=False))
         ]
         for s_key, s_val in default_shop_settings:
             await db.execute("INSERT OR IGNORE INTO shop_settings (key, value) VALUES (?, ?)", (s_key, s_val))
 
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS promocodes (
-                code TEXT PRIMARY KEY,
-                discount REAL,
-                discount_type TEXT DEFAULT 'rub',
-                max_uses INTEGER DEFAULT 0,
-                used_count INTEGER DEFAULT 0
-            )
-        """)
-        for p_col in [
-            "ALTER TABLE promocodes ADD COLUMN discount_type TEXT DEFAULT 'rub'",
-            "ALTER TABLE promocodes ADD COLUMN max_uses INTEGER DEFAULT 0",
-            "ALTER TABLE promocodes ADD COLUMN used_count INTEGER DEFAULT 0"
-        ]:
-            try:
-                await db.execute(p_col)
-            except Exception:
-                pass
-
+        await db.execute("CREATE TABLE IF NOT EXISTS promocodes (code TEXT PRIMARY KEY, discount REAL, discount_type TEXT DEFAULT 'rub', max_uses INTEGER DEFAULT 0, used_count INTEGER DEFAULT 0)")
         async with db.execute("SELECT COUNT(*) FROM promocodes") as cur:
             row = await cur.fetchone()
             if row and row[0] == 0:
-                await db.execute(
-                    "INSERT INTO promocodes (code, discount, discount_type, max_uses, used_count) VALUES (?, ?, 'rub', 0, 0)",
-                    ("MONKEY3", 3.0)
-                )
+                await db.execute("INSERT INTO promocodes (code, discount, discount_type, max_uses, used_count) VALUES (?, ?, 'rub', 0, 0)", ("MONKEY3", 3.0))
         try:
             os.makedirs(AUDIO_DIR, exist_ok=True)
             os.makedirs(IMAGES_DIR, exist_ok=True)
@@ -966,14 +784,12 @@ async def apply_auto_schedule_tick():
     notify_uids: list[int] = []
     brand_name = "Monkey Vape"
     async with aiosqlite.connect(DB_FILE) as db:
-        sched_enabled = (await get_setting_raw(db, "auto_schedule_enabled", "0")) == "1"
-        if not sched_enabled:
+        if (await get_setting_raw(db, "auto_schedule_enabled", "0")) != "1":
             return
-        open_time_str = normalize_hhmm(await get_setting_raw(db, "open_time", "10:00"), "10:00")
-        close_time_str = normalize_hhmm(await get_setting_raw(db, "close_time", "22:00"), "22:00")
-        should_be_open = is_within_schedule(datetime.now(), open_time_str, close_time_str)
+        open_t = normalize_hhmm(await get_setting_raw(db, "open_time", "10:00"), "10:00")
+        close_t = normalize_hhmm(await get_setting_raw(db, "close_time", "22:00"), "22:00")
+        should_be_open = is_within_schedule(datetime.now(), open_t, close_t)
         currently_open = (await get_setting_raw(db, "shop_open", "1")) == "1"
-
         if should_be_open and not currently_open:
             await set_setting_raw(db, "shop_open", "1")
             brand_name = await get_shop_brand_name(db)
@@ -981,14 +797,9 @@ async def apply_auto_schedule_tick():
             if notify_uids:
                 await set_setting_list(db, "shop_open_subscribers", [])
             await db.commit()
-
     for uid in notify_uids:
         try:
-            await bot.send_message(
-                uid,
-                f"🟢 <b>Магазин {html.escape(brand_name)} открылся по расписанию!</b>\n\nТеперь вы можете оформить заказ в каталоге.",
-                parse_mode="HTML"
-            )
+            await bot.send_message(uid, f"🟢 <b>Магазин {html.escape(brand_name)} открылся по расписанию!</b>", parse_mode="HTML")
             await asyncio.sleep(0.05)
         except Exception:
             pass
@@ -997,17 +808,16 @@ async def auto_schedule_worker():
     while True:
         try:
             await apply_auto_schedule_tick()
-        except Exception as e:
-            print(f"[ERR] auto_schedule_worker: {e}")
+        except Exception:
+            pass
         await asyncio.sleep(60)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
     try:
-        default_menu_url = f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}"
         await bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=default_menu_url))
+            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}&v={WEBAPP_CACHE_VER}"))
         )
     except Exception:
         pass
@@ -1029,24 +839,14 @@ def verify_telegram_init_data(init_data: str, max_age_sec: int = 86400 * 3) -> t
         received_hash = (parsed.get("hash") or [""])[0]
         if not received_hash:
             return 0, ""
-
         auth_date = int((parsed.get("auth_date") or ["0"])[0])
         if auth_date <= 0 or (time.time() - auth_date) > max_age_sec:
             return 0, ""
-
-        data_check_lines = []
-        for k in sorted(parsed.keys()):
-            if k == "hash":
-                continue
-            data_check_lines.append(f"{k}={parsed[k][0]}")
-        data_check_string = "\n".join(data_check_lines)
-
+        data_check_lines = [f"{k}={parsed[k][0]}" for k in sorted(parsed.keys()) if k != "hash"]
         secret_key = hmac.new(b"WebAppData", TOKEN.encode("utf-8"), hashlib.sha256).digest()
-        calculated_hash = hmac.new(secret_key, data_check_string.encode("utf-8"), hashlib.sha256).hexdigest()
-
+        calculated_hash = hmac.new(secret_key, "\n".join(data_check_lines).encode("utf-8"), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(calculated_hash, received_hash):
             return 0, ""
-
         user_json_str = (parsed.get("user") or [""])[0]
         if user_json_str:
             uobj = json.loads(user_json_str)
@@ -1058,8 +858,7 @@ def verify_telegram_init_data(init_data: str, max_age_sec: int = 86400 * 3) -> t
     return 0, ""
 
 async def require_verified_owner(db, request: Request, claimed_uid: int = 0) -> int:
-    init_data = request.headers.get("X-Telegram-Init-Data", "")
-    v_uid, _ = verify_telegram_init_data(init_data)
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram Mini App")
     if claimed_uid and int(claimed_uid) != v_uid:
@@ -1069,8 +868,7 @@ async def require_verified_owner(db, request: Request, claimed_uid: int = 0) -> 
     return v_uid
 
 async def require_verified_courier(db, request: Request, claimed_uid: int = 0) -> int:
-    init_data = request.headers.get("X-Telegram-Init-Data", "")
-    v_uid, _ = verify_telegram_init_data(init_data)
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram Mini App")
     if claimed_uid and int(claimed_uid) != v_uid:
@@ -1086,20 +884,17 @@ async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
         cid = 0
     if cid <= 0:
         return False
-
     try:
         await bot.send_message(chat_id=cid, text=text, parse_mode="HTML", reply_markup=reply_markup)
         return True
     except Exception:
         pass
-
     if reply_markup is not None:
         try:
             await bot.send_message(chat_id=cid, text=text, parse_mode="HTML")
             return True
         except Exception:
             pass
-
     try:
         async with Bot(token=TOKEN) as temp_bot:
             try:
@@ -1111,73 +906,63 @@ async def send_tg_dm(chat_id: int, text: str, reply_markup=None) -> bool:
         return False
 
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=list(ALLOWED_ORIGINS),
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=list(ALLOWED_ORIGINS), allow_credentials=True, allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["*"])
 
 RATE_LIMIT_GENERAL: dict[str, list[float]] = defaultdict(list)
 RATE_LIMIT_SENSITIVE: dict[str, list[float]] = defaultdict(list)
-SENSITIVE_PATHS = {
-    "/api/create_order",
-    "/api/admin/upload_image",
-    "/api/admin/upload_music",
-    "/api/admin/broadcast",
-    "/api/admin/send_backup",
-}
+SENSITIVE_PATHS = {"/api/create_order", "/api/admin/upload_image", "/api/admin/upload_music", "/api/admin/broadcast", "/api/admin/send_backup"}
 
 def _get_client_ip(request: Request) -> str:
     cf_ip = request.headers.get("CF-Connecting-IP", "").strip()
     if cf_ip:
         return cf_ip
     xff = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-    if xff:
-        return xff
-    return request.client.host if request.client else "unknown"
+    return xff or (request.client.host if request.client else "unknown")
 
 @app.middleware("http")
 async def security_and_rate_limit_middleware(request: Request, call_next):
     origin = (request.headers.get("origin") or "").strip()
     allow_origin = origin if origin in ALLOWED_ORIGINS else "https://monkeyvape-shop.github.io"
-
     if request.method == "OPTIONS":
-        response = Response(status_code=200)
-        response.headers["Access-Control-Allow-Origin"] = allow_origin
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Allow-Private-Network"] = "true"
-        return response
-
+        r = Response(status_code=200)
+        r.headers["Access-Control-Allow-Origin"] = allow_origin
+        r.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        r.headers["Access-Control-Allow-Headers"] = "*"
+        r.headers["Access-Control-Allow-Private-Network"] = "true"
+        return r
     now_ts = time.time()
     client_ip = _get_client_ip(request)
     path = request.url.path
-
     if path.startswith("/api/"):
         gen_hits = [t for t in RATE_LIMIT_GENERAL[client_ip] if now_ts - t < 60.0]
         if len(gen_hits) >= 150:
             return JSONResponse(status_code=429, content={"detail": "Слишком много запросов. Попробуйте через минуту."})
         gen_hits.append(now_ts)
         RATE_LIMIT_GENERAL[client_ip] = gen_hits
-
         if path in SENSITIVE_PATHS:
             sens_hits = [t for t in RATE_LIMIT_SENSITIVE[client_ip] if now_ts - t < 60.0]
             if len(sens_hits) >= 15:
                 return JSONResponse(status_code=429, content={"detail": "Превышен лимит запросов. Подождите минуту."})
             sens_hits.append(now_ts)
             RATE_LIMIT_SENSITIVE[client_ip] = sens_hits
-
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except RuntimeError as exc:
+        if "No response returned" in str(exc):
+            return Response(status_code=204)
+        raise
+    except Exception as exc:
+        err_resp = JSONResponse(status_code=500, content={"detail": f"Внутренняя ошибка сервера: {exc}"})
+        err_resp.headers["Access-Control-Allow-Origin"] = allow_origin
+        err_resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        err_resp.headers["Access-Control-Allow-Headers"] = "*"
+        err_resp.headers["Access-Control-Allow-Private-Network"] = "true"
+        return err_resp
     response.headers["Access-Control-Allow-Origin"] = allow_origin
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "*"
     response.headers["Access-Control-Allow-Private-Network"] = "true"
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
 class OrderSchema(BaseModel):
@@ -1225,6 +1010,8 @@ class CourierBannerSchema(BaseModel):
     title: str = ""
     desc: str = ""
     badge: str = ""
+    layout: str = "classic"
+    badge_text: str = "АКЦИЯ"
     banner_interval: int | None = None
     interval: int | None = None
     banners: list | None = None
@@ -1333,6 +1120,20 @@ class AdminChannelsSchema(BaseModel):
     news_channel_url: str = ""
     reviews_channel_url: str = ""
     support_username: str = "@warat_24"
+
+class AdminDonateConfigSchema(BaseModel):
+    user_id: int
+    enabled: bool = True
+    title: str = "Поддержать проект"
+    subtitle: str = "Звёзды Telegram или криптовалюта на развитие магазина"
+    stars_enabled: bool = True
+    stars_username: str = "@warat_24"
+    stars_bot_invoice: bool = True
+    wallets: list = []
+
+class DonateStarsInvoiceSchema(BaseModel):
+    user_id: int = 0
+    amount: int = 50
 
 class AdminCategoryManageSchema(BaseModel):
     user_id: int
@@ -1445,8 +1246,7 @@ async def get_user_avatar(user_id: int):
     try:
         photos = await bot.get_user_profile_photos(user_id=user_id, limit=1)
         if photos.total_count > 0 and photos.photos:
-            file_id = photos.photos[0][-1].file_id
-            tg_file = await bot.get_file(file_id)
+            tg_file = await bot.get_file(photos.photos[0][-1].file_id)
             file_bytes_io = await bot.download_file(tg_file.file_path)
             return Response(content=file_bytes_io.read(), media_type="image/jpeg")
     except Exception:
@@ -1508,21 +1308,11 @@ async def get_shop_config():
         music_paused = (await get_setting_raw(db, "music_paused", "0")) == "1"
 
         audio_state = await get_audio_library_state(db)
-        music_url = audio_state["music_url"]
-        music_title = audio_state["music_title"]
-        music_volume = audio_state["music_volume"]
-
         currency = await get_setting_raw(db, "currency", "р.")
         if currency not in ALLOWED_CURRENCIES:
             currency = "р."
 
         deliv_state = await get_delivery_settings_state(db)
-        delivery_mode = deliv_state["delivery_mode"]
-        enabled_delivery_modes = deliv_state["enabled_delivery_modes"]
-        district_locations = deliv_state["district_locations"]
-        pickup_locations = deliv_state["pickup_locations"]
-        delivery_locations = deliv_state["delivery_locations"]
-
         splash_emoji = (await get_setting_raw(db, "splash_emoji", "🐵")).strip() or "🐵"
         splash_image = normalize_public_asset_url((await get_setting_raw(db, "splash_image", "")).strip())
         welcome_text = await get_setting_raw(db, "welcome_text", DEFAULT_WELCOME_TEXT)
@@ -1536,23 +1326,16 @@ async def get_shop_config():
         news_channel_url = await get_setting_raw(db, "news_channel_url", "")
         reviews_channel_url = await get_setting_raw(db, "reviews_channel_url", "")
         support_username = await get_setting_raw(db, "support_username", "@warat_24")
+        donate_cfg = await get_donate_config_state(db)
 
         top_notice_state = await get_top_notice_state(db)
-
         banner_enabled = await get_setting_raw(db, "banner_enabled", "1") == "1"
         try:
             banner_interval = max(0, min(120, int(await get_setting_raw(db, "banner_interval", "5") or 5)))
         except Exception:
             banner_interval = 5
         banners_list = await get_banners_list(db)
-        first_banner = banners_list[0] if banners_list else {
-            "title": "СКИДКА НЕДЕЛИ -20%",
-            "desc": "Популярные товары и новинки уже в каталоге",
-            "promo_code": "MONKEY3"
-        }
-        banner_title = first_banner.get("title", "")
-        banner_desc = first_banner.get("desc", "")
-        banner_badge = first_banner.get("promo_code", "")
+        first_banner = banners_list[0] if banners_list else {"title": "СКИДКА НЕДЕЛИ -20%", "desc": "Популярные товары и новинки уже в каталоге", "promo_code": "MONKEY3"}
 
         saved_ui_themes = await get_setting_list(db, "saved_ui_themes", [])
         age_check_enabled = (await get_setting_raw(db, "age_check_enabled", "1")) == "1"
@@ -1577,109 +1360,115 @@ async def get_shop_config():
         promos = {}
         async with db.execute("SELECT code, discount, discount_type, max_uses, used_count FROM promocodes") as cursor:
             for r in await cursor.fetchall():
-                promos[r[0]] = {
-                    "discount": float(r[1]),
-                    "type": r[2] or "rub",
-                    "max_uses": int(r[3] or 0),
-                    "used_count": int(r[4] or 0)
-                }
+                promos[r[0]] = {"discount": float(r[1]), "type": r[2] or "rub", "max_uses": int(r[3] or 0), "used_count": int(r[4] or 0)}
 
         products_list = []
-        async with db.execute("""
-            SELECT id, title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json, categories_json
-            FROM products ORDER BY id ASC
-        """) as cursor:
+        async with db.execute("SELECT id, title, category, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json, categories_json FROM products ORDER BY id ASC") as cursor:
             for pr in await cursor.fetchall():
                 cat = pr[2] or "liquid"
                 cats_arr = parse_product_categories(pr[12] or "", cat)
                 primary_c = cats_arr[0] if cats_arr else cat
                 products_list.append({
-                    "id": pr[0],
-                    "title": pr[1],
-                    "category": primary_c,
-                    "categories": cats_arr,
-                    "price": float(pr[3]),
-                    "old_price": float(pr[4] or 0.0),
-                    "tag": pr[5] or "",
-                    "icon": pr[6] or "🧪",
-                    "available": bool(pr[7]),
+                    "id": pr[0], "title": pr[1], "category": primary_c, "categories": cats_arr,
+                    "price": float(pr[3]), "old_price": float(pr[4] or 0.0), "tag": pr[5] or "",
+                    "icon": pr[6] or "🧪", "available": bool(pr[7]),
                     "image_url": normalize_public_asset_url(pr[8] or ""),
-                    "has_discount": bool(pr[9]),
-                    "low_stock": bool(pr[10]),
+                    "has_discount": bool(pr[9]), "low_stock": bool(pr[10]),
                     "options": parse_product_options(pr[11] or "", primary_c)
                 })
 
         return {
-            "shop_open": shop_open_raw == "1",
-            "closed_message": closed_message,
-            "season_effect": season_effect,
-            "hit_color": hit_color,
-            "ui_theme": ui_theme,
-            "saved_ui_themes": saved_ui_themes,
-            "age_settings": {
-                "enabled": age_check_enabled,
-                "min_years": age_min_years,
-                "bg_color": age_modal_bg,
-                "opacity": age_modal_opacity
-            },
-            "smart_bar": {
-                "enabled": smart_bar_enabled,
-                "target": smart_bar_target,
-                "reward": smart_bar_reward
-            },
-            "logo_part1": logo_part1,
-            "logo_part2": logo_part2,
-            "logo_image": logo_image,
-            "splash_style": splash_style,
-            "music_enabled": music_enabled,
-            "music_paused": music_paused,
-            "music_url": music_url,
-            "music_title": music_title,
-            "music_volume": music_volume,
-            "audio_tracks": audio_state["audio_tracks"],
-            "audio_loop_mode": audio_state["audio_loop_mode"],
-            "audio_active_track_id": audio_state["audio_active_track_id"],
-            "audio_default_volume": audio_state["audio_default_volume"],
+            "shop_open": shop_open_raw == "1", "closed_message": closed_message,
+            "season_effect": season_effect, "hit_color": hit_color,
+            "ui_theme": ui_theme, "saved_ui_themes": saved_ui_themes,
+            "age_settings": {"enabled": age_check_enabled, "min_years": age_min_years, "bg_color": age_modal_bg, "opacity": age_modal_opacity},
+            "smart_bar": {"enabled": smart_bar_enabled, "target": smart_bar_target, "reward": smart_bar_reward},
+            "logo_part1": logo_part1, "logo_part2": logo_part2, "logo_image": logo_image, "splash_style": splash_style,
+            "music_enabled": music_enabled, "music_paused": music_paused,
+            "music_url": audio_state["music_url"], "music_title": audio_state["music_title"], "music_volume": audio_state["music_volume"],
+            "audio_tracks": audio_state["audio_tracks"], "audio_loop_mode": audio_state["audio_loop_mode"],
+            "audio_active_track_id": audio_state["audio_active_track_id"], "audio_default_volume": audio_state["audio_default_volume"],
             "currency": currency,
-            "delivery_mode": delivery_mode,
-            "enabled_delivery_modes": enabled_delivery_modes,
-            "district_locations": district_locations,
-            "pickup_locations": pickup_locations,
-            "delivery_locations": delivery_locations,
-            "splash_emoji": splash_emoji,
-            "splash_image": splash_image,
-            "welcome_text": welcome_text,
-            "min_order_amount": min_order_amount,
-            "delivery_fee": delivery_fee,
-            "free_delivery_threshold": free_delivery_threshold,
-            "auto_schedule_enabled": auto_schedule_enabled,
-            "open_time": open_time,
-            "close_time": close_time,
-            "news_channel_url": news_channel_url,
-            "reviews_channel_url": reviews_channel_url,
-            "support_username": support_username,
-            "categories": categories,
-            "top_notice": top_notice_state,
-            "banner_interval": banner_interval,
-            "banners": banners_list,
+            "delivery_mode": deliv_state["delivery_mode"], "enabled_delivery_modes": deliv_state["enabled_delivery_modes"],
+            "district_locations": deliv_state["district_locations"], "pickup_locations": deliv_state["pickup_locations"],
+            "delivery_locations": deliv_state["delivery_locations"],
+            "splash_emoji": splash_emoji, "splash_image": splash_image, "welcome_text": welcome_text,
+            "min_order_amount": min_order_amount, "delivery_fee": delivery_fee, "free_delivery_threshold": free_delivery_threshold,
+            "auto_schedule_enabled": auto_schedule_enabled, "open_time": open_time, "close_time": close_time,
+            "news_channel_url": news_channel_url, "reviews_channel_url": reviews_channel_url, "support_username": support_username,
+            "donate_config": donate_cfg,
+            "categories": categories, "top_notice": top_notice_state,
+            "banner_interval": banner_interval, "banners": banners_list,
             "banner": {
-                "enabled": banner_enabled,
-                "interval": banner_interval,
-                "banners": banners_list,
-                "title": banner_title,
-                "desc": banner_desc,
-                "badge": banner_badge
+                "enabled": banner_enabled, "interval": banner_interval, "banners": banners_list,
+                "title": first_banner.get("title", ""), "desc": first_banner.get("desc", ""), "badge": first_banner.get("promo_code", "")
             },
-            "time_slots": time_slots,
-            "metro_stations": metro_stations,
-            "disabled_stations": disabled_stations,
-            "disabled_times": disabled_times,
-            "promocodes": promos,
-            "products": products_list,
-            "banned_users": banned_users,
-            "owner_ids": owner_ids,
-            "courier_ids": courier_ids
+            "time_slots": time_slots, "metro_stations": metro_stations,
+            "disabled_stations": disabled_stations, "disabled_times": disabled_times,
+            "promocodes": promos, "products": products_list,
+            "banned_users": banned_users, "owner_ids": owner_ids, "courier_ids": courier_ids
         }
+
+@app.post("/api/admin/donate_config")
+async def update_admin_donate_config(data: AdminDonateConfigSchema, request: Request):
+    async with aiosqlite.connect(DB_FILE) as db:
+        await require_verified_owner(db, request, data.user_id)
+        wallets_clean = []
+        for i, w in enumerate(data.wallets or []):
+            nw = normalize_donate_wallet(w, i)
+            if nw:
+                wallets_clean.append(nw)
+        st_user = (data.stars_username or "").strip()
+        if st_user and not st_user.startswith("@") and not st_user.startswith("http"):
+            st_user = "@" + st_user
+        cfg_obj = {
+            "enabled": bool(data.enabled),
+            "title": (data.title or "").strip() or "Поддержать проект",
+            "subtitle": (data.subtitle or "").strip() or "Звёзды Telegram или криптовалюта на развитие магазина",
+            "stars_enabled": bool(data.stars_enabled),
+            "stars_username": st_user,
+            "stars_bot_invoice": bool(data.stars_bot_invoice),
+            "wallets": wallets_clean
+        }
+        await set_setting_raw(db, "donate_config", json.dumps(cfg_obj, ensure_ascii=False))
+        await db.commit()
+    return {"success": True, "donate_config": cfg_obj}
+
+@app.post("/api/donate/stars_invoice")
+async def create_stars_donate_invoice(data: DonateStarsInvoiceSchema, request: Request):
+    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    target_uid = v_uid if v_uid > 0 else int(data.user_id or 0)
+    if target_uid <= 0:
+        raise HTTPException(status_code=401, detail="Откройте магазин внутри Telegram")
+    amt = max(1, min(25000, int(data.amount or 50)))
+    async with aiosqlite.connect(DB_FILE) as db:
+        brand_name = await get_shop_brand_name(db)
+        cfg = await get_donate_config_state(db)
+    if not cfg.get("enabled") or not cfg.get("stars_enabled"):
+        raise HTTPException(status_code=400, detail="Оплата звёздами через бота сейчас отключена")
+    prices = [LabeledPrice(label=f"Поддержка {brand_name}", amount=amt)]
+    try:
+        link = await bot.create_invoice_link(
+            title=f"Поддержка {brand_name}",
+            description=f"Донат {amt} Telegram Stars на развитие проекта {brand_name}",
+            payload=f"donate_stars:{target_uid}:{amt}:{int(time.time())}",
+            currency="XTR",
+            prices=prices
+        )
+        return {"success": True, "invoice_link": link}
+    except Exception:
+        try:
+            await bot.send_invoice(
+                chat_id=target_uid,
+                title=f"Поддержка {brand_name}",
+                description=f"Донат {amt} Telegram Stars на развитие проекта {brand_name}",
+                payload=f"donate_stars:{target_uid}:{amt}:{int(time.time())}",
+                currency="XTR",
+                prices=prices
+            )
+            return {"success": True, "sent_to_chat": True}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Не удалось создать счёт на звёзды: {e}")
 
 @app.post("/api/admin/ui_theme")
 async def update_admin_ui_theme(data: AdminUiThemeSchema, request: Request):
@@ -1735,15 +1524,7 @@ async def update_admin_age_settings(data: AdminAgeSettingsSchema, request: Reque
         await set_setting_raw(db, "age_modal_bg", bg_c)
         await set_setting_raw(db, "age_modal_opacity", str(op_pct))
         await db.commit()
-    return {
-        "success": True,
-        "age_settings": {
-            "enabled": bool(data.enabled),
-            "min_years": min_y,
-            "bg_color": bg_c,
-            "opacity": op_pct
-        }
-    }
+    return {"success": True, "age_settings": {"enabled": bool(data.enabled), "min_years": min_y, "bg_color": bg_c, "opacity": op_pct}}
 
 @app.post("/api/admin/branding")
 async def update_admin_branding(data: AdminBrandingSchema, request: Request):
@@ -1762,10 +1543,8 @@ async def update_admin_branding(data: AdminBrandingSchema, request: Request):
             await set_setting_raw(db, "splash_emoji", data.splash_emoji.strip())
         if data.splash_image is not None:
             await set_setting_raw(db, "splash_image", normalize_public_asset_url(data.splash_image.strip()))
-        if data.splash_style is not None:
-            st_clean = data.splash_style.strip()
-            if st_clean in ("neon", "minimal", "orbit", "pulse", "glass"):
-                await set_setting_raw(db, "splash_style", st_clean)
+        if data.splash_style is not None and data.splash_style.strip() in ("neon", "minimal", "orbit", "pulse", "glass"):
+            await set_setting_raw(db, "splash_style", data.splash_style.strip())
         if data.welcome_text is not None:
             w_clean = data.welcome_text.strip()
             await set_setting_raw(db, "welcome_text", w_clean if w_clean else DEFAULT_WELCOME_TEXT)
@@ -1774,16 +1553,7 @@ async def update_admin_branding(data: AdminBrandingSchema, request: Request):
 
 def _detect_audio_media_type(filename: str) -> str:
     ext = os.path.splitext((filename or "").lower())[1]
-    return {
-        ".mp3": "audio/mpeg",
-        ".ogg": "audio/ogg",
-        ".oga": "audio/ogg",
-        ".wav": "audio/wav",
-        ".m4a": "audio/mp4",
-        ".aac": "audio/aac",
-        ".webm": "audio/webm",
-        ".flac": "audio/flac",
-    }.get(ext, "audio/mpeg")
+    return {".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".oga": "audio/ogg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".aac": "audio/aac", ".webm": "audio/webm", ".flac": "audio/flac"}.get(ext, "audio/mpeg")
 
 def _sanitize_audio_ext(filename: str, raw_b64: str) -> str:
     ext = os.path.splitext((filename or "").lower())[1]
@@ -1815,24 +1585,19 @@ async def upload_admin_music(data: AdminMusicUploadSchema, request: Request):
             raise HTTPException(status_code=400, detail="Некорректный формат аудиоданных")
         if not audio_bytes or len(audio_bytes) > 25 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="Размер аудиофайла должен быть от 1 Б до 25 МБ")
-
         os.makedirs(AUDIO_DIR, exist_ok=True)
         ext = _sanitize_audio_ext(data.filename, data.data_base64)
         uniq = f"{int(time.time() * 1000)}_{os.urandom(2).hex()}"
         stored_name = f"track_{uniq}{ext}"
-        disk_path = os.path.join(AUDIO_DIR, stored_name)
-        with open(disk_path, "wb") as f:
+        with open(os.path.join(AUDIO_DIR, stored_name), "wb") as f:
             f.write(audio_bytes)
-
         track_url = f"/api/music/{stored_name}"
         clean_title = (data.music_title or "").strip() or os.path.splitext(data.filename or "Фоновый трек")[0] or "Фоновый трек"
-
         audio_state = await get_audio_library_state(db)
         tracks = list(audio_state["audio_tracks"])
         new_track_id = f"trk_{uniq}"
         tracks.append({"id": new_track_id, "title": clean_title, "url": track_url})
         cleanup_orphaned_audio_files([t["url"] for t in tracks])
-
         await set_setting_raw(db, "audio_tracks", json.dumps(tracks, ensure_ascii=False))
         await set_setting_raw(db, "audio_active_track_id", new_track_id)
         await set_setting_raw(db, "music_url", track_url)
@@ -1848,42 +1613,27 @@ async def upload_admin_music(data: AdminMusicUploadSchema, request: Request):
             m_vol = audio_state["music_volume"]
             def_vol_100 = audio_state["audio_default_volume"]
         await db.commit()
-
     return {
-        "success": True,
-        "music_url": track_url,
-        "music_title": clean_title,
-        "music_enabled": True,
-        "music_paused": False,
-        "music_volume": m_vol,
-        "audio_tracks": tracks,
-        "audio_loop_mode": audio_state["audio_loop_mode"],
-        "audio_active_track_id": new_track_id,
-        "audio_default_volume": def_vol_100
+        "success": True, "music_url": track_url, "music_title": clean_title,
+        "music_enabled": True, "music_paused": False, "music_volume": m_vol,
+        "audio_tracks": tracks, "audio_loop_mode": audio_state["audio_loop_mode"],
+        "audio_active_track_id": new_track_id, "audio_default_volume": def_vol_100
     }
 
 @app.post("/api/admin/audio")
 async def update_admin_audio(data: AdminAudioSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
-
         audio_state = await get_audio_library_state(db)
         tracks = list(audio_state["audio_tracks"])
         loop_mode = audio_state["audio_loop_mode"]
         active_id = audio_state["audio_active_track_id"]
         def_vol_100 = audio_state["audio_default_volume"]
-
         if data.audio_tracks is not None:
-            tracks = []
-            for i, item in enumerate(data.audio_tracks):
-                norm = normalize_audio_track(item, i)
-                if norm:
-                    tracks.append(norm)
+            tracks = [norm for i, item in enumerate(data.audio_tracks) if (norm := normalize_audio_track(item, i))]
             cleanup_orphaned_audio_files([t["url"] for t in tracks])
-
-        if data.audio_loop_mode is not None and data.audio_loop_mode in ("sequence", "single"):
+        if data.audio_loop_mode in ("sequence", "single"):
             loop_mode = data.audio_loop_mode
-
         if data.audio_active_track_id is not None:
             cand_id = str(data.audio_active_track_id or "").strip()
             if any(t["id"] == cand_id for t in tracks):
@@ -1896,28 +1646,17 @@ async def update_admin_audio(data: AdminAudioSchema, request: Request):
             active_id = tracks[0]["id"]
         elif not tracks:
             active_id = ""
-
         if data.audio_default_volume is not None:
             try:
                 def_vol_100 = max(0, min(100, int(round(float(data.audio_default_volume)))))
             except Exception:
                 pass
-
         active_track = next((t for t in tracks if t["id"] == active_id), None)
         eff_url = active_track["url"] if active_track else ""
         eff_title = active_track["title"] if active_track else "Фоновый трек"
         eff_vol_float = round(def_vol_100 / 100.0, 2)
-
-        if data.music_enabled is not None:
-            m_enabled = bool(data.music_enabled)
-        else:
-            m_enabled = ((await get_setting_raw(db, "music_enabled", "0")) == "1") if tracks else False
-
-        if data.music_paused is not None:
-            m_paused = bool(data.music_paused)
-        else:
-            m_paused = (await get_setting_raw(db, "music_paused", "0")) == "1"
-
+        m_enabled = bool(data.music_enabled) if data.music_enabled is not None else (((await get_setting_raw(db, "music_enabled", "0")) == "1") if tracks else False)
+        m_paused = bool(data.music_paused) if data.music_paused is not None else ((await get_setting_raw(db, "music_paused", "0")) == "1")
         await set_setting_raw(db, "audio_tracks", json.dumps(tracks, ensure_ascii=False))
         await set_setting_raw(db, "audio_loop_mode", loop_mode)
         await set_setting_raw(db, "audio_active_track_id", active_id)
@@ -1928,19 +1667,7 @@ async def update_admin_audio(data: AdminAudioSchema, request: Request):
         await set_setting_raw(db, "music_enabled", "1" if m_enabled else "0")
         await set_setting_raw(db, "music_paused", "1" if m_paused else "0")
         await db.commit()
-
-    return {
-        "success": True,
-        "audio_tracks": tracks,
-        "audio_loop_mode": loop_mode,
-        "audio_active_track_id": active_id,
-        "audio_default_volume": def_vol_100,
-        "music_enabled": m_enabled,
-        "music_paused": m_paused,
-        "music_url": eff_url,
-        "music_title": eff_title,
-        "music_volume": eff_vol_float
-    }
+    return {"success": True, "audio_tracks": tracks, "audio_loop_mode": loop_mode, "audio_active_track_id": active_id, "audio_default_volume": def_vol_100, "music_enabled": m_enabled, "music_paused": m_paused, "music_url": eff_url, "music_title": eff_title, "music_volume": eff_vol_float}
 
 @app.get("/api/music/{filename}")
 async def serve_uploaded_music(filename: str):
@@ -1952,15 +1679,7 @@ async def serve_uploaded_music(filename: str):
         raise HTTPException(status_code=404, detail="Audio file not found")
     with open(file_path, "rb") as f:
         content = f.read()
-    return Response(
-        content=content,
-        media_type=_detect_audio_media_type(safe_name),
-        headers={
-            "Accept-Ranges": "bytes",
-            "Content-Length": str(len(content)),
-            "Cache-Control": "public, max-age=3600"
-        }
-    )
+    return Response(content=content, media_type=_detect_audio_media_type(safe_name), headers={"Accept-Ranges": "bytes", "Content-Length": str(len(content)), "Cache-Control": "public, max-age=3600"})
 
 def _detect_valid_image_ext(img_bytes: bytes) -> str | None:
     if len(img_bytes) >= 3 and img_bytes[:3] == b"\xff\xd8\xff":
@@ -1986,15 +1705,12 @@ async def upload_admin_image(data: AdminImageUploadSchema, request: Request):
         raise HTTPException(status_code=400, detail="Некорректный формат изображения")
     if not img_bytes or len(img_bytes) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Размер изображения должен быть до 10 МБ")
-
     ext = _detect_valid_image_ext(img_bytes)
     if not ext:
         raise HTTPException(status_code=400, detail="Разрешены только изображения JPG, PNG или WEBP")
-
     os.makedirs(IMAGES_DIR, exist_ok=True)
     stored_name = f"prod_{int(time.time() * 1000)}_{os.urandom(3).hex()}{ext}"
-    disk_path = os.path.join(IMAGES_DIR, stored_name)
-    with open(disk_path, "wb") as f:
+    with open(os.path.join(IMAGES_DIR, stored_name), "wb") as f:
         f.write(img_bytes)
     return {"success": True, "image_url": f"/api/product_image/{stored_name}"}
 
@@ -2010,11 +1726,7 @@ async def serve_uploaded_product_image(filename: str):
     mtype = "image/png" if ext == ".png" else ("image/webp" if ext == ".webp" else "image/jpeg")
     with open(file_path, "rb") as f:
         content = f.read()
-    return Response(
-        content=content,
-        media_type=mtype,
-        headers={"Cache-Control": "public, max-age=86400"}
-    )
+    return Response(content=content, media_type=mtype, headers={"Cache-Control": "public, max-age=86400"})
 
 @app.post("/api/admin/music")
 async def update_admin_music(data: AdminMusicSchema, request: Request):
@@ -2024,7 +1736,6 @@ async def update_admin_music(data: AdminMusicSchema, request: Request):
         m_title = (data.music_title or "").strip() or "Фоновый трек"
         m_vol = max(0.0, min(1.0, round(float(data.music_volume if data.music_volume is not None else 0.35), 2)))
         def_vol_100 = max(0, min(100, int(round(m_vol * 100))))
-
         audio_state = await get_audio_library_state(db)
         tracks = list(audio_state["audio_tracks"])
         active_id = audio_state["audio_active_track_id"]
@@ -2041,7 +1752,6 @@ async def update_admin_music(data: AdminMusicSchema, request: Request):
             tracks = []
             active_id = ""
             cleanup_orphaned_audio_files([])
-
         await set_setting_raw(db, "music_enabled", "1" if data.music_enabled else "0")
         await set_setting_raw(db, "music_paused", "1" if data.music_paused else "0")
         await set_setting_raw(db, "music_url", m_url)
@@ -2051,26 +1761,14 @@ async def update_admin_music(data: AdminMusicSchema, request: Request):
         await set_setting_raw(db, "audio_active_track_id", active_id)
         await set_setting_raw(db, "audio_default_volume", str(def_vol_100))
         await db.commit()
-    return {
-        "success": True,
-        "music_enabled": bool(data.music_enabled),
-        "music_paused": bool(data.music_paused),
-        "music_url": m_url,
-        "music_title": m_title,
-        "music_volume": m_vol,
-        "audio_tracks": tracks,
-        "audio_active_track_id": active_id,
-        "audio_default_volume": def_vol_100
-    }
+    return {"success": True, "music_enabled": bool(data.music_enabled), "music_paused": bool(data.music_paused), "music_url": m_url, "music_title": m_title, "music_volume": m_vol, "audio_tracks": tracks, "audio_active_track_id": active_id, "audio_default_volume": def_vol_100}
 
 @app.post("/api/admin/localization")
 async def update_admin_localization(data: AdminLocalizationSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
-
         cur = data.currency.strip() if data.currency.strip() in ALLOWED_CURRENCIES else "р."
         dmode = data.delivery_mode.strip() if data.delivery_mode.strip() in ALLOWED_DELIVERY_MODES else "metro"
-
         clean_enabled_modes: list[str] = []
         if data.enabled_delivery_modes is not None:
             for m in data.enabled_delivery_modes:
@@ -2080,32 +1778,14 @@ async def update_admin_localization(data: AdminLocalizationSchema, request: Requ
         if not clean_enabled_modes:
             clean_enabled_modes = [dmode]
         dmode = clean_enabled_modes[0]
-
         clean_locs = sanitize_string_list(data.delivery_locations)
-
         deliv_state = await get_delivery_settings_state(db)
-        district_locs = deliv_state["district_locations"]
-        pickup_locs = deliv_state["pickup_locations"]
-
-        if data.district_locations is not None:
-            district_locs = sanitize_string_list(data.district_locations)
-        elif dmode == "districts" and data.delivery_locations:
-            district_locs = list(clean_locs)
-
-        if data.pickup_locations is not None:
-            pickup_locs = sanitize_string_list(data.pickup_locations)
-        elif dmode == "pickup" and data.delivery_locations:
-            pickup_locs = list(clean_locs)
-
+        district_locs = sanitize_string_list(data.district_locations) if data.district_locations is not None else deliv_state["district_locations"]
+        pickup_locs = sanitize_string_list(data.pickup_locations) if data.pickup_locations is not None else deliv_state["pickup_locations"]
         if not clean_locs:
-            if dmode == "districts":
-                clean_locs = list(district_locs)
-            elif dmode == "pickup":
-                clean_locs = list(pickup_locs)
-
+            clean_locs = list(district_locs) if dmode == "districts" else (list(pickup_locs) if dmode == "pickup" else [])
         emoji = (data.splash_emoji or "").strip() or "🐵"
         w_text = (data.welcome_text or "").strip() or DEFAULT_WELCOME_TEXT
-
         await set_setting_raw(db, "currency", cur)
         await set_setting_raw(db, "delivery_mode", dmode)
         await set_setting_list(db, "enabled_delivery_modes", clean_enabled_modes)
@@ -2116,27 +1796,14 @@ async def update_admin_localization(data: AdminLocalizationSchema, request: Requ
         if data.splash_image is not None:
             await set_setting_raw(db, "splash_image", normalize_public_asset_url(data.splash_image.strip()))
         await set_setting_raw(db, "welcome_text", w_text)
-
         if data.min_order_amount is not None:
             await set_setting_raw(db, "min_order_amount", str(max(0.0, round(float(data.min_order_amount), 2))))
         if data.delivery_fee is not None:
             await set_setting_raw(db, "delivery_fee", str(max(0.0, round(float(data.delivery_fee), 2))))
         if data.free_delivery_threshold is not None:
             await set_setting_raw(db, "free_delivery_threshold", str(max(0.0, round(float(data.free_delivery_threshold), 2))))
-
         await db.commit()
-
-    return {
-        "success": True,
-        "currency": cur,
-        "delivery_mode": dmode,
-        "enabled_delivery_modes": clean_enabled_modes,
-        "district_locations": district_locs,
-        "pickup_locations": pickup_locs,
-        "delivery_locations": clean_locs,
-        "splash_emoji": emoji,
-        "welcome_text": w_text
-    }
+    return {"success": True, "currency": cur, "delivery_mode": dmode, "enabled_delivery_modes": clean_enabled_modes, "district_locations": district_locs, "pickup_locations": pickup_locs, "delivery_locations": clean_locs, "splash_emoji": emoji, "welcome_text": w_text}
 
 @app.post("/api/admin/delivery_pricing")
 async def update_admin_delivery_pricing(data: AdminDeliveryPricingSchema, request: Request):
@@ -2153,15 +1820,9 @@ async def update_admin_delivery_pricing(data: AdminDeliveryPricingSchema, reques
         if data.smart_bar_target is not None:
             await set_setting_raw(db, "smart_bar_target", str(max(0.0, round(float(data.smart_bar_target), 2))))
         if data.smart_bar_reward is not None:
-            rew = data.smart_bar_reward.strip() or "Бесплатная доставка"
-            await set_setting_raw(db, "smart_bar_reward", rew)
+            await set_setting_raw(db, "smart_bar_reward", data.smart_bar_reward.strip() or "Бесплатная доставка")
         await db.commit()
-    return {
-        "success": True,
-        "min_order_amount": min_amt,
-        "delivery_fee": d_fee,
-        "free_delivery_threshold": free_thr
-    }
+    return {"success": True, "min_order_amount": min_amt, "delivery_fee": d_fee, "free_delivery_threshold": free_thr}
 
 @app.post("/api/admin/smart_bar")
 async def update_admin_smart_bar(data: AdminSmartBarSchema, request: Request):
@@ -2173,14 +1834,7 @@ async def update_admin_smart_bar(data: AdminSmartBarSchema, request: Request):
         await set_setting_raw(db, "smart_bar_target", str(sb_target))
         await set_setting_raw(db, "smart_bar_reward", sb_reward)
         await db.commit()
-    return {
-        "success": True,
-        "smart_bar": {
-            "enabled": bool(data.enabled),
-            "target": sb_target,
-            "reward": sb_reward
-        }
-    }
+    return {"success": True, "smart_bar": {"enabled": bool(data.enabled), "target": sb_target, "reward": sb_reward}}
 
 @app.post("/api/admin/channels")
 async def update_admin_channels(data: AdminChannelsSchema, request: Request):
@@ -2207,19 +1861,13 @@ async def admin_manage_category(data: AdminCategoryManageSchema, request: Reques
             if not c_name:
                 raise HTTPException(status_code=400, detail="Empty category name")
             if not any(c["name"].lower() == c_name.lower() for c in cats):
-                new_id = f"cat_{int(time.time() * 1000)}"
-                cats.append({"id": new_id, "name": c_name})
+                cats.append({"id": f"cat_{int(time.time() * 1000)}", "name": c_name})
         elif data.action == "rename":
-            c_id = data.id.strip()
-            c_name = data.name.strip()
-            if not c_id or not c_name:
-                raise HTTPException(status_code=400, detail="Invalid category rename")
             for c in cats:
-                if c["id"] == c_id:
-                    c["name"] = c_name
+                if c["id"] == data.id.strip():
+                    c["name"] = data.name.strip()
         elif data.action == "delete":
-            c_id = data.id.strip()
-            cats = [c for c in cats if c["id"] != c_id]
+            cats = [c for c in cats if c["id"] != data.id.strip()]
         await set_setting_raw(db, "categories", json.dumps(cats, ensure_ascii=False))
         await db.commit()
     return {"success": True, "categories": cats}
@@ -2229,14 +1877,7 @@ async def update_admin_top_notice(data: AdminTopNoticeSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
         cur_state = await get_top_notice_state(db)
-        if data.interval is not None:
-            try:
-                safe_iv = max(0, min(120, int(data.interval)))
-            except Exception:
-                safe_iv = 4
-        else:
-            safe_iv = cur_state["interval"]
-
+        safe_iv = max(0, min(120, int(data.interval))) if data.interval is not None else cur_state["interval"]
         if data.slides is not None:
             norm_slides = [normalize_top_notice_slide(s, i) for i, s in enumerate(data.slides) if isinstance(s, dict)]
         else:
@@ -2246,38 +1887,22 @@ async def update_admin_top_notice(data: AdminTopNoticeSchema, request: Request):
                 norm_slides[0]["text"] = clean_text
             else:
                 norm_slides = [normalize_top_notice_slide({"text": clean_text}, 0)]
-
-        first_text = norm_slides[0]["text"] if norm_slides else ((data.text or "").strip() or DEFAULT_TOP_NOTICE_TEXT)
+        first_text = norm_slides[0]["text"] if norm_slides else DEFAULT_TOP_NOTICE_TEXT
         await set_setting_raw(db, "top_notice_enabled", "1" if data.enabled else "0")
         await set_setting_raw(db, "top_notice_text", first_text)
         await set_setting_raw(db, "top_notice_interval", str(safe_iv))
         await set_setting_raw(db, "top_notice_slides", json.dumps(norm_slides, ensure_ascii=False))
         await db.commit()
-    return {
-        "success": True,
-        "top_notice": {
-            "enabled": bool(data.enabled),
-            "text": first_text,
-            "interval": safe_iv,
-            "slides": norm_slides
-        }
-    }
+    return {"success": True, "top_notice": {"enabled": bool(data.enabled), "text": first_text, "interval": safe_iv, "slides": norm_slides}}
 
 async def _save_banner_settings_db(db, data: CourierBannerSchema) -> dict:
     await set_setting_raw(db, "banner_enabled", "1" if data.enabled else "0")
-
     raw_interval = data.banner_interval if data.banner_interval is not None else data.interval
     if raw_interval is not None:
-        try:
-            safe_interval = max(0, min(120, int(raw_interval)))
-        except Exception:
-            safe_interval = 5
+        safe_interval = max(0, min(120, int(raw_interval)))
         await set_setting_raw(db, "banner_interval", str(safe_interval))
     else:
-        try:
-            safe_interval = max(0, min(120, int(await get_setting_raw(db, "banner_interval", "5") or 5)))
-        except Exception:
-            safe_interval = 5
+        safe_interval = max(0, min(120, int(await get_setting_raw(db, "banner_interval", "5") or 5)))
 
     if data.banners is not None:
         norm_banners = [normalize_banner_item(b, i) for i, b in enumerate(data.banners) if isinstance(b, dict)]
@@ -2286,61 +1911,29 @@ async def _save_banner_settings_db(db, data: CourierBannerSchema) -> dict:
             await set_setting_raw(db, "banner_title", norm_banners[0]["title"])
             await set_setting_raw(db, "banner_desc", norm_banners[0]["desc"])
             await set_setting_raw(db, "banner_badge", norm_banners[0]["promo_code"])
-        else:
-            await set_setting_raw(db, "banner_title", "")
-            await set_setting_raw(db, "banner_desc", "")
-            await set_setting_raw(db, "banner_badge", "")
     else:
-        await set_setting_raw(db, "banner_title", data.title.strip())
-        await set_setting_raw(db, "banner_desc", data.desc.strip())
-        await set_setting_raw(db, "banner_badge", data.badge.strip())
         norm_banners = await get_banners_list(db)
         if norm_banners:
             norm_banners[0]["title"] = data.title.strip()
             norm_banners[0]["desc"] = data.desc.strip()
+            norm_banners[0]["layout"] = data.layout or "classic"
+            norm_banners[0]["badge_text"] = data.badge_text or "АКЦИЯ"
             if data.badge.strip():
                 norm_banners[0]["promo_code"] = data.badge.strip()
             await set_setting_raw(db, "banners", json.dumps(norm_banners, ensure_ascii=False))
 
     if data.top_notice is not None:
-        if isinstance(data.top_notice, dict):
-            tn_enabled = bool(data.top_notice.get("enabled", True))
-            tn_text = str(data.top_notice.get("text") or "").strip() or DEFAULT_TOP_NOTICE_TEXT
-            tn_iv = data.top_notice.get("interval")
-            tn_slides_raw = data.top_notice.get("slides")
-        else:
-            tn_enabled = bool(data.top_notice.enabled)
-            tn_text = (data.top_notice.text or "").strip() or DEFAULT_TOP_NOTICE_TEXT
-            tn_iv = data.top_notice.interval
-            tn_slides_raw = data.top_notice.slides
-        await set_setting_raw(db, "top_notice_enabled", "1" if tn_enabled else "0")
-        if tn_iv is not None:
-            try:
-                await set_setting_raw(db, "top_notice_interval", str(max(0, min(120, int(tn_iv)))))
-            except Exception:
-                pass
-        if isinstance(tn_slides_raw, list):
-            norm_tn_slides = [normalize_top_notice_slide(s, i) for i, s in enumerate(tn_slides_raw) if isinstance(s, dict)]
-            await set_setting_raw(db, "top_notice_slides", json.dumps(norm_tn_slides, ensure_ascii=False))
-            first_tn = norm_tn_slides[0]["text"] if norm_tn_slides else tn_text
-            await set_setting_raw(db, "top_notice_text", first_tn)
-        else:
-            await set_setting_raw(db, "top_notice_text", tn_text)
-    else:
-        if data.top_notice_enabled is not None:
-            await set_setting_raw(db, "top_notice_enabled", "1" if data.top_notice_enabled else "0")
-        if data.top_notice_text is not None:
-            tn_clean = data.top_notice_text.strip() or DEFAULT_TOP_NOTICE_TEXT
-            await set_setting_raw(db, "top_notice_text", tn_clean)
+        tn_d = data.top_notice if isinstance(data.top_notice, dict) else data.top_notice.model_dump()
+        await set_setting_raw(db, "top_notice_enabled", "1" if bool(tn_d.get("enabled", True)) else "0")
+        if tn_d.get("interval") is not None:
+            await set_setting_raw(db, "top_notice_interval", str(max(0, min(120, int(tn_d["interval"])))))
+        if isinstance(tn_d.get("slides"), list):
+            norm_tn = [normalize_top_notice_slide(s, i) for i, s in enumerate(tn_d["slides"]) if isinstance(s, dict)]
+            await set_setting_raw(db, "top_notice_slides", json.dumps(norm_tn, ensure_ascii=False))
+            if norm_tn:
+                await set_setting_raw(db, "top_notice_text", norm_tn[0]["text"])
 
-    tn_state_cur = await get_top_notice_state(db)
-
-    return {
-        "enabled": bool(data.enabled),
-        "banner_interval": safe_interval,
-        "banners": norm_banners,
-        "top_notice": tn_state_cur
-    }
+    return {"enabled": bool(data.enabled), "banner_interval": safe_interval, "banners": norm_banners, "top_notice": await get_top_notice_state(db)}
 
 @app.post("/api/admin/banner")
 async def update_admin_banner(data: CourierBannerSchema, request: Request):
@@ -2364,15 +1957,9 @@ async def subscribe_stock(data: StockNotifySchema, request: Request):
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
-        async with db.execute(
-            "SELECT id FROM stock_notifications WHERE user_id = ? AND product_id = ? AND option_name = ?",
-            (v_uid, data.product_id, data.option_name.strip())
-        ) as cur:
+        async with db.execute("SELECT id FROM stock_notifications WHERE user_id = ? AND product_id = ? AND option_name = ?", (v_uid, data.product_id, data.option_name.strip())) as cur:
             if not await cur.fetchone():
-                await db.execute(
-                    "INSERT INTO stock_notifications (user_id, product_id, option_name) VALUES (?, ?, ?)",
-                    (v_uid, data.product_id, data.option_name.strip())
-                )
+                await db.execute("INSERT INTO stock_notifications (user_id, product_id, option_name) VALUES (?, ?, ?)", (v_uid, data.product_id, data.option_name.strip()))
                 await db.commit()
     return {"success": True}
 
@@ -2400,20 +1987,14 @@ async def admin_shop_status(data: AdminShopStatusSchema, request: Request):
         await set_setting_raw(db, "shop_open", "1" if data.is_open else "0")
         if data.closed_message.strip():
             await set_setting_raw(db, "closed_message", data.closed_message.strip())
-
         if data.is_open and not was_open:
             notify_uids = [int(x) for x in await get_setting_list(db, "shop_open_subscribers")]
             if notify_uids:
                 await set_setting_list(db, "shop_open_subscribers", [])
         await db.commit()
-
     for uid in notify_uids:
         try:
-            await bot.send_message(
-                uid,
-                f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>\n\nТеперь вы можете оформить заказ в каталоге.",
-                parse_mode="HTML"
-            )
+            await bot.send_message(uid, f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>", parse_mode="HTML")
             await asyncio.sleep(0.05)
         except Exception:
             pass
@@ -2424,9 +2005,8 @@ async def admin_appearance(data: AdminAppearanceSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
         season = data.season_effect if data.season_effect in ("none", "winter", "autumn", "spring", "summer", "rain", "garland", "fireworks", "aurora", "bokeh") else "none"
-        color = data.hit_color.strip() or "#ffcc00"
         await set_setting_raw(db, "season_effect", season)
-        await set_setting_raw(db, "hit_color", color)
+        await set_setting_raw(db, "hit_color", data.hit_color.strip() or "#ffcc00")
         await db.commit()
     return {"success": True}
 
@@ -2437,12 +2017,9 @@ async def admin_manage_metro(data: AdminMetroManageSchema, request: Request):
         if data.line not in ("green", "blue", "red"):
             raise HTTPException(status_code=400, detail="Invalid line")
         st_name = data.station.strip()
-        if not st_name:
-            raise HTTPException(status_code=400, detail="Empty station")
         metro_map = await get_metro_map(db)
-        if data.action == "add":
-            if not any(s["name"].lower() == st_name.lower() for s in metro_map[data.line]):
-                metro_map[data.line].append({"name": st_name, "line": LINE_NAMES[data.line]})
+        if data.action == "add" and st_name and not any(s["name"].lower() == st_name.lower() for s in metro_map[data.line]):
+            metro_map[data.line].append({"name": st_name, "line": LINE_NAMES[data.line]})
         elif data.action == "delete":
             metro_map[data.line] = [s for s in metro_map[data.line] if s["name"] != st_name]
         await set_setting_raw(db, "metro_stations", json.dumps(metro_map, ensure_ascii=False))
@@ -2454,13 +2031,10 @@ async def admin_manage_time(data: AdminTimeManageSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
         t_str = data.time.strip()
-        if not t_str:
-            raise HTTPException(status_code=400, detail="Empty time")
         slots = await get_setting_list(db, "time_slots", DEFAULT_TIME_SLOTS)
-        if data.action == "add":
-            if t_str not in slots:
-                slots.append(t_str)
-                slots.sort()
+        if data.action == "add" and t_str and t_str not in slots:
+            slots.append(t_str)
+            slots.sort()
         elif data.action == "delete":
             slots = [s for s in slots if s != t_str]
         await set_setting_list(db, "time_slots", slots)
@@ -2499,15 +2073,9 @@ async def admin_save_promo(data: AdminPromoSaveSchema, request: Request):
         await require_verified_owner(db, request, data.user_id)
         code = data.code.strip().upper()
         dtype = data.discount_type if data.discount_type in ("rub", "percent") else "rub"
-        max_uses = max(0, int(data.max_uses or 0))
         await db.execute(
-            """INSERT INTO promocodes (code, discount, discount_type, max_uses, used_count)
-               VALUES (?, ?, ?, ?, 0)
-               ON CONFLICT(code) DO UPDATE SET
-               discount = excluded.discount,
-               discount_type = excluded.discount_type,
-               max_uses = excluded.max_uses""",
-            (code, float(data.discount), dtype, max_uses)
+            "INSERT INTO promocodes (code, discount, discount_type, max_uses, used_count) VALUES (?, ?, ?, ?, 0) ON CONFLICT(code) DO UPDATE SET discount = excluded.discount, discount_type = excluded.discount_type, max_uses = excluded.max_uses",
+            (code, float(data.discount), dtype, max(0, int(data.max_uses or 0)))
         )
         await db.commit()
     return {"success": True}
@@ -2516,61 +2084,38 @@ async def admin_save_promo(data: AdminPromoSaveSchema, request: Request):
 async def admin_delete_promo(data: AdminPromoDeleteSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
-        code = data.code.strip().upper()
-        await db.execute("DELETE FROM promocodes WHERE code = ?", (code,))
+        await db.execute("DELETE FROM promocodes WHERE code = ?", (data.code.strip().upper(),))
         await db.commit()
     return {"success": True}
 
 @app.post("/api/admin/save_product")
 async def admin_save_product(data: AdminProductSaveSchema, request: Request):
-    clean_cats: list[str] = []
-    for c in (data.categories or []):
-        cid = str(c or "").strip()
-        if cid and cid not in clean_cats:
-            clean_cats.append(cid)
+    clean_cats = [str(c).strip() for c in (data.categories or []) if str(c).strip()]
     if not clean_cats and (data.category or "").strip():
         clean_cats = [(data.category or "").strip()]
     if not clean_cats:
         clean_cats = ["liquid"]
     primary_cat = clean_cats[0]
-    cats_json = json.dumps(clean_cats, ensure_ascii=False)
-
     clean_opts = [{"name": str(o.get("name", "")).strip(), "available": bool(o.get("available", True))} for o in (data.options or []) if str(o.get("name", "")).strip()]
     if not clean_opts:
         clean_opts = [{"name": o, "available": True} for o in DEFAULT_OPTIONS_BY_CAT.get(primary_cat, ["Стандарт"])]
-    opts_json = json.dumps(clean_opts, ensure_ascii=False)
     clean_img_url = normalize_public_asset_url(data.image_url.strip())
-
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
         if data.id and data.id > 0:
             async with db.execute("SELECT available FROM products WHERE id = ?", (data.id,)) as cur:
                 old_row = await cur.fetchone()
             was_avail = bool(old_row[0]) if old_row else False
-
             await db.execute(
-                """UPDATE products SET title = ?, category = ?, categories_json = ?, price = ?, old_price = ?, tag = ?, icon = ?,
-                   available = ?, image_url = ?, has_discount = ?, low_stock = ?, options_json = ? WHERE id = ?""",
-                (
-                    data.title.strip(), primary_cat, cats_json, float(data.price), float(data.old_price or 0.0),
-                    data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0,
-                    clean_img_url, 1 if data.has_discount else 0, 1 if data.low_stock else 0,
-                    opts_json, data.id
-                )
+                "UPDATE products SET title = ?, category = ?, categories_json = ?, price = ?, old_price = ?, tag = ?, icon = ?, available = ?, image_url = ?, has_discount = ?, low_stock = ?, options_json = ? WHERE id = ?",
+                (data.title.strip(), primary_cat, json.dumps(clean_cats, ensure_ascii=False), float(data.price), float(data.old_price or 0.0), data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0, clean_img_url, 1 if data.has_discount else 0, 1 if data.low_stock else 0, json.dumps(clean_opts, ensure_ascii=False), data.id)
             )
-            avail_opt_names = [o["name"] for o in clean_opts if o["available"]]
             if data.available:
-                await notify_stock_subscribers(db, data.id, data.title.strip(), avail_opt_names, all_restocked=(not was_avail))
+                await notify_stock_subscribers(db, data.id, data.title.strip(), [o["name"] for o in clean_opts if o["available"]], all_restocked=(not was_avail))
         else:
             await db.execute(
-                """INSERT INTO products (title, category, categories_json, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    data.title.strip(), primary_cat, cats_json, float(data.price), float(data.old_price or 0.0),
-                    data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0,
-                    clean_img_url, 1 if data.has_discount else 0, 1 if data.low_stock else 0,
-                    opts_json
-                )
+                "INSERT INTO products (title, category, categories_json, price, old_price, tag, icon, available, image_url, has_discount, low_stock, options_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (data.title.strip(), primary_cat, json.dumps(clean_cats, ensure_ascii=False), float(data.price), float(data.old_price or 0.0), data.tag.strip(), data.icon.strip() or "🧪", 1 if data.available else 0, clean_img_url, 1 if data.has_discount else 0, 1 if data.low_stock else 0, json.dumps(clean_opts, ensure_ascii=False))
             )
         await db.commit()
     return {"success": True}
@@ -2585,8 +2130,7 @@ async def admin_toggle_product(data: AdminProductToggleSchema, request: Request)
             await db.execute("UPDATE products SET available = CASE WHEN available = 1 THEN 0 ELSE 1 END WHERE id = ?", (data.product_id,))
             if row and not bool(row[1]):
                 opts = parse_product_options(row[3] or "", row[2])
-                avail_names = [o["name"] for o in opts if o["available"]]
-                await notify_stock_subscribers(db, data.product_id, row[0], avail_names, all_restocked=True)
+                await notify_stock_subscribers(db, data.product_id, row[0], [o["name"] for o in opts if o["available"]], all_restocked=True)
         elif data.field == "hit":
             await db.execute("UPDATE products SET tag = CASE WHEN tag = 'хит' THEN '' ELSE 'хит' END WHERE id = ?", (data.product_id,))
         elif data.field == "discount":
@@ -2619,18 +2163,15 @@ async def admin_manage_role(data: AdminRoleManageSchema, request: Request):
         elif data.action == "remove_owner":
             if tid in primary_owners:
                 raise HTTPException(status_code=400, detail="Cannot remove primary owner")
-            owners = [int(x) for x in await get_setting_list(db, "extra_owners") if int(x) != tid]
-            await set_setting_list(db, "extra_owners", owners)
+            await set_setting_list(db, "extra_owners", [int(x) for x in await get_setting_list(db, "extra_owners") if int(x) != tid])
         elif data.action == "add_courier":
-            removed_defs = [int(x) for x in await get_setting_list(db, "removed_default_couriers") if int(x) != tid]
-            await set_setting_list(db, "removed_default_couriers", removed_defs)
+            await set_setting_list(db, "removed_default_couriers", [int(x) for x in await get_setting_list(db, "removed_default_couriers") if int(x) != tid])
             couriers = [int(x) for x in await get_setting_list(db, "extra_couriers")]
             if tid not in couriers and tid not in DEFAULT_COURIER_IDS:
                 couriers.append(tid)
                 await set_setting_list(db, "extra_couriers", couriers)
         elif data.action == "remove_courier":
-            couriers = [int(x) for x in await get_setting_list(db, "extra_couriers") if int(x) != tid]
-            await set_setting_list(db, "extra_couriers", couriers)
+            await set_setting_list(db, "extra_couriers", [int(x) for x in await get_setting_list(db, "extra_couriers") if int(x) != tid])
             removed_defs = [int(x) for x in await get_setting_list(db, "removed_default_couriers")]
             if tid not in removed_defs:
                 removed_defs.append(tid)
@@ -2643,8 +2184,7 @@ async def admin_manage_role(data: AdminRoleManageSchema, request: Request):
                 banned.append(tid)
                 await set_setting_list(db, "banned_users", banned)
         elif data.action == "unban_user":
-            banned = [int(x) for x in await get_setting_list(db, "banned_users") if int(x) != tid]
-            await set_setting_list(db, "banned_users", banned)
+            await set_setting_list(db, "banned_users", [int(x) for x in await get_setting_list(db, "banned_users") if int(x) != tid])
         await db.commit()
     return {"success": True}
 
@@ -2662,123 +2202,49 @@ async def update_admin_schedule(data: AdminScheduleSchema, request: Request):
         await apply_auto_schedule_tick()
     async with aiosqlite.connect(DB_FILE) as db:
         cur_open = (await get_setting_raw(db, "shop_open", "1")) == "1"
-    return {
-        "success": True,
-        "auto_schedule_enabled": bool(data.auto_schedule_enabled),
-        "open_time": open_t,
-        "close_time": close_t,
-        "shop_open": cur_open
-    }
+    return {"success": True, "auto_schedule_enabled": bool(data.auto_schedule_enabled), "open_time": open_t, "close_time": close_t, "shop_open": cur_open}
 
 async def build_orders_report_csv_bytes() -> bytes:
     buf = io.StringIO()
     writer = csv.writer(buf, delimiter=";", lineterminator="\r\n")
-
     async with aiosqlite.connect(DB_FILE) as db:
         currency = await get_setting_raw(db, "currency", "р.")
         default_deliv_mode = await get_setting_raw(db, "delivery_mode", "metro")
         banned_set = {int(x) for x in await get_setting_list(db, "banned_users")}
-
-        writer.writerow([
-            "ID заказа", "Дата оформления", "Статус", "Кем отменён",
-            "ID клиента", "Имя клиента", "Формат доставки", "Локация / Адрес", "Время встречи",
-            "Курьер", "Состав заказа", "Промокод", "Скидка", "Доставка", "Итого", "Валюта"
-        ])
-
+        writer.writerow(["ID заказа", "Дата оформления", "Статус", "Кем отменён", "ID клиента", "Имя клиента", "Формат доставки", "Локация / Адрес", "Время встречи", "Курьер", "Состав заказа", "Промокод", "Скидка", "Доставка", "Итого", "Валюта"])
         user_stats: dict[int, dict] = {}
-        async with db.execute(
-            """SELECT id, created_at, status, cancelled_by, user_id, user_name,
-                      delivery_mode, station, time, claimed_by_name, items, promo_code, discount, delivery_fee, total
-               FROM orders ORDER BY rowid DESC"""
-        ) as cur:
-            order_rows = await cur.fetchall()
-
-        status_map = {"active": "Активен", "completed": "Выдан", "cancelled": "Отменён"}
-        cancel_map = {"client": "Клиент", "courier": "Курьер"}
-
-        for row in order_rows:
-            (oid, created_at, status, cancelled_by, uid, uname,
-             ord_dmode, station, meet_time, courier_name, items_json, promo_code, discount, deliv_fee, total) = row
-            uid_int = int(uid or 0)
-            tot_val = float(total or 0.0)
-            eff_dmode = (ord_dmode or "").strip() or default_deliv_mode
-            try:
-                parsed_items = json.loads(items_json or "[]")
-                items_text = ", ".join(
-                    f"{it.get('title', 'Товар')} x{it.get('qty', 1)} ({float(it.get('price', 0)):.2f})"
-                    for it in parsed_items
-                )
-            except Exception:
-                items_text = str(items_json or "")
-
-            writer.writerow([
-                str(oid or ""),
-                str(created_at or ""),
-                status_map.get(status, str(status or "")),
-                cancel_map.get(cancelled_by, str(cancelled_by or "")),
-                uid_int,
-                str(uname or ""),
-                get_delivery_mode_title(eff_dmode),
-                str(station or ""),
-                str(meet_time or ""),
-                str(courier_name or ""),
-                items_text,
-                str(promo_code or ""),
-                f"{float(discount or 0):.2f}",
-                f"{float(deliv_fee or 0):.2f}",
-                f"{tot_val:.2f}",
-                currency
-            ])
-
-            if uid_int > 0:
-                st_entry = user_stats.setdefault(uid_int, {
-                    "user_name": str(uname or ""),
-                    "joined_at": "",
-                    "total_orders": 0,
-                    "completed_orders": 0,
-                    "total_spent": 0.0
-                })
-                if not st_entry["user_name"] and uname:
-                    st_entry["user_name"] = str(uname)
-                st_entry["total_orders"] += 1
-                if status == "completed":
-                    st_entry["completed_orders"] += 1
-                    st_entry["total_spent"] = round(st_entry["total_spent"] + tot_val, 2)
-
+        async with db.execute("SELECT id, created_at, status, cancelled_by, user_id, user_name, delivery_mode, station, time, claimed_by_name, items, promo_code, discount, delivery_fee, total FROM orders ORDER BY rowid DESC") as cur:
+            for row in await cur.fetchall():
+                (oid, created_at, status, cancelled_by, uid, uname, ord_dmode, station, meet_time, courier_name, items_json, promo_code, discount, deliv_fee, total) = row
+                uid_int = int(uid or 0)
+                tot_val = float(total or 0.0)
+                eff_dmode = (ord_dmode or "").strip() or default_deliv_mode
+                try:
+                    items_text = ", ".join(f"{it.get('title', 'Товар')} x{it.get('qty', 1)} ({float(it.get('price', 0)):.2f})" for it in json.loads(items_json or "[]"))
+                except Exception:
+                    items_text = str(items_json or "")
+                writer.writerow([str(oid or ""), str(created_at or ""), {"active": "Активен", "completed": "Выдан", "cancelled": "Отменён"}.get(status, str(status or "")), {"client": "Клиент", "courier": "Курьер"}.get(cancelled_by, str(cancelled_by or "")), uid_int, str(uname or ""), get_delivery_mode_title(eff_dmode), str(station or ""), str(meet_time or ""), str(courier_name or ""), items_text, str(promo_code or ""), f"{float(discount or 0):.2f}", f"{float(deliv_fee or 0):.2f}", f"{tot_val:.2f}", currency])
+                if uid_int > 0:
+                    st_entry = user_stats.setdefault(uid_int, {"user_name": str(uname or ""), "joined_at": "", "total_orders": 0, "completed_orders": 0, "total_spent": 0.0})
+                    if not st_entry["user_name"] and uname:
+                        st_entry["user_name"] = str(uname)
+                    st_entry["total_orders"] += 1
+                    if status == "completed":
+                        st_entry["completed_orders"] += 1
+                        st_entry["total_spent"] = round(st_entry["total_spent"] + tot_val, 2)
         async with db.execute("SELECT user_id, user_name, joined_at FROM users WHERE user_id > 0 ORDER BY rowid DESC") as ucur:
-            user_rows = await ucur.fetchall()
-
-        for uid, uname, joined_at in user_rows:
-            uid_int = int(uid)
-            st_entry = user_stats.setdefault(uid_int, {
-                "user_name": str(uname or ""),
-                "joined_at": str(joined_at or ""),
-                "total_orders": 0,
-                "completed_orders": 0,
-                "total_spent": 0.0
-            })
-            if uname:
-                st_entry["user_name"] = str(uname)
-            if joined_at:
-                st_entry["joined_at"] = str(joined_at)
-
+            for uid, uname, joined_at in await ucur.fetchall():
+                uid_int = int(uid)
+                st_entry = user_stats.setdefault(uid_int, {"user_name": str(uname or ""), "joined_at": str(joined_at or ""), "total_orders": 0, "completed_orders": 0, "total_spent": 0.0})
+                if uname:
+                    st_entry["user_name"] = str(uname)
+                if joined_at:
+                    st_entry["joined_at"] = str(joined_at)
         writer.writerow([])
         writer.writerow(["БАЗА КЛИЕНТОВ"])
-        writer.writerow([
-            "ID клиента", "Имя / Username", "Дата регистрации",
-            "Всего заказов", "Выдано заказов", f"Сумма выкупа ({currency})", "Статус"
-        ])
+        writer.writerow(["ID клиента", "Имя / Username", "Дата регистрации", "Всего заказов", "Выдано заказов", f"Сумма выкупа ({currency})", "Статус"])
         for uid_int, info in user_stats.items():
-            writer.writerow([
-                uid_int,
-                info["user_name"],
-                info["joined_at"],
-                info["total_orders"],
-                info["completed_orders"],
-                f"{info['total_spent']:.2f}",
-                "Заблокирован" if uid_int in banned_set else "Активен"
-            ])
-
+            writer.writerow([uid_int, info["user_name"], info["joined_at"], info["total_orders"], info["completed_orders"], f"{info['total_spent']:.2f}", "Заблокирован" if uid_int in banned_set else "Активен"])
     return buf.getvalue().encode("utf-8-sig")
 
 async def send_backup_files_to_owner(target_uid: int):
@@ -2786,19 +2252,8 @@ async def send_backup_files_to_owner(target_uid: int):
     csv_bytes = await build_orders_report_csv_bytes()
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "rb") as f:
-            db_bytes = f.read()
-        await bot.send_document(
-            target_uid,
-            BufferedInputFile(db_bytes, filename="database.db"),
-            caption=f"🗄 <b>Резервная копия базы данных</b> ({html.escape(now_label)})",
-            parse_mode="HTML"
-        )
-    await bot.send_document(
-        target_uid,
-        BufferedInputFile(csv_bytes, filename="orders_report.csv"),
-        caption=f"📊 <b>Отчёт по заказам и клиентам</b> ({html.escape(now_label)})",
-        parse_mode="HTML"
-    )
+            await bot.send_document(target_uid, BufferedInputFile(f.read(), filename="database.db"), caption=f"🗄 <b>Резервная копия базы данных</b> ({html.escape(now_label)})", parse_mode="HTML")
+    await bot.send_document(target_uid, BufferedInputFile(csv_bytes, filename="orders_report.csv"), caption=f"📊 <b>Отчёт по заказам и клиентам</b> ({html.escape(now_label)})", parse_mode="HTML")
 
 @app.post("/api/admin/send_backup")
 async def admin_send_backup(data: AdminUserActionSchema, request: Request):
@@ -2825,63 +2280,51 @@ async def admin_stats(user_id: int, request: Request):
     now = datetime.now()
     today_prefix = now.strftime("%d.%m.%Y")
     week_ago = now - timedelta(days=7)
-
     today_rev = week_rev = total_rev = 0.0
     today_cnt = week_cnt = total_cnt = cancelled_cnt = active_cnt = 0
     item_counts, station_counts, courier_map = {}, {}, {}
-
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, user_id)
         async with db.execute("SELECT total, status, created_at, items, station, claimed_by_id, claimed_by_name FROM orders") as cursor:
-            rows = await cursor.fetchall()
-
-        for total, status, created_at, items_json, station, c_id, c_name in rows:
-            val = float(total or 0)
-            c_str = created_at or ""
-            if status == "completed":
-                total_rev += val
-                total_cnt += 1
-                if c_str.startswith(today_prefix):
-                    today_rev += val
-                    today_cnt += 1
-                try:
-                    dt = datetime.strptime(c_str[:10], "%d.%m.%Y")
-                    if dt >= week_ago.replace(hour=0, minute=0, second=0, microsecond=0):
-                        week_rev += val
-                        week_cnt += 1
-                except Exception:
-                    pass
-                if station:
-                    station_counts[station] = station_counts.get(station, 0) + 1
-                c_label = c_name if c_name else (f"ID {c_id}" if c_id else "Без закрепления")
-                if c_label not in courier_map:
-                    courier_map[c_label] = {"name": c_label, "count": 0, "revenue": 0.0}
-                courier_map[c_label]["count"] += 1
-                courier_map[c_label]["revenue"] = round(courier_map[c_label]["revenue"] + val, 2)
-                try:
-                    for it in json.loads(items_json or "[]"):
-                        t = it.get("title", "Товар")
-                        q = int(it.get("qty", 1))
-                        item_counts[t] = item_counts.get(t, 0) + q
-                except Exception:
-                    pass
-            elif status == "cancelled":
-                cancelled_cnt += 1
-            elif status == "active":
-                active_cnt += 1
-
-    top_items = sorted(item_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-    top_stations = sorted(station_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-    courier_stats = sorted(courier_map.values(), key=lambda x: x["revenue"], reverse=True)
-
+            for total, status, created_at, items_json, station, c_id, c_name in await cursor.fetchall():
+                val = float(total or 0)
+                c_str = created_at or ""
+                if status == "completed":
+                    total_rev += val
+                    total_cnt += 1
+                    if c_str.startswith(today_prefix):
+                        today_rev += val
+                        today_cnt += 1
+                    try:
+                        if datetime.strptime(c_str[:10], "%d.%m.%Y") >= week_ago.replace(hour=0, minute=0, second=0, microsecond=0):
+                            week_rev += val
+                            week_cnt += 1
+                    except Exception:
+                        pass
+                    if station:
+                        station_counts[station] = station_counts.get(station, 0) + 1
+                    c_label = c_name if c_name else (f"ID {c_id}" if c_id else "Без закрепления")
+                    if c_label not in courier_map:
+                        courier_map[c_label] = {"name": c_label, "count": 0, "revenue": 0.0}
+                    courier_map[c_label]["count"] += 1
+                    courier_map[c_label]["revenue"] = round(courier_map[c_label]["revenue"] + val, 2)
+                    try:
+                        for it in json.loads(items_json or "[]"):
+                            item_counts[it.get("title", "Товар")] = item_counts.get(it.get("title", "Товар"), 0) + int(it.get("qty", 1))
+                    except Exception:
+                        pass
+                elif status == "cancelled":
+                    cancelled_cnt += 1
+                elif status == "active":
+                    active_cnt += 1
     return {
         "today_rev": round(today_rev, 2), "today_cnt": today_cnt,
         "week_rev": round(week_rev, 2), "week_cnt": week_cnt,
         "total_rev": round(total_rev, 2), "total_cnt": total_cnt,
         "cancelled_cnt": cancelled_cnt, "active_cnt": active_cnt,
-        "top_items": [{"title": k, "qty": v} for k, v in top_items],
-        "top_stations": [{"station": k, "count": v} for k, v in top_stations],
-        "courier_stats": courier_stats
+        "top_items": [{"title": k, "qty": v} for k, v in sorted(item_counts.items(), key=lambda x: x[1], reverse=True)[:5]],
+        "top_stations": [{"station": k, "count": v} for k, v in sorted(station_counts.items(), key=lambda x: x[1], reverse=True)[:5]],
+        "courier_stats": sorted(courier_map.values(), key=lambda x: x["revenue"], reverse=True)
     }
 
 @app.get("/api/admin/broadcast_history/{user_id}")
@@ -2902,12 +2345,10 @@ async def admin_broadcast(data: AdminBroadcastSchema, request: Request):
     text = data.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Empty text")
-
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
         async with db.execute("SELECT user_id FROM users WHERE user_id > 0") as cursor:
             rows = await cursor.fetchall()
-
     user_ids = [r[0] for r in rows]
     sent = failed = 0
     for uid in user_ids:
@@ -2917,13 +2358,9 @@ async def admin_broadcast(data: AdminBroadcastSchema, request: Request):
             await asyncio.sleep(0.05)
         except Exception:
             failed += 1
-
     now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "INSERT INTO broadcasts (created_at, text, sent, failed, total) VALUES (?, ?, ?, ?, ?)",
-            (now_str, text[:300], sent, failed, len(user_ids))
-        )
+        await db.execute("INSERT INTO broadcasts (created_at, text, sent, failed, total) VALUES (?, ?, ?, ?, ?)", (now_str, text[:300], sent, failed, len(user_ids)))
         await db.commit()
     return {"success": True, "sent": sent, "failed": failed, "total": len(user_ids)}
 
@@ -2934,44 +2371,27 @@ async def create_order(order: OrderSchema, request: Request):
     init_uid, init_uname = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
     if init_uid <= 0:
         raise HTTPException(status_code=401, detail="Оформление заказа доступно только внутри Telegram")
-    effective_user_id = init_uid
-    effective_user_name = init_uname or (order.user_name or "").strip() or "User"
-    order.user_id = effective_user_id
-    order.user_name = effective_user_name
+    order.user_id = init_uid
+    order.user_name = init_uname or (order.user_name or "").strip() or "User"
 
     async with aiosqlite.connect(DB_FILE) as db:
-        shop_open_raw = await get_setting_raw(db, "shop_open", "1")
-        if shop_open_raw != "1":
-            closed_msg = await get_setting_raw(db, "closed_message", "Витрина сейчас на паузе, скоро вернёмся в онлайн.")
-            raise HTTPException(status_code=403, detail=closed_msg)
-
+        if (await get_setting_raw(db, "shop_open", "1")) != "1":
+            raise HTTPException(status_code=403, detail=await get_setting_raw(db, "closed_message", "Витрина сейчас на паузе, скоро вернёмся в онлайн."))
         banned = [int(x) for x in await get_setting_list(db, "banned_users")]
         if int(order.user_id) in banned:
             raise HTTPException(status_code=403, detail="Ваш аккаунт заблокирован в магазине.")
-
         currency = await get_setting_raw(db, "currency", "р.")
         if currency not in ALLOWED_CURRENCIES:
             currency = "р."
-
         deliv_state = await get_delivery_settings_state(db)
         enabled_modes = deliv_state["enabled_delivery_modes"]
-        default_dmode = deliv_state["delivery_mode"]
-
         requested_dmode = (order.delivery_mode or "").strip()
-        if requested_dmode in ALLOWED_DELIVERY_MODES:
-            if enabled_modes and requested_dmode not in enabled_modes:
-                raise HTTPException(status_code=400, detail="Выбранный формат доставки сейчас недоступен.")
-            delivery_mode = requested_dmode
-        else:
-            delivery_mode = default_dmode
-
+        delivery_mode = requested_dmode if (requested_dmode in ALLOWED_DELIVERY_MODES and (not enabled_modes or requested_dmode in enabled_modes)) else deliv_state["delivery_mode"]
         min_order_amount = float(await get_setting_raw(db, "min_order_amount", "0") or 0)
         configured_delivery_fee = float(await get_setting_raw(db, "delivery_fee", "0") or 0)
         free_delivery_threshold = float(await get_setting_raw(db, "free_delivery_threshold", "0") or 0)
-
         if not order.items:
             raise HTTPException(status_code=400, detail="Корзина пуста.")
-
         station_clean = (order.station or "").strip()
         if not station_clean:
             raise HTTPException(status_code=400, detail=f"Укажите: {get_location_label(delivery_mode).lower()}.")
@@ -2996,19 +2416,8 @@ async def create_order(order: OrderSchema, request: Request):
             items_subtotal = round(items_subtotal + real_price * qty, 2)
 
         if min_order_amount > 0 and items_subtotal + 1e-6 < min_order_amount:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Минимальная сумма заказа: {min_order_amount:.2f} {currency}"
-            )
-
-        if configured_delivery_fee > 0:
-            if free_delivery_threshold > 0 and items_subtotal >= free_delivery_threshold:
-                applied_delivery_fee = 0.0
-            else:
-                applied_delivery_fee = round(configured_delivery_fee, 2)
-        else:
-            applied_delivery_fee = 0.0
-
+            raise HTTPException(status_code=400, detail=f"Минимальная сумма заказа: {min_order_amount:.2f} {currency}")
+        applied_delivery_fee = 0.0 if (configured_delivery_fee <= 0 or (free_delivery_threshold > 0 and items_subtotal >= free_delivery_threshold)) else round(configured_delivery_fee, 2)
         applied_discount = 0.0
         if order.promo_code:
             code_up = order.promo_code.strip().upper()
@@ -3020,29 +2429,14 @@ async def create_order(order: OrderSchema, request: Request):
                     if m_uses > 0 and u_cnt >= m_uses:
                         raise HTTPException(status_code=400, detail="Лимит использований промокода исчерпан.")
                     if p_disc > 0:
-                        if p_type == "percent":
-                            applied_discount = min(items_subtotal, round(items_subtotal * (p_disc / 100.0), 2))
-                        else:
-                            applied_discount = min(items_subtotal, round(p_disc, 2))
+                        applied_discount = min(items_subtotal, round(items_subtotal * (p_disc / 100.0), 2)) if p_type == "percent" else min(items_subtotal, round(p_disc, 2))
                     await db.execute("UPDATE promocodes SET used_count = used_count + 1 WHERE code = ?", (code_up,))
 
-        net_items_total = max(0.0, round(items_subtotal - applied_discount, 2))
-        final_total = round(net_items_total + applied_delivery_fee, 2)
-
-        if order.user_id > 0:
-            await db.execute(
-                "INSERT OR IGNORE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)",
-                (order.user_id, order.user_name, created_at)
-            )
-
+        final_total = round(max(0.0, round(items_subtotal - applied_discount, 2)) + applied_delivery_fee, 2)
+        await db.execute("INSERT OR IGNORE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)", (order.user_id, order.user_name, created_at))
         await db.execute(
-            """INSERT OR REPLACE INTO orders 
-               (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, delivery_fee, created_at, cancelled_by, claimed_by_id, claimed_by_name, delivery_mode)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, 0, ?, ?, ?, ?, '', 0, '', ?)""",
-            (
-                order_id, order.user_id, order.user_name, station_clean, order.time,
-                final_total, json.dumps(verified_items), order.promo_code, applied_discount, applied_delivery_fee, created_at, delivery_mode
-            )
+            "INSERT OR REPLACE INTO orders (id, user_id, user_name, station, time, total, items, status, time_changed, hidden_by_courier, promo_code, discount, delivery_fee, created_at, cancelled_by, claimed_by_id, claimed_by_name, delivery_mode) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, 0, ?, ?, ?, ?, '', 0, '', ?)",
+            (order_id, order.user_id, order.user_name, station_clean, order.time, final_total, json.dumps(verified_items), order.promo_code, applied_discount, applied_delivery_fee, created_at, delivery_mode)
         )
         all_couriers = await get_all_courier_ids(db)
         all_owners = await get_all_owner_ids(db)
@@ -3056,53 +2450,17 @@ async def create_order(order: OrderSchema, request: Request):
     safe_time = html.escape(order.time or "")
     items_str = "\n".join([f"• {html.escape(str(i['title']))} × {i['qty']} — {(i['price'] * i['qty']):.2f} {safe_cur}" for i in verified_items])
     promo_line = f"\n🎟 <b>Промокод:</b> {html.escape(order.promo_code)} (-{applied_discount:.2f} {safe_cur})" if order.promo_code and applied_discount > 0 else ""
-    if applied_delivery_fee > 0:
-        deliv_line = f"\n🚚 <b>Доставка:</b> {applied_delivery_fee:.2f} {safe_cur}"
-    elif configured_delivery_fee > 0 and free_delivery_threshold > 0:
-        deliv_line = f"\n🚚 <b>Доставка:</b> бесплатно (от {free_delivery_threshold:.2f} {safe_cur})"
-    else:
-        deliv_line = ""
+    deliv_line = f"\n🚚 <b>Доставка:</b> {applied_delivery_fee:.2f} {safe_cur}" if applied_delivery_fee > 0 else (f"\n🚚 <b>Доставка:</b> бесплатно (от {free_delivery_threshold:.2f} {safe_cur})" if configured_delivery_fee > 0 and free_delivery_threshold > 0 else "")
 
-    courier_text = (
-        f"🛵 <b>Новый заказ #{html.escape(order_id)}!</b>\n\n"
-        f"👤 <b>Покупатель:</b> {safe_user} (<code>{order.user_id}</code>)\n"
-        f"🚚 <b>Формат:</b> {mode_title}\n"
-        f"📍 <b>{loc_label}:</b> {loc_value}\n"
-        f"⏰ <b>Время встречи:</b> {safe_time}\n"
-        f"💰 <b>К получению:</b> {final_total:.2f} {safe_cur}\n\n"
-        f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}{deliv_line}\n\n"
-        f"Откройте вкладку <b>«Курьер»</b> в приложении, чтобы взять заказ в работу."
-    )
-
+    courier_text = f"🛵 <b>Новый заказ #{html.escape(order_id)}!</b>\n\n👤 <b>Покупатель:</b> {safe_user} (<code>{order.user_id}</code>)\n🚚 <b>Формат:</b> {mode_title}\n📍 <b>{loc_label}:</b> {loc_value}\n⏰ <b>Время встречи:</b> {safe_time}\n💰 <b>К получению:</b> {final_total:.2f} {safe_cur}\n\n📦 <b>Состав заказа:</b>\n{items_str}{promo_line}{deliv_line}"
     for cid in all_couriers:
         courier_url = build_personal_url(cid, "Courier", is_owner=(cid in all_owners), is_courier=True)
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🛵 Открыть панель курьера", web_app=WebAppInfo(url=courier_url))]
-        ])
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🛵 Открыть панель курьера", web_app=WebAppInfo(url=courier_url))]])
         await send_tg_dm(int(cid), courier_text, reply_markup=kb)
 
-    user_text = (
-        f"✨ <b>Электронный чек • Заказ #{html.escape(order_id)} принят!</b>\n"
-        f"📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n"
-        f"🚚 <b>Формат:</b> {mode_title}\n"
-        f"📍 <b>{loc_label}:</b> {loc_value}\n"
-        f"⏰ <b>Время встречи:</b> {safe_time}\n\n"
-        f"📦 <b>Состав заказа:</b>\n{items_str}{promo_line}{deliv_line}\n\n"
-        f"💰 <b>Итого к оплате:</b> {final_total:.2f} {safe_cur}\n\n"
-        f"Заказ передан курьеру. Отслеживать статус можно во вкладке <b>«Заказы»</b>."
-    )
-
-    if order.user_id:
-        await send_tg_dm(int(order.user_id), user_text)
-
-    return {
-        "success": True,
-        "order_id": order_id,
-        "delivery_mode": delivery_mode,
-        "station": station_clean,
-        "total": final_total,
-        "delivery_fee": applied_delivery_fee
-    }
+    user_text = f"✨ <b>Электронный чек • Заказ #{html.escape(order_id)} принят!</b>\n📅 <b>Оформлен:</b> {html.escape(created_at)}\n\n🚚 <b>Формат:</b> {mode_title}\n📍 <b>{loc_label}:</b> {loc_value}\n⏰ <b>Время встречи:</b> {safe_time}\n\n📦 <b>Состав заказа:</b>\n{items_str}{promo_line}{deliv_line}\n\n💰 <b>Итого к оплате:</b> {final_total:.2f} {safe_cur}"
+    await send_tg_dm(int(order.user_id), user_text)
+    return {"success": True, "order_id": order_id, "delivery_mode": delivery_mode, "station": station_clean, "total": final_total, "delivery_fee": applied_delivery_fee}
 
 @app.post("/api/courier/claim_order")
 async def courier_claim_order(data: CourierClaimSchema, request: Request):
@@ -3120,22 +2478,10 @@ async def courier_claim_order(data: CourierClaimSchema, request: Request):
             raise HTTPException(status_code=400, detail="Заказ уже завершён")
         if current_cid != 0 and current_cid != v_uid:
             raise HTTPException(status_code=409, detail=f"Заказ уже взял {current_cname}")
-
-        await db.execute(
-            "UPDATE orders SET claimed_by_id = ?, claimed_by_name = ? WHERE id = ?",
-            (v_uid, data.courier_name.strip() or f"Курьер {v_uid}", oid)
-        )
+        await db.execute("UPDATE orders SET claimed_by_id = ?, claimed_by_name = ? WHERE id = ?", (v_uid, data.courier_name.strip() or f"Курьер {v_uid}", oid))
         await db.commit()
-
-    loc_label = html.escape(get_location_label(delivery_mode))
-    loc_value = html.escape(format_location_value(station, delivery_mode))
     if buyer_id and current_cid == 0:
-        await send_tg_dm(
-            int(buyer_id),
-            f"🛵 <b>Курьер уже везёт ваш заказ #{html.escape(oid)}!</b>\n"
-            f"👤 Курьер: {html.escape(data.courier_name)}\n"
-            f"📍 {loc_label}: {loc_value} в {html.escape(time_str)}"
-        )
+        await send_tg_dm(int(buyer_id), f"🛵 <b>Курьер уже везёт ваш заказ #{html.escape(oid)}!</b>\n👤 Курьер: {html.escape(data.courier_name)}\n📍 {html.escape(get_location_label(delivery_mode))}: {html.escape(format_location_value(station, delivery_mode))} в {html.escape(time_str)}")
     return {"success": True}
 
 @app.post("/api/courier/arrived")
@@ -3152,14 +2498,8 @@ async def courier_arrived(data: CourierArrivedSchema, request: Request):
     delivery_mode = (row[3] or "").strip() or default_dmode
     if claimed_id != 0 and claimed_id != v_uid:
         raise HTTPException(status_code=403, detail="Этот заказ ведёт другой курьер")
-
-    loc_value = html.escape(format_location_value(station, delivery_mode))
     if buyer_id:
-        await send_tg_dm(
-            int(buyer_id),
-            f"📍 <b>Курьер на месте ({loc_value})!</b>\n"
-            f"Заказ #{html.escape(oid)} ожидает вас на месте встречи."
-        )
+        await send_tg_dm(int(buyer_id), f"📍 <b>Курьер на месте ({html.escape(format_location_value(station, delivery_mode))})!</b>\nЗаказ #{html.escape(oid)} ожидает вас на месте встречи.")
     return {"success": True}
 
 @app.get("/api/orders")
@@ -3170,23 +2510,20 @@ async def get_orders(request: Request, courier_id: int = 0):
         default_dmode = await get_setting_raw(db, "delivery_mode", "metro")
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM orders WHERE hidden_by_courier = 0 ORDER BY rowid DESC") as cursor:
-            rows = await cursor.fetchall()
             result = []
-            for row in rows:
+            for row in await cursor.fetchall():
                 c_id = int(row["claimed_by_id"] or 0)
                 if not is_owner and c_id != 0 and c_id != v_uid:
                     continue
-                eff_dmode = (row["delivery_mode"] or "").strip() or default_dmode
                 result.append({
                     "id": str(row["id"]), "user_id": row["user_id"], "user_name": row["user_name"],
-                    "delivery_mode": eff_dmode,
+                    "delivery_mode": (row["delivery_mode"] or "").strip() or default_dmode,
                     "station": row["station"], "time": row["time"], "total": row["total"],
                     "items": json.loads(row["items"]), "status": row["status"],
                     "time_changed": bool(row["time_changed"]), "hidden_by_courier": bool(row["hidden_by_courier"]),
                     "promo_code": row["promo_code"] or "", "discount": row["discount"] or 0.0,
-                    "delivery_fee": row["delivery_fee"] or 0.0,
-                    "created_at": row["created_at"] or "", "cancelled_by": row["cancelled_by"] or "",
-                    "claimed_by_id": c_id, "claimed_by_name": row["claimed_by_name"] or ""
+                    "delivery_fee": row["delivery_fee"] or 0.0, "created_at": row["created_at"] or "",
+                    "cancelled_by": row["cancelled_by"] or "", "claimed_by_id": c_id, "claimed_by_name": row["claimed_by_name"] or ""
                 })
             return result
 
@@ -3208,8 +2545,7 @@ async def get_user_orders(user_id: int, request: Request):
                 "items": json.loads(row["items"]), "status": row["status"],
                 "time_changed": bool(row["time_changed"]), "promo_code": row["promo_code"] or "",
                 "discount": row["discount"] or 0.0, "delivery_fee": row["delivery_fee"] or 0.0,
-                "created_at": row["created_at"] or "",
-                "cancelled_by": row["cancelled_by"] or "",
+                "created_at": row["created_at"] or "", "cancelled_by": row["cancelled_by"] or "",
                 "claimed_by_id": row["claimed_by_id"] or 0, "claimed_by_name": row["claimed_by_name"] or ""
             } for row in await cursor.fetchall()]
 
@@ -3225,11 +2561,9 @@ async def update_order_status(data: StatusUpdateSchema, request: Request):
             row = await cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Order not found")
-
         user_id, user_name, station, time_val, existing_claimed_id = row[0], row[1], row[2], row[3], int(row[4] or 0)
         delivery_mode = (row[5] or "").strip() or default_dmode
         is_cour = await check_is_courier(db, v_uid)
-
         if cancelled_by == 'client':
             if v_uid != int(user_id or 0) and not is_cour:
                 raise HTTPException(status_code=403, detail="Вы не можете отменить чужой заказ")
@@ -3238,13 +2572,9 @@ async def update_order_status(data: StatusUpdateSchema, request: Request):
                 raise HTTPException(status_code=403, detail="Нет прав курьера")
             if existing_claimed_id != 0 and existing_claimed_id != v_uid and not await check_is_owner(db, v_uid):
                 raise HTTPException(status_code=403, detail="Этот заказ закреплён за другим курьером")
-
         if is_cour and cancelled_by != 'client':
             await db.execute(
-                """UPDATE orders SET status = ?, cancelled_by = ?,
-                   claimed_by_id = CASE WHEN claimed_by_id = 0 THEN ? ELSE claimed_by_id END,
-                   claimed_by_name = CASE WHEN claimed_by_name = '' THEN ? ELSE claimed_by_name END
-                   WHERE id = ?""",
+                "UPDATE orders SET status = ?, cancelled_by = ?, claimed_by_id = CASE WHEN claimed_by_id = 0 THEN ? ELSE claimed_by_id END, claimed_by_name = CASE WHEN claimed_by_name = '' THEN ? ELSE claimed_by_name END WHERE id = ?",
                 (data.status, cancelled_by, v_uid, data.courier_name, str(data.order_id))
             )
         else:
@@ -3253,57 +2583,33 @@ async def update_order_status(data: StatusUpdateSchema, request: Request):
         news_url = await get_setting_raw(db, "news_channel_url", "")
         reviews_url = await get_setting_raw(db, "reviews_channel_url", "")
         await db.commit()
-
         all_owners = await get_all_owner_ids(db)
         safe_user = html.escape(user_name or "User")
         loc_value = html.escape(format_location_value(station, delivery_mode))
         if data.status == 'cancelled':
             who_text = "Отменено клиентом" if cancelled_by == 'client' else ("Отменено курьером" if cancelled_by == 'courier' else "Заказ отменён")
             if user_id:
-                await send_tg_dm(
-                    int(user_id),
-                    f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text}).\n"
-                    f"📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}"
-                )
-            if existing_claimed_id != 0 and cancelled_by == 'client':
-                notify_targets = list({int(existing_claimed_id)} | {int(x) for x in all_owners})
-            else:
-                notify_targets = list({int(x) for x in (all_couriers + all_owners)})
+                await send_tg_dm(int(user_id), f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text}).\n📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}")
+            notify_targets = list({int(existing_claimed_id)} | {int(x) for x in all_owners}) if (existing_claimed_id != 0 and cancelled_by == 'client') else list({int(x) for x in (all_couriers + all_owners)})
             for cid in notify_targets:
                 if cid:
-                    await send_tg_dm(
-                        int(cid),
-                        f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text})\n"
-                        f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
-                        f"📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}"
-                    )
+                    await send_tg_dm(int(cid), f"❌ <b>Заказ #{html.escape(str(data.order_id))} отменён</b> ({who_text})\n👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n📍 Локация: {loc_value} • ⏰ {html.escape(str(time_val or ''))}")
         elif data.status == 'completed':
             clean_reviews_url = normalize_tg_link(reviews_url)
             clean_news_url = normalize_tg_link(news_url)
             if user_id:
                 oid_safe = html.escape(str(data.order_id))
-                completed_msg = (
-                    f"🎉 <b>Заказ #{oid_safe} успешно выдан! Спасибо, что выбираешь нас.</b>\n\n"
-                    f"⭐ <b>Оцените качество заказа и работы курьера в 1 клик:</b>"
-                )
-                star_row = [
-                    InlineKeyboardButton(text=f"⭐ {s}", callback_data=f"rate:{data.order_id}:{s}")
-                    for s in range(1, 6)
-                ]
+                completed_msg = f"🎉 <b>Заказ #{oid_safe} успешно выдан! Спасибо, что выбираешь нас.</b>\n\n⭐ <b>Оцените качество заказа и работы курьера в 1 клик:</b>"
+                star_row = [InlineKeyboardButton(text=f"⭐ {s}", callback_data=f"rate:{data.order_id}:{s}") for s in range(1, 6)]
                 kb_rows = [star_row]
                 if clean_reviews_url.startswith(("http://", "https://")):
                     kb_rows.append([InlineKeyboardButton(text="💬 Канал с отзывами", url=clean_reviews_url)])
                 if clean_news_url.startswith(("http://", "https://")):
                     kb_rows.append([InlineKeyboardButton(text="✈️ Канал с новостями", url=clean_news_url)])
-                markup = InlineKeyboardMarkup(inline_keyboard=kb_rows)
-                await send_tg_dm(int(user_id), completed_msg, reply_markup=markup)
+                await send_tg_dm(int(user_id), completed_msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows))
             for oid_owner in all_owners:
                 if oid_owner and int(oid_owner) != int(user_id or 0):
-                    await send_tg_dm(
-                        int(oid_owner),
-                        f"✅ <b>Заказ #{html.escape(str(data.order_id))} успешно выдан!</b>\n"
-                        f"👤 Покупатель: {safe_user} • 📍 {loc_value}"
-                    )
+                    await send_tg_dm(int(oid_owner), f"✅ <b>Заказ #{html.escape(str(data.order_id))} успешно выдан!</b>\n👤 Покупатель: {safe_user} • 📍 {loc_value}")
     return {"success": True}
 
 @app.post("/api/delete_completed_order")
@@ -3325,36 +2631,21 @@ async def update_order_time(data: TimeUpdateSchema, request: Request):
             row = await cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Заказ не найден")
-
         user_id, user_name, station, claimed_id = row[0], row[1], row[2], int(row[3] or 0)
         if v_uid != int(user_id or 0) and not await check_is_courier(db, v_uid):
             raise HTTPException(status_code=403, detail="Нет доступа к этому заказу")
-
         await db.execute("UPDATE orders SET time = ?, time_changed = 1 WHERE id = ?", (data.time, str(data.order_id)))
         all_couriers = await get_all_courier_ids(db)
         await db.commit()
-
         delivery_mode = (row[4] or "").strip() or default_dmode
         safe_user = html.escape(user_name or "User")
         loc_label = html.escape(get_location_label(delivery_mode))
         loc_value = html.escape(format_location_value(station, delivery_mode))
-        targets = [claimed_id] if claimed_id != 0 else all_couriers
-        for cid in targets:
+        for cid in ([claimed_id] if claimed_id != 0 else all_couriers):
             if cid:
-                await send_tg_dm(
-                    int(cid),
-                    f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n"
-                    f"👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n"
-                    f"📍 {loc_label}: {loc_value}\n"
-                    f"🕒 Новое время: <b>{html.escape(data.time)}</b>"
-                )
+                await send_tg_dm(int(cid), f"⏰ <b>Клиент перенёс время заказа #{html.escape(str(data.order_id))}</b>\n👤 Покупатель: {safe_user} (<code>{user_id}</code>)\n📍 {loc_label}: {loc_value}\n🕒 Новое время: <b>{html.escape(data.time)}</b>")
         if user_id:
-            await send_tg_dm(
-                int(user_id),
-                f"⏰ <b>Время встречи по заказу #{html.escape(str(data.order_id))} обновлено!</b>\n"
-                f"📍 {loc_label}: {loc_value}\n"
-                f"🕒 Новое время: <b>{html.escape(data.time)}</b>"
-            )
+            await send_tg_dm(int(user_id), f"⏰ <b>Время встречи по заказу #{html.escape(str(data.order_id))} обновлено!</b>\n📍 {loc_label}: {loc_value}\n🕒 Новое время: <b>{html.escape(data.time)}</b>")
     return {"success": True}
 
 @app.get("/api/check_role/{user_id}")
@@ -3373,15 +2664,8 @@ async def handle_owner_photo_upload(message: Message):
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, message.from_user.id):
             return
-    file_id = message.photo[-1].file_id
     base = PUBLIC_TUNNEL_URL.strip().rstrip("/") or DEFAULT_API_URL
-    photo_url = f"{base}/api/tg_photo/{file_id}"
-    await message.answer(
-        f"🖼 <b>Прямая ссылка на фото готова!</b>\n\n"
-        f"Можешь выбрать фото прямо из галереи в админ-панели или вставить эту ссылку:\n"
-        f"<code>{html.escape(photo_url)}</code>",
-        parse_mode="HTML"
-    )
+    await message.answer(f"🖼 <b>Прямая ссылка на фото готова!</b>\n\n<code>{html.escape(f'{base}/api/tg_photo/{message.photo[-1].file_id}')}</code>", parse_mode="HTML")
 
 @dp.message(F.audio | F.voice)
 async def handle_owner_audio_upload(message: Message):
@@ -3391,16 +2675,12 @@ async def handle_owner_audio_upload(message: Message):
         audio_obj = message.audio or message.voice
         if not audio_obj:
             return
-        file_id = audio_obj.file_id
-        track_title = getattr(audio_obj, "title", None) or getattr(audio_obj, "file_name", None) or "Трек из Telegram"
-        track_title = re.sub(r"\.[^/.]+$", "", str(track_title)).strip() or "Трек из Telegram"
-        audio_url = f"/api/tg_audio/{file_id}"
-
+        track_title = re.sub(r"\.[^/.]+$", "", str(getattr(audio_obj, "title", None) or getattr(audio_obj, "file_name", None) or "Трек из Telegram")).strip() or "Трек из Telegram"
+        audio_url = f"/api/tg_audio/{audio_obj.file_id}"
         audio_state = await get_audio_library_state(db)
         tracks = list(audio_state["audio_tracks"])
         new_id = f"trk_{int(time.time() * 1000)}_{os.urandom(2).hex()}"
         tracks.append({"id": new_id, "title": track_title, "url": audio_url})
-
         await set_setting_raw(db, "audio_tracks", json.dumps(tracks, ensure_ascii=False))
         await set_setting_raw(db, "audio_active_track_id", new_id)
         await set_setting_raw(db, "music_url", audio_url)
@@ -3408,32 +2688,30 @@ async def handle_owner_audio_upload(message: Message):
         await set_setting_raw(db, "music_enabled", "1")
         await set_setting_raw(db, "music_paused", "0")
         await db.commit()
-    await message.answer(
-        f"🎵 <b>Аудиофайл из Telegram сохранён для магазина!</b>\n\n"
-        f"Название: <b>{html.escape(track_title)}</b>\n"
-        f"Треков в библиотеке: <b>{len(tracks)}</b>\n"
-        f"Ссылка: <code>{html.escape(audio_url)}</code>\n\n"
-        f"Фоновая музыка включена — обновите или откройте мини-приложение.",
-        parse_mode="HTML"
-    )
+    await message.answer(f"🎵 <b>Аудиофайл сохранён:</b> <b>{html.escape(track_title)}</b> (треков: {len(tracks)})", parse_mode="HTML")
 
 @dp.message(F.text.startswith("/seturl"))
 async def cmd_set_tunnel_url(message: Message):
-    global PUBLIC_TUNNEL_URL
+    global PUBLIC_TUNNEL_URL, WEBAPP_CACHE_VER
     async with aiosqlite.connect(DB_FILE) as db:
         if not await check_is_owner(db, message.from_user.id):
             return
     new_url = message.text[7:].strip().rstrip("/")
     if not new_url.startswith("http"):
-        await message.answer("Укажи ссылку после команды, например:\n<code>/seturl https://api.monkeyshop.org</code>", parse_mode="HTML")
+        await message.answer("Укажи ссылку после команды, например: <code>/seturl https://api.monkeyshop.org</code>", parse_mode="HTML")
         return
     PUBLIC_TUNNEL_URL = new_url
+    WEBAPP_CACHE_VER = str(int(time.time()))
     try:
         with open(TUNNEL_FILE, "w", encoding="utf-8") as f:
             f.write(new_url)
     except Exception:
         pass
-    await message.answer(f"✅ Новый адрес сервера сохранён:\n<code>{html.escape(new_url)}</code>\n\nНажми /start, чтобы обновить кнопку.", parse_mode="HTML")
+    try:
+        await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=f"{WEBAPP_URL}?api={quote(PUBLIC_TUNNEL_URL)}&v={WEBAPP_CACHE_VER}")))
+    except Exception:
+        pass
+    await message.answer(f"✅ Новый адрес сервера сохранён: <code>{html.escape(new_url)}</code>", parse_mode="HTML")
 
 @dp.message(F.text == "/stats")
 async def cmd_owner_stats(message: Message):
@@ -3457,8 +2735,7 @@ async def cmd_owner_stats(message: Message):
                         today_rev += val
                         today_cnt += 1
                     try:
-                        dt = datetime.strptime(c_str[:10], "%d.%m.%Y")
-                        if dt >= week_ago.replace(hour=0, minute=0, second=0, microsecond=0):
+                        if datetime.strptime(c_str[:10], "%d.%m.%Y") >= week_ago.replace(hour=0, minute=0, second=0, microsecond=0):
                             week_rev += val
                             week_cnt += 1
                     except Exception:
@@ -3468,16 +2745,7 @@ async def cmd_owner_stats(message: Message):
         async with db.execute("SELECT COUNT(*) FROM users WHERE user_id > 0") as cur:
             u_row = await cur.fetchone()
             subs_cnt = u_row[0] if u_row else 0
-
-    await message.answer(
-        f"📊 <b>Аналитика витрины:</b>\n\n"
-        f"📅 <b>Сегодня:</b> {today_rev:.2f} {currency} ({today_cnt} зак.)\n"
-        f"🗓 <b>За 7 дней:</b> {week_rev:.2f} {currency} ({week_cnt} зак.)\n"
-        f"💰 <b>Всего выручка:</b> {total_rev:.2f} {currency} ({total_cnt} зак.)\n"
-        f"🛵 <b>Активных заказов:</b> {active_cnt}\n"
-        f"👥 <b>Аудитория бота:</b> {subs_cnt} чел.",
-        parse_mode="HTML"
-    )
+    await message.answer(f"📊 <b>Аналитика витрины:</b>\n\n📅 Сегодня: {today_rev:.2f} {currency} ({today_cnt})\n🗓 За 7 дней: {week_rev:.2f} {currency} ({week_cnt})\n💰 Всего: {total_rev:.2f} {currency} ({total_cnt})\n🛵 Активных: {active_cnt}\n👥 Клиентов: {subs_cnt}", parse_mode="HTML")
 
 @dp.message(F.text == "/open")
 async def cmd_owner_open_shop(message: Message):
@@ -3493,18 +2761,13 @@ async def cmd_owner_open_shop(message: Message):
             if notify_uids:
                 await set_setting_list(db, "shop_open_subscribers", [])
         await db.commit()
-
     for uid in notify_uids:
         try:
-            await bot.send_message(
-                uid,
-                f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>\n\nТеперь вы можете оформить заказ в каталоге.",
-                parse_mode="HTML"
-            )
+            await bot.send_message(uid, f"🟢 <b>Магазин {html.escape(brand_name)} снова открыт!</b>", parse_mode="HTML")
             await asyncio.sleep(0.05)
         except Exception:
             pass
-    await message.answer("🟢 <b>Витрина открыта!</b> Приём заказов возобновлён.", parse_mode="HTML")
+    await message.answer("🟢 <b>Витрина открыта!</b>", parse_mode="HTML")
 
 @dp.message(F.text.startswith("/close"))
 async def cmd_owner_close_shop(message: Message):
@@ -3517,7 +2780,7 @@ async def cmd_owner_close_shop(message: Message):
             await set_setting_raw(db, "closed_message", reason)
         cur_msg = await get_setting_raw(db, "closed_message", "Витрина сейчас на паузе, скоро вернёмся в онлайн.")
         await db.commit()
-    await message.answer(f"🔴 <b>Витрина закрыта!</b>\nСтатус для клиентов: <i>{html.escape(cur_msg)}</i>", parse_mode="HTML")
+    await message.answer(f"🔴 <b>Витрина закрыта!</b>\nСтатус: <i>{html.escape(cur_msg)}</i>", parse_mode="HTML")
 
 @dp.message(F.text.startswith("/post"))
 async def cmd_post_broadcast(message: Message):
@@ -3526,21 +2789,12 @@ async def cmd_post_broadcast(message: Message):
             return
         async with db.execute("SELECT user_id FROM users WHERE user_id > 0") as cursor:
             rows = await cursor.fetchall()
-
     inline_text = message.text[5:].strip()
     if not message.reply_to_message and not inline_text:
-        await message.answer(
-            "📢 <b>Как запустить рассылку:</b>\n\n"
-            "1. Отправь боту готовый пост (текст, фото, видео или кружочек).\n"
-            "2. Нажми <b>«Ответить» (Reply)</b> на это сообщение и напиши <code>/post</code>.\n\n"
-            "<i>Или отправь сразу:</i> <code>/post Текст объявления</code>",
-            parse_mode="HTML"
-        )
+        await message.answer("📢 Ответьте <code>/post</code> на пост или напишите <code>/post Текст</code>", parse_mode="HTML")
         return
-
     user_ids = [r[0] for r in rows]
-    status_msg = await message.answer(f"⏳ Запускаю рассылку по базе ({len(user_ids)} чел.)...")
-
+    status_msg = await message.answer(f"⏳ Рассылка ({len(user_ids)} чел.)...")
     sent = failed = 0
     for uid in user_ids:
         try:
@@ -3552,22 +2806,11 @@ async def cmd_post_broadcast(message: Message):
             await asyncio.sleep(0.05)
         except Exception:
             failed += 1
-
     post_preview = inline_text or (message.reply_to_message.text or message.reply_to_message.caption or "[Медиа-пост]")
-    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "INSERT INTO broadcasts (created_at, text, sent, failed, total) VALUES (?, ?, ?, ?, ?)",
-            (now_str, post_preview[:300], sent, failed, len(user_ids))
-        )
+        await db.execute("INSERT INTO broadcasts (created_at, text, sent, failed, total) VALUES (?, ?, ?, ?, ?)", (datetime.now().strftime("%d.%m.%Y, %H:%M"), post_preview[:300], sent, failed, len(user_ids)))
         await db.commit()
-
-    await status_msg.edit_text(
-        f"✅ <b>Рассылка завершена!</b>\n\n"
-        f"📨 Доставлено: <b>{sent}</b>\n"
-        f"🚫 Недоступны / заблокировали бота: <b>{failed}</b>",
-        parse_mode="HTML"
-    )
+    await status_msg.edit_text(f"✅ <b>Рассылка завершена!</b>\n📨 Доставлено: <b>{sent}</b> • 🚫 Ошибок: <b>{failed}</b>", parse_mode="HTML")
 
 CLAIM_FAILED_ATTEMPTS: dict[int, list[float]] = defaultdict(list)
 
@@ -3578,170 +2821,129 @@ async def cmd_claim_owner(message: Message):
     recent_fails = [t for t in CLAIM_FAILED_ATTEMPTS[uid] if now_ts - t < 3600]
     CLAIM_FAILED_ATTEMPTS[uid] = recent_fails
     if len(recent_fails) >= 5:
-        await message.answer("⛔ Превышено число попыток ввода ключа. Повторите через 1 час.")
+        await message.answer("⛔ Превышено число попыток. Повторите через 1 час.")
         return
-
-    first_name = message.from_user.first_name or "Владелец"
-    uname = f"@{message.from_user.username}" if message.from_user.username else first_name
     secret_arg = message.text[6:].strip()
-
     if not CLAIM_SECRET:
-        await message.answer(
-            "⚠️ Секретный ключ активации <code>CLAIM_SECRET</code> не задан в файле <code>.env</code>.",
-            parse_mode="HTML"
-        )
+        await message.answer("⚠️ <code>CLAIM_SECRET</code> не задан в <code>.env</code>.", parse_mode="HTML")
         return
-
     if not secret_arg:
-        await message.answer(
-            "🔑 Укажите секретный ключ после команды:\n<code>/claim ваш_секретный_ключ</code>",
-            parse_mode="HTML"
-        )
+        await message.answer("🔑 Укажите ключ: <code>/claim ключ</code>", parse_mode="HTML")
         return
-
     if not hmac.compare_digest(secret_arg, CLAIM_SECRET):
         CLAIM_FAILED_ATTEMPTS[uid].append(now_ts)
-        await message.answer("❌ Неверный секретный ключ активации.")
+        await message.answer("❌ Неверный секретный ключ.")
         return
-
     CLAIM_FAILED_ATTEMPTS.pop(uid, None)
-    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
+    uname = f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "Владелец")
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "INSERT OR REPLACE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)",
-            (uid, uname, now_str)
-        )
+        await db.execute("INSERT OR REPLACE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)", (uid, uname, datetime.now().strftime("%d.%m.%Y, %H:%M")))
         claimed = [int(x) for x in await get_setting_list(db, "claimed_primary_owners")]
         if uid not in claimed:
             claimed.append(uid)
             await set_setting_list(db, "claimed_primary_owners", claimed)
-        banned = [int(x) for x in await get_setting_list(db, "banned_users") if int(x) != uid]
-        await set_setting_list(db, "banned_users", banned)
+        await set_setting_list(db, "banned_users", [int(x) for x in await get_setting_list(db, "banned_users") if int(x) != uid])
         brand_name = await get_shop_brand_name(db)
         await db.commit()
-
     personal_url = build_personal_url(uid, uname, is_owner=True, is_courier=True)
     try:
-        await bot.set_chat_menu_button(
-            chat_id=uid,
-            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=personal_url))
-        )
+        await bot.set_chat_menu_button(chat_id=uid, menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=personal_url)))
     except Exception:
         pass
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=f"🛍 Открыть {brand_name}", web_app=WebAppInfo(url=personal_url))]],
-        resize_keyboard=True
-    )
-    await message.answer(
-        f"👑 <b>Права главного владельца успешно активированы!</b>\n\n"
-        f"Ваш Telegram ID (<code>{uid}</code>) добавлен в список главных администраторов.\n"
-        f"Откройте магазин по кнопке ниже — панель управления уже доступна во вкладке <b>«Профиль»</b>.",
-        reply_markup=kb,
-        parse_mode="HTML"
-    )
+    kb = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=f"🛍 Открыть {brand_name}", web_app=WebAppInfo(url=personal_url))]], resize_keyboard=True)
+    await message.answer("👑 <b>Права главного владельца активированы!</b>", reply_markup=kb, parse_mode="HTML")
 
 @dp.message(F.text == "/backup")
 async def cmd_owner_backup(message: Message):
-    uid = message.from_user.id
     async with aiosqlite.connect(DB_FILE) as db:
-        if not await check_is_owner(db, uid):
+        if not await check_is_owner(db, message.from_user.id):
             return
-    status_msg = await message.answer("⏳ Формирую резервную копию базы данных и отчёт по заказам...")
+    status_msg = await message.answer("⏳ Формирую бэкап...")
     try:
-        await send_backup_files_to_owner(uid)
+        await send_backup_files_to_owner(message.from_user.id)
         await status_msg.delete()
     except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка при выгрузке бэкапа: {html.escape(str(e))}", parse_mode="HTML")
+        await status_msg.edit_text(f"❌ Ошибка: {html.escape(str(e))}", parse_mode="HTML")
 
 @dp.message(F.text == "/start")
 async def cmd_start(message: Message):
     uid = message.from_user.id
     first_name = message.from_user.first_name or "друг"
     uname = f"@{message.from_user.username}" if message.from_user.username else first_name
-    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
-
     async with aiosqlite.connect(DB_FILE) as db:
-        await db.execute(
-            "INSERT OR REPLACE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)",
-            (uid, uname, now_str)
-        )
+        await db.execute("INSERT OR REPLACE INTO users (user_id, user_name, joined_at) VALUES (?, ?, ?)", (uid, uname, datetime.now().strftime("%d.%m.%Y, %H:%M")))
         is_own = await check_is_owner(db, uid)
         is_cour = await check_is_courier(db, uid)
         brand_name = await get_shop_brand_name(db)
         welcome_tpl = await get_setting_raw(db, "welcome_text", DEFAULT_WELCOME_TEXT)
         await db.commit()
-
     personal_url = build_personal_url(uid, uname, is_owner=is_own, is_courier=is_cour)
     try:
-        await bot.set_chat_menu_button(
-            chat_id=uid,
-            menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=personal_url))
-        )
+        await bot.set_chat_menu_button(chat_id=uid, menu_button=MenuButtonWebApp(text="Магазин", web_app=WebAppInfo(url=personal_url)))
+    except Exception:
+        pass
+    kb = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=f"🛍 Открыть {brand_name}", web_app=WebAppInfo(url=personal_url))]], resize_keyboard=True)
+    await message.answer(render_welcome_message(welcome_tpl, first_name, brand_name), reply_markup=kb, parse_mode="HTML")
+
+@dp.pre_checkout_query()
+async def handle_stars_pre_checkout(pre_checkout_query: PreCheckoutQuery):
+    try:
+        await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
     except Exception:
         pass
 
-    welcome_rendered = render_welcome_message(welcome_tpl, first_name, brand_name)
-    kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=f"🛍 Открыть {brand_name}", web_app=WebAppInfo(url=personal_url))]],
-        resize_keyboard=True
-    )
-    try:
-        await message.answer(
-            welcome_rendered,
-            reply_markup=kb,
-            parse_mode="HTML"
-        )
-    except Exception:
-        plain_fallback = (welcome_tpl or DEFAULT_WELCOME_TEXT).replace("{user}", first_name).replace("{brand}", brand_name)
-        await message.answer(
-            plain_fallback,
-            reply_markup=kb
-        )
+@dp.message(F.successful_payment)
+async def handle_successful_stars_payment(message: Message):
+    sp = message.successful_payment
+    if not sp:
+        return
+    uid = message.from_user.id
+    uname = f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "Покупатель")
+    stars_cnt = int(sp.total_amount or 0)
+    await message.answer(f"💖 <b>Спасибо за поддержку проекта!</b>\n\nПолучено <b>{stars_cnt} ⭐</b>.", parse_mode="HTML")
+    async with aiosqlite.connect(DB_FILE) as db:
+        all_owners = await get_all_owner_ids(db)
+    for oid_owner in all_owners:
+        if oid_owner:
+            await send_tg_dm(int(oid_owner), f"⭐ <b>Новый донат: {stars_cnt} Telegram Stars!</b>\n👤 От: {html.escape(uname)} (<code>{uid}</code>)")
 
 PENDING_REVIEW_STATES: dict[int, dict] = {}
 
-async def publish_review_record(uid: int, user_name: str, order_id: str, stars: int, comment: str = ""):
+def format_review_author_label(author_mode: str, username: str, display_name: str) -> str:
+    mode = (author_mode or "user").strip()
+    if mode == "anon":
+        return "Анонимный покупатель"
+    if mode == "nick":
+        return (display_name or "").strip() or (username or "").lstrip("@").strip() or "Покупатель"
+    if username:
+        return username if username.startswith("@") else f"@{username}"
+    return (display_name or "").strip() or "Покупатель"
+
+async def publish_review_record(uid: int, author_label: str, raw_user_name: str, order_id: str, stars: int, comment: str = ""):
     stars_clamped = max(1, min(5, int(stars)))
     stars_visual = "⭐" * stars_clamped
     now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
     items_summary = ""
-    reviews_url = ""
-    all_owners: list[int] = []
-    brand_name = "Monkey Vape"
-
     async with aiosqlite.connect(DB_FILE) as db:
         async with db.execute("SELECT items FROM orders WHERE id = ?", (str(order_id),)) as cur:
             orow = await cur.fetchone()
             if orow and orow[0]:
                 try:
-                    parsed_it = json.loads(orow[0])
-                    items_summary = ", ".join(f"{it.get('title', 'Товар')} ×{it.get('qty', 1)}" for it in parsed_it)
+                    items_summary = ", ".join(f"{it.get('title', 'Товар')} ×{it.get('qty', 1)}" for it in json.loads(orow[0]))
                 except Exception:
                     pass
         await db.execute(
-            """INSERT INTO reviews (order_id, user_id, user_name, stars, comment, items_summary, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (str(order_id), int(uid), user_name, stars_clamped, comment.strip(), items_summary, now_str)
+            "INSERT INTO reviews (order_id, user_id, user_name, stars, comment, items_summary, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (str(order_id), int(uid), author_label, stars_clamped, comment.strip(), items_summary, now_str)
         )
         reviews_url = await get_setting_raw(db, "reviews_channel_url", "")
         all_owners = await get_all_owner_ids(db)
         brand_name = await get_shop_brand_name(db)
         await db.commit()
 
-    safe_user = html.escape(user_name or "Покупатель")
-    safe_comment = html.escape(comment.strip())
-    safe_items = html.escape(items_summary)
-    comment_block = f"\n💬 <b>Отзыв:</b> {safe_comment}" if safe_comment else ""
-    items_block = f"\n🛍 <b>Заказ:</b> {safe_items}" if safe_items else ""
-
-    channel_post = (
-        f"🌟 <b>Новый отзыв о {html.escape(brand_name)}!</b>\n\n"
-        f"👤 <b>Клиент:</b> {safe_user}\n"
-        f"📊 <b>Оценка:</b> {stars_visual} ({stars_clamped}/5)"
-        f"{items_block}{comment_block}\n"
-        f"📅 <i>{html.escape(now_str)}</i>"
-    )
+    comment_block = f"\n💬 <b>Отзыв:</b> {html.escape(comment.strip())}" if comment.strip() else ""
+    items_block = f"\n🛍 <b>Заказ:</b> {html.escape(items_summary)}" if items_summary else ""
+    channel_post = f"🌟 <b>Новый отзыв о {html.escape(brand_name)}!</b>\n\n👤 <b>Клиент:</b> {html.escape(author_label or 'Покупатель')}\n📊 <b>Оценка:</b> {stars_visual} ({stars_clamped}/5){items_block}{comment_block}\n📅 <i>{html.escape(now_str)}</i>"
 
     target_channel = extract_tg_chat_target(reviews_url)
     published_to_channel = False
@@ -3749,18 +2951,32 @@ async def publish_review_record(uid: int, user_name: str, order_id: str, stars: 
         try:
             await bot.send_message(chat_id=target_channel, text=channel_post, parse_mode="HTML")
             published_to_channel = True
-        except Exception as e:
-            print(f"[REVIEW_CHANNEL_WARN] Could not post to {target_channel}: {e}")
+        except Exception:
+            pass
 
-    owner_post = (
-        f"⭐ <b>Новый отзыв по заказу #{html.escape(str(order_id))}!</b>\n"
-        f"👤 {safe_user} (<code>{uid}</code>) • {stars_visual} ({stars_clamped}/5)"
-        f"{items_block}{comment_block}\n"
-        f"{'✅ Опубликовано в канал отзывов' if published_to_channel else 'ℹ️ Сохранено в базе (канал не настроен или бот не админ канала)'}"
-    )
+    owner_post = f"⭐ <b>Новый отзыв по заказу #{html.escape(str(order_id))}!</b>\n👤 Подпись: <b>{html.escape(author_label)}</b> ({html.escape(raw_user_name or 'Покупатель')}, <code>{uid}</code>)\n📊 Оценка: {stars_visual} ({stars_clamped}/5){items_block}{comment_block}\n{'✅ Опубликовано в канал отзывов' if published_to_channel else 'ℹ️ Сохранено в базе'}"
     for oid_owner in all_owners:
         if oid_owner:
             await send_tg_dm(int(oid_owner), owner_post)
+
+def build_review_choice_keyboard(order_id: str, stars: int, current_mode: str, has_username: bool) -> InlineKeyboardMarkup:
+    mode_row = []
+    if has_username:
+        mode_row.append(InlineKeyboardButton(text=f"{'✓ ' if current_mode == 'user' else ''}С @username", callback_data=f"revmode:{order_id}:{stars}:user"))
+    mode_row.append(InlineKeyboardButton(text=f"{'✓ ' if current_mode == 'nick' else ''}Только имя", callback_data=f"revmode:{order_id}:{stars}:nick"))
+    mode_row.append(InlineKeyboardButton(text=f"{'✓ ' if current_mode == 'anon' else ''}🎭 Анонимно", callback_data=f"revmode:{order_id}:{stars}:anon"))
+    return InlineKeyboardMarkup(inline_keyboard=[
+        mode_row,
+        [InlineKeyboardButton(text="✅ Опубликовать без текста", callback_data=f"pubrev:{order_id}:{stars}:{current_mode}")]
+    ])
+
+def build_review_prompt_text(order_id: str, stars: int, author_label: str) -> str:
+    return (
+        f"Спасибо за оценку {'⭐' * stars} (<b>{stars}/5</b>) по заказу <b>#{html.escape(order_id)}</b>!\n\n"
+        f"👤 Подпись в канале: <b>{html.escape(author_label)}</b>\n"
+        f"<i>Выберите формат подписи (с @username, только имя или анонимно):</i>\n\n"
+        f"✍️ Напишите ответным сообщением текст отзыва или нажмите <b>«Опубликовать без текста»</b>:"
+    )
 
 @dp.callback_query(F.data.startswith("rate:"))
 async def handle_one_click_rating(callback: CallbackQuery):
@@ -3774,26 +2990,39 @@ async def handle_one_click_rating(callback: CallbackQuery):
     except Exception:
         stars = 5
     uid = callback.from_user.id
-    uname = f"@{callback.from_user.username}" if callback.from_user.username else (callback.from_user.first_name or "Покупатель")
-    PENDING_REVIEW_STATES[uid] = {
-        "order_id": order_id,
-        "stars": stars,
-        "user_name": uname,
-        "expires_at": time.time() + 900
-    }
-    stars_visual = "⭐" * stars
-    await callback.answer(f"Оценка {stars_visual} принята!")
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Опубликовать без текста", callback_data=f"pubrev:{order_id}:{stars}")]
-    ])
+    tg_username = f"@{callback.from_user.username}" if callback.from_user.username else ""
+    display_name = f"{callback.from_user.first_name or ''} {callback.from_user.last_name or ''}".strip() or "Покупатель"
+    default_mode = "user" if tg_username else "nick"
+    PENDING_REVIEW_STATES[uid] = {"order_id": order_id, "stars": stars, "username": tg_username, "display_name": display_name, "author_mode": default_mode, "expires_at": time.time() + 900}
+    await callback.answer(f"Оценка {'⭐' * stars} принята!")
     try:
-        await callback.message.answer(
-            f"Спасибо за оценку {stars_visual} (<b>{stars}/5</b>) по заказу <b>#{html.escape(order_id)}</b>!\n\n"
-            f"✍️ Напишите ответным сообщением пару слов о впечатлении — мы опубликуем ваш отзыв, "
-            f"или нажмите кнопку ниже, чтобы отправить только оценку:",
-            parse_mode="HTML",
-            reply_markup=kb
-        )
+        await callback.message.answer(build_review_prompt_text(order_id, stars, format_review_author_label(default_mode, tg_username, display_name)), parse_mode="HTML", reply_markup=build_review_choice_keyboard(order_id, stars, default_mode, bool(tg_username)))
+    except Exception:
+        pass
+
+@dp.callback_query(F.data.startswith("revmode:"))
+async def handle_review_author_mode(callback: CallbackQuery):
+    parts = (callback.data or "").split(":")
+    if len(parts) < 4:
+        await callback.answer()
+        return
+    order_id = parts[1].strip()
+    try:
+        stars = max(1, min(5, int(parts[2])))
+    except Exception:
+        stars = 5
+    chosen_mode = parts[3].strip() if parts[3].strip() in ("user", "nick", "anon") else "anon"
+    uid = callback.from_user.id
+    tg_username = f"@{callback.from_user.username}" if callback.from_user.username else ""
+    display_name = (callback.from_user.first_name or "").strip() or "Покупатель"
+    state = PENDING_REVIEW_STATES.get(uid) or {"order_id": order_id, "stars": stars, "username": tg_username, "display_name": display_name, "expires_at": time.time() + 900}
+    state["author_mode"] = chosen_mode
+    state["expires_at"] = time.time() + 900
+    PENDING_REVIEW_STATES[uid] = state
+    author_label = format_review_author_label(chosen_mode, state.get("username", tg_username), state.get("display_name", display_name))
+    await callback.answer(f"Подпись: {author_label}")
+    try:
+        await callback.message.edit_text(build_review_prompt_text(order_id, stars, author_label), parse_mode="HTML", reply_markup=build_review_choice_keyboard(order_id, stars, chosen_mode, bool(state.get("username", tg_username))))
     except Exception:
         pass
 
@@ -3805,13 +3034,17 @@ async def handle_publish_rating_only(callback: CallbackQuery):
         stars = max(1, min(5, int(parts[2]))) if len(parts) > 2 else 5
     except Exception:
         stars = 5
+    url_mode = parts[3].strip() if len(parts) > 3 else ""
     uid = callback.from_user.id
     state = PENDING_REVIEW_STATES.pop(uid, None)
-    uname = (state or {}).get("user_name") or (f"@{callback.from_user.username}" if callback.from_user.username else (callback.from_user.first_name or "Покупатель"))
+    tg_username = (state or {}).get("username") or (f"@{callback.from_user.username}" if callback.from_user.username else "")
+    display_name = (state or {}).get("display_name") or (callback.from_user.first_name or "Покупатель")
+    author_mode = url_mode or (state or {}).get("author_mode") or ("user" if tg_username else "nick")
+    author_label = format_review_author_label(author_mode, tg_username, display_name)
     await callback.answer("✅ Отзыв опубликован!")
-    await publish_review_record(uid, uname, order_id, stars, "")
+    await publish_review_record(uid, author_label, tg_username or display_name, order_id, stars, "")
     try:
-        await callback.message.edit_text(f"✅ <b>Спасибо! Ваша оценка {'⭐' * stars} ({stars}/5) опубликована.</b>", parse_mode="HTML")
+        await callback.message.edit_text(f"✅ <b>Спасибо! Ваша оценка {'⭐' * stars} ({stars}/5) опубликована.</b>\n👤 Подпись: <b>{html.escape(author_label)}</b>", parse_mode="HTML")
     except Exception:
         pass
 
@@ -3823,21 +3056,17 @@ async def handle_pending_review_text(message: Message):
         PENDING_REVIEW_STATES.pop(uid, None)
         return
     PENDING_REVIEW_STATES.pop(uid, None)
-    comment_text = (message.text or "").strip()
-    uname = state.get("user_name") or (f"@{message.from_user.username}" if message.from_user.username else (message.from_user.first_name or "Покупатель"))
-    await publish_review_record(uid, uname, state["order_id"], int(state["stars"]), comment_text)
-    await message.answer(
-        f"✅ <b>Спасибо за ваш отзыв!</b>\n"
-        f"Оценка: {'⭐' * int(state['stars'])} ({state['stars']}/5)\n"
-        f"Ваш комментарий успешно принят.",
-        parse_mode="HTML"
-    )
+    tg_username = state.get("username") or (f"@{message.from_user.username}" if message.from_user.username else "")
+    display_name = state.get("display_name") or (message.from_user.first_name or "Покупатель")
+    author_mode = state.get("author_mode") or ("user" if tg_username else "nick")
+    author_label = format_review_author_label(author_mode, tg_username, display_name)
+    await publish_review_record(uid, author_label, tg_username or display_name, state["order_id"], int(state["stars"]), (message.text or "").strip())
+    await message.answer(f"✅ <b>Спасибо за ваш отзыв!</b>\n👤 Подпись: <b>{html.escape(author_label)}</b>\nОценка: {'⭐' * int(state['stars'])} ({state['stars']}/5)", parse_mode="HTML")
 
 async def main():
     asyncio.create_task(dp.start_polling(bot))
     config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="info")
-    server = uvicorn.Server(config)
-    await server.serve()
+    await uvicorn.Server(config).serve()
 
 if __name__ == "__main__":
     asyncio.run(main())
