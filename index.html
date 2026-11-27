@@ -1512,7 +1512,7 @@
         .promo-input-row { display: flex; gap: 8px; align-items: center; }
         .promo-input { flex: 1; min-width: 0; background-color: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; color: var(--text-main); font-size: 13px; outline: none; text-transform: uppercase; user-select: text; -webkit-user-select: text; pointer-events: auto; position: relative; z-index: 3; transition: border-color 0.2s, box-shadow 0.2s; }
         .promo-input:focus { border-color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green-glow); }
-        .admin-select { background-color: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 10px; color: var(--text-main); font-size: 12.5px; outline: none; }
+        .admin-select { background-color: color-mix(in srgb, var(--bg-color) 85%, transparent); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 10px; color: var(--text-main); font-size: 12.5px; outline: none; min-width: 0; max-width: 100%; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .promo-apply-btn { background-color: var(--accent-green); color: #080c09; border: none; border-radius: 12px; padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; position: relative; z-index: 3; transition: transform 0.14s ease; }
         .promo-apply-btn:active { transform: scale(0.95); }
         .cart-summary {
@@ -4325,12 +4325,12 @@
     let bannerIntervalSec = parseInt(localStorage.getItem('monkey_banner_interval') ?? '5', 10);
     if (isNaN(bannerIntervalSec) || bannerIntervalSec < 0) bannerIntervalSec = 5;
     const BANNER_LAYOUT_OPTIONS = [
-        { id: 'classic', label: '📐 Классика (Слева текст • Справа кнопка)' },
-        { id: 'split', label: '◫ Колонки (Название слева • Описание сбоку)' },
-        { id: 'centered', label: '🎯 По центру (Акцентный постер)' },
-        { id: 'badge_top', label: '🏷 Бейдж сверху (Тег + Кнопка / Текст снизу)' },
-        { id: 'vertical', label: '🃏 Витрина (Стек с широкой кнопкой)' },
-        { id: 'reverse', label: '⇄ Инверсия (Кнопка слева • Текст справа)' }
+        { id: 'classic', label: '📐 Классика (Текст • Кнопка)' },
+        { id: 'split', label: '◫ Колонки (Слева • Описание)' },
+        { id: 'centered', label: '🎯 По центру (Постер)' },
+        { id: 'badge_top', label: '🏷 Бейдж сверху' },
+        { id: 'vertical', label: '🃏 Витрина (Кнопка снизу)' },
+        { id: 'reverse', label: '⇄ Инверсия (Кнопка • Текст)' }
     ];
     function normalizeClientBannerSlide(raw, idx = 0) {
         const s = raw || {};
@@ -4711,17 +4711,17 @@
                             <button type="button" class="toggle-pill off" style="padding:3px 8px;" title="Удалить баннер" onclick="adminDeleteBannerSlide(${idx})">✕</button>
                         </div>
                     </div>
-                    <div style="display:flex; gap:6px; align-items:center;">
-                        <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">📐 Формат:</span>
-                        <select class="admin-select" style="flex:1; padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'layout', this.value, true)">
+                    <div style="display:flex; gap:6px; align-items:center; min-width:0; width:100%;">
+                        <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap; flex-shrink:0;">📐 Формат:</span>
+                        <select class="admin-select" style="flex:1; min-width:0; max-width:100%; width:100%; padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'layout', this.value, true)">
                             ${layoutOptsHtml}
                         </select>
                     </div>
-                    <div style="display:grid; grid-template-columns:1.15fr 0.85fr; gap:6px;">
-                        <select class="admin-select" style="padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'style', this.value, true)">
+                    <div style="display:grid; grid-template-columns:minmax(0, 1.15fr) minmax(0, 0.85fr); gap:6px; width:100%;">
+                        <select class="admin-select" style="min-width:0; max-width:100%; width:100%; padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'style', this.value, true)">
                             ${styleOptsHtml}
                         </select>
-                        <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Бейдж (АКЦИЯ)" value="${escapeHtml(slide.badge_text ?? 'АКЦИЯ')}" oninput="updateBannerSlideField(${idx}, 'badge_text', this.value)">
+                        <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px; min-width:0; width:100%;" placeholder="Бейдж (АКЦИЯ)" value="${escapeHtml(slide.badge_text ?? 'АКЦИЯ')}" oninput="updateBannerSlideField(${idx}, 'badge_text', this.value)">
                     </div>
                     <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Большой заголовок (напр. СКИДКА -3 БУНА)" value="${escapeHtml(slide.title)}" oninput="updateBannerSlideField(${idx}, 'title', this.value)">
                     <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Описание (сбоку или снизу в зависимости от формата)" value="${escapeHtml(slide.desc)}" oninput="updateBannerSlideField(${idx}, 'desc', this.value)">
@@ -7479,7 +7479,18 @@
         const createdAt = getFormattedNowDateTime();
         const orderData = {
             id: orderId, user_id: currentUserId, user_name: currentUserName,
-            items: items.map(i => ({ title: `${i.title} (${i.optionName})`, price: i.price, qty: i.qty })),
+            items: items.map(i => {
+                const matchedProd = Number(i.id) > 0
+                    ? products.find(p => Number(p.id) === Number(i.id))
+                    : products.find(p => String(p.title || '').trim().toLowerCase() === String(i.title || '').trim().toLowerCase());
+                return {
+                    id: Number(matchedProd?.id || i.id || 0),
+                    title: `${i.title} (${i.optionName})`,
+                    optionName: String(i.optionName || ''),
+                    price: i.price,
+                    qty: i.qty
+                };
+            }),
             total, delivery_mode: deliveryMode, station: finalLocation, time: selectedTime, status: 'active', time_changed: false,
             promo_code: actualDiscount > 0 ? appliedPromoCode : '', discount: actualDiscount,
             delivery_fee: appliedDeliveryFee, created_at: createdAt,
