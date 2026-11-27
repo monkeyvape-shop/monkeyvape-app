@@ -891,6 +891,289 @@
         .promo-copy-btn.copied {
             filter: brightness(1.08);
         }
+        .promo-banner-tag-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: var(--accent-green-glow);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 55%, transparent);
+            color: var(--accent-green);
+            width: fit-content;
+            margin-bottom: 6px;
+        }
+        .promo-banner.banner-style-cyber .promo-banner-tag-pill { background: rgba(56, 189, 248, 0.16); border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; }
+        .promo-banner.banner-style-sunset .promo-banner-tag-pill { background: rgba(255, 140, 36, 0.16); border-color: rgba(255, 140, 36, 0.5); color: #ff9a3c; }
+        .promo-banner.banner-style-violet .promo-banner-tag-pill { background: rgba(192, 132, 252, 0.16); border-color: rgba(192, 132, 252, 0.5); color: #c084fc; }
+        .promo-banner.banner-style-gold .promo-banner-tag-pill { background: rgba(255, 208, 38, 0.16); border-color: rgba(255, 208, 38, 0.5); color: #ffd026; }
+        .promo-banner.banner-style-crimson .promo-banner-tag-pill { background: rgba(255, 77, 109, 0.16); border-color: rgba(255, 77, 109, 0.5); color: #ff5c7a; }
+        [data-theme="light"] .promo-banner.banner-style-cyber .promo-banner-tag-pill { color: #0284c7; }
+        [data-theme="light"] .promo-banner.banner-style-sunset .promo-banner-tag-pill { color: #ea580c; }
+        [data-theme="light"] .promo-banner.banner-style-violet .promo-banner-tag-pill { color: #7e22ce; }
+        [data-theme="light"] .promo-banner.banner-style-gold .promo-banner-tag-pill { color: #b45309; }
+        [data-theme="light"] .promo-banner.banner-style-crimson .promo-banner-tag-pill { color: #be123c; }
+
+        /* Новые раскладки баннеров */
+        .promo-banner.banner-layout-split {
+            display: grid;
+            grid-template-columns: 1.08fr 0.92fr;
+            align-items: stretch;
+            gap: 10px;
+            padding: 15px 16px;
+        }
+        .promo-banner-split-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            min-width: 0;
+            position: relative;
+            z-index: 1;
+        }
+        .promo-banner-split-left h3 { margin-bottom: 0; font-size: 16px; }
+        .promo-banner-split-right {
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 10px 11px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            min-width: 0;
+        }
+        [data-theme="light"] .promo-banner-split-right {
+            background: rgba(0, 0, 0, 0.035);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+        .promo-banner-split-right p {
+            font-size: 11.5px;
+            line-height: 1.4;
+            color: var(--text-main);
+            opacity: 0.9;
+        }
+        .promo-banner.banner-layout-centered {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 18px 18px 16px 18px;
+            gap: 8px;
+        }
+        .promo-banner.banner-layout-centered .promo-banner-tag-pill {
+            margin: 0 auto 2px auto;
+        }
+        .promo-banner.banner-layout-centered .promo-banner-text {
+            width: 100%;
+        }
+        .promo-banner.banner-layout-centered h3 {
+            font-size: 17.5px;
+            margin-bottom: 4px;
+        }
+        .promo-banner.banner-layout-centered .promo-copy-btn {
+            margin-top: 4px;
+            padding: 8px 18px;
+        }
+        .promo-banner.banner-layout-badge_top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 15px 17px;
+        }
+        .promo-banner-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+        .promo-banner-top-row .promo-banner-tag-pill { margin-bottom: 0; }
+        .promo-banner.banner-layout-vertical {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 9px;
+            padding: 16px 17px;
+        }
+        .promo-banner.banner-layout-vertical .promo-banner-tag-pill { margin-bottom: 0; }
+        .promo-banner.banner-layout-vertical .promo-copy-btn {
+            width: 100%;
+            text-align: center;
+            padding: 9px 14px;
+            margin-top: 2px;
+        }
+        .promo-banner.banner-layout-reverse {
+            flex-direction: row-reverse;
+            text-align: right;
+            gap: 14px;
+        }
+        .promo-banner.banner-layout-reverse .promo-banner-text {
+            border-right: 2px solid color-mix(in srgb, var(--accent-green) 45%, transparent);
+            padding-right: 11px;
+        }
+        .promo-banner.banner-layout-reverse.banner-style-cyber .promo-banner-text { border-right-color: rgba(56, 189, 248, 0.5); }
+        .promo-banner.banner-layout-reverse.banner-style-sunset .promo-banner-text { border-right-color: rgba(255, 140, 36, 0.5); }
+        .promo-banner.banner-layout-reverse.banner-style-violet .promo-banner-text { border-right-color: rgba(192, 132, 252, 0.5); }
+        .promo-banner.banner-layout-reverse.banner-style-gold .promo-banner-text { border-right-color: rgba(255, 208, 38, 0.5); }
+        .promo-banner.banner-layout-reverse.banner-style-crimson .promo-banner-text { border-right-color: rgba(255, 77, 109, 0.5); }
+
+        .admin-banner-preview-wrap {
+            margin-top: 4px;
+            padding-top: 6px;
+            border-top: 1px dashed var(--border-color);
+        }
+        .admin-banner-preview-wrap .promo-banner {
+            pointer-events: none;
+            padding: 12px 13px;
+            border-radius: 14px;
+        }
+        .admin-banner-preview-wrap .promo-banner h3 { font-size: 13.5px; }
+        .admin-banner-preview-wrap .promo-banner p { font-size: 11px; }
+        .admin-banner-preview-wrap .promo-copy-btn { font-size: 11px; padding: 6px 10px; }
+
+        /* Табло «Поддержать проект» в профиле */
+        .profile-donate-card {
+            background: linear-gradient(155deg, color-mix(in srgb, var(--card-bg) 88%, transparent) 0%, color-mix(in srgb, var(--banner-bg) 72%, var(--card-bg)) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
+            box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 14px;
+        }
+        .donate-card-header {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            margin-bottom: 12px;
+        }
+        .donate-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 13px;
+            background: var(--accent-green-glow);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            font-size: 19px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 0 14px var(--accent-green-glow);
+        }
+        .donate-tabs-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            background: color-mix(in srgb, var(--bg-color) 82%, transparent);
+            border: 1px solid var(--border-color);
+            padding: 4px;
+            border-radius: 13px;
+            margin-bottom: 11px;
+        }
+        .donate-tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.16s ease;
+        }
+        .donate-tab-btn.active {
+            background: var(--accent-green);
+            color: #080c09;
+            box-shadow: 0 3px 12px var(--accent-green-glow);
+        }
+        .donate-stars-presets {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 5px;
+            margin-bottom: 9px;
+        }
+        .donate-star-chip {
+            background: color-mix(in srgb, var(--bg-color) 85%, transparent);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 7px 4px;
+            border-radius: 10px;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.14s ease;
+        }
+        .donate-star-chip.active {
+            border-color: var(--accent-green);
+            background: var(--accent-green-glow);
+            color: var(--accent-green);
+        }
+        .donate-star-custom-row {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+        }
+        .donate-wallet-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 9px;
+        }
+        .donate-wallet-pill {
+            background: color-mix(in srgb, var(--bg-color) 85%, transparent);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.14s ease;
+        }
+        .donate-wallet-pill.active {
+            border-color: var(--accent-green);
+            background: var(--accent-green-glow);
+            color: var(--accent-green);
+        }
+        .donate-wallet-box {
+            background: color-mix(in srgb, var(--bg-color) 86%, transparent);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 11px 12px;
+        }
+        .donate-wallet-addr {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11.5px;
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 8px 10px;
+            word-break: break-all;
+            user-select: all;
+            -webkit-user-select: all;
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+        .admin-donate-wallet-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
         .promo-banner-dots {
             display: flex;
             justify-content: center;
@@ -2324,6 +2607,8 @@
             </div>
             <!-- Современные карточки каналов и поддержки -->
             <div id="profile-links-container"></div>
+            <!-- Табло поддержки проекта (Telegram Stars и криптовалюта) -->
+            <div id="profile-donate-container"></div>
             <!-- Блок управления звуком пользователя под кнопкой Поддержка 24/7 -->
             <div id="user-music-card" class="profile-music-card">
                 <div class="profile-music-top">
@@ -2370,6 +2655,7 @@
                     <div class="admin-sub-tab" onclick="switchAdminTab('interface', this)">🖌 Интерфейс</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('region', this)">🌍 Локация</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('channels', this)">🔗 Каналы</div>
+                    <div class="admin-sub-tab" onclick="switchAdminTab('donate', this)">💖 Донаты</div>
                     <div class="admin-sub-tab" id="admin-subtab-metro" onclick="switchAdminTab('metro', this)">🚇 Метро</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('time', this)">⏰ Время</div>
                     <div class="admin-sub-tab" onclick="switchAdminTab('roles', this)">👥 Доступ</div>
@@ -2720,6 +3006,46 @@
                         </div>
                         <button type="button" class="primary-btn" style="padding:10px; font-size:13px;" onclick="adminSaveChannels()">💾 Сохранить настройки каналов</button>
                     </div>
+                </div>
+                <!-- Вкладка "Донаты" — настройка табло поддержки проекта (Stars и криптокошельки) -->
+                <div id="admin-tab-donate" style="display: none;">
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">💖 Табло «Поддержать проект»:</span>
+                            <button type="button" id="admin-donate-enabled-btn" class="toggle-pill on" onclick="adminToggleDonateEnabled()">🟢 Показано</button>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:7px;">
+                            <input type="text" id="admin-donate-title-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Заголовок (напр. Поддержать проект)" oninput="isDonateDirty=true">
+                            <input type="text" id="admin-donate-subtitle-input" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Подзаголовок табло..." oninput="isDonateDirty=true">
+                        </div>
+                    </div>
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">⭐ Приём Telegram Stars в боте:</span>
+                            <button type="button" id="admin-donate-stars-btn" class="toggle-pill on" onclick="adminToggleDonateStars()">🟢 Включён</button>
+                        </div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-bottom:7px; line-height:1.35;">
+                            Покупатель вводит любое количество звёзд и оплачивает счёт прямо внутри бота.
+                        </div>
+                        <div>
+                            <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:4px;">👤 Получатель / @username для отображения:</div>
+                            <input type="text" id="admin-donate-stars-user-input" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="@warat_24" oninput="isDonateDirty=true">
+                        </div>
+                    </div>
+                    <div class="shop-master-box">
+                        <div style="font-size:12.5px; font-weight:700; margin-bottom:4px;">🪙 Криптокошельки (USDT и любая крипта):</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; line-height:1.35;">
+                            Добавляй и меняй любые кошельки в любое время. Клиент сможет скопировать адрес в 1 клик.
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:5px; margin-bottom:9px;">
+                            <button type="button" class="toggle-pill on" style="padding:7px 6px; font-size:11px;" onclick="adminAddDonateWalletPreset('USDT', 'TRC20')">+ USDT (TRC20)</button>
+                            <button type="button" class="toggle-pill on" style="padding:7px 6px; font-size:11px;" onclick="adminAddDonateWalletPreset('USDT', 'TON')">+ USDT (TON)</button>
+                            <button type="button" class="toggle-pill on" style="padding:7px 6px; font-size:11px;" onclick="adminAddDonateWalletPreset('TON', 'TON')">+ TON</button>
+                            <button type="button" class="toggle-pill on" style="padding:7px 6px; font-size:11px;" onclick="adminAddDonateWalletPreset('', '')">+ Свой кошелёк</button>
+                        </div>
+                        <div id="admin-donate-wallets-list"></div>
+                    </div>
+                    <button type="button" class="primary-btn" style="padding:11px; font-size:13px;" onclick="adminSaveDonateConfig()">💾 Сохранить настройки донатов</button>
                 </div>
                 <div id="admin-tab-metro" style="display: none;">
                     <div class="metro-tabs" style="margin-bottom:10px;">
@@ -3998,6 +4324,14 @@
     let bannerCarouselEnabled = localStorage.getItem('monkey_banner_enabled') !== '0';
     let bannerIntervalSec = parseInt(localStorage.getItem('monkey_banner_interval') ?? '5', 10);
     if (isNaN(bannerIntervalSec) || bannerIntervalSec < 0) bannerIntervalSec = 5;
+    const BANNER_LAYOUT_OPTIONS = [
+        { id: 'classic', label: '📐 Классика (Слева текст • Справа кнопка)' },
+        { id: 'split', label: '◫ Колонки (Название слева • Описание сбоку)' },
+        { id: 'centered', label: '🎯 По центру (Акцентный постер)' },
+        { id: 'badge_top', label: '🏷 Бейдж сверху (Тег + Кнопка / Текст снизу)' },
+        { id: 'vertical', label: '🃏 Витрина (Стек с широкой кнопкой)' },
+        { id: 'reverse', label: '⇄ Инверсия (Кнопка слева • Текст справа)' }
+    ];
     function normalizeClientBannerSlide(raw, idx = 0) {
         const s = raw || {};
         return {
@@ -4005,9 +4339,87 @@
             title: String(s.title || ''),
             desc: String(s.desc || ''),
             style: BANNER_STYLE_OPTIONS.some(o => o.id === s.style) ? s.style : 'emerald',
+            layout: BANNER_LAYOUT_OPTIONS.some(o => o.id === s.layout) ? s.layout : 'classic',
+            badge_text: String(s.badge_text !== undefined ? s.badge_text : 'АКЦИЯ'),
             btn_text: String(s.btn_text || 'Скопировать'),
             promo_code: String(s.promo_code || '')
         };
+    }
+    function buildSingleBannerCardHtml(slide, idx, isPreview = false) {
+        const stClass = `banner-style-${slide.style || 'emerald'}`;
+        const lay = BANNER_LAYOUT_OPTIONS.some(o => o.id === slide.layout) ? slide.layout : 'classic';
+        const layClass = `banner-layout-${lay}`;
+        const btnLabel = (slide.btn_text || '').trim() || 'Скопировать';
+        const showBtn = Boolean(btnLabel || (slide.promo_code || '').trim());
+        const badgeTxt = (slide.badge_text || '').trim();
+        const badgeHtml = badgeTxt ? `<span class="promo-banner-tag-pill">${escapeHtml(badgeTxt)}</span>` : '';
+        const clickAttr = isPreview ? '' : `onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, this)"`;
+        const btnHtml = showBtn ? `<button type="button" class="promo-copy-btn" ${clickAttr}>${escapeHtml(btnLabel)}</button>` : '';
+        const titleHtml = `<h3>${escapeHtml(slide.title || '')}</h3>`;
+        const descHtml = `<p>${escapeHtml(slide.desc || '')}</p>`;
+
+        if (lay === 'split') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass}">
+                    <div class="promo-banner-split-left">
+                        ${badgeHtml}
+                        ${titleHtml}
+                        ${btnHtml}
+                    </div>
+                    <div class="promo-banner-split-right">
+                        ${descHtml}
+                    </div>
+                </div>
+            `;
+        }
+        if (lay === 'centered') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass}">
+                    ${badgeHtml}
+                    <div class="promo-banner-text">
+                        ${titleHtml}
+                        ${descHtml}
+                    </div>
+                    ${btnHtml}
+                </div>
+            `;
+        }
+        if (lay === 'badge_top') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass}">
+                    <div class="promo-banner-top-row">
+                        ${badgeHtml || '<span></span>'}
+                        ${btnHtml}
+                    </div>
+                    <div class="promo-banner-text">
+                        ${titleHtml}
+                        ${descHtml}
+                    </div>
+                </div>
+            `;
+        }
+        if (lay === 'vertical') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass}">
+                    ${badgeHtml}
+                    <div class="promo-banner-text">
+                        ${titleHtml}
+                        ${descHtml}
+                    </div>
+                    ${btnHtml}
+                </div>
+            `;
+        }
+        return `
+            <div class="promo-banner ${stClass} ${layClass}">
+                <div class="promo-banner-text">
+                    ${badgeHtml}
+                    ${titleHtml}
+                    ${descHtml}
+                </div>
+                ${btnHtml}
+            </div>
+        `;
     }
     let bannerSlides = (() => {
         try {
@@ -4286,6 +4698,9 @@
             const styleOptsHtml = BANNER_STYLE_OPTIONS.map(opt =>
                 `<option value="${opt.id}" ${slide.style === opt.id ? 'selected' : ''}>${opt.label}</option>`
             ).join('');
+            const layoutOptsHtml = BANNER_LAYOUT_OPTIONS.map(opt =>
+                `<option value="${opt.id}" ${(slide.layout || 'classic') === opt.id ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
             return `
                 <div class="admin-banner-slide-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
@@ -4296,17 +4711,26 @@
                             <button type="button" class="toggle-pill off" style="padding:3px 8px;" title="Удалить баннер" onclick="adminDeleteBannerSlide(${idx})">✕</button>
                         </div>
                     </div>
-                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Большой заголовок (напр. СКИДКА -3 БУНА)" value="${escapeHtml(slide.title)}" oninput="updateBannerSlideField(${idx}, 'title', this.value)">
-                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Мини-описание (напр. На все жидкости в каталоге)" value="${escapeHtml(slide.desc)}" oninput="updateBannerSlideField(${idx}, 'desc', this.value)">
                     <div style="display:flex; gap:6px; align-items:center;">
-                        <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">🎨 Стиль:</span>
-                        <select class="admin-select" style="flex:1; padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'style', this.value)">
-                            ${styleOptsHtml}
+                        <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">📐 Формат:</span>
+                        <select class="admin-select" style="flex:1; padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'layout', this.value, true)">
+                            ${layoutOptsHtml}
                         </select>
                     </div>
+                    <div style="display:grid; grid-template-columns:1.15fr 0.85fr; gap:6px;">
+                        <select class="admin-select" style="padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'style', this.value, true)">
+                            ${styleOptsHtml}
+                        </select>
+                        <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Бейдж (АКЦИЯ)" value="${escapeHtml(slide.badge_text ?? 'АКЦИЯ')}" oninput="updateBannerSlideField(${idx}, 'badge_text', this.value)">
+                    </div>
+                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Большой заголовок (напр. СКИДКА -3 БУНА)" value="${escapeHtml(slide.title)}" oninput="updateBannerSlideField(${idx}, 'title', this.value)">
+                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Описание (сбоку или снизу в зависимости от формата)" value="${escapeHtml(slide.desc)}" oninput="updateBannerSlideField(${idx}, 'desc', this.value)">
                     <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:6px;">
                         <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Текст кнопки (Скопировать)" value="${escapeHtml(slide.btn_text)}" oninput="updateBannerSlideField(${idx}, 'btn_text', this.value)">
                         <input type="text" class="promo-input admin-banner-field" style="font-size:12px;" placeholder="Промокод (1K3)" value="${escapeHtml(slide.promo_code)}" oninput="updateBannerSlideField(${idx}, 'promo_code', this.value)">
+                    </div>
+                    <div class="admin-banner-preview-wrap" id="admin-banner-preview-${idx}">
+                        ${buildSingleBannerCardHtml(slide, idx, true)}
                     </div>
                 </div>
             `;
@@ -4327,20 +4751,7 @@
         }
         bannerEl.style.display = 'block';
         if (currentBannerSlideIdx >= bannerSlides.length) currentBannerSlideIdx = 0;
-        trackEl.innerHTML = bannerSlides.map((slide, idx) => {
-            const stClass = `banner-style-${slide.style || 'emerald'}`;
-            const btnLabel = (slide.btn_text || '').trim() || 'Скопировать';
-            const showBtn = Boolean(btnLabel || (slide.promo_code || '').trim());
-            return `
-                <div class="promo-banner ${stClass}">
-                    <div class="promo-banner-text">
-                        <h3>${escapeHtml(slide.title || '')}</h3>
-                        <p>${escapeHtml(slide.desc || '')}</p>
-                    </div>
-                    ${showBtn ? `<button type="button" class="promo-copy-btn" onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, this)">${escapeHtml(btnLabel)}</button>` : ''}
-                </div>
-            `;
-        }).join('');
+        trackEl.innerHTML = bannerSlides.map((slide, idx) => buildSingleBannerCardHtml(slide, idx, false)).join('');
         trackEl.style.transform = `translateX(-${currentBannerSlideIdx * 100}%)`;
         if (dotsEl) {
             if (bannerSlides.length > 1) {
@@ -4399,21 +4810,31 @@
         try { localStorage.setItem('monkey_banner_interval', String(bannerIntervalSec)); } catch (_) {}
         restartBannerAutoSlideTimer();
     }
-    function updateBannerSlideField(idx, field, val) {
+    function updateBannerSlideField(idx, field, val, rerenderCard = false) {
         if (!bannerSlides[idx]) return;
         isBannerDirty = true;
         bannerSlides[idx][field] = String(val ?? '');
         try { localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides)); } catch (_) {}
         renderPromoBannerCarouselSlides();
+        const prevBox = document.getElementById(`admin-banner-preview-${idx}`);
+        if (prevBox) {
+            prevBox.innerHTML = buildSingleBannerCardHtml(bannerSlides[idx], idx, true);
+        }
+        if (rerenderCard) {
+            renderAdminBannersList();
+        }
     }
     function adminAddBannerSlide() {
         isBannerDirty = true;
         const nextStyle = BANNER_STYLE_OPTIONS[bannerSlides.length % BANNER_STYLE_OPTIONS.length].id;
+        const nextLayout = BANNER_LAYOUT_OPTIONS[bannerSlides.length % BANNER_LAYOUT_OPTIONS.length].id;
         bannerSlides.push(normalizeClientBannerSlide({
             id: `banner_${Date.now()}_${bannerSlides.length}`,
             title: 'НОВАЯ АКЦИЯ',
             desc: 'Выгодное предложение для всех покупателей',
             style: nextStyle,
+            layout: nextLayout,
+            badge_text: 'АКЦИЯ',
             btn_text: 'Скопировать',
             promo_code: '1K3'
         }, bannerSlides.length));
@@ -4564,6 +4985,331 @@
         if (nInp && document.activeElement !== nInp) nInp.value = newsChannelUrl;
         if (rInp && document.activeElement !== rInp) rInp.value = reviewsChannelUrl;
         if (sInp && document.activeElement !== sInp) sInp.value = supportUsername;
+    }
+    // ----- ТАБЛО «ПОДДЕРЖАТЬ ПРОЕКТ» (STARS + КРИПТОВАЛЮТА) -----
+    let donateConfig = (() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('monkey_donate_config') || 'null');
+            if (saved && typeof saved === 'object') {
+                return {
+                    enabled: saved.enabled !== false,
+                    title: String(saved.title || 'Поддержать проект'),
+                    subtitle: String(saved.subtitle || 'Звёзды Telegram или криптовалюта на развитие магазина'),
+                    stars_enabled: saved.stars_enabled !== false,
+                    stars_username: String(saved.stars_username || supportUsername || '@warat_24'),
+                    stars_bot_invoice: saved.stars_bot_invoice !== false,
+                    wallets: Array.isArray(saved.wallets) ? saved.wallets : []
+                };
+            }
+        } catch (_) {}
+        return {
+            enabled: true,
+            title: 'Поддержать проект',
+            subtitle: 'Звёзды Telegram или криптовалюта на развитие магазина',
+            stars_enabled: true,
+            stars_username: supportUsername || '@warat_24',
+            stars_bot_invoice: true,
+            wallets: []
+        };
+    })();
+    let activeDonateTab = 'stars';
+    let selectedDonateStarsAmount = 50;
+    let selectedDonateWalletIdx = 0;
+    let isDonateDirty = false;
+    let isDonateInvoicePending = false;
+
+    function selectDonateModeTab(mode) {
+        activeDonateTab = mode === 'crypto' ? 'crypto' : 'stars';
+        renderProfileDonateBoard();
+    }
+    function selectDonateStarsPreset(amt) {
+        selectedDonateStarsAmount = Math.max(1, Math.min(25000, parseInt(amt, 10) || 50));
+        renderProfileDonateBoard();
+    }
+    function handleCustomDonateStarsInput(val) {
+        const parsed = parseInt(val, 10);
+        if (!isNaN(parsed) && parsed > 0) {
+            selectedDonateStarsAmount = Math.max(1, Math.min(25000, parsed));
+        }
+    }
+    function selectDonateWalletIndex(idx) {
+        selectedDonateWalletIdx = Math.max(0, parseInt(idx, 10) || 0);
+        renderProfileDonateBoard();
+    }
+    function copyDonateWalletAddress(addr) {
+        const clean = String(addr || '').trim();
+        if (!clean) return;
+        copyTextToClipboardSafe(clean);
+        triggerHaptic('success');
+        showToast('📋 Адрес криптокошелька скопирован!');
+    }
+    async function submitStarsDonate() {
+        if (isDonateInvoicePending) return;
+        const inp = document.getElementById('donate-stars-custom-input');
+        const rawVal = inp ? parseInt(inp.value, 10) : selectedDonateStarsAmount;
+        const amount = Math.max(1, Math.min(25000, isNaN(rawVal) ? 50 : rawVal));
+        selectedDonateStarsAmount = amount;
+        if (!currentUserId) {
+            showToast('Откройте магазин внутри Telegram для оплаты звёздами', true);
+            return;
+        }
+        isDonateInvoicePending = true;
+        const btn = document.getElementById('donate-stars-submit-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = '⏳ Создаём счёт...';
+        }
+        try {
+            const res = await apiFetch('/api/donate/stars_invoice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: Number(currentUserId), amount })
+            });
+            const data = await res.json();
+            const tgWebApp = window.Telegram && window.Telegram.WebApp;
+            if (data.invoice_link && tgWebApp && typeof tgWebApp.openInvoice === 'function') {
+                tgWebApp.openInvoice(data.invoice_link, (status) => {
+                    if (status === 'paid') {
+                        triggerHaptic('success');
+                        showToast(`💖 Спасибо! Донат ${amount} ⭐ получен!`);
+                    } else if (status === 'failed') {
+                        showToast('Оплата звёздами не прошла', true);
+                    }
+                });
+            } else if (data.sent_to_chat) {
+                triggerHaptic('success');
+                showToast(`⭐ Счёт на ${amount} звёзд отправлен вам в чат с ботом!`);
+            } else if (data.invoice_link) {
+                window.open(data.invoice_link, '_blank');
+            }
+        } catch (e) {
+            showToast(e?.detail ? `⚠️ ${e.detail}` : 'Не удалось создать счёт на звёзды', true);
+        } finally {
+            isDonateInvoicePending = false;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = `⭐ Поддержать (${selectedDonateStarsAmount} ⭐)`;
+            }
+        }
+    }
+    function renderProfileDonateBoard() {
+        const container = document.getElementById('profile-donate-container');
+        if (!container) return;
+        const wallets = Array.isArray(donateConfig.wallets) ? donateConfig.wallets : [];
+        const hasStars = Boolean(donateConfig.stars_enabled);
+        const hasCrypto = wallets.length > 0;
+        if (!donateConfig.enabled || (!hasStars && !hasCrypto)) {
+            container.innerHTML = '';
+            return;
+        }
+        if (activeDonateTab === 'stars' && !hasStars && hasCrypto) activeDonateTab = 'crypto';
+        if (activeDonateTab === 'crypto' && !hasCrypto && hasStars) activeDonateTab = 'stars';
+        if (selectedDonateWalletIdx >= wallets.length) selectedDonateWalletIdx = 0;
+
+        const tabsHtml = (hasStars && hasCrypto) ? `
+            <div class="donate-tabs-row">
+                <button type="button" class="donate-tab-btn ${activeDonateTab === 'stars' ? 'active' : ''}" onclick="selectDonateModeTab('stars')">⭐ Telegram Stars</button>
+                <button type="button" class="donate-tab-btn ${activeDonateTab === 'crypto' ? 'active' : ''}" onclick="selectDonateModeTab('crypto')">🪙 Криптовалюта / USDT</button>
+            </div>
+        ` : '';
+
+        let bodyHtml = '';
+        if (activeDonateTab === 'stars' && hasStars) {
+            const presets = [15, 50, 100, 250, 500];
+            const presetsHtml = presets.map(p =>
+                `<button type="button" class="donate-star-chip ${Number(selectedDonateStarsAmount) === p ? 'active' : ''}" onclick="selectDonateStarsPreset(${p})">${p} ⭐</button>`
+            ).join('');
+            const recipNote = (donateConfig.stars_username || '').trim()
+                ? `<div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;">Получатель проекта: <b style="color:var(--accent-green);">${escapeHtml(donateConfig.stars_username)}</b> • Оплата прямо в боте</div>`
+                : `<div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;">Мгновенная оплата звёздами прямо внутри бота</div>`;
+            bodyHtml = `
+                ${recipNote}
+                <div class="donate-stars-presets">${presetsHtml}</div>
+                <div class="donate-star-custom-row">
+                    <input type="number" id="donate-stars-custom-input" class="promo-input" style="text-transform:none; width:115px; flex:0 0 115px; font-size:13px; text-align:center;" min="1" max="25000" value="${selectedDonateStarsAmount}" placeholder="Кол-во ⭐" oninput="handleCustomDonateStarsInput(this.value)">
+                    <button type="button" id="donate-stars-submit-btn" class="primary-btn" style="padding:11px 12px; font-size:12.5px;" onclick="submitStarsDonate()">⭐ Поддержать (${selectedDonateStarsAmount} ⭐)</button>
+                </div>
+            `;
+        } else if (hasCrypto) {
+            const activeWallet = wallets[selectedDonateWalletIdx] || wallets[0];
+            const pillsHtml = wallets.length > 1 ? `
+                <div class="donate-wallet-pills">
+                    ${wallets.map((w, idx) => {
+                        const label = w.network ? `${w.coin} (${w.network})` : w.coin;
+                        return `<button type="button" class="donate-wallet-pill ${idx === selectedDonateWalletIdx ? 'active' : ''}" onclick="selectDonateWalletIndex(${idx})">${escapeHtml(label)}</button>`;
+                    }).join('')}
+                </div>
+            ` : '';
+            const netBadge = activeWallet.network
+                ? `<span style="font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:7px; background:var(--accent-green-glow); border:1px solid var(--accent-green); color:var(--accent-green);">${escapeHtml(activeWallet.network)}</span>`
+                : '';
+            const addrClean = (activeWallet.address || '').trim();
+            const payUrlClean = normalizeTelegramUrl(activeWallet.pay_url || '');
+            const safeEscAddr = addrClean.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            bodyHtml = `
+                ${pillsHtml}
+                <div class="donate-wallet-box">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                        <span style="font-size:13px; font-weight:800; color:var(--text-main);">🪙 ${escapeHtml(activeWallet.coin || 'USDT')}</span>
+                        ${netBadge}
+                    </div>
+                    ${addrClean ? `
+                        <div class="donate-wallet-addr">${escapeHtml(addrClean)}</div>
+                        <button type="button" class="primary-btn" style="padding:10px 12px; font-size:12.5px;" onclick="copyDonateWalletAddress('${safeEscAddr}')">📋 Скопировать адрес кошелька</button>
+                    ` : ''}
+                    ${payUrlClean ? `
+                        <a href="${escapeHtml(payUrlClean)}" target="_blank" class="order-btn-secondary" style="width:100%; margin-top:${addrClean ? '7px' : '8px'}; padding:10px; font-size:12px; font-weight:700; color:var(--accent-green); border-color:var(--accent-green);">↗ Открыть ссылку для перевода</a>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="profile-donate-card">
+                <div class="donate-card-header">
+                    <div class="donate-card-icon">💖</div>
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-size:14.5px; font-weight:800; color:var(--text-main); margin-bottom:2px;">${escapeHtml(donateConfig.title || 'Поддержать проект')}</div>
+                        <div style="font-size:11.5px; color:var(--text-secondary); line-height:1.35;">${escapeHtml(donateConfig.subtitle || 'Звёзды Telegram или криптовалюта на развитие магазина')}</div>
+                    </div>
+                </div>
+                ${tabsHtml}
+                ${bodyHtml}
+            </div>
+        `;
+    }
+    function renderAdminDonateTab() {
+        const enBtn = document.getElementById('admin-donate-enabled-btn');
+        const stBtn = document.getElementById('admin-donate-stars-btn');
+        const titleInp = document.getElementById('admin-donate-title-input');
+        const subInp = document.getElementById('admin-donate-subtitle-input');
+        const userInp = document.getElementById('admin-donate-stars-user-input');
+        const listEl = document.getElementById('admin-donate-wallets-list');
+        if (enBtn) {
+            enBtn.className = `toggle-pill ${donateConfig.enabled ? 'on' : 'off'}`;
+            enBtn.innerText = donateConfig.enabled ? '🟢 Показано' : '⚪ Скрыто';
+        }
+        if (stBtn) {
+            stBtn.className = `toggle-pill ${donateConfig.stars_enabled ? 'on' : 'off'}`;
+            stBtn.innerText = donateConfig.stars_enabled ? '🟢 Включён' : '⚪ Выключен';
+        }
+        if (titleInp && document.activeElement !== titleInp) titleInp.value = donateConfig.title || 'Поддержать проект';
+        if (subInp && document.activeElement !== subInp) subInp.value = donateConfig.subtitle || '';
+        if (userInp && document.activeElement !== userInp) userInp.value = donateConfig.stars_username || '';
+        if (listEl) {
+            const wallets = Array.isArray(donateConfig.wallets) ? donateConfig.wallets : [];
+            if (!wallets.length) {
+                listEl.innerHTML = '<div style="font-size:11.5px; color:var(--text-secondary); padding:4px 0;">Криптокошельки пока не добавлены — выбери шаблон выше</div>';
+            } else {
+                listEl.innerHTML = wallets.map((w, idx) => `
+                    <div class="admin-donate-wallet-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                            <span style="font-size:12px; font-weight:800; color:var(--accent-green);">Кошелёк #${idx + 1}</span>
+                            <div style="display:flex; gap:4px;">
+                                ${wallets.length > 1 ? `<button type="button" class="toggle-pill on" style="padding:3px 7px;" onclick="adminMoveDonateWallet(${idx}, -1)">↑</button>` : ''}
+                                ${wallets.length > 1 ? `<button type="button" class="toggle-pill on" style="padding:3px 7px;" onclick="adminMoveDonateWallet(${idx}, 1)">↓</button>` : ''}
+                                <button type="button" class="toggle-pill off" style="padding:3px 8px;" onclick="adminDeleteDonateWallet(${idx})">✕</button>
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                            <input type="text" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Монета (USDT, TON, BTC)" value="${escapeHtml(w.coin || '')}" oninput="updateDonateWalletField(${idx}, 'coin', this.value)">
+                            <input type="text" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Сеть (TRC20, TON, BEP20)" value="${escapeHtml(w.network || '')}" oninput="updateDonateWalletField(${idx}, 'network', this.value)">
+                        </div>
+                        <input type="text" class="promo-input" style="text-transform:none; font-size:12px;" placeholder="Адрес криптокошелька..." value="${escapeHtml(w.address || '')}" oninput="updateDonateWalletField(${idx}, 'address', this.value)">
+                        <input type="text" class="promo-input" style="text-transform:none; font-size:11.5px;" placeholder="Ссылка на оплату (необязательно)" value="${escapeHtml(w.pay_url || '')}" oninput="updateDonateWalletField(${idx}, 'pay_url', this.value)">
+                    </div>
+                `).join('');
+            }
+        }
+    }
+    function adminToggleDonateEnabled() {
+        isDonateDirty = true;
+        donateConfig.enabled = !donateConfig.enabled;
+        renderAdminDonateTab();
+        renderProfileDonateBoard();
+    }
+    function adminToggleDonateStars() {
+        isDonateDirty = true;
+        donateConfig.stars_enabled = !donateConfig.stars_enabled;
+        renderAdminDonateTab();
+        renderProfileDonateBoard();
+    }
+    function adminAddDonateWalletPreset(coin, network) {
+        isDonateDirty = true;
+        if (!Array.isArray(donateConfig.wallets)) donateConfig.wallets = [];
+        donateConfig.wallets.push({
+            id: `w_${Date.now()}_${donateConfig.wallets.length}`,
+            coin: coin || 'USDT',
+            network: network || '',
+            address: '',
+            pay_url: ''
+        });
+        renderAdminDonateTab();
+    }
+    function updateDonateWalletField(idx, field, val) {
+        if (!donateConfig.wallets || !donateConfig.wallets[idx]) return;
+        isDonateDirty = true;
+        donateConfig.wallets[idx][field] = String(val ?? '');
+        renderProfileDonateBoard();
+    }
+    function adminMoveDonateWallet(idx, delta) {
+        const target = idx + delta;
+        if (!donateConfig.wallets || target < 0 || target >= donateConfig.wallets.length) return;
+        isDonateDirty = true;
+        const tmp = donateConfig.wallets[idx];
+        donateConfig.wallets[idx] = donateConfig.wallets[target];
+        donateConfig.wallets[target] = tmp;
+        renderAdminDonateTab();
+        renderProfileDonateBoard();
+    }
+    function adminDeleteDonateWallet(idx) {
+        if (!donateConfig.wallets) return;
+        isDonateDirty = true;
+        donateConfig.wallets.splice(idx, 1);
+        renderAdminDonateTab();
+        renderProfileDonateBoard();
+    }
+    async function adminSaveDonateConfig() {
+        document.activeElement?.blur();
+        const titleVal = (document.getElementById('admin-donate-title-input')?.value || '').trim() || 'Поддержать проект';
+        const subVal = (document.getElementById('admin-donate-subtitle-input')?.value || '').trim() || 'Звёзды Telegram или криптовалюта на развитие магазина';
+        const userVal = (document.getElementById('admin-donate-stars-user-input')?.value || '').trim();
+        const cleanWallets = (donateConfig.wallets || []).filter(w => (w.address || '').trim() || (w.pay_url || '').trim());
+        donateConfig.title = titleVal;
+        donateConfig.subtitle = subVal;
+        donateConfig.stars_username = userVal;
+        donateConfig.stars_bot_invoice = true;
+        donateConfig.wallets = cleanWallets;
+        try { localStorage.setItem('monkey_donate_config', JSON.stringify(donateConfig)); } catch (_) {}
+        renderAdminDonateTab();
+        renderProfileDonateBoard();
+        try {
+            const res = await apiFetch('/api/admin/donate_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    enabled: Boolean(donateConfig.enabled),
+                    title: titleVal,
+                    subtitle: subVal,
+                    stars_enabled: Boolean(donateConfig.stars_enabled),
+                    stars_username: userVal,
+                    stars_bot_invoice: true,
+                    wallets: cleanWallets
+                })
+            });
+            const data = await res.json();
+            if (data?.donate_config) {
+                donateConfig = data.donate_config;
+                try { localStorage.setItem('monkey_donate_config', JSON.stringify(donateConfig)); } catch (_) {}
+            }
+            isDonateDirty = false;
+            renderAdminDonateTab();
+            renderProfileDonateBoard();
+            showToast('💖 Настройки поддержки проекта сохранены!');
+        } catch (e) {
+            showToast('Ошибка сохранения настроек донатов', true);
+        }
     }
     let shopCategories = JSON.parse(localStorage.getItem('monkey_categories')) || [
         { id: 'liquid', name: 'Жидкости' },
@@ -5982,7 +6728,24 @@
                     }
                     renderAdminChannelsTab();
                 }
+                if (!isDonateDirty && cfg.donate_config && typeof cfg.donate_config === 'object') {
+                    const prevDonateJson = JSON.stringify(donateConfig);
+                    if (JSON.stringify(cfg.donate_config) !== prevDonateJson) {
+                        donateConfig = {
+                            enabled: cfg.donate_config.enabled !== false,
+                            title: String(cfg.donate_config.title || 'Поддержать проект'),
+                            subtitle: String(cfg.donate_config.subtitle || 'Звёзды Telegram или криптовалюта на развитие магазина'),
+                            stars_enabled: cfg.donate_config.stars_enabled !== false,
+                            stars_username: String(cfg.donate_config.stars_username || supportUsername || '@warat_24'),
+                            stars_bot_invoice: cfg.donate_config.stars_bot_invoice !== false,
+                            wallets: Array.isArray(cfg.donate_config.wallets) ? cfg.donate_config.wallets : []
+                        };
+                        try { localStorage.setItem('monkey_donate_config', JSON.stringify(donateConfig)); } catch (_) {}
+                        renderAdminDonateTab();
+                    }
+                }
                 renderProfileLinks();
+                renderProfileDonateBoard();
                 if (!isScheduleDirty) {
                     if (cfg.auto_schedule_enabled !== undefined) {
                         autoScheduleEnabled = Boolean(cfg.auto_schedule_enabled);
@@ -7485,7 +8248,7 @@
         currentAdminSubTab = tab;
         document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
-        ['stats', 'products', 'promos', 'appearance', 'interface', 'region', 'channels', 'metro', 'time', 'roles', 'broadcast', 'commands'].forEach(t => {
+        ['stats', 'products', 'promos', 'appearance', 'interface', 'region', 'channels', 'donate', 'metro', 'time', 'roles', 'broadcast', 'commands'].forEach(t => {
             const box = document.getElementById(`admin-tab-${t}`);
             if (box) box.style.display = t === tab ? 'block' : 'none';
         });
@@ -7495,6 +8258,7 @@
         if (tab === 'region') renderAdminRegionTab();
         if (tab === 'products') { renderAdminCategories(); populateCategorySelects(); renderAdminProducts(); }
         if (tab === 'channels') { renderAdminChannelsTab(); renderProfileLinks(); }
+        if (tab === 'donate') { renderAdminDonateTab(); renderProfileDonateBoard(); }
         if (tab === 'broadcast') loadBroadcastHistory();
         if (tab === 'commands') renderAdminCommands();
     }
@@ -7845,6 +8609,8 @@
                     title: first.title || '',
                     desc: first.desc || '',
                     badge: first.promo_code || '',
+                    layout: first.layout || 'classic',
+                    badge_text: first.badge_text || 'АКЦИЯ',
                     banner_interval: bannerIntervalSec,
                     banners: bannerSlides,
                     top_notice: topNotice
@@ -8737,6 +9503,7 @@
     renderCatalogCategories();
     populateCategorySelects();
     renderProfileLinks();
+    renderProfileDonateBoard();
     ensureValidSelectedStationAndTime();
     renderProducts(products);
     renderStations('green');
