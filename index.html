@@ -1007,6 +1007,57 @@
             padding: 9px 14px;
             margin-top: 2px;
         }
+        .promo-banner.banner-no-action .promo-banner-text {
+            width: 100%;
+            flex: 1 1 100%;
+        }
+        .promo-banner-media {
+            width: 82px;
+            height: 82px;
+            border-radius: 15px;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
+            background: rgba(0, 0, 0, 0.22);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .promo-banner-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .promo-banner.banner-layout-centered .promo-banner-media,
+        .promo-banner.banner-layout-vertical .promo-banner-media {
+            width: 100%;
+            height: 112px;
+            margin-top: 4px;
+        }
+        .promo-banner.banner-layout-badge_top .promo-banner-media {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+        }
+        .promo-banner.banner-layout-split .promo-banner-media {
+            width: 100%;
+            height: 68px;
+            border-radius: 12px;
+        }
+        .admin-banner-preview-wrap .promo-banner-media {
+            width: 58px;
+            height: 58px;
+            border-radius: 11px;
+        }
+        .admin-banner-preview-wrap .promo-banner.banner-layout-centered .promo-banner-media,
+        .admin-banner-preview-wrap .promo-banner.banner-layout-vertical .promo-banner-media {
+            width: 100%;
+            height: 76px;
+        }
         .promo-banner.banner-layout-reverse {
             flex-direction: row-reverse;
             text-align: right;
@@ -1469,8 +1520,20 @@
             border: 1px solid var(--accent-green);
             flex-shrink: 0;
         }
-        .cart-empty { text-align: center; padding: 54px 20px; color: var(--text-secondary); }
-        .cart-empty-icon { font-size: 48px; margin-bottom: 14px; }
+        .cart-empty { text-align: center; padding: 54px 20px; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; }
+        .cart-empty-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            background: var(--icon-glow);
+            border: 1.5px solid var(--icon-color);
+            color: var(--icon-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 14px auto;
+            box-shadow: 0 0 20px var(--icon-glow);
+        }
         .cart-empty p { font-size: 14px; line-height: 1.45; }
         .cart-items-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
         .cart-item {
@@ -2547,7 +2610,19 @@
     <div class="top-bar">
         <div class="brand-title" id="brand-title">MONKEY <span>VAPE</span></div>
         <div class="top-bar-actions">
-            <button class="theme-toggle-btn" id="theme-toggle-btn" title="Сменить тему" onclick="toggleAppTheme()">☀️</button>
+            <button class="theme-toggle-btn" id="theme-toggle-btn" title="Сменить тему" onclick="toggleAppTheme()" style="color: var(--icon-color);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
             <button class="metro-selector-btn" id="topbar-metro-btn" onclick="openMetroPicker()">
                 <div class="metro-icon" id="topbar-loc-badge">M</div>
                 <span id="current-metro-label">Выбрать локацию</span>
@@ -2560,7 +2635,12 @@
         <div id="screen-catalog" class="screen active">
             <div id="catalog-closed-banner" class="closed-shop-banner" style="display: none;"></div>
             <div class="search-box">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon" style="display:inline-flex; align-items:center; justify-content:center;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </span>
                 <input type="text" class="search-input" id="search-input" placeholder="Поиск товаров по названию или вкусу..." oninput="filterProducts()">
             </div>
             <div class="categories-scroll" id="categories-scroll"></div>
@@ -3122,7 +3202,19 @@
             </div>
         </div>
         <div id="screen-courier" class="screen">
-            <div class="section-title">Панель курьера 🛵</div>
+            <div class="section-title" style="display:flex; align-items:center; gap:9px;">
+                <span>Панель курьера</span>
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:9px; background:var(--icon-glow); border:1px solid var(--icon-color); color:var(--icon-color);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="5.5" cy="17.5" r="2.5"></circle>
+                        <circle cx="18.5" cy="17.5" r="2.5"></circle>
+                        <path d="M15 6h2l3 6v5.5h-1.5"></path>
+                        <path d="M8 17.5h8"></path>
+                        <path d="M5.5 15l2.5-6h5v6"></path>
+                        <path d="M13 6h-2"></path>
+                    </svg>
+                </span>
+            </div>
             <div class="orders-tabs">
                 <button class="orders-tab-btn active" id="courier-tab-active" onclick="switchCourierSubTab('active')">
                     Активные <span class="tab-count-badge" id="courier-active-count">0</span>
@@ -3132,7 +3224,15 @@
                 </button>
             </div>
             <div id="courier-orders-list">
-                <div class="cart-empty"><div class="cart-empty-icon">⏳</div><p>Загрузка заказов...</p></div>
+                <div class="cart-empty">
+                    <div class="cart-empty-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <p>Загрузка заказов...</p>
+                </div>
             </div>
         </div>
         <div id="screen-checkout" class="screen">
@@ -3145,7 +3245,11 @@
                         <h4 id="checkout-method-title">Встреча в метро</h4>
                         <p id="checkout-method-desc">Передача из рук в руки • Наличные или перевод</p>
                     </div>
-                    <div style="color: var(--accent-green); font-size: 18px;">✓</div>
+                    <div style="color: var(--icon-color); display:flex; align-items:center; justify-content:center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
                 </div>
             </div>
             <div style="margin-bottom: 18px;">
@@ -3457,8 +3561,17 @@
             document.documentElement.removeAttribute('data-theme');
             applyCustomUiCssVars(customUiTheme);
         }
+        updateThemeToggleBtnIcon(theme);
+    }
+    function updateThemeToggleBtnIcon(theme) {
         const btn = document.getElementById('theme-toggle-btn');
-        if (btn) btn.innerText = theme === 'light' ? '🌙' : '☀️';
+        if (!btn) return;
+        btn.style.color = 'var(--icon-color)';
+        if (theme === 'light') {
+            btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+        } else {
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+        }
     }
     function toggleAppTheme() { applyAppTheme(currentAppTheme === 'light' ? 'dark' : 'light'); }
     applyAppTheme(currentAppTheme);
@@ -4391,6 +4504,7 @@
     ];
     function normalizeClientBannerSlide(raw, idx = 0) {
         const s = raw || {};
+        const am = ['button', 'image', 'none'].includes(s.action_mode) ? s.action_mode : 'button';
         return {
             id: String(s.id || `banner_${Date.now()}_${idx}`),
             title: String(s.title || ''),
@@ -4398,7 +4512,9 @@
             style: BANNER_STYLE_OPTIONS.some(o => o.id === s.style) ? s.style : 'emerald',
             layout: BANNER_LAYOUT_OPTIONS.some(o => o.id === s.layout) ? s.layout : 'classic',
             badge_text: String(s.badge_text !== undefined ? s.badge_text : 'АКЦИЯ'),
-            btn_text: String(s.btn_text || 'Скопировать'),
+            action_mode: am,
+            image_url: String(s.image_url || '').trim(),
+            btn_text: String(s.btn_text !== undefined ? s.btn_text : 'Скопировать'),
             promo_code: String(s.promo_code || '')
         };
     }
@@ -4406,22 +4522,35 @@
         const stClass = `banner-style-${slide.style || 'emerald'}`;
         const lay = BANNER_LAYOUT_OPTIONS.some(o => o.id === slide.layout) ? slide.layout : 'classic';
         const layClass = `banner-layout-${lay}`;
-        const btnLabel = (slide.btn_text || '').trim() || 'Скопировать';
-        const showBtn = Boolean(btnLabel || (slide.promo_code || '').trim());
+        const actionMode = ['button', 'image', 'none'].includes(slide.action_mode) ? slide.action_mode : 'button';
         const badgeTxt = (slide.badge_text || '').trim();
         const badgeHtml = badgeTxt ? `<span class="promo-banner-tag-pill">${escapeHtml(badgeTxt)}</span>` : '';
         const clickAttr = isPreview ? '' : `onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, this)"`;
-        const btnHtml = showBtn ? `<button type="button" class="promo-copy-btn" ${clickAttr}>${escapeHtml(btnLabel)}</button>` : '';
+
+        let actionHtml = '';
+        if (actionMode === 'button') {
+            const btnLabel = (slide.btn_text || '').trim() || ((slide.promo_code || '').trim() ? 'Скопировать' : '');
+            if (btnLabel) {
+                actionHtml = `<button type="button" class="promo-copy-btn" ${clickAttr}>${escapeHtml(btnLabel)}</button>`;
+            }
+        } else if (actionMode === 'image') {
+            const imgSrc = (slide.image_url || '').trim();
+            if (imgSrc) {
+                const imgClick = (!isPreview && (slide.promo_code || '').trim()) ? `style="cursor:pointer;" onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, null)"` : '';
+                actionHtml = `<div class="promo-banner-media" ${imgClick}>${buildProductImgTag(imgSrc, slide.title || 'Promo', '')}</div>`;
+            }
+        }
+        const noActionClass = actionHtml ? '' : 'banner-no-action';
         const titleHtml = `<h3>${escapeHtml(slide.title || '')}</h3>`;
         const descHtml = `<p>${escapeHtml(slide.desc || '')}</p>`;
 
         if (lay === 'split') {
             return `
-                <div class="promo-banner ${stClass} ${layClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
                     <div class="promo-banner-split-left">
                         ${badgeHtml}
                         ${titleHtml}
-                        ${btnHtml}
+                        ${actionHtml}
                     </div>
                     <div class="promo-banner-split-right">
                         ${descHtml}
@@ -4431,22 +4560,22 @@
         }
         if (lay === 'centered') {
             return `
-                <div class="promo-banner ${stClass} ${layClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
                     ${badgeHtml}
                     <div class="promo-banner-text">
                         ${titleHtml}
                         ${descHtml}
                     </div>
-                    ${btnHtml}
+                    ${actionHtml}
                 </div>
             `;
         }
         if (lay === 'badge_top') {
             return `
-                <div class="promo-banner ${stClass} ${layClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
                     <div class="promo-banner-top-row">
                         ${badgeHtml || '<span></span>'}
-                        ${btnHtml}
+                        ${actionHtml}
                     </div>
                     <div class="promo-banner-text">
                         ${titleHtml}
@@ -4457,24 +4586,24 @@
         }
         if (lay === 'vertical') {
             return `
-                <div class="promo-banner ${stClass} ${layClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
                     ${badgeHtml}
                     <div class="promo-banner-text">
                         ${titleHtml}
                         ${descHtml}
                     </div>
-                    ${btnHtml}
+                    ${actionHtml}
                 </div>
             `;
         }
         return `
-            <div class="promo-banner ${stClass} ${layClass}">
+            <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
                 <div class="promo-banner-text">
                     ${badgeHtml}
                     ${titleHtml}
                     ${descHtml}
                 </div>
-                ${btnHtml}
+                ${actionHtml}
             </div>
         `;
     }
@@ -4782,16 +4911,65 @@
                     </div>
                     <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Большой заголовок (напр. СКИДКА -3 БУНА)" value="${escapeHtml(slide.title)}" oninput="updateBannerSlideField(${idx}, 'title', this.value)">
                     <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Описание (сбоку или снизу в зависимости от формата)" value="${escapeHtml(slide.desc)}" oninput="updateBannerSlideField(${idx}, 'desc', this.value)">
-                    <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:6px;">
-                        <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Текст кнопки (Скопировать)" value="${escapeHtml(slide.btn_text)}" oninput="updateBannerSlideField(${idx}, 'btn_text', this.value)">
-                        <input type="text" class="promo-input admin-banner-field" style="font-size:12px;" placeholder="Промокод (1K3)" value="${escapeHtml(slide.promo_code)}" oninput="updateBannerSlideField(${idx}, 'promo_code', this.value)">
+                    <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:5px;">
+                        <button type="button" class="toggle-pill ${(slide.action_mode || 'button') === 'button' ? 'on' : ''}" style="${(slide.action_mode || 'button') !== 'button' ? 'background:var(--bg-color); color:var(--text-secondary); border:1px solid var(--border-color);' : ''} font-size:11px; padding:6px 4px;" onclick="updateBannerSlideField(${idx}, 'action_mode', 'button', true)">🔘 Кнопка</button>
+                        <button type="button" class="toggle-pill ${slide.action_mode === 'image' ? 'on' : ''}" style="${slide.action_mode !== 'image' ? 'background:var(--bg-color); color:var(--text-secondary); border:1px solid var(--border-color);' : ''} font-size:11px; padding:6px 4px;" onclick="updateBannerSlideField(${idx}, 'action_mode', 'image', true)">🖼 Картинка</button>
+                        <button type="button" class="toggle-pill ${slide.action_mode === 'none' ? 'on' : ''}" style="${slide.action_mode !== 'none' ? 'background:var(--bg-color); color:var(--text-secondary); border:1px solid var(--border-color);' : ''} font-size:11px; padding:6px 4px;" onclick="updateBannerSlideField(${idx}, 'action_mode', 'none', true)">📝 Только текст</button>
                     </div>
+                    ${(slide.action_mode || 'button') === 'button' ? `
+                        <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:6px;">
+                            <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Текст кнопки (Скопировать)" value="${escapeHtml(slide.btn_text)}" oninput="updateBannerSlideField(${idx}, 'btn_text', this.value)">
+                            <input type="text" class="promo-input admin-banner-field" style="font-size:12px;" placeholder="Промокод (1K3)" value="${escapeHtml(slide.promo_code)}" oninput="updateBannerSlideField(${idx}, 'promo_code', this.value)">
+                        </div>
+                    ` : ''}
+                    ${slide.action_mode === 'image' ? `
+                        <div style="display:flex; flex-direction:column; gap:6px;">
+                            <input type="file" id="admin-banner-file-${idx}" accept="image/*" style="display:none;" onchange="handleBannerSlideImageSelect(this, ${idx})">
+                            <div style="display:flex; gap:6px;">
+                                <button type="button" class="img-upload-btn" style="margin-bottom:0; padding:8px 10px; font-size:11.5px; flex:1;" onclick="document.getElementById('admin-banner-file-${idx}').click()">📷 Загрузить рекламную картинку</button>
+                                ${slide.image_url ? `<button type="button" class="toggle-pill off" style="padding:7px 10px;" onclick="updateBannerSlideField(${idx}, 'image_url', '', true)">✕</button>` : ''}
+                            </div>
+                            <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:11.5px;" placeholder="Или ссылка на картинку (необязательно)" value="${escapeHtml(slide.image_url || '')}" oninput="updateBannerSlideField(${idx}, 'image_url', this.value)">
+                            <input type="text" class="promo-input admin-banner-field" style="font-size:11.5px;" placeholder="Промокод при нажатии на картинку (необязательно)" value="${escapeHtml(slide.promo_code || '')}" oninput="updateBannerSlideField(${idx}, 'promo_code', this.value)">
+                        </div>
+                    ` : ''}
                     <div class="admin-banner-preview-wrap" id="admin-banner-preview-${idx}">
                         ${buildSingleBannerCardHtml(slide, idx, true)}
                     </div>
                 </div>
             `;
         }).join('');
+        hydrateProtectedImages();
+    }
+    async function handleBannerSlideImageSelect(inputEl, slideIdx) {
+        const file = inputEl.files && inputEl.files[0];
+        if (!file || !bannerSlides[slideIdx]) return;
+        try {
+            const dataUrl = await compressImageFileToDataUrl(file, 600, 0.85);
+            updateBannerSlideField(slideIdx, 'image_url', dataUrl, true);
+            showToast("⏳ Загружаем картинку баннера...");
+            try {
+                const res = await apiFetch('/api/admin/upload_image', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: Number(currentUserId),
+                        filename: file.name || 'banner.jpg',
+                        data_base64: dataUrl
+                    })
+                });
+                const upData = await res.json();
+                const savedPath = (upData?.image_url || '').trim();
+                if (savedPath) {
+                    updateBannerSlideField(slideIdx, 'image_url', savedPath, true);
+                    showToast("✅ Картинка баннера загружена!");
+                }
+            } catch (_) {
+                showToast("✅ Картинка выбрана! Нажмите «Сохранить все баннеры»");
+            }
+        } catch (e) {
+            showToast("Не удалось обработать картинку", true);
+        }
+        inputEl.value = '';
     }
     function renderPromoBannerCarouselSlides() {
         const bannerEl = document.getElementById('promo-banner');
@@ -4809,6 +4987,7 @@
         bannerEl.style.display = 'block';
         if (currentBannerSlideIdx >= bannerSlides.length) currentBannerSlideIdx = 0;
         trackEl.innerHTML = bannerSlides.map((slide, idx) => buildSingleBannerCardHtml(slide, idx, false)).join('');
+        hydrateProtectedImages();
         trackEl.style.transform = `translateX(-${currentBannerSlideIdx * 100}%)`;
         if (dotsEl) {
             if (bannerSlides.length > 1) {
@@ -4876,6 +5055,7 @@
         const prevBox = document.getElementById(`admin-banner-preview-${idx}`);
         if (prevBox) {
             prevBox.innerHTML = buildSingleBannerCardHtml(bannerSlides[idx], idx, true);
+            hydrateProtectedImages();
         }
         if (rerenderCard) {
             renderAdminBannersList();
@@ -7226,7 +7406,17 @@
         if (!container) return;
         const items = Object.values(cart);
         if (items.length === 0) {
-            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>В корзине пока пусто</p><button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">Перейти в каталог</button></div>`;
+            container.innerHTML = `<div class="cart-empty">
+                <div class="cart-empty-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="21" r="1"></circle>
+                        <circle cx="20" cy="21" r="1"></circle>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                </div>
+                <p>В корзине пока пусто</p>
+                <button class="primary-btn" style="margin-top:20px;" onclick="switchScreen('catalog')">Перейти в каталог</button>
+            </div>`;
             return;
         }
         let itemsHtml = '<div class="cart-items-list">', subtotal = 0;
@@ -7706,7 +7896,10 @@
         if (pEl) pEl.innerText = pastList.length;
         const listToRender = currentOrdersSubTab === 'active' ? activeList : pastList;
         if (listToRender.length === 0) {
-            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${currentOrdersSubTab === 'active' ? '📦' : '🗂️'}</div><p>${currentOrdersSubTab === 'active' ? 'Активных заказов сейчас нет' : 'История заказов пока пуста'}</p></div>`;
+            const emptyOrderSvg = currentOrdersSubTab === 'active'
+                ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`
+                : `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${emptyOrderSvg}</div><p>${currentOrdersSubTab === 'active' ? 'Активных заказов сейчас нет' : 'История заказов пока пуста'}</p></div>`;
             return;
         }
         let html = '';
@@ -7959,8 +8152,7 @@
             currentAppTheme = 'dark';
             localStorage.setItem('monkey_theme', 'dark');
             document.documentElement.removeAttribute('data-theme');
-            const btn = document.getElementById('theme-toggle-btn');
-            if (btn) btn.innerText = '☀️';
+            updateThemeToggleBtnIcon('dark');
         }
         applyCustomUiCssVars(customUiTheme);
         renderAdminInterfaceTab();
@@ -8063,8 +8255,7 @@
             currentAppTheme = 'dark';
             localStorage.setItem('monkey_theme', 'dark');
             document.documentElement.removeAttribute('data-theme');
-            const btn = document.getElementById('theme-toggle-btn');
-            if (btn) btn.innerText = '☀️';
+            updateThemeToggleBtnIcon('dark');
         }
         applyCustomUiCssVars(customUiTheme);
         // Обновляем бейдж и активный кружок точечно без перерисовки DOM, чтобы не закрывать <input type="color">
@@ -8089,8 +8280,7 @@
             currentAppTheme = 'dark';
             localStorage.setItem('monkey_theme', 'dark');
             document.documentElement.removeAttribute('data-theme');
-            const btn = document.getElementById('theme-toggle-btn');
-            if (btn) btn.innerText = '☀️';
+            updateThemeToggleBtnIcon('dark');
         }
         applyCustomUiCssVars(customUiTheme);
         renderAdminInterfaceTab();
@@ -9443,9 +9633,19 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: key, courier_id: Number(currentUserId), courier_name: currentUserName })
             });
-            if (res.ok) loadCourierOrders();
+            if (res.ok) {
+                triggerHaptic('success');
+                cachedCourierOrders = cachedCourierOrders.map(o =>
+                    String(o.id).trim() === key
+                        ? { ...o, claimed_by_id: Number(currentUserId), claimed_by_name: currentUserName }
+                        : o
+                );
+                renderCourierCards(cachedCourierOrders);
+                showToast("Заказ принят в работу!");
+                loadCourierOrders();
+            }
         } catch (e) {
-            showToast("Заказ уже взял другой курьер", true);
+            showToast(e?.detail ? e.detail : "Заказ уже взял другой курьер", true);
             loadCourierOrders();
         }
     }
@@ -9456,8 +9656,9 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: key, courier_id: Number(currentUserId), courier_name: currentUserName })
             });
-            showToast("📍 Клиенту отправлено уведомление!");
-        } catch (e) { showToast("Ошибка отправки уведомления", true); }
+            triggerHaptic('success');
+            showToast("Клиенту отправлено уведомление, что вы на месте!");
+        } catch (e) { showToast(e?.detail ? e.detail : "Ошибка отправки уведомления", true); }
     }
     function renderCourierCards(orders) {
         const container = document.getElementById('courier-orders-list');
@@ -9476,15 +9677,18 @@
         if (pEl) pEl.innerText = pastCourierList.length;
         const listToRender = currentCourierSubTab === 'active' ? activeCourierList : pastCourierList;
         if (listToRender.length === 0) {
-            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${currentCourierSubTab === 'active' ? '✅' : '🗂️'}</div><p>${currentCourierSubTab === 'active' ? 'Нет активных заказов для доставки' : 'Прошедших заказов пока нет'}</p></div>`;
+            const emptyCourierSvg = currentCourierSubTab === 'active'
+                ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`
+                : `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+            container.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">${emptyCourierSvg}</div><p>${currentCourierSubTab === 'active' ? 'Нет активных заказов для доставки' : 'Прошедших заказов пока нет'}</p></div>`;
             return;
         }
         let html = '';
         listToRender.forEach(ord => {
             const oid = String(ord.id).trim();
             const claimedId = Number(ord.claimed_by_id || 0);
-            const isClaimedByMe = claimedId && claimedId === Number(currentUserId);
-            const isClaimedByOther = claimedId && claimedId !== Number(currentUserId);
+            const isClaimedByMe = claimedId !== 0 && claimedId === Number(currentUserId);
+            const isClaimedByOther = claimedId !== 0 && claimedId !== Number(currentUserId);
             const ordMode = (ord.delivery_mode || '').trim() || deliveryMode;
             const meta = getDeliveryMeta(ordMode);
             let itemsList = ord.items.map(i => `<div>• ${escapeHtml(i.title)} × ${i.qty} (${formatMoney(i.price * i.qty)})</div>`).join('');
@@ -9492,9 +9696,12 @@
             let delivBadgeCourier = Number(ord.delivery_fee || 0) > 0 ? `<div style="color:var(--text-secondary); margin-top:3px;">🚚 Доставка: ${formatMoney(ord.delivery_fee)}</div>` : '';
             let statusHtml = `<span class="order-status-pill active">Активен</span>`;
             if (ord.status === 'cancelled') statusHtml = `<span class="order-status-pill cancelled">${getCancelledLabel(ord)}</span>`;
-            else if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан ✅</span>`;
+            else if (ord.status === 'completed') statusHtml = `<span class="order-status-pill completed">Выдан</span>`;
             let claimedBanner = claimedId
-                ? `<div style="font-size:11.5px; font-weight:700; color:${isClaimedByMe ? 'var(--accent-green)' : '#ffaa00'}; background:rgba(255,255,255,0.04); padding:5px 8px; border-radius:8px;">🛵 ${isClaimedByMe ? 'Вы ведёте этот заказ' : `Взял курьер: ${escapeHtml(ord.claimed_by_name)}`}</div>`
+                ? `<div style="display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; color:${isClaimedByMe ? 'var(--accent-green)' : '#ffaa00'}; background:rgba(255,255,255,0.04); padding:6px 9px; border-radius:9px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="2.5"></circle><circle cx="18.5" cy="17.5" r="2.5"></circle><path d="M15 6h2l3 6v5.5h-1.5"></path><path d="M8 17.5h8"></path><path d="M5.5 15l2.5-6h5v6"></path></svg>
+                    <span>${isClaimedByMe ? 'Вы ведёте этот заказ' : `Взял курьер: ${escapeHtml(ord.claimed_by_name)}`}</span>
+                </div>`
                 : '';
             let deleteBtn = (ord.status === 'completed' || ord.status === 'cancelled') ? `<button class="delete-order-x" title="Удалить заказ из списка" onclick="deleteFinishedOrderCourier('${oid}')">✕</button>` : '';
             
@@ -9502,20 +9709,37 @@
             const chatHref = cleanUsername ? `https://t.me/${cleanUsername}` : `tg://user?id=${ord.user_id}`;
             let courierActions = '';
             if (ord.status === 'active') {
-                const claimBtn = !claimedId
-                    ? `<button onclick="claimOrderByCourier('${oid}')" style="width:100%; background:rgba(0,229,255,0.14); border:1px solid #00e5ff; color:#00e5ff; padding:10px; border-radius:11px; font-size:12px; font-weight:700; cursor:pointer;">🙋‍♂️ Взять заказ в работу</button>`
-                    : '';
-                courierActions = `
-                    ${claimBtn}
-                    <div class="order-actions-row">
-                        <button class="order-btn-secondary" onclick="notifyClientCourierArrived('${oid}')">📍 Я на месте</button>
-                        <a class="order-btn-secondary" href="${chatHref}" target="_blank">💬 Написать</a>
-                    </div>
-                    <div class="order-actions-row">
-                        <button onclick="updateOrderStatusByCourier('${oid}', 'completed')" style="flex:1; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:11px; border-radius:12px; font-weight:700; cursor:pointer; ${isClaimedByOther ? 'opacity:0.65;' : ''}">✅ Выдан</button>
-                        <button onclick="updateOrderStatusByCourier('${oid}', 'cancelled')" style="flex:1; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:11px; border-radius:12px; font-weight:700; cursor:pointer;">❌ Отменить</button>
-                    </div>
-                `;
+                if (!claimedId) {
+                    courierActions = `
+                        <button onclick="claimOrderByCourier('${oid}')" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--icon-glow); border:1.5px solid var(--icon-color); color:var(--icon-color); padding:11px; border-radius:12px; font-size:12.5px; font-weight:800; cursor:pointer;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+                            <span>Взять заказ в работу</span>
+                        </button>
+                    `;
+                } else if (isClaimedByMe) {
+                    courierActions = `
+                        <div class="order-actions-row">
+                            <button class="order-btn-secondary" onclick="notifyClientCourierArrived('${oid}')">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--icon-color)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                <span>Я на месте</span>
+                            </button>
+                            <a class="order-btn-secondary" href="${chatHref}" target="_blank">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--icon-color)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                <span>Написать</span>
+                            </a>
+                        </div>
+                        <div class="order-actions-row">
+                            <button onclick="updateOrderStatusByCourier('${oid}', 'completed')" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; background-color:var(--accent-green); color:#0b0f0c; border:none; padding:11px; border-radius:12px; font-weight:800; cursor:pointer;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Выдан</span>
+                            </button>
+                            <button onclick="updateOrderStatusByCourier('${oid}', 'cancelled')" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; background-color:transparent; color:var(--danger); border:1px solid var(--danger); padding:11px; border-radius:12px; font-weight:800; cursor:pointer;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                <span>Отменить</span>
+                            </button>
+                        </div>
+                    `;
+                }
             }
             let timeNoteCourier = ord.time_changed ? '<span style="font-size:11px; color:var(--accent-green); font-weight:600;">(перенесено)</span>' : '';
             let createdAtHtml = ord.created_at ? `<div class="order-meta-row"><span>📅 Оформлен:</span> <b>${escapeHtml(ord.created_at)}</b></div>` : '';
