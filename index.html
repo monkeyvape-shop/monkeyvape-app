@@ -774,6 +774,7 @@
         }
         .promo-banner-track {
             display: flex;
+            align-items: center;
             width: 100%;
             transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
             will-change: transform;
@@ -781,13 +782,14 @@
         .promo-banner {
             flex: 0 0 100%;
             width: 100%;
+            max-height: 224px;
             background: linear-gradient(135deg, color-mix(in srgb, var(--banner-bg) 88%, transparent) 0%, color-mix(in srgb, var(--card-bg) 84%, transparent) 100%);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid color-mix(in srgb, var(--accent-green) 35%, var(--border-color));
             box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
             border-radius: 20px;
-            padding: 17px 18px;
+            padding: 15px 17px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -977,14 +979,16 @@
         .promo-banner.banner-no-action.banner-style-crimson .promo-banner-text { border-left-color: #ff5c7a; }
 
         .promo-banner-media {
-            width: 146px;
-            height: 146px;
-            border-radius: 16px;
+            width: 96px;
+            height: 96px;
+            max-width: 112px;
+            max-height: 112px;
+            border-radius: 14px;
             overflow: hidden;
             flex-shrink: 0;
             border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
             background: rgba(0, 0, 0, 0.24);
-            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.34);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
             position: relative;
             z-index: 2;
             display: flex;
@@ -997,10 +1001,10 @@
             object-fit: cover;
             display: block;
         }
-        .promo-banner.banner-img-sm .promo-banner-media { width: 92px; height: 92px; border-radius: 13px; }
-        .promo-banner.banner-img-md .promo-banner-media { width: 120px; height: 120px; border-radius: 15px; }
-        .promo-banner.banner-img-lg .promo-banner-media { width: 150px; height: 150px; border-radius: 16px; }
-        .promo-banner.banner-img-xl .promo-banner-media { width: 182px; height: 182px; border-radius: 18px; }
+        .promo-banner.banner-img-sm .promo-banner-media { width: 64px; height: 64px; border-radius: 11px; }
+        .promo-banner.banner-img-md .promo-banner-media { width: 80px; height: 80px; border-radius: 13px; }
+        .promo-banner.banner-img-lg .promo-banner-media { width: 96px; height: 96px; border-radius: 14px; }
+        .promo-banner.banner-img-xl .promo-banner-media { width: 112px; height: 112px; border-radius: 15px; }
 
         .promo-banner.banner-layout-media_left {
             flex-direction: row-reverse;
@@ -1008,14 +1012,15 @@
             align-items: center;
         }
         .promo-banner.banner-layout-hero_bg {
-            min-height: 168px;
-            padding: 20px 18px;
+            min-height: 136px;
+            max-height: 194px;
+            padding: 18px 18px;
             align-items: flex-end;
         }
-        .promo-banner.banner-img-sm.banner-layout-hero_bg { min-height: 132px; }
-        .promo-banner.banner-img-md.banner-layout-hero_bg { min-height: 156px; }
-        .promo-banner.banner-img-lg.banner-layout-hero_bg { min-height: 184px; }
-        .promo-banner.banner-img-xl.banner-layout-hero_bg { min-height: 220px; }
+        .promo-banner.banner-img-sm.banner-layout-hero_bg { min-height: 114px; max-height: 164px; }
+        .promo-banner.banner-img-md.banner-layout-hero_bg { min-height: 128px; max-height: 174px; }
+        .promo-banner.banner-img-lg.banner-layout-hero_bg { min-height: 142px; max-height: 184px; }
+        .promo-banner.banner-img-xl.banner-layout-hero_bg { min-height: 156px; max-height: 194px; }
         .promo-banner-hero-bg-layer {
             position: absolute;
             inset: 0;
@@ -1190,41 +1195,45 @@
         .promo-banner.banner-layout-vertical .promo-banner-media,
         .promo-banner.banner-layout-spotlight .promo-banner-media {
             width: 100%;
-            height: 160px;
-            margin-top: 4px;
+            max-width: 100%;
+            height: 102px;
+            max-height: 118px;
+            margin-top: 2px;
         }
         .promo-banner.banner-img-sm.banner-layout-centered .promo-banner-media,
         .promo-banner.banner-img-sm.banner-layout-vertical .promo-banner-media,
-        .promo-banner.banner-img-sm.banner-layout-spotlight .promo-banner-media { height: 105px; }
+        .promo-banner.banner-img-sm.banner-layout-spotlight .promo-banner-media { height: 68px; max-height: 68px; }
         .promo-banner.banner-img-md.banner-layout-centered .promo-banner-media,
         .promo-banner.banner-img-md.banner-layout-vertical .promo-banner-media,
-        .promo-banner.banner-img-md.banner-layout-spotlight .promo-banner-media { height: 140px; }
+        .promo-banner.banner-img-md.banner-layout-spotlight .promo-banner-media { height: 86px; max-height: 86px; }
         .promo-banner.banner-img-lg.banner-layout-centered .promo-banner-media,
         .promo-banner.banner-img-lg.banner-layout-vertical .promo-banner-media,
-        .promo-banner.banner-img-lg.banner-layout-spotlight .promo-banner-media { height: 178px; }
+        .promo-banner.banner-img-lg.banner-layout-spotlight .promo-banner-media { height: 102px; max-height: 102px; }
         .promo-banner.banner-img-xl.banner-layout-centered .promo-banner-media,
         .promo-banner.banner-img-xl.banner-layout-vertical .promo-banner-media,
-        .promo-banner.banner-img-xl.banner-layout-spotlight .promo-banner-media { height: 225px; }
+        .promo-banner.banner-img-xl.banner-layout-spotlight .promo-banner-media { height: 118px; max-height: 118px; }
 
         .promo-banner.banner-layout-badge_top .promo-banner-media {
-            width: 78px;
-            height: 78px;
-            border-radius: 14px;
+            width: 66px;
+            height: 66px;
+            border-radius: 12px;
         }
-        .promo-banner.banner-img-sm.banner-layout-badge_top .promo-banner-media { width: 56px; height: 56px; }
-        .promo-banner.banner-img-md.banner-layout-badge_top .promo-banner-media { width: 72px; height: 72px; }
-        .promo-banner.banner-img-lg.banner-layout-badge_top .promo-banner-media { width: 92px; height: 92px; }
-        .promo-banner.banner-img-xl.banner-layout-badge_top .promo-banner-media { width: 114px; height: 114px; }
+        .promo-banner.banner-img-sm.banner-layout-badge_top .promo-banner-media { width: 44px; height: 44px; }
+        .promo-banner.banner-img-md.banner-layout-badge_top .promo-banner-media { width: 56px; height: 56px; }
+        .promo-banner.banner-img-lg.banner-layout-badge_top .promo-banner-media { width: 68px; height: 68px; }
+        .promo-banner.banner-img-xl.banner-layout-badge_top .promo-banner-media { width: 78px; height: 78px; }
 
         .promo-banner.banner-layout-split .promo-banner-media {
             width: 100%;
-            height: 110px;
+            max-width: 100%;
+            height: 84px;
+            max-height: 98px;
             border-radius: 12px;
         }
-        .promo-banner.banner-img-sm.banner-layout-split .promo-banner-media { height: 76px; }
-        .promo-banner.banner-img-md.banner-layout-split .promo-banner-media { height: 98px; }
-        .promo-banner.banner-img-lg.banner-layout-split .promo-banner-media { height: 122px; }
-        .promo-banner.banner-img-xl.banner-layout-split .promo-banner-media { height: 148px; }
+        .promo-banner.banner-img-sm.banner-layout-split .promo-banner-media { height: 60px; max-height: 60px; }
+        .promo-banner.banner-img-md.banner-layout-split .promo-banner-media { height: 74px; max-height: 74px; }
+        .promo-banner.banner-img-lg.banner-layout-split .promo-banner-media { height: 86px; max-height: 86px; }
+        .promo-banner.banner-img-xl.banner-layout-split .promo-banner-media { height: 98px; max-height: 98px; }
 
         .promo-banner.banner-layout-reverse {
             flex-direction: row-reverse;
@@ -2583,6 +2592,86 @@
             text-align: left;
             padding: 2px 0;
         }
+        /* Приветственный экран при входе с эффектом рассеивающегося тумана */
+        #welcome-mist-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 980;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 24px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 1.1s ease, -webkit-backdrop-filter 1.1s ease;
+        }
+        #welcome-mist-overlay.active {
+            display: flex;
+        }
+        #welcome-mist-overlay.mist-visible {
+            opacity: 1;
+        }
+        #welcome-mist-overlay.mist-dissipating {
+            opacity: 0;
+            pointer-events: none;
+            backdrop-filter: blur(0px) !important;
+            -webkit-backdrop-filter: blur(0px) !important;
+            transition: opacity 1.15s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 1.15s ease, -webkit-backdrop-filter 1.15s ease;
+        }
+        .welcome-mist-cloud {
+            position: absolute;
+            width: 340px;
+            height: 340px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--accent-green-glow) 0%, transparent 70%);
+            filter: blur(36px);
+            pointer-events: none;
+            opacity: 0.65;
+            transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.1s ease, filter 1.2s ease;
+        }
+        .welcome-mist-cloud.cloud-1 { top: 18%; left: -12%; }
+        .welcome-mist-cloud.cloud-2 { bottom: 16%; right: -12%; background: radial-gradient(circle, var(--icon-glow) 0%, transparent 70%); }
+        #welcome-mist-overlay.mist-dissipating .welcome-mist-cloud.cloud-1 {
+            transform: translate(-36px, -24px) scale(1.45);
+            opacity: 0;
+            filter: blur(54px);
+        }
+        #welcome-mist-overlay.mist-dissipating .welcome-mist-cloud.cloud-2 {
+            transform: translate(36px, 24px) scale(1.45);
+            opacity: 0;
+            filter: blur(54px);
+        }
+        .welcome-mist-text {
+            position: relative;
+            z-index: 2;
+            font-size: 26px;
+            font-weight: 900;
+            line-height: 1.28;
+            letter-spacing: 0.6px;
+            color: var(--text-main);
+            text-shadow: 0 4px 26px rgba(0, 0, 0, 0.65), 0 0 24px var(--accent-green-glow);
+            opacity: 0;
+            filter: blur(14px);
+            transform: scale(0.94) translateY(8px);
+            transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1), filter 0.95s cubic-bezier(0.22, 1, 0.36, 1), transform 0.95s cubic-bezier(0.22, 1, 0.36, 1), letter-spacing 1.15s ease;
+        }
+        #welcome-mist-overlay.mist-visible .welcome-mist-text {
+            opacity: 1;
+            filter: blur(0px);
+            transform: scale(1) translateY(0);
+        }
+        #welcome-mist-overlay.mist-dissipating .welcome-mist-text {
+            opacity: 0;
+            filter: blur(22px);
+            transform: scale(1.12) translateY(-6px);
+            letter-spacing: 3.5px;
+            transition: opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1), filter 1.15s cubic-bezier(0.16, 1, 0.3, 1), transform 1.15s cubic-bezier(0.16, 1, 0.3, 1), letter-spacing 1.15s ease;
+        }
     </style>
 </head>
 <body>
@@ -2662,6 +2751,12 @@
                 <div style="font-size:11.5px; color:var(--text-secondary);">Закрываем приложение...</div>
             </div>
         </div>
+    </div>
+    <!-- Приветственный экран при входе в магазин с рассеиванием как туман -->
+    <div id="welcome-mist-overlay" onclick="dismissWelcomeMistOverlay()">
+        <div class="welcome-mist-cloud cloud-1"></div>
+        <div class="welcome-mist-cloud cloud-2"></div>
+        <div class="welcome-mist-text" id="welcome-mist-text">Вас приветствует Monkey Shop</div>
     </div>
     <div id="splash-screen" class="splash-style-energy">
         <div class="splash-energy-beams"></div>
@@ -3153,6 +3248,38 @@
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
                             <button type="button" class="toggle-pill on" style="padding:9px; font-size:12px;" onclick="previewAgeConsentModalNow()">👁 Предпросмотр</button>
                             <button type="button" class="primary-btn" style="padding:9px; font-size:12px;" onclick="adminSaveAgeSettings()">💾 Сохранить</button>
+                        </div>
+                    </div>
+                    <div class="shop-master-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;">🌫 Приветствие при входе (туман):</span>
+                            <button type="button" id="admin-welcome-ov-toggle-btn" class="toggle-pill on" onclick="adminToggleWelcomeOverlayEnabled()">🟢 Включено</button>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+                            <input type="text" id="admin-welcome-ov-text" class="promo-input" style="text-transform:none; width:100%; font-size:12.5px;" placeholder="Вас приветствует Monkey Shop" oninput="handleAdminWelcomeOverlayInput()">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:7px 10px;">
+                                <span style="font-size:12px; color:var(--text-secondary);">🎨 Цвет фона:</span>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span class="swatch-circle" style="width:20px; height:20px; background:#0b0f0c;" onclick="setAdminWelcomeOverlayBgColor('#0b0f0c')"></span>
+                                    <span class="swatch-circle" style="width:20px; height:20px; background:#131b14;" onclick="setAdminWelcomeOverlayBgColor('#131b14')"></span>
+                                    <span class="swatch-circle" style="width:20px; height:20px; background:#0f1926;" onclick="setAdminWelcomeOverlayBgColor('#0f1926')"></span>
+                                    <span class="swatch-circle" style="width:20px; height:20px; background:#181124;" onclick="setAdminWelcomeOverlayBgColor('#181124')"></span>
+                                    <label class="color-wheel-label" style="width:22px; height:22px;" title="Любой цвет">
+                                        <input type="color" id="admin-welcome-ov-bg-color" value="#0b0f0c" oninput="setAdminWelcomeOverlayBgColor(this.value)" onchange="setAdminWelcomeOverlayBgColor(this.value)">
+                                    </label>
+                                </div>
+                            </div>
+                            <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:8px 10px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-secondary); margin-bottom:5px;">
+                                    <span>💧 Непрозрачность фона (0% = прозрачный):</span>
+                                    <b id="admin-welcome-ov-opacity-label" style="color:var(--accent-green);">40%</b>
+                                </div>
+                                <input type="range" id="admin-welcome-ov-opacity-slider" min="0" max="100" value="40" style="width:100%; accent-color:var(--accent-green); cursor:pointer;" oninput="handleAdminWelcomeOverlayOpacityInput(this.value)">
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                            <button type="button" class="toggle-pill on" style="padding:9px; font-size:12px;" onclick="playWelcomeMistOverlay(true)">👁 Предпросмотр</button>
+                            <button type="button" class="primary-btn" style="padding:9px; font-size:12px;" onclick="adminSaveWelcomeOverlay()">💾 Сохранить</button>
                         </div>
                     </div>
                 </div>
@@ -6037,18 +6164,18 @@
 
         if (currentSeasonEffect === 'storm_rain' || currentSeasonEffect === 'thunder') {
             const withRain = currentSeasonEffect === 'storm_rain';
-            const rainDrops = withRain ? Array.from({ length: 42 }, () => ({
-                x: Math.random() * (canvas.width + 60),
+            const rainDrops = withRain ? Array.from({ length: 15 }, () => ({
+                x: Math.random() * (canvas.width + 50),
                 y: Math.random() * canvas.height,
-                len: 12 + Math.random() * 11,
-                speedY: 5.2 + Math.random() * 2.8,
-                speedX: -1.45 - Math.random() * 0.65,
-                alpha: 0.24 + Math.random() * 0.22
+                len: 9 + Math.random() * 7,
+                speedY: 2.3 + Math.random() * 1.2,
+                speedX: -0.65 - Math.random() * 0.35,
+                alpha: 0.13 + Math.random() * 0.11
             })) : [];
 
             let activeBolts = [];
             let screenFlashAlpha = 0;
-            let nextStrikeTimer = 35 + Math.floor(Math.random() * 55);
+            let nextStrikeTimer = 150 + Math.floor(Math.random() * 130);
 
             function buildJaggedBolt(x1, y1, x2, y2, displace, depth = 0) {
                 const segs = [];
@@ -6079,50 +6206,50 @@
             }
 
             function triggerLightningStrike() {
-                const startX = canvas.width * (0.14 + Math.random() * 0.72);
-                const endX = startX + (Math.random() - 0.5) * 140;
-                const endY = canvas.height * (0.48 + Math.random() * 0.38);
-                const segments = buildJaggedBolt(startX, -8, endX, endY, 68, 0);
+                const startX = canvas.width * (0.16 + Math.random() * 0.68);
+                const endX = startX + (Math.random() - 0.5) * 120;
+                const endY = canvas.height * (0.44 + Math.random() * 0.34);
+                const segments = buildJaggedBolt(startX, -8, endX, endY, 62, 0);
                 activeBolts.push({
                     segments,
                     life: 1.0,
-                    decay: 0.042 + Math.random() * 0.018,
+                    decay: 0.015 + Math.random() * 0.007,
                     flickerPhase: Math.random() * Math.PI * 2
                 });
-                screenFlashAlpha = 0.24 + Math.random() * 0.14;
+                screenFlashAlpha = 0.11 + Math.random() * 0.06;
             }
 
             function drawStormFrame() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                if (screenFlashAlpha > 0.005) {
+                if (screenFlashAlpha > 0.004) {
                     ctx.save();
                     const flashGrad = ctx.createRadialGradient(canvas.width * 0.5, canvas.height * 0.18, 10, canvas.width * 0.5, canvas.height * 0.45, canvas.height * 0.85);
                     flashGrad.addColorStop(0, `rgba(205, 235, 255, ${screenFlashAlpha})`);
-                    flashGrad.addColorStop(1, `rgba(120, 175, 255, ${screenFlashAlpha * 0.25})`);
+                    flashGrad.addColorStop(1, `rgba(120, 175, 255, ${screenFlashAlpha * 0.22})`);
                     ctx.fillStyle = flashGrad;
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.restore();
-                    screenFlashAlpha *= 0.84;
+                    screenFlashAlpha *= 0.92;
                 }
 
                 if (withRain) {
                     ctx.save();
                     ctx.lineCap = 'round';
-                    const flashBoost = screenFlashAlpha > 0.03 ? 0.28 : 0;
+                    const flashBoost = screenFlashAlpha > 0.02 ? 0.14 : 0;
                     rainDrops.forEach(d => {
                         d.x += d.speedX;
                         d.y += d.speedY;
                         if (d.y > canvas.height + 16) {
                             d.y = -14;
-                            d.x = Math.random() * (canvas.width + 60);
+                            d.x = Math.random() * (canvas.width + 50);
                         }
                         if (d.x < -20) d.x = canvas.width + 20;
-                        ctx.strokeStyle = `rgba(165, 218, 255, ${Math.min(0.85, d.alpha + flashBoost)})`;
-                        ctx.lineWidth = 1.25;
+                        ctx.strokeStyle = `rgba(165, 218, 255, ${Math.min(0.52, d.alpha + flashBoost)})`;
+                        ctx.lineWidth = 1.05;
                         ctx.beginPath();
                         ctx.moveTo(d.x, d.y);
-                        ctx.lineTo(d.x + d.speedX * 2.3, d.y + d.len);
+                        ctx.lineTo(d.x + d.speedX * 2.1, d.y + d.len);
                         ctx.stroke();
                     });
                     ctx.restore();
@@ -6131,20 +6258,20 @@
                 nextStrikeTimer -= 1;
                 if (nextStrikeTimer <= 0) {
                     triggerLightningStrike();
-                    if (Math.random() < 0.38) {
+                    if (Math.random() < 0.18) {
                         setTimeout(() => {
                             if (currentSeasonEffect === 'storm_rain' || currentSeasonEffect === 'thunder') {
                                 triggerLightningStrike();
                             }
-                        }, 110 + Math.floor(Math.random() * 90));
+                        }, 220 + Math.floor(Math.random() * 140));
                     }
-                    nextStrikeTimer = 115 + Math.floor(Math.random() * 145);
+                    nextStrikeTimer = 380 + Math.floor(Math.random() * 340);
                 }
 
                 activeBolts = activeBolts.filter(b => b.life > 0.02);
                 activeBolts.forEach(bolt => {
                     bolt.life -= bolt.decay;
-                    const pulse = bolt.life > 0.55 ? (0.65 + 0.35 * Math.sin(bolt.life * 38 + bolt.flickerPhase)) : bolt.life;
+                    const pulse = bolt.life > 0.55 ? (0.72 + 0.28 * Math.sin(bolt.life * 16 + bolt.flickerPhase)) : bolt.life;
                     ctx.save();
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
@@ -6770,6 +6897,7 @@
         const closePrevBtn = document.getElementById('age-preview-close-btn');
         if (closePrevBtn) closePrevBtn.style.display = 'none';
         document.getElementById('age-consent-modal')?.classList.remove('active');
+        playWelcomeMistOverlay(false);
     }
     async function adminSaveAgeSettings(silent = false) {
         document.activeElement?.blur();
@@ -6812,12 +6940,145 @@
         } catch (_) {}
         return false;
     }
+
+    let welcomeOverlayEnabled = localStorage.getItem('monkey_welcome_ov_enabled') !== '0';
+    let welcomeOverlayText = localStorage.getItem('monkey_welcome_ov_text') || 'Вас приветствует Monkey Shop';
+    let welcomeOverlayBg = localStorage.getItem('monkey_welcome_ov_bg') || '#0b0f0c';
+    let welcomeOverlayOpacity = parseInt(localStorage.getItem('monkey_welcome_ov_opacity') ?? '40', 10);
+    if (isNaN(welcomeOverlayOpacity)) welcomeOverlayOpacity = 40;
+    let isWelcomeOverlayDirty = false;
+    let welcomeMistShownThisSession = false;
+    let welcomeMistHoldTimer = null;
+    let welcomeMistCleanupTimer = null;
+
+    function applyWelcomeOverlayAppearance() {
+        const opPct = Math.max(0, Math.min(100, parseInt(welcomeOverlayOpacity, 10) || 0));
+        const bgHex = (welcomeOverlayBg || '#0b0f0c').trim();
+        const txt = (welcomeOverlayText || '').trim() || 'Вас приветствует Monkey Shop';
+
+        const ovEl = document.getElementById('welcome-mist-overlay');
+        const txtEl = document.getElementById('welcome-mist-text');
+        if (txtEl) txtEl.innerText = txt;
+        if (ovEl) {
+            ovEl.style.backgroundColor = hexToRgba(bgHex, opPct / 100);
+            const blurPx = Math.round((opPct / 100) * 14);
+            ovEl.style.backdropFilter = blurPx > 0 ? `blur(${blurPx}px)` : 'none';
+            ovEl.style.webkitBackdropFilter = blurPx > 0 ? `blur(${blurPx}px)` : 'none';
+        }
+
+        const admBtn = document.getElementById('admin-welcome-ov-toggle-btn');
+        const admTxt = document.getElementById('admin-welcome-ov-text');
+        const admColor = document.getElementById('admin-welcome-ov-bg-color');
+        const admOpSlider = document.getElementById('admin-welcome-ov-opacity-slider');
+        const admOpLbl = document.getElementById('admin-welcome-ov-opacity-label');
+        if (admBtn) {
+            admBtn.className = `toggle-pill ${welcomeOverlayEnabled ? 'on' : 'off'}`;
+            admBtn.innerText = welcomeOverlayEnabled ? '🟢 Включено' : '⚪ Выключено';
+        }
+        if (admTxt && document.activeElement !== admTxt) admTxt.value = txt;
+        if (admColor && document.activeElement !== admColor) admColor.value = bgHex;
+        if (admOpSlider && document.activeElement !== admOpSlider) admOpSlider.value = String(opPct);
+        if (admOpLbl) admOpLbl.innerText = `${opPct}%`;
+    }
+    function dismissWelcomeMistOverlay() {
+        const ovEl = document.getElementById('welcome-mist-overlay');
+        if (!ovEl || !ovEl.classList.contains('active')) return;
+        if (welcomeMistHoldTimer) { clearTimeout(welcomeMistHoldTimer); welcomeMistHoldTimer = null; }
+        ovEl.classList.remove('mist-visible');
+        ovEl.classList.add('mist-dissipating');
+        if (welcomeMistCleanupTimer) clearTimeout(welcomeMistCleanupTimer);
+        welcomeMistCleanupTimer = setTimeout(() => {
+            ovEl.classList.remove('active', 'mist-visible', 'mist-dissipating');
+        }, 1200);
+    }
+    function playWelcomeMistOverlay(isPreview = false) {
+        if (!isPreview) {
+            if (welcomeMistShownThisSession || !welcomeOverlayEnabled) return;
+            welcomeMistShownThisSession = true;
+        }
+        const ovEl = document.getElementById('welcome-mist-overlay');
+        if (!ovEl) return;
+        applyWelcomeOverlayAppearance();
+        if (welcomeMistHoldTimer) { clearTimeout(welcomeMistHoldTimer); welcomeMistHoldTimer = null; }
+        if (welcomeMistCleanupTimer) { clearTimeout(welcomeMistCleanupTimer); welcomeMistCleanupTimer = null; }
+        ovEl.classList.remove('mist-visible', 'mist-dissipating');
+        ovEl.classList.add('active');
+        void ovEl.offsetWidth;
+        requestAnimationFrame(() => {
+            ovEl.classList.add('mist-visible');
+        });
+        welcomeMistHoldTimer = setTimeout(() => {
+            dismissWelcomeMistOverlay();
+        }, 1750);
+    }
+    function adminToggleWelcomeOverlayEnabled() {
+        isWelcomeOverlayDirty = true;
+        welcomeOverlayEnabled = !welcomeOverlayEnabled;
+        try { localStorage.setItem('monkey_welcome_ov_enabled', welcomeOverlayEnabled ? '1' : '0'); } catch (_) {}
+        applyWelcomeOverlayAppearance();
+        adminSaveWelcomeOverlay(true);
+    }
+    function handleAdminWelcomeOverlayInput() {
+        isWelcomeOverlayDirty = true;
+        const val = document.getElementById('admin-welcome-ov-text')?.value ?? '';
+        welcomeOverlayText = val;
+        applyWelcomeOverlayAppearance();
+    }
+    function setAdminWelcomeOverlayBgColor(hexVal) {
+        isWelcomeOverlayDirty = true;
+        welcomeOverlayBg = hexVal || '#0b0f0c';
+        try { localStorage.setItem('monkey_welcome_ov_bg', welcomeOverlayBg); } catch (_) {}
+        applyWelcomeOverlayAppearance();
+    }
+    function handleAdminWelcomeOverlayOpacityInput(val) {
+        isWelcomeOverlayDirty = true;
+        const op = parseInt(val, 10);
+        welcomeOverlayOpacity = isNaN(op) ? 40 : Math.max(0, Math.min(100, op));
+        try { localStorage.setItem('monkey_welcome_ov_opacity', String(welcomeOverlayOpacity)); } catch (_) {}
+        applyWelcomeOverlayAppearance();
+    }
+    async function adminSaveWelcomeOverlay(silent = false) {
+        document.activeElement?.blur();
+        const rawTxt = (document.getElementById('admin-welcome-ov-text')?.value || '').trim();
+        welcomeOverlayText = rawTxt || 'Вас приветствует Monkey Shop';
+        const op = parseInt(document.getElementById('admin-welcome-ov-opacity-slider')?.value ?? String(welcomeOverlayOpacity), 10);
+        welcomeOverlayOpacity = isNaN(op) ? 40 : Math.max(0, Math.min(100, op));
+        try {
+            localStorage.setItem('monkey_welcome_ov_enabled', welcomeOverlayEnabled ? '1' : '0');
+            localStorage.setItem('monkey_welcome_ov_text', welcomeOverlayText);
+            localStorage.setItem('monkey_welcome_ov_bg', welcomeOverlayBg);
+            localStorage.setItem('monkey_welcome_ov_opacity', String(welcomeOverlayOpacity));
+        } catch (_) {}
+        applyWelcomeOverlayAppearance();
+        try {
+            await apiFetch(`/api/admin/welcome_overlay`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: Number(currentUserId),
+                    enabled: Boolean(welcomeOverlayEnabled),
+                    text: welcomeOverlayText,
+                    bg_color: welcomeOverlayBg,
+                    opacity: welcomeOverlayOpacity
+                })
+            });
+            isWelcomeOverlayDirty = false;
+            if (!silent) showToast("✅ Приветствие при входе сохранено!");
+        } catch (e) {
+            if (!silent) showToast("Ошибка сохранения приветствия на сервере", true);
+        }
+    }
+    applyWelcomeOverlayAppearance();
+
     function checkAndShowAgeConsentModal() {
         const modal = document.getElementById('age-consent-modal');
-        if (!modal) return;
+        if (!modal) {
+            playWelcomeMistOverlay(false);
+            return;
+        }
         applyAgeModalAppearance();
         if (!ageCheckEnabled || isUserAgeVerified()) {
             modal.classList.remove('active');
+            playWelcomeMistOverlay(false);
             return;
         }
         isAgeModalPreviewMode = false;
@@ -7225,6 +7486,19 @@
                         localStorage.setItem('monkey_age_modal_opacity', String(ageModalOpacity));
                     } catch (_) {}
                     applyAgeModalAppearance();
+                }
+                if (!isWelcomeOverlayDirty && cfg.welcome_overlay && typeof cfg.welcome_overlay === 'object') {
+                    welcomeOverlayEnabled = cfg.welcome_overlay.enabled !== false;
+                    welcomeOverlayText = String(cfg.welcome_overlay.text || 'Вас приветствует Monkey Shop');
+                    welcomeOverlayBg = String(cfg.welcome_overlay.bg_color || '#0b0f0c');
+                    welcomeOverlayOpacity = Math.max(0, Math.min(100, parseInt(cfg.welcome_overlay.opacity ?? '40', 10) || 0));
+                    try {
+                        localStorage.setItem('monkey_welcome_ov_enabled', welcomeOverlayEnabled ? '1' : '0');
+                        localStorage.setItem('monkey_welcome_ov_text', welcomeOverlayText);
+                        localStorage.setItem('monkey_welcome_ov_bg', welcomeOverlayBg);
+                        localStorage.setItem('monkey_welcome_ov_opacity', String(welcomeOverlayOpacity));
+                    } catch (_) {}
+                    applyWelcomeOverlayAppearance();
                 }
                 if (cfg.logo_part1 !== undefined || cfg.logo_part2 !== undefined || cfg.logo_image !== undefined || cfg.splash_style !== undefined || cfg.splash_emoji !== undefined || cfg.splash_image !== undefined || cfg.welcome_text !== undefined || cfg.welcome_message !== undefined) {
                     if (cfg.logo_part1 !== undefined) logoPart1 = cfg.logo_part1 ?? 'MONKEY';
@@ -9494,6 +9768,7 @@
     }
     function renderAdminAppearance() {
         applyAgeModalAppearance();
+        applyWelcomeOverlayAppearance();
         ['none', 'winter', 'autumn', 'spring', 'summer', 'rain', 'storm_rain', 'thunder', 'garland', 'fireworks', 'aurora', 'bokeh'].forEach(s => {
             const btn = document.getElementById(`season-btn-${s}`);
             if (btn) {
