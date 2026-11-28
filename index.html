@@ -779,7 +779,17 @@
             transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
             will-change: transform;
         }
-        .promo-banner {
+        .promo-banner,
+        .promo-banner.banner-no-action,
+        .promo-banner.banner-layout-media_left,
+        .promo-banner.banner-layout-hero_bg,
+        .promo-banner.banner-layout-editorial,
+        .promo-banner.banner-layout-spotlight,
+        .promo-banner.banner-layout-split,
+        .promo-banner.banner-layout-centered,
+        .promo-banner.banner-layout-badge_top,
+        .promo-banner.banner-layout-vertical,
+        .promo-banner.banner-layout-reverse {
             flex: 0 0 100%;
             width: 100%;
             min-width: 0;
@@ -797,7 +807,9 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            gap: 8px;
+            align-items: flex-start;
+            text-align: left;
+            gap: 6px;
             position: relative;
             overflow: hidden;
         }
@@ -885,16 +897,61 @@
         [data-theme="light"] .promo-banner.banner-style-crimson { background: linear-gradient(135deg, #ffe4e6 0%, #fff1f2 100%); }
         [data-theme="light"] .promo-banner.banner-style-crimson h3 { color: #be123c; }
         [data-theme="light"] .promo-banner.banner-style-crimson .promo-copy-btn { background: #be123c; color: #ffffff; }
-
-        .promo-banner-top-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
+        .promo-banner-text {
             width: 100%;
             min-width: 0;
             position: relative;
             z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .promo-banner h3 {
+            font-size: 16.5px;
+            font-weight: 900;
+            letter-spacing: 0.3px;
+            color: var(--accent-green);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            max-width: 100%;
+        }
+        .promo-banner p {
+            font-size: 12px;
+            color: color-mix(in srgb, var(--text-main) 78%, var(--text-secondary));
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+            max-width: 100%;
+        }
+        .promo-badge,
+        .promo-copy-btn {
+            width: 100%;
+            background-color: var(--accent-green);
+            color: #080c09;
+            border: none;
+            font-size: 13px;
+            font-weight: 800;
+            height: 36px;
+            padding: 0 14px;
+            border-radius: 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px var(--accent-green-glow);
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: transform 0.14s ease, filter 0.15s ease, background-color 0.2s ease;
+        }
+        .promo-copy-btn:active {
+            transform: scale(0.97);
+        }
+        .promo-copy-btn.copied {
+            filter: brightness(1.08);
         }
         .promo-banner-tag-pill {
             display: inline-flex;
@@ -923,58 +980,22 @@
         [data-theme="light"] .promo-banner.banner-style-gold .promo-banner-tag-pill { color: #b45309; }
         [data-theme="light"] .promo-banner.banner-style-crimson .promo-banner-tag-pill { color: #be123c; }
 
-        .promo-banner-text {
-            flex: 1 1 auto;
-            min-width: 0;
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .promo-banner h3 {
-            font-size: 16px;
-            font-weight: 900;
-            letter-spacing: 0.25px;
-            color: var(--accent-green);
-            margin: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.22;
-        }
-        .promo-banner p {
-            font-size: 12px;
-            color: color-mix(in srgb, var(--text-main) 80%, var(--text-secondary));
-            margin: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.3;
-        }
-        .promo-banner-body {
-            flex: 1 1 auto;
-            min-height: 0;
+        .promo-banner-media {
             width: 100%;
-            min-width: 0;
+            height: 44px;
+            min-height: 44px;
+            max-height: 44px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
+            background: rgba(0, 0, 0, 0.24);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
             position: relative;
             z-index: 2;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        .promo-banner-media {
-            width: 84px;
-            height: 76px;
-            flex-shrink: 0;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
-            background: rgba(0, 0, 0, 0.28);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-            position: relative;
-            z-index: 2;
+            justify-content: center;
         }
         .promo-banner-media img {
             width: 100%;
@@ -982,110 +1003,49 @@
             object-fit: cover;
             display: block;
         }
-        .promo-banner-thumb {
-            width: 44px;
-            height: 44px;
-            flex-shrink: 0;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
-            background: rgba(0, 0, 0, 0.28);
+        .promo-banner-hero-bg-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
         }
-        .promo-banner-thumb img {
+        .promo-banner-hero-bg-layer img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
+            filter: brightness(0.56) saturate(1.1);
         }
-        .promo-banner-bottom-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
+        .promo-banner-hero-bg-layer::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(8, 12, 10, 0.35) 0%, rgba(8, 12, 10, 0.88) 100%);
+        }
+        .promo-banner.banner-layout-hero_bg h3 {
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
+        }
+        .promo-banner.banner-layout-hero_bg p {
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+        }
+        .promo-banner-editorial-top,
+        .promo-banner-editorial-bottom,
+        .promo-banner-spotlight-footer,
+        .promo-banner-split-left,
+        .promo-banner-split-right,
+        .promo-banner-top-row {
             width: 100%;
             min-width: 0;
             position: relative;
             z-index: 2;
-        }
-        .promo-copy-btn {
-            background-color: var(--accent-green);
-            color: #080c09;
-            border: none;
-            font-size: 12px;
-            font-weight: 800;
-            height: 32px;
-            padding: 0 14px;
-            border-radius: 10px;
-            white-space: nowrap;
-            flex-shrink: 0;
-            box-shadow: 0 4px 12px var(--accent-green-glow);
-            position: relative;
-            z-index: 2;
-            cursor: pointer;
-            transition: transform 0.14s ease, filter 0.15s ease, background-color 0.2s ease;
-        }
-        .promo-copy-btn.full-width {
-            width: 100%;
-            height: 36px;
-            font-size: 13px;
-            border-radius: 12px;
-        }
-        .promo-copy-btn:active {
-            transform: scale(0.97);
-        }
-        .promo-copy-btn.copied {
-            filter: brightness(1.08);
-        }
-
-        /* 3 колонки выбора формата баннера в админке */
-        .banner-format-columns {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 6px;
-            width: 100%;
-            margin-top: 2px;
-        }
-        .banner-format-col {
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 6px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            min-width: 0;
+            gap: 2px;
         }
-        .banner-format-col-title {
-            font-size: 10px;
-            font-weight: 800;
-            color: var(--text-secondary);
-            text-align: center;
-            padding-bottom: 4px;
-            border-bottom: 1px solid var(--border-color);
-            line-height: 1.25;
-        }
-        .banner-format-btn {
-            width: 100%;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 6px 5px;
-            border-radius: 8px;
-            font-size: 10.5px;
-            font-weight: 600;
-            text-align: center;
-            cursor: pointer;
-            line-height: 1.25;
-            transition: all 0.14s ease;
-        }
-        .banner-format-btn:active {
-            transform: scale(0.96);
-        }
-        .banner-format-btn.active {
-            background: var(--accent-green-glow);
-            border-color: var(--accent-green);
-            color: var(--accent-green);
-            font-weight: 800;
+        .promo-banner-editorial-divider {
+            display: none;
         }
 
         .admin-banner-preview-wrap {
@@ -2594,62 +2554,6 @@
         <div class="welcome-mist-text" id="welcome-mist-text">Вас приветствует Monkey Shop</div>
     </div>
     <div id="splash-screen" class="splash-style-energy">
-    <script>
-        (function() {
-            function forceSplashProgressFallback() {
-                var pf = document.getElementById('progress-fill');
-                var pctEl = document.getElementById('splash-percent');
-                var subEl = document.getElementById('splash-sub');
-                var splash = document.getElementById('splash-screen');
-                if (!splash) return;
-                var curPct = parseInt((pctEl && pctEl.textContent) || '0', 10) || 0;
-                if (curPct === 0) {
-                    var p = 18;
-                    if (pf) pf.style.width = p + '%';
-                    if (pctEl) pctEl.textContent = p + '%';
-                    var iv = setInterval(function() {
-                        var sp = document.getElementById('splash-screen');
-                        if (!sp) { clearInterval(iv); return; }
-                        p = Math.min(100, p + 22);
-                        var f = document.getElementById('progress-fill');
-                        var t = document.getElementById('splash-percent');
-                        var s = document.getElementById('splash-sub');
-                        if (f) f.style.width = p + '%';
-                        if (t) t.textContent = p + '%';
-                        if (s && p >= 60) s.textContent = 'Почти готово...';
-                        if (p >= 100) {
-                            clearInterval(iv);
-                            setTimeout(function() {
-                                var el = document.getElementById('splash-screen');
-                                if (el) {
-                                    el.style.opacity = '0';
-                                    setTimeout(function() {
-                                        if (el && el.parentNode) el.parentNode.removeChild(el);
-                                        if (typeof window.checkAndShowAgeConsentModal === 'function') {
-                                            window.checkAndShowAgeConsentModal();
-                                        }
-                                    }, 350);
-                                }
-                            }, 200);
-                        }
-                    }, 180);
-                }
-            }
-            setTimeout(forceSplashProgressFallback, 900);
-            setTimeout(function() {
-                var sp = document.getElementById('splash-screen');
-                if (sp && sp.parentNode) {
-                    sp.style.opacity = '0';
-                    setTimeout(function() {
-                        if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
-                        if (typeof window.checkAndShowAgeConsentModal === 'function') {
-                            window.checkAndShowAgeConsentModal();
-                        }
-                    }, 300);
-                }
-            }, 3600);
-        })();
-    </script>
         <div class="splash-energy-beams"></div>
         <div class="splash-orb orb-1"></div>
         <div class="splash-orb orb-2"></div>
@@ -4740,69 +4644,31 @@
     let bannerCarouselEnabled = localStorage.getItem('monkey_banner_enabled') !== '0';
     let bannerIntervalSec = parseInt(localStorage.getItem('monkey_banner_interval') ?? '5', 10);
     if (isNaN(bannerIntervalSec) || bannerIntervalSec < 0) bannerIntervalSec = 5;
-    const BANNER_LAYOUT_COLUMNS = [
-        {
-            colKey: 'with_img',
-            colTitle: '🖼 С картинкой',
-            items: [
-                { id: 'showcase_img', label: '🃏 Витрина с фото', actionMode: 'image', hasBtn: false },
-                { id: 'side_img', label: '◧ Фото сбоку', actionMode: 'image', hasBtn: false },
-                { id: 'hero_img', label: '🖼 Постер-фон', actionMode: 'image', hasBtn: false }
-            ]
-        },
-        {
-            colKey: 'no_img_btn',
-            colTitle: '🔘 Без картинки, с кнопкой',
-            items: [
-                { id: 'classic_btn', label: '📐 Классика + кнопка', actionMode: 'button', hasBtn: true },
-                { id: 'badge_btn', label: '🏷 Бейдж + кнопка', actionMode: 'button', hasBtn: true },
-                { id: 'split_btn', label: '◫ Строка + кнопка', actionMode: 'button', hasBtn: true }
-            ]
-        },
-        {
-            colKey: 'no_img_no_btn',
-            colTitle: '📝 Без картинки, без кнопки',
-            items: [
-                { id: 'clean_text', label: '📝 Чистый текст', actionMode: 'none', hasBtn: false },
-                { id: 'badge_text', label: '🏷 Бейдж + текст', actionMode: 'none', hasBtn: false },
-                { id: 'centered_text', label: '🎯 По центру', actionMode: 'none', hasBtn: false }
-            ]
-        }
+    const BANNER_LAYOUT_OPTIONS = [
+        { id: 'classic', label: '📐 Классика (Текст • Медиа/Кнопка)' },
+        { id: 'media_left', label: '◧ Слева направо (Картинка • Текст)' },
+        { id: 'hero_bg', label: '🖼 Постер на весь фон (Текст поверх)' },
+        { id: 'editorial', label: '📰 Афиша (Заголовок • Разделитель)' },
+        { id: 'split', label: '◫ Две колонки (Слева • Описание)' },
+        { id: 'centered', label: '🎯 По центру (Симметричный постер)' },
+        { id: 'badge_top', label: '🏷 Бейдж сверху • Текст снизу' },
+        { id: 'vertical', label: '🃏 Витрина (Визуал/Кнопка снизу)' },
+        { id: 'reverse', label: '⇄ Инверсия (Кнопка/Медиа • Текст)' },
+        { id: 'spotlight', label: '✨ Акцент-карточка (Нижняя плашка)' }
     ];
-    const ALL_BANNER_LAYOUT_ITEMS = BANNER_LAYOUT_COLUMNS.flatMap(c => c.items);
-    const LEGACY_LAYOUT_MAP = {
-        classic: 'classic_btn',
-        media_left: 'side_img',
-        hero_bg: 'hero_img',
-        editorial: 'badge_text',
-        split: 'split_btn',
-        centered: 'centered_text',
-        badge_top: 'badge_btn',
-        vertical: 'showcase_img',
-        reverse: 'classic_btn',
-        spotlight: 'showcase_img'
-    };
-    function resolveBannerLayoutId(rawLayout, actionMode) {
-        if (ALL_BANNER_LAYOUT_ITEMS.some(it => it.id === rawLayout)) return rawLayout;
-        if (LEGACY_LAYOUT_MAP[rawLayout]) return LEGACY_LAYOUT_MAP[rawLayout];
-        if (actionMode === 'image') return 'showcase_img';
-        if (actionMode === 'none') return 'clean_text';
-        return 'classic_btn';
-    }
     function normalizeClientBannerSlide(raw, idx = 0) {
         const s = raw || {};
         const am = ['button', 'image', 'none'].includes(s.action_mode) ? s.action_mode : 'button';
-        const lay = resolveBannerLayoutId(s.layout, am);
-        const layMeta = ALL_BANNER_LAYOUT_ITEMS.find(it => it.id === lay);
+        const imgSz = ['sm', 'md', 'lg', 'xl'].includes(s.image_size) ? s.image_size : 'lg';
         return {
             id: String(s.id || `banner_${Date.now()}_${idx}`),
             title: String(s.title || ''),
             desc: String(s.desc || ''),
             style: BANNER_STYLE_OPTIONS.some(o => o.id === s.style) ? s.style : 'emerald',
-            layout: lay,
+            layout: BANNER_LAYOUT_OPTIONS.some(o => o.id === s.layout) ? s.layout : 'classic',
             badge_text: String(s.badge_text !== undefined ? s.badge_text : 'АКЦИЯ'),
-            action_mode: layMeta ? layMeta.actionMode : am,
-            image_size: 'lg',
+            action_mode: am,
+            image_size: imgSz,
             image_url: String(s.image_url || '').trim(),
             btn_text: String(s.btn_text !== undefined ? s.btn_text : 'Скопировать'),
             promo_code: String(s.promo_code || '')
@@ -4810,116 +4676,161 @@
     }
     function buildSingleBannerCardHtml(slide, idx, isPreview = false) {
         const stClass = `banner-style-${slide.style || 'emerald'}`;
-        const lay = resolveBannerLayoutId(slide.layout, slide.action_mode);
-        const layMeta = ALL_BANNER_LAYOUT_ITEMS.find(it => it.id === lay) || ALL_BANNER_LAYOUT_ITEMS[3];
+        const lay = BANNER_LAYOUT_OPTIONS.some(o => o.id === slide.layout) ? slide.layout : 'classic';
+        const layClass = `banner-layout-${lay}`;
+        const actionMode = ['button', 'image', 'none'].includes(slide.action_mode) ? slide.action_mode : 'button';
+        const imgSz = ['sm', 'md', 'lg', 'xl'].includes(slide.image_size) ? slide.image_size : 'lg';
+        const imgSzClass = `banner-img-${imgSz}`;
         const badgeTxt = (slide.badge_text || '').trim();
         const badgeHtml = badgeTxt ? `<span class="promo-banner-tag-pill">${escapeHtml(badgeTxt)}</span>` : '';
+        const clickAttr = isPreview ? '' : `onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, this)"`;
+
+        let actionHtml = '';
+        let heroBgHtml = '';
+        if (actionMode === 'button') {
+            const btnLabel = (slide.btn_text || '').trim() || ((slide.promo_code || '').trim() ? 'Скопировать' : '');
+            if (btnLabel) {
+                actionHtml = `<button type="button" class="promo-copy-btn" ${clickAttr}>${escapeHtml(btnLabel)}</button>`;
+            }
+        } else if (actionMode === 'image') {
+            const imgSrc = (slide.image_url || '').trim();
+            if (imgSrc) {
+                if (lay === 'hero_bg') {
+                    heroBgHtml = `<div class="promo-banner-hero-bg-layer">${buildProductImgTag(imgSrc, slide.title || 'Promo', '')}</div>`;
+                } else {
+                    const imgClick = (!isPreview && (slide.promo_code || '').trim()) ? `style="cursor:pointer;" onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, null)"` : '';
+                    actionHtml = `<div class="promo-banner-media" ${imgClick}>${buildProductImgTag(imgSrc, slide.title || 'Promo', '')}</div>`;
+                }
+            }
+        }
+        const hasVisualRight = Boolean(actionHtml);
+        const noActionClass = (hasVisualRight || heroBgHtml) ? '' : 'banner-no-action';
         const titleHtml = (slide.title || '').trim() ? `<h3>${escapeHtml(slide.title)}</h3>` : '';
         const descHtml = (slide.desc || '').trim() ? `<p>${escapeHtml(slide.desc)}</p>` : '';
-        const textBlockHtml = `<div class="promo-banner-text">${titleHtml}${descHtml}</div>`;
-        const clickAttr = isPreview ? '' : `onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, this)"`;
-        const btnLabel = (slide.btn_text || '').trim() || ((slide.promo_code || '').trim() ? 'Скопировать' : '');
-        const btnHtml = (layMeta.hasBtn && btnLabel)
-            ? `<button type="button" class="promo-copy-btn" ${clickAttr}>${escapeHtml(btnLabel)}</button>`
-            : '';
-        const imgSrc = (slide.image_url || '').trim();
-        const imgClick = (!isPreview && (slide.promo_code || '').trim())
-            ? `style="cursor:pointer;" onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, null)"`
-            : '';
-        const mediaCardHtml = imgSrc
-            ? `<div class="promo-banner-media" ${imgClick}>${buildProductImgTag(imgSrc, slide.title || 'Promo', '')}</div>`
-            : '';
 
-        if (layMeta.actionMode === 'image') {
-            if (lay === 'hero_img') {
-                return `
-                    <div class="promo-banner ${stClass}" ${imgClick}>
-                        ${imgSrc ? `<div style="position:absolute;inset:0;z-index:0;pointer-events:none;">${buildProductImgTag(imgSrc, slide.title || 'Promo', '')}<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,10,0.45) 0%,rgba(8,12,10,0.9) 100%);"></div></div>` : ''}
-                        <div class="promo-banner-top-row">${badgeHtml || '<span></span>'}</div>
-                        <div class="promo-banner-text" style="color:#fff;">
-                            ${titleHtml ? `<h3 style="color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.6);">${escapeHtml(slide.title)}</h3>` : ''}
-                            ${descHtml ? `<p style="color:rgba(255,255,255,0.9);text-shadow:0 1px 6px rgba(0,0,0,0.6);">${escapeHtml(slide.desc)}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-            }
-            if (lay === 'side_img') {
-                return `
-                    <div class="promo-banner ${stClass}">
-                        ${badgeHtml ? `<div class="promo-banner-top-row">${badgeHtml}</div>` : ''}
-                        <div class="promo-banner-body">
-                            ${textBlockHtml}
-                            ${mediaCardHtml}
-                        </div>
-                    </div>
-                `;
-            }
+        if (lay === 'hero_bg') {
+            const heroClick = (!isPreview && (slide.promo_code || '').trim()) ? `style="cursor:pointer;" onclick="copyBannerPromoCode(${idx}, null)"` : '';
             return `
-                <div class="promo-banner ${stClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}" ${heroClick}>
+                    ${heroBgHtml}
+                    <div class="promo-banner-text">
+                        ${badgeHtml}
+                        ${titleHtml}
+                        ${descHtml}
+                    </div>
+                    ${actionHtml}
+                </div>
+            `;
+        }
+        if (lay === 'editorial') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
+                    <div class="promo-banner-editorial-top">
+                        ${badgeHtml}
+                        ${titleHtml}
+                    </div>
+                    <div class="promo-banner-editorial-divider"></div>
+                    <div class="promo-banner-editorial-bottom">
+                        <div class="promo-banner-text">${descHtml}</div>
+                        ${actionHtml}
+                    </div>
+                </div>
+            `;
+        }
+        if (lay === 'spotlight') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
+                    <div class="promo-banner-text">
+                        ${badgeHtml}
+                        ${titleHtml}
+                    </div>
+                    ${actionHtml}
+                    ${descHtml ? `<div class="promo-banner-spotlight-footer"><div class="promo-banner-text">${descHtml}</div></div>` : ''}
+                </div>
+            `;
+        }
+        if (lay === 'split') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
+                    <div class="promo-banner-split-left">
+                        ${badgeHtml}
+                        ${titleHtml}
+                        ${actionHtml}
+                    </div>
+                    <div class="promo-banner-split-right">
+                        ${descHtml}
+                    </div>
+                </div>
+            `;
+        }
+        if (lay === 'centered') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
+                    ${badgeHtml}
+                    <div class="promo-banner-text">
+                        ${titleHtml}
+                        ${descHtml}
+                    </div>
+                    ${actionHtml}
+                </div>
+            `;
+        }
+        if (lay === 'badge_top') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
                     <div class="promo-banner-top-row">
                         ${badgeHtml || '<span></span>'}
+                        ${actionHtml}
                     </div>
-                    <div class="promo-banner-body">
-                        ${textBlockHtml}
-                        ${mediaCardHtml}
-                    </div>
-                </div>
-            `;
-        }
-
-        if (layMeta.hasBtn) {
-            if (lay === 'badge_btn') {
-                return `
-                    <div class="promo-banner ${stClass}">
-                        <div class="promo-banner-top-row">
-                            ${badgeHtml || '<span></span>'}
-                            ${btnHtml}
-                        </div>
-                        ${textBlockHtml}
-                    </div>
-                `;
-            }
-            if (lay === 'split_btn') {
-                return `
-                    <div class="promo-banner ${stClass}">
-                        ${badgeHtml ? `<div class="promo-banner-top-row">${badgeHtml}</div>` : ''}
-                        <div class="promo-banner-bottom-row">
-                            ${textBlockHtml}
-                            ${btnHtml}
-                        </div>
-                    </div>
-                `;
-            }
-            return `
-                <div class="promo-banner ${stClass}">
-                    ${badgeHtml ? `<div class="promo-banner-top-row">${badgeHtml}</div>` : ''}
-                    ${textBlockHtml}
-                    ${btnHtml ? `<button type="button" class="promo-copy-btn full-width" ${clickAttr}>${escapeHtml(btnLabel)}</button>` : ''}
-                </div>
-            `;
-        }
-
-        if (lay === 'centered_text') {
-            return `
-                <div class="promo-banner ${stClass}" style="align-items:center; justify-content:center; text-align:center;">
-                    ${badgeHtml}
-                    <div class="promo-banner-text" style="align-items:center; text-align:center;">
+                    <div class="promo-banner-text">
                         ${titleHtml}
                         ${descHtml}
                     </div>
                 </div>
             `;
         }
+        if (lay === 'vertical') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
+                    ${badgeHtml}
+                    <div class="promo-banner-text">
+                        ${titleHtml}
+                        ${descHtml}
+                    </div>
+                    ${actionHtml}
+                </div>
+            `;
+        }
         return `
-            <div class="promo-banner ${stClass}">
-                ${badgeHtml ? `<div class="promo-banner-top-row">${badgeHtml}</div>` : ''}
-                <div class="promo-banner-text" style="flex:1; justify-content:center;">
+            <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
+                <div class="promo-banner-text">
+                    ${badgeHtml}
                     ${titleHtml}
                     ${descHtml}
                 </div>
+                ${actionHtml}
             </div>
         `;
     }
+    let bannerSlides = (() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('monkey_banners_list') || 'null');
+            if (Array.isArray(saved) && saved.length > 0) {
+                return saved.map((item, i) => normalizeClientBannerSlide(item, i));
+            }
+        } catch (_) {}
+        const legacy = JSON.parse(localStorage.getItem('monkey_promo_banner') || 'null');
+        return [
+            normalizeClientBannerSlide({
+                id: 'banner_default_1',
+                title: legacy?.title || 'СКИДКА НЕДЕЛИ -20%',
+                desc: legacy?.desc || 'Популярные товары и новинки уже в каталоге',
+                style: 'emerald',
+                btn_text: 'Скопировать',
+                promo_code: (legacy?.badge && !String(legacy.badge).startsWith('-')) ? legacy.badge : 'MONKEY3'
+            }, 0)
+        ];
+    })();
     let currentBannerSlideIdx = 0;
     let bannerAutoSlideTimer = null;
     let isBannerDirty = false;
@@ -5167,18 +5078,6 @@
         renderTopNoticeCard(false);
         restartTopNoticeAutoSlideTimer();
     }
-    function selectBannerLayoutFormat(idx, layoutId) {
-        const slide = bannerSlides[idx];
-        if (!slide) return;
-        const layMeta = ALL_BANNER_LAYOUT_ITEMS.find(it => it.id === layoutId);
-        if (!layMeta) return;
-        isBannerDirty = true;
-        slide.layout = layMeta.id;
-        slide.action_mode = layMeta.actionMode;
-        try { localStorage.setItem('monkey_banners_list', JSON.stringify(bannerSlides)); } catch (_) {}
-        renderPromoBannerCarouselSlides();
-        renderAdminBannersList();
-    }
     function renderAdminBannersList() {
         const listEl = document.getElementById('admin-banners-list');
         if (!listEl) return;
@@ -5190,15 +5089,9 @@
             const styleOptsHtml = BANNER_STYLE_OPTIONS.map(opt =>
                 `<option value="${opt.id}" ${slide.style === opt.id ? 'selected' : ''}>${opt.label}</option>`
             ).join('');
-            const curLay = resolveBannerLayoutId(slide.layout, slide.action_mode);
-            const colsHtml = BANNER_LAYOUT_COLUMNS.map(col => `
-                <div class="banner-format-col">
-                    <div class="banner-format-col-title">${col.colTitle}</div>
-                    ${col.items.map(it => `
-                        <button type="button" class="banner-format-btn ${curLay === it.id ? 'active' : ''}" onclick="selectBannerLayoutFormat(${idx}, '${it.id}')">${it.label}</button>
-                    `).join('')}
-                </div>
-            `).join('');
+            const layoutOptsHtml = BANNER_LAYOUT_OPTIONS.map(opt =>
+                `<option value="${opt.id}" ${(slide.layout || 'classic') === opt.id ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
             return `
                 <div class="admin-banner-slide-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
@@ -5209,15 +5102,25 @@
                             <button type="button" class="toggle-pill off" style="padding:3px 8px;" title="Удалить баннер" onclick="adminDeleteBannerSlide(${idx})">✕</button>
                         </div>
                     </div>
-                    <div class="banner-format-columns">${colsHtml}</div>
-                    <div style="display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 0.9fr); gap:6px; width:100%;">
+                    <div style="display:flex; gap:6px; align-items:center; min-width:0; width:100%;">
+                        <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap; flex-shrink:0;">📐 Формат:</span>
+                        <select class="admin-select" style="flex:1; min-width:0; max-width:100%; width:100%; padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'layout', this.value, true)">
+                            ${layoutOptsHtml}
+                        </select>
+                    </div>
+                    <div style="display:grid; grid-template-columns:minmax(0, 1.15fr) minmax(0, 0.85fr); gap:6px; width:100%;">
                         <select class="admin-select" style="min-width:0; max-width:100%; width:100%; padding:7px 8px; font-size:12px;" onchange="updateBannerSlideField(${idx}, 'style', this.value, true)">
                             ${styleOptsHtml}
                         </select>
                         <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px; min-width:0; width:100%;" placeholder="Бейдж (АКЦИЯ)" value="${escapeHtml(slide.badge_text ?? 'АКЦИЯ')}" oninput="updateBannerSlideField(${idx}, 'badge_text', this.value)">
                     </div>
-                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Заголовок (напр. СКИДКА -3 БУНА)" value="${escapeHtml(slide.title)}" oninput="updateBannerSlideField(${idx}, 'title', this.value)">
-                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Описание акции..." value="${escapeHtml(slide.desc)}" oninput="updateBannerSlideField(${idx}, 'desc', this.value)">
+                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Большой заголовок (напр. СКИДКА -3 БУНА)" value="${escapeHtml(slide.title)}" oninput="updateBannerSlideField(${idx}, 'title', this.value)">
+                    <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Описание (сбоку или снизу в зависимости от формата)" value="${escapeHtml(slide.desc)}" oninput="updateBannerSlideField(${idx}, 'desc', this.value)">
+                    <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:5px;">
+                        <button type="button" class="toggle-pill ${(slide.action_mode || 'button') === 'button' ? 'on' : ''}" style="${(slide.action_mode || 'button') !== 'button' ? 'background:var(--bg-color); color:var(--text-secondary); border:1px solid var(--border-color);' : ''} font-size:11px; padding:6px 4px;" onclick="updateBannerSlideField(${idx}, 'action_mode', 'button', true)">🔘 Кнопка</button>
+                        <button type="button" class="toggle-pill ${slide.action_mode === 'image' ? 'on' : ''}" style="${slide.action_mode !== 'image' ? 'background:var(--bg-color); color:var(--text-secondary); border:1px solid var(--border-color);' : ''} font-size:11px; padding:6px 4px;" onclick="updateBannerSlideField(${idx}, 'action_mode', 'image', true)">🖼 Картинка</button>
+                        <button type="button" class="toggle-pill ${slide.action_mode === 'none' ? 'on' : ''}" style="${slide.action_mode !== 'none' ? 'background:var(--bg-color); color:var(--text-secondary); border:1px solid var(--border-color);' : ''} font-size:11px; padding:6px 4px;" onclick="updateBannerSlideField(${idx}, 'action_mode', 'none', true)">📝 Только текст</button>
+                    </div>
                     ${(slide.action_mode || 'button') === 'button' ? `
                         <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:6px;">
                             <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:12px;" placeholder="Текст кнопки (Скопировать)" value="${escapeHtml(slide.btn_text)}" oninput="updateBannerSlideField(${idx}, 'btn_text', this.value)">
@@ -5228,8 +5131,22 @@
                         <div style="display:flex; flex-direction:column; gap:6px;">
                             <input type="file" id="admin-banner-file-${idx}" accept="image/*" style="display:none;" onchange="handleBannerSlideImageSelect(this, ${idx})">
                             <div style="display:flex; gap:6px;">
-                                <button type="button" class="img-upload-btn" style="margin-bottom:0; padding:8px 10px; font-size:11.5px; flex:1;" onclick="document.getElementById('admin-banner-file-${idx}').click()">📷 Загрузить картинку</button>
+                                <button type="button" class="img-upload-btn" style="margin-bottom:0; padding:8px 10px; font-size:11.5px; flex:1;" onclick="document.getElementById('admin-banner-file-${idx}').click()">📷 Загрузить рекламную картинку</button>
                                 ${slide.image_url ? `<button type="button" class="toggle-pill off" style="padding:7px 10px;" onclick="updateBannerSlideField(${idx}, 'image_url', '', true)">✕</button>` : ''}
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:5px;">
+                                <span style="font-size:11px; color:var(--text-secondary); white-space:nowrap;">📐 Размер:</span>
+                                <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:4px; flex:1;">
+                                    ${[
+                                        { id: 'sm', label: 'S' },
+                                        { id: 'md', label: 'M' },
+                                        { id: 'lg', label: 'L' },
+                                        { id: 'xl', label: 'XL' }
+                                    ].map(sz => {
+                                        const isSzAct = (slide.image_size || 'lg') === sz.id;
+                                        return `<button type="button" class="toggle-pill ${isSzAct ? 'on' : ''}" style="${!isSzAct ? 'background:var(--bg-color); color:var(--text-secondary); border:1px solid var(--border-color);' : ''} font-size:11px; padding:5px 4px;" onclick="updateBannerSlideField(${idx}, 'image_size', '${sz.id}', true)">${sz.label}</button>`;
+                                    }).join('')}
+                                </div>
                             </div>
                             <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:11.5px;" placeholder="Или ссылка на картинку (необязательно)" value="${escapeHtml(slide.image_url || '')}" oninput="updateBannerSlideField(${idx}, 'image_url', this.value)">
                             <input type="text" class="promo-input admin-banner-field" style="font-size:11.5px;" placeholder="Промокод при нажатии на картинку (необязательно)" value="${escapeHtml(slide.promo_code || '')}" oninput="updateBannerSlideField(${idx}, 'promo_code', this.value)">
@@ -5242,6 +5159,36 @@
             `;
         }).join('');
         hydrateProtectedImages();
+    }
+    async function handleBannerSlideImageSelect(inputEl, slideIdx) {
+        const file = inputEl.files && inputEl.files[0];
+        if (!file || !bannerSlides[slideIdx]) return;
+        try {
+            const dataUrl = await compressImageFileToDataUrl(file, 600, 0.85);
+            updateBannerSlideField(slideIdx, 'image_url', dataUrl, true);
+            showToast("⏳ Загружаем картинку баннера...");
+            try {
+                const res = await apiFetch('/api/admin/upload_image', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: Number(currentUserId),
+                        filename: file.name || 'banner.jpg',
+                        data_base64: dataUrl
+                    })
+                });
+                const upData = await res.json();
+                const savedPath = (upData?.image_url || '').trim();
+                if (savedPath) {
+                    updateBannerSlideField(slideIdx, 'image_url', savedPath, true);
+                    showToast("✅ Картинка баннера загружена!");
+                }
+            } catch (_) {
+                showToast("✅ Картинка выбрана! Нажмите «Сохранить все баннеры»");
+            }
+        } catch (e) {
+            showToast("Не удалось обработать картинку", true);
+        }
+        inputEl.value = '';
     }
     function renderPromoBannerCarouselSlides() {
         const bannerEl = document.getElementById('promo-banner');
@@ -5336,7 +5283,7 @@
     function adminAddBannerSlide() {
         isBannerDirty = true;
         const nextStyle = BANNER_STYLE_OPTIONS[bannerSlides.length % BANNER_STYLE_OPTIONS.length].id;
-        const nextLayout = ALL_BANNER_LAYOUT_ITEMS[bannerSlides.length % ALL_BANNER_LAYOUT_ITEMS.length].id;
+        const nextLayout = BANNER_LAYOUT_OPTIONS[bannerSlides.length % BANNER_LAYOUT_OPTIONS.length].id;
         bannerSlides.push(normalizeClientBannerSlide({
             id: `banner_${Date.now()}_${bannerSlides.length}`,
             title: 'НОВАЯ АКЦИЯ',
