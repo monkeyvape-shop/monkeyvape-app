@@ -95,13 +95,13 @@
             pointer-events: none;
             z-index: 900;
         }
-        /* Современный анимированный Splash Screen */
+        /* Современный энергичный и масштабный Splash Screen */
         #splash-screen {
             position: absolute;
             inset: 0;
             background:
-                radial-gradient(circle at 50% 34%, var(--banner-bg) 0%, transparent 65%),
-                radial-gradient(circle at 50% 78%, var(--accent-green-glow) 0%, transparent 72%),
+                radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent-green) 28%, transparent) 0%, transparent 64%),
+                radial-gradient(circle at 50% 78%, var(--accent-green-glow) 0%, transparent 74%),
                 var(--bg-color);
             display: flex;
             flex-direction: column;
@@ -109,19 +109,75 @@
             align-items: center;
             z-index: 1000;
             overflow: hidden;
-            backdrop-filter: blur(22px);
-            -webkit-backdrop-filter: blur(22px);
-            transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), filter 0.55s ease;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s ease;
+        }
+        .splash-energy-beams {
+            position: absolute;
+            width: 540px;
+            height: 540px;
+            top: 37%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: repeating-conic-gradient(
+                from 0deg,
+                color-mix(in srgb, var(--accent-green) 14%, transparent) 0deg 10deg,
+                transparent 10deg 30deg
+            );
+            -webkit-mask: radial-gradient(circle, rgba(0,0,0,0.9) 18%, transparent 68%);
+            mask: radial-gradient(circle, rgba(0,0,0,0.9) 18%, transparent 68%);
+            animation: splashBeamsSpin 14s linear infinite;
+            pointer-events: none;
+            opacity: 0.72;
+        }
+        @keyframes splashBeamsSpin {
+            from { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            50% { transform: translate(-50%, -50%) rotate(180deg) scale(1.08); }
+            to { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+        }
+        .splash-shockwave {
+            position: absolute;
+            width: 224px;
+            height: 224px;
+            border-radius: 50%;
+            border: 2px solid color-mix(in srgb, var(--accent-green) 65%, transparent);
+            box-shadow: 0 0 24px var(--accent-green-glow);
+            pointer-events: none;
+            animation: splashShockwaveBurst 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+        }
+        .splash-shockwave.wave-2 {
+            animation-delay: 1.1s;
+        }
+        @keyframes splashShockwaveBurst {
+            0% { transform: scale(0.88); opacity: 0.85; }
+            100% { transform: scale(2.05); opacity: 0; }
         }
         /* Варианты экрана загрузки мини-приложения */
+        #splash-screen.splash-style-energy {
+            background:
+                radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent-green) 34%, transparent) 0%, transparent 62%),
+                radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--icon-color) 24%, transparent) 0%, transparent 55%),
+                var(--bg-color);
+        }
+        #splash-screen.splash-style-energy .splash-logo {
+            font-size: 33px;
+            letter-spacing: 3.2px;
+            text-shadow: 0 0 30px var(--accent-green), 0 0 56px var(--accent-green-glow);
+        }
+        #splash-screen.splash-style-energy .splash-badge-wrap::before {
+            inset: -11px;
+            padding: 4px;
+            animation-duration: 1.4s;
+        }
         #splash-screen.splash-style-neon {
             background:
-                radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--accent-green) 24%, transparent) 0%, transparent 65%),
+                radial-gradient(circle at 50% 36%, color-mix(in srgb, var(--accent-green) 26%, transparent) 0%, transparent 65%),
                 radial-gradient(circle at 50% 78%, var(--accent-green-glow) 0%, transparent 72%),
                 var(--bg-color);
         }
         #splash-screen.splash-style-neon .splash-logo {
-            text-shadow: 0 0 26px var(--accent-green), 0 0 44px var(--accent-green-glow);
+            text-shadow: 0 0 28px var(--accent-green), 0 0 48px var(--accent-green-glow);
         }
         #splash-screen.splash-style-minimal {
             background: var(--bg-color);
@@ -129,6 +185,8 @@
             -webkit-backdrop-filter: none;
         }
         #splash-screen.splash-style-minimal .splash-orb,
+        #splash-screen.splash-style-minimal .splash-energy-beams,
+        #splash-screen.splash-style-minimal .splash-shockwave,
         #splash-screen.splash-style-minimal .splash-badge-wrap::before,
         #splash-screen.splash-style-minimal .splash-badge-wrap::after,
         #splash-screen.splash-style-minimal .progress-fill::after {
@@ -142,7 +200,7 @@
         }
         #splash-screen.splash-style-minimal .splash-logo {
             text-shadow: none;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
         }
         #splash-screen.splash-style-orbit {
             background:
@@ -151,45 +209,45 @@
                 var(--bg-color);
         }
         #splash-screen.splash-style-orbit .splash-badge-wrap::before {
-            inset: -13px;
+            inset: -14px;
             border-radius: 999px;
-            padding: 3px;
+            padding: 3.5px;
             background: conic-gradient(from 0deg, var(--accent-green) 0%, transparent 32%, var(--icon-color) 65%, transparent 100%);
-            animation-duration: 1.3s;
+            animation-duration: 1.2s;
         }
         #splash-screen.splash-style-orbit .splash-badge-wrap::after {
-            inset: -20px;
+            inset: -23px;
             border-radius: 999px;
-            border: 1.5px dashed var(--icon-color);
-            opacity: 0.55;
-            animation: splashHaloSpin 3.2s linear infinite reverse;
+            border: 2px dashed var(--icon-color);
+            opacity: 0.65;
+            animation: splashHaloSpin 2.8s linear infinite reverse;
         }
         #splash-screen.splash-style-orbit .splash-orb.orb-1 {
-            width: 260px; height: 260px; opacity: 0.72;
+            width: 290px; height: 290px; opacity: 0.78;
         }
         #splash-screen.splash-style-pulse {
             background:
-                radial-gradient(circle at 50% 42%, var(--accent-green-glow) 0%, transparent 62%),
+                radial-gradient(circle at 50% 40%, var(--accent-green-glow) 0%, transparent 64%),
                 var(--bg-color);
         }
         #splash-screen.splash-style-pulse .splash-badge-wrap::before {
             display: none;
         }
         #splash-screen.splash-style-pulse .splash-badge-wrap::after {
-            inset: -6px;
+            inset: -8px;
             border-radius: 50%;
-            border: 2px solid var(--accent-green);
-            opacity: 0.85;
-            animation: splashPulseExpand 1.2s ease-out infinite;
+            border: 2.5px solid var(--accent-green);
+            opacity: 0.9;
+            animation: splashPulseExpand 1.05s ease-out infinite;
         }
         @keyframes splashPulseExpand {
-            0% { transform: scale(0.98); opacity: 0.9; }
-            100% { transform: scale(1.34); opacity: 0; }
+            0% { transform: scale(0.96); opacity: 0.95; }
+            100% { transform: scale(1.45); opacity: 0; }
         }
         #splash-screen.splash-style-glass {
             background:
-                radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent-green) 22%, transparent) 0%, transparent 55%),
-                radial-gradient(circle at 75% 80%, color-mix(in srgb, var(--icon-color) 20%, transparent) 0%, transparent 55%),
+                radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent-green) 24%, transparent) 0%, transparent 55%),
+                radial-gradient(circle at 75% 80%, color-mix(in srgb, var(--icon-color) 22%, transparent) 0%, transparent 55%),
                 var(--bg-color);
         }
         #splash-screen.splash-style-glass .splash-badge-wrap {
@@ -201,7 +259,7 @@
             box-shadow: none;
         }
         #splash-screen.splash-style-glass .progress-bar {
-            width: 210px;
+            width: 232px;
             height: 8px;
             background: rgba(255,255,255,0.12);
             border: 1px solid rgba(255,255,255,0.2);
@@ -278,80 +336,81 @@
             animation: splashOrbDrift 4.5s ease-in-out infinite alternate;
         }
         .splash-orb.orb-1 {
-            width: 210px;
-            height: 210px;
-            top: 16%;
-            left: 12%;
+            width: 280px;
+            height: 280px;
+            top: 10%;
+            left: 4%;
             background: var(--accent-green-glow);
         }
         .splash-orb.orb-2 {
-            width: 190px;
-            height: 190px;
-            bottom: 18%;
-            right: 10%;
+            width: 260px;
+            height: 260px;
+            bottom: 12%;
+            right: 4%;
             background: var(--icon-glow);
-            animation-delay: -2s;
+            animation-delay: -1.6s;
         }
         @keyframes splashOrbDrift {
             0% { transform: translate(0, 0) scale(0.95); }
-            100% { transform: translate(16px, -18px) scale(1.12); }
+            100% { transform: translate(22px, -24px) scale(1.2); }
         }
         .splash-badge-wrap {
             position: relative;
-            width: 176px;
-            height: 176px;
+            width: 214px;
+            height: 214px;
             border-radius: 50%;
-            background: transparent;
+            background: radial-gradient(circle, var(--accent-green-glow) 0%, transparent 72%);
             border: none;
-            box-shadow: none;
+            box-shadow: 0 0 42px var(--accent-green-glow);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 26px;
-            animation: splashBadgeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+            margin-bottom: 28px;
+            z-index: 2;
+            animation: splashBadgeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         .splash-badge-wrap::before {
             content: '';
             position: absolute;
-            inset: -6px;
+            inset: -8px;
             border-radius: 50%;
-            padding: 3px;
+            padding: 3.5px;
             background: conic-gradient(from 0deg, transparent 0%, var(--accent-green) 35%, transparent 65%, var(--icon-color) 90%, transparent 100%);
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
-            animation: splashHaloSpin 2.4s linear infinite;
+            animation: splashHaloSpin 1.7s linear infinite;
             pointer-events: none;
         }
         .splash-badge-wrap::after {
             content: '';
             position: absolute;
-            inset: -2px;
+            inset: -3px;
             border-radius: 50%;
-            border: 1.5px solid var(--accent-green);
+            border: 2px solid var(--accent-green);
             opacity: 0;
-            animation: splashPulseRing 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+            animation: splashPulseRing 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
             pointer-events: none;
         }
         @keyframes splashHaloSpin {
             to { transform: rotate(360deg); }
         }
         @keyframes splashPulseRing {
-            0% { transform: scale(0.96); opacity: 0.65; }
-            100% { transform: scale(1.24); opacity: 0; }
+            0% { transform: scale(0.95); opacity: 0.78; }
+            100% { transform: scale(1.32); opacity: 0; }
         }
         .splash-emblem {
-            font-size: 64px;
+            font-size: 80px;
             line-height: 1;
-            width: 158px;
-            height: 158px;
+            width: 192px;
+            height: 192px;
             border-radius: 50%;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: splashFloat 2.4s ease-in-out infinite;
+            animation: splashFloat 1.8s ease-in-out infinite;
             position: relative;
             z-index: 1;
         }
@@ -361,32 +420,33 @@
             object-fit: cover;
             border-radius: 50%;
             display: block;
-            filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
+            filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.52));
         }
         @keyframes splashBadgeIn {
-            0% { opacity: 0; transform: translateY(16px) scale(0.85); }
+            0% { opacity: 0; transform: translateY(24px) scale(0.72); }
+            65% { opacity: 1; transform: translateY(-4px) scale(1.05); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes splashFloat {
             0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-4px) scale(1.04); }
+            50% { transform: translateY(-6px) scale(1.06); }
         }
         @keyframes splashTextIn {
-            0% { opacity: 0; transform: translateY(10px); filter: blur(4px); }
-            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+            0% { opacity: 0; transform: translateY(14px) scale(0.94); filter: blur(4px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
         .splash-logo {
-            font-size: 29px;
+            font-size: 32px;
             font-weight: 900;
             color: var(--logo-color-1);
-            text-shadow: 0 0 24px var(--accent-green-glow);
-            margin-bottom: 8px;
-            letter-spacing: 2.5px;
+            text-shadow: 0 0 28px var(--accent-green-glow);
+            margin-bottom: 10px;
+            letter-spacing: 3px;
             text-align: center;
             padding: 0 18px;
             position: relative;
-            z-index: 1;
-            animation: splashTextIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+            z-index: 2;
+            animation: splashTextIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
         }
         .splash-logo span { color: var(--logo-color-2); }
         .splash-status-row {
@@ -394,36 +454,36 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 14px;
+            margin-bottom: 15px;
             position: relative;
-            z-index: 1;
-            animation: splashTextIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+            z-index: 2;
+            animation: splashTextIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
         }
         .splash-sub {
             color: var(--text-secondary);
-            font-size: 12.5px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             letter-spacing: 0.3px;
         }
         .splash-percent {
-            font-size: 11.5px;
+            font-size: 12px;
             font-weight: 800;
             color: var(--accent-green);
             font-variant-numeric: tabular-nums;
             background: var(--accent-green-glow);
-            border: 1px solid color-mix(in srgb, var(--accent-green) 45%, transparent);
-            padding: 2px 7px;
+            border: 1px solid color-mix(in srgb, var(--accent-green) 55%, transparent);
+            padding: 2px 8px;
             border-radius: 999px;
         }
         .progress-bar {
-            width: 192px;
-            height: 5px;
-            background-color: rgba(255, 255, 255, 0.09);
+            width: 226px;
+            height: 7px;
+            background-color: rgba(255, 255, 255, 0.11);
             border-radius: 999px;
             overflow: hidden;
             position: relative;
-            z-index: 1;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+            z-index: 2;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 16px var(--accent-green-glow);
         }
         .progress-fill {
             width: 0%;
@@ -864,10 +924,28 @@
             flex: 1;
             min-width: 0;
             position: relative;
-            z-index: 1;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
         }
-        .promo-banner h3 { font-size: 16.5px; font-weight: 800; letter-spacing: 0.3px; color: var(--accent-green); margin-bottom: 5px; word-break: break-word; line-height: 1.25; }
-        .promo-banner p { font-size: 12px; color: var(--text-secondary); word-break: break-word; line-height: 1.35; }
+        .promo-banner h3 {
+            font-size: 17.5px;
+            font-weight: 900;
+            letter-spacing: 0.35px;
+            color: var(--accent-green);
+            margin: 0;
+            word-break: break-word;
+            line-height: 1.22;
+        }
+        .promo-banner p {
+            font-size: 12.5px;
+            color: color-mix(in srgb, var(--text-main) 78%, var(--text-secondary));
+            margin: 0;
+            word-break: break-word;
+            line-height: 1.42;
+        }
         .promo-badge,
         .promo-copy-btn {
             background-color: var(--accent-green);
@@ -875,8 +953,8 @@
             border: none;
             font-size: 12px;
             font-weight: 800;
-            padding: 8px 12px;
-            border-radius: 11px;
+            padding: 9px 14px;
+            border-radius: 12px;
             white-space: nowrap;
             flex-shrink: 0;
             box-shadow: 0 4px 14px var(--accent-green-glow);
@@ -897,15 +975,15 @@
             gap: 4px;
             font-size: 10px;
             font-weight: 800;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.7px;
             text-transform: uppercase;
-            padding: 3px 9px;
+            padding: 3.5px 10px;
             border-radius: 999px;
             background: var(--accent-green-glow);
             border: 1px solid color-mix(in srgb, var(--accent-green) 55%, transparent);
             color: var(--accent-green);
             width: fit-content;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
         }
         .promo-banner.banner-style-cyber .promo-banner-tag-pill { background: rgba(56, 189, 248, 0.16); border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; }
         .promo-banner.banner-style-sunset .promo-banner-tag-pill { background: rgba(255, 140, 36, 0.16); border-color: rgba(255, 140, 36, 0.5); color: #ff9a3c; }
@@ -918,108 +996,36 @@
         [data-theme="light"] .promo-banner.banner-style-gold .promo-banner-tag-pill { color: #b45309; }
         [data-theme="light"] .promo-banner.banner-style-crimson .promo-banner-tag-pill { color: #be123c; }
 
-        /* Новые раскладки баннеров */
-        .promo-banner.banner-layout-split {
-            display: grid;
-            grid-template-columns: 1.08fr 0.92fr;
-            align-items: stretch;
-            gap: 10px;
-            padding: 15px 16px;
-        }
-        .promo-banner-split-left {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 8px;
-            min-width: 0;
-            position: relative;
-            z-index: 1;
-        }
-        .promo-banner-split-left h3 { margin-bottom: 0; font-size: 16px; }
-        .promo-banner-split-right {
-            background: rgba(255, 255, 255, 0.045);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px;
-            padding: 10px 11px;
-            display: flex;
-            align-items: center;
-            position: relative;
-            z-index: 1;
-            min-width: 0;
-        }
-        [data-theme="light"] .promo-banner-split-right {
-            background: rgba(0, 0, 0, 0.035);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-        .promo-banner-split-right p {
-            font-size: 11.5px;
-            line-height: 1.4;
-            color: var(--text-main);
-            opacity: 0.9;
-        }
-        .promo-banner.banner-layout-centered {
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            padding: 18px 18px 16px 18px;
-            gap: 8px;
-        }
-        .promo-banner.banner-layout-centered .promo-banner-tag-pill {
-            margin: 0 auto 2px auto;
-        }
-        .promo-banner.banner-layout-centered .promo-banner-text {
-            width: 100%;
-        }
-        .promo-banner.banner-layout-centered h3 {
-            font-size: 17.5px;
-            margin-bottom: 4px;
-        }
-        .promo-banner.banner-layout-centered .promo-copy-btn {
-            margin-top: 4px;
-            padding: 8px 18px;
-        }
-        .promo-banner.banner-layout-badge_top {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 10px;
-            padding: 15px 17px;
-        }
-        .promo-banner-top-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            position: relative;
-            z-index: 1;
-        }
-        .promo-banner-top-row .promo-banner-tag-pill { margin-bottom: 0; }
-        .promo-banner.banner-layout-vertical {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 9px;
-            padding: 16px 17px;
-        }
-        .promo-banner.banner-layout-vertical .promo-banner-tag-pill { margin-bottom: 0; }
-        .promo-banner.banner-layout-vertical .promo-copy-btn {
-            width: 100%;
-            text-align: center;
-            padding: 9px 14px;
-            margin-top: 2px;
+        /* Раскладки и размеры картинок баннеров */
+        .promo-banner.banner-no-action {
+            padding: 19px 20px;
         }
         .promo-banner.banner-no-action .promo-banner-text {
             width: 100%;
             flex: 1 1 100%;
+            border-left: 3px solid color-mix(in srgb, var(--accent-green) 70%, transparent);
+            padding-left: 13px;
         }
+        .promo-banner.banner-no-action.banner-layout-centered .promo-banner-text {
+            border-left: none;
+            padding-left: 0;
+            align-items: center;
+        }
+        .promo-banner.banner-no-action.banner-style-cyber .promo-banner-text { border-left-color: #38bdf8; }
+        .promo-banner.banner-no-action.banner-style-sunset .promo-banner-text { border-left-color: #ff9a3c; }
+        .promo-banner.banner-no-action.banner-style-violet .promo-banner-text { border-left-color: #c084fc; }
+        .promo-banner.banner-no-action.banner-style-gold .promo-banner-text { border-left-color: #ffd026; }
+        .promo-banner.banner-no-action.banner-style-crimson .promo-banner-text { border-left-color: #ff5c7a; }
+
         .promo-banner-media {
-            width: 82px;
-            height: 82px;
-            border-radius: 15px;
+            width: 146px;
+            height: 146px;
+            border-radius: 16px;
             overflow: hidden;
             flex-shrink: 0;
             border: 1px solid color-mix(in srgb, var(--accent-green) 42%, var(--border-color));
-            background: rgba(0, 0, 0, 0.22);
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+            background: rgba(0, 0, 0, 0.24);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.34);
             position: relative;
             z-index: 2;
             display: flex;
@@ -1032,46 +1038,250 @@
             object-fit: cover;
             display: block;
         }
-        .promo-banner.banner-layout-centered .promo-banner-media,
-        .promo-banner.banner-layout-vertical .promo-banner-media {
+        .promo-banner.banner-img-sm .promo-banner-media { width: 92px; height: 92px; border-radius: 13px; }
+        .promo-banner.banner-img-md .promo-banner-media { width: 120px; height: 120px; border-radius: 15px; }
+        .promo-banner.banner-img-lg .promo-banner-media { width: 150px; height: 150px; border-radius: 16px; }
+        .promo-banner.banner-img-xl .promo-banner-media { width: 182px; height: 182px; border-radius: 18px; }
+
+        .promo-banner.banner-layout-media_left {
+            flex-direction: row-reverse;
+            gap: 14px;
+            align-items: center;
+        }
+        .promo-banner.banner-layout-hero_bg {
+            min-height: 168px;
+            padding: 20px 18px;
+            align-items: flex-end;
+        }
+        .promo-banner.banner-img-sm.banner-layout-hero_bg { min-height: 132px; }
+        .promo-banner.banner-img-md.banner-layout-hero_bg { min-height: 156px; }
+        .promo-banner.banner-img-lg.banner-layout-hero_bg { min-height: 184px; }
+        .promo-banner.banner-img-xl.banner-layout-hero_bg { min-height: 220px; }
+        .promo-banner-hero-bg-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .promo-banner-hero-bg-layer img {
             width: 100%;
-            height: 112px;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            filter: brightness(0.62) saturate(1.1);
+        }
+        .promo-banner-hero-bg-layer::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(8, 12, 10, 0.25) 0%, rgba(8, 12, 10, 0.86) 100%);
+        }
+        .promo-banner.banner-layout-hero_bg h3 {
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
+        }
+        .promo-banner.banner-layout-hero_bg p {
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+        }
+
+        .promo-banner.banner-layout-editorial {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 17px 18px;
+        }
+        .promo-banner-editorial-top {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            z-index: 2;
+        }
+        .promo-banner-editorial-divider {
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(90deg, color-mix(in srgb, var(--accent-green) 55%, transparent) 0%, rgba(255,255,255,0.08) 100%);
+            position: relative;
+            z-index: 2;
+        }
+        .promo-banner-editorial-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .promo-banner.banner-layout-spotlight {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 11px;
+            padding: 16px 17px;
+        }
+        .promo-banner-spotlight-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.055);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 13px;
+            padding: 9px 12px;
+            position: relative;
+            z-index: 2;
+        }
+        [data-theme="light"] .promo-banner-spotlight-footer {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .promo-banner.banner-layout-split {
+            display: grid;
+            grid-template-columns: 1.06fr 0.94fr;
+            align-items: stretch;
+            gap: 11px;
+            padding: 16px 17px;
+        }
+        .promo-banner-split-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 8px;
+            min-width: 0;
+            position: relative;
+            z-index: 2;
+        }
+        .promo-banner-split-left h3 { margin-bottom: 0; font-size: 16.5px; }
+        .promo-banner-split-right {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 11px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            min-width: 0;
+        }
+        [data-theme="light"] .promo-banner-split-right {
+            background: rgba(0, 0, 0, 0.035);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+        .promo-banner-split-right p {
+            font-size: 12px;
+            line-height: 1.42;
+            color: var(--text-main);
+            opacity: 0.92;
+        }
+        .promo-banner.banner-layout-centered {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 19px 18px 17px 18px;
+            gap: 8px;
+        }
+        .promo-banner.banner-layout-centered .promo-banner-tag-pill {
+            margin: 0 auto 2px auto;
+        }
+        .promo-banner.banner-layout-centered .promo-banner-text {
+            width: 100%;
+            align-items: center;
+        }
+        .promo-banner.banner-layout-centered h3 {
+            font-size: 18px;
+        }
+        .promo-banner.banner-layout-centered .promo-copy-btn {
+            margin-top: 4px;
+            padding: 9px 20px;
+        }
+        .promo-banner.banner-layout-badge_top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 16px 17px;
+        }
+        .promo-banner-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+        }
+        .promo-banner-top-row .promo-banner-tag-pill { margin-bottom: 0; }
+        .promo-banner.banner-layout-vertical {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 17px 18px;
+        }
+        .promo-banner.banner-layout-vertical .promo-banner-tag-pill { margin-bottom: 0; }
+        .promo-banner.banner-layout-vertical .promo-copy-btn {
+            width: 100%;
+            text-align: center;
+            padding: 10px 14px;
+            margin-top: 2px;
+        }
+
+        .promo-banner.banner-layout-centered .promo-banner-media,
+        .promo-banner.banner-layout-vertical .promo-banner-media,
+        .promo-banner.banner-layout-spotlight .promo-banner-media {
+            width: 100%;
+            height: 160px;
             margin-top: 4px;
         }
+        .promo-banner.banner-img-sm.banner-layout-centered .promo-banner-media,
+        .promo-banner.banner-img-sm.banner-layout-vertical .promo-banner-media,
+        .promo-banner.banner-img-sm.banner-layout-spotlight .promo-banner-media { height: 105px; }
+        .promo-banner.banner-img-md.banner-layout-centered .promo-banner-media,
+        .promo-banner.banner-img-md.banner-layout-vertical .promo-banner-media,
+        .promo-banner.banner-img-md.banner-layout-spotlight .promo-banner-media { height: 140px; }
+        .promo-banner.banner-img-lg.banner-layout-centered .promo-banner-media,
+        .promo-banner.banner-img-lg.banner-layout-vertical .promo-banner-media,
+        .promo-banner.banner-img-lg.banner-layout-spotlight .promo-banner-media { height: 178px; }
+        .promo-banner.banner-img-xl.banner-layout-centered .promo-banner-media,
+        .promo-banner.banner-img-xl.banner-layout-vertical .promo-banner-media,
+        .promo-banner.banner-img-xl.banner-layout-spotlight .promo-banner-media { height: 225px; }
+
         .promo-banner.banner-layout-badge_top .promo-banner-media {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+            width: 78px;
+            height: 78px;
+            border-radius: 14px;
         }
+        .promo-banner.banner-img-sm.banner-layout-badge_top .promo-banner-media { width: 56px; height: 56px; }
+        .promo-banner.banner-img-md.banner-layout-badge_top .promo-banner-media { width: 72px; height: 72px; }
+        .promo-banner.banner-img-lg.banner-layout-badge_top .promo-banner-media { width: 92px; height: 92px; }
+        .promo-banner.banner-img-xl.banner-layout-badge_top .promo-banner-media { width: 114px; height: 114px; }
+
         .promo-banner.banner-layout-split .promo-banner-media {
             width: 100%;
-            height: 68px;
+            height: 110px;
             border-radius: 12px;
         }
-        .admin-banner-preview-wrap .promo-banner-media {
-            width: 58px;
-            height: 58px;
-            border-radius: 11px;
-        }
-        .admin-banner-preview-wrap .promo-banner.banner-layout-centered .promo-banner-media,
-        .admin-banner-preview-wrap .promo-banner.banner-layout-vertical .promo-banner-media {
-            width: 100%;
-            height: 76px;
-        }
+        .promo-banner.banner-img-sm.banner-layout-split .promo-banner-media { height: 76px; }
+        .promo-banner.banner-img-md.banner-layout-split .promo-banner-media { height: 98px; }
+        .promo-banner.banner-img-lg.banner-layout-split .promo-banner-media { height: 122px; }
+        .promo-banner.banner-img-xl.banner-layout-split .promo-banner-media { height: 148px; }
+
         .promo-banner.banner-layout-reverse {
             flex-direction: row-reverse;
             text-align: right;
             gap: 14px;
         }
         .promo-banner.banner-layout-reverse .promo-banner-text {
-            border-right: 2px solid color-mix(in srgb, var(--accent-green) 45%, transparent);
-            padding-right: 11px;
+            align-items: flex-end;
+            border-right: 2.5px solid color-mix(in srgb, var(--accent-green) 55%, transparent);
+            padding-right: 12px;
         }
-        .promo-banner.banner-layout-reverse.banner-style-cyber .promo-banner-text { border-right-color: rgba(56, 189, 248, 0.5); }
-        .promo-banner.banner-layout-reverse.banner-style-sunset .promo-banner-text { border-right-color: rgba(255, 140, 36, 0.5); }
-        .promo-banner.banner-layout-reverse.banner-style-violet .promo-banner-text { border-right-color: rgba(192, 132, 252, 0.5); }
-        .promo-banner.banner-layout-reverse.banner-style-gold .promo-banner-text { border-right-color: rgba(255, 208, 38, 0.5); }
-        .promo-banner.banner-layout-reverse.banner-style-crimson .promo-banner-text { border-right-color: rgba(255, 77, 109, 0.5); }
+        .promo-banner.banner-layout-reverse.banner-style-cyber .promo-banner-text { border-right-color: rgba(56, 189, 248, 0.55); }
+        .promo-banner.banner-layout-reverse.banner-style-sunset .promo-banner-text { border-right-color: rgba(255, 140, 36, 0.55); }
+        .promo-banner.banner-layout-reverse.banner-style-violet .promo-banner-text { border-right-color: rgba(192, 132, 252, 0.55); }
+        .promo-banner.banner-layout-reverse.banner-style-gold .promo-banner-text { border-right-color: rgba(255, 208, 38, 0.55); }
+        .promo-banner.banner-layout-reverse.banner-style-crimson .promo-banner-text { border-right-color: rgba(255, 77, 109, 0.55); }
 
         .admin-banner-preview-wrap {
             margin-top: 4px;
@@ -1080,11 +1290,11 @@
         }
         .admin-banner-preview-wrap .promo-banner {
             pointer-events: none;
-            padding: 12px 13px;
+            padding: 13px 14px;
             border-radius: 14px;
         }
-        .admin-banner-preview-wrap .promo-banner h3 { font-size: 13.5px; }
-        .admin-banner-preview-wrap .promo-banner p { font-size: 11px; }
+        .admin-banner-preview-wrap .promo-banner h3 { font-size: 14px; }
+        .admin-banner-preview-wrap .promo-banner p { font-size: 11.5px; }
         .admin-banner-preview-wrap .promo-copy-btn { font-size: 11px; padding: 6px 10px; }
 
         /* Табло «Поддержать проект» в профиле */
@@ -2494,9 +2704,12 @@
             </div>
         </div>
     </div>
-    <div id="splash-screen">
+    <div id="splash-screen" class="splash-style-energy">
+        <div class="splash-energy-beams"></div>
         <div class="splash-orb orb-1"></div>
         <div class="splash-orb orb-2"></div>
+        <div class="splash-shockwave"></div>
+        <div class="splash-shockwave wave-2"></div>
         <div class="splash-badge-wrap">
             <div class="splash-emblem" id="splash-emblem">🐵</div>
         </div>
@@ -2837,11 +3050,13 @@
                                 <span>✨ Вид экрана загрузки: <b id="admin-splash-style-current" style="color:var(--accent-green);">⚡ Неоновый</b></span>
                             </div>
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;" id="admin-splash-style-grid">
-                                <button type="button" class="toggle-pill on" id="splash-style-btn-neon" onclick="selectSplashStyle('neon')">⚡ Неоновый</button>
-                                <button type="button" class="toggle-pill" id="splash-style-btn-minimal" onclick="selectSplashStyle('minimal')">◻️ Минимал</button>
+                                <button type="button" class="toggle-pill on" id="splash-style-btn-energy" onclick="selectSplashStyle('energy')">🔥 Энергия (Макси)</button>
+                                <button type="button" class="toggle-pill" id="splash-style-btn-neon" onclick="selectSplashStyle('neon')">⚡ Неоновый</button>
                                 <button type="button" class="toggle-pill" id="splash-style-btn-orbit" onclick="selectSplashStyle('orbit')">🌀 Орбита</button>
                                 <button type="button" class="toggle-pill" id="splash-style-btn-pulse" onclick="selectSplashStyle('pulse')">💓 Пульс</button>
-                                <button type="button" class="toggle-pill" id="splash-style-btn-glass" style="grid-column:span 2;" onclick="selectSplashStyle('glass')">🔮 Стекло</button>
+                                <button type="button" class="toggle-pill" id="splash-style-btn-glass" onclick="selectSplashStyle('glass')">🔮 Стекло</button>
+                                <button type="button" class="toggle-pill" id="splash-style-btn-minimal" onclick="selectSplashStyle('minimal')">◻️ Минимал</button>
+                                <button type="button" class="toggle-pill on" style="grid-column:span 2; padding:8px;" onclick="previewSplashScreenNow()">👁 Предпросмотр экрана загрузки</button>
                             </div>
                         </div>
                         <div style="margin-bottom:8px;">
@@ -2930,6 +3145,8 @@
                             <button type="button" class="toggle-pill" id="season-btn-spring" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('spring')">🌸 Весна (Лепестки)</button>
                             <button type="button" class="toggle-pill" id="season-btn-summer" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('summer')">✨ Лето (Искры)</button>
                             <button type="button" class="toggle-pill" id="season-btn-rain" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('rain')">🌧 Дождь</button>
+                            <button type="button" class="toggle-pill" id="season-btn-storm_rain" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('storm_rain')">⛈ Гроза с дождём</button>
+                            <button type="button" class="toggle-pill" id="season-btn-thunder" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('thunder')">⚡ Гроза (молнии)</button>
                             <button type="button" class="toggle-pill" id="season-btn-garland" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('garland')">🎄 Гирлянда</button>
                             <button type="button" class="toggle-pill" id="season-btn-fireworks" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('fireworks')">🎆 Салюты</button>
                             <button type="button" class="toggle-pill" id="season-btn-aurora" style="background:var(--card-bg); color:var(--text-secondary); border:1px solid var(--border-color);" onclick="adminSetSeason('aurora')">🌌 Сияние</button>
@@ -3579,7 +3796,7 @@
     let logoPart2 = localStorage.getItem('monkey_logo_part2') ?? 'VAPE';
     let logoImage = localStorage.getItem('monkey_logo_image') || '';
     let isLogoImageDirty = false;
-    let splashStyle = localStorage.getItem('monkey_splash_style') || 'neon';
+    let splashStyle = localStorage.getItem('monkey_splash_style') || 'energy';
     let isSplashStyleDirty = false;
     let splashEmoji = localStorage.getItem('monkey_splash_emoji') || '🐵';
     let splashImage = localStorage.getItem('monkey_splash_image') || '';
@@ -3650,15 +3867,16 @@
     }
     function applySplashStyleUI() {
         const sp = document.getElementById('splash-screen');
-        const styles = ['neon', 'minimal', 'orbit', 'pulse', 'glass'];
+        const styles = ['energy', 'neon', 'minimal', 'orbit', 'pulse', 'glass'];
         const styleLabels = {
+            energy: '🔥 Энергия (Макси)',
             neon: '⚡ Неоновый',
             minimal: '◻️ Минимал',
             orbit: '🌀 Орбита',
             pulse: '💓 Пульс',
             glass: '🔮 Стекло'
         };
-        const activeSt = styles.includes(splashStyle) ? splashStyle : 'neon';
+        const activeSt = styles.includes(splashStyle) ? splashStyle : 'energy';
         if (sp) {
             styles.forEach(s => sp.classList.remove(`splash-style-${s}`));
             sp.classList.add(`splash-style-${activeSt}`);
@@ -3717,16 +3935,19 @@
         const p1 = (logoPart1 || '').trim();
         const p2 = (logoPart2 || '').trim();
         const textPart = `${escapeHtml(p1)}${p2 ? ` <span>${escapeHtml(p2)}</span>` : ''}` || 'MONKEY <span>VAPE</span>';
-        const styles = ['neon', 'minimal', 'orbit', 'pulse', 'glass'];
-        const activeSt = styles.includes(splashStyle) ? splashStyle : 'neon';
+        const styles = ['energy', 'neon', 'minimal', 'orbit', 'pulse', 'glass'];
+        const activeSt = styles.includes(splashStyle) ? splashStyle : 'energy';
         const ov = document.createElement('div');
         ov.id = 'splash-preview-overlay';
         ov.className = `splash-style-${activeSt}`;
-        ov.style.cssText = 'position:absolute; inset:0; z-index:950; display:flex; flex-direction:column; justify-content:center; align-items:center; background:var(--bg-color); cursor:pointer;';
+        ov.style.cssText = 'position:absolute; inset:0; z-index:950; display:flex; flex-direction:column; justify-content:center; align-items:center; background:var(--bg-color); cursor:pointer; overflow:hidden;';
         ov.onclick = () => ov.remove();
         ov.innerHTML = `
+            <div class="splash-energy-beams"></div>
             <div class="splash-orb orb-1"></div>
             <div class="splash-orb orb-2"></div>
+            <div class="splash-shockwave"></div>
+            <div class="splash-shockwave wave-2"></div>
             <div class="splash-badge-wrap">
                 <div class="splash-emblem">${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="Splash">` : escapeHtml(em)}</div>
             </div>
@@ -4495,16 +4716,21 @@
     let bannerIntervalSec = parseInt(localStorage.getItem('monkey_banner_interval') ?? '5', 10);
     if (isNaN(bannerIntervalSec) || bannerIntervalSec < 0) bannerIntervalSec = 5;
     const BANNER_LAYOUT_OPTIONS = [
-        { id: 'classic', label: '📐 Классика (Текст • Кнопка)' },
-        { id: 'split', label: '◫ Колонки (Слева • Описание)' },
-        { id: 'centered', label: '🎯 По центру (Постер)' },
-        { id: 'badge_top', label: '🏷 Бейдж сверху' },
-        { id: 'vertical', label: '🃏 Витрина (Кнопка снизу)' },
-        { id: 'reverse', label: '⇄ Инверсия (Кнопка • Текст)' }
+        { id: 'classic', label: '📐 Классика (Текст • Медиа/Кнопка)' },
+        { id: 'media_left', label: '◧ Слева направо (Картинка • Текст)' },
+        { id: 'hero_bg', label: '🖼 Постер на весь фон (Текст поверх)' },
+        { id: 'editorial', label: '📰 Афиша (Заголовок • Разделитель)' },
+        { id: 'split', label: '◫ Две колонки (Слева • Описание)' },
+        { id: 'centered', label: '🎯 По центру (Симметричный постер)' },
+        { id: 'badge_top', label: '🏷 Бейдж сверху • Текст снизу' },
+        { id: 'vertical', label: '🃏 Витрина (Визуал/Кнопка снизу)' },
+        { id: 'reverse', label: '⇄ Инверсия (Кнопка/Медиа • Текст)' },
+        { id: 'spotlight', label: '✨ Акцент-карточка (Нижняя плашка)' }
     ];
     function normalizeClientBannerSlide(raw, idx = 0) {
         const s = raw || {};
         const am = ['button', 'image', 'none'].includes(s.action_mode) ? s.action_mode : 'button';
+        const imgSz = ['sm', 'md', 'lg', 'xl'].includes(s.image_size) ? s.image_size : 'lg';
         return {
             id: String(s.id || `banner_${Date.now()}_${idx}`),
             title: String(s.title || ''),
@@ -4513,6 +4739,7 @@
             layout: BANNER_LAYOUT_OPTIONS.some(o => o.id === s.layout) ? s.layout : 'classic',
             badge_text: String(s.badge_text !== undefined ? s.badge_text : 'АКЦИЯ'),
             action_mode: am,
+            image_size: imgSz,
             image_url: String(s.image_url || '').trim(),
             btn_text: String(s.btn_text !== undefined ? s.btn_text : 'Скопировать'),
             promo_code: String(s.promo_code || '')
@@ -4523,11 +4750,14 @@
         const lay = BANNER_LAYOUT_OPTIONS.some(o => o.id === slide.layout) ? slide.layout : 'classic';
         const layClass = `banner-layout-${lay}`;
         const actionMode = ['button', 'image', 'none'].includes(slide.action_mode) ? slide.action_mode : 'button';
+        const imgSz = ['sm', 'md', 'lg', 'xl'].includes(slide.image_size) ? slide.image_size : 'lg';
+        const imgSzClass = `banner-img-${imgSz}`;
         const badgeTxt = (slide.badge_text || '').trim();
         const badgeHtml = badgeTxt ? `<span class="promo-banner-tag-pill">${escapeHtml(badgeTxt)}</span>` : '';
         const clickAttr = isPreview ? '' : `onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, this)"`;
 
         let actionHtml = '';
+        let heroBgHtml = '';
         if (actionMode === 'button') {
             const btnLabel = (slide.btn_text || '').trim() || ((slide.promo_code || '').trim() ? 'Скопировать' : '');
             if (btnLabel) {
@@ -4536,17 +4766,63 @@
         } else if (actionMode === 'image') {
             const imgSrc = (slide.image_url || '').trim();
             if (imgSrc) {
-                const imgClick = (!isPreview && (slide.promo_code || '').trim()) ? `style="cursor:pointer;" onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, null)"` : '';
-                actionHtml = `<div class="promo-banner-media" ${imgClick}>${buildProductImgTag(imgSrc, slide.title || 'Promo', '')}</div>`;
+                if (lay === 'hero_bg') {
+                    heroBgHtml = `<div class="promo-banner-hero-bg-layer">${buildProductImgTag(imgSrc, slide.title || 'Promo', '')}</div>`;
+                } else {
+                    const imgClick = (!isPreview && (slide.promo_code || '').trim()) ? `style="cursor:pointer;" onclick="event.stopPropagation(); copyBannerPromoCode(${idx}, null)"` : '';
+                    actionHtml = `<div class="promo-banner-media" ${imgClick}>${buildProductImgTag(imgSrc, slide.title || 'Promo', '')}</div>`;
+                }
             }
         }
-        const noActionClass = actionHtml ? '' : 'banner-no-action';
-        const titleHtml = `<h3>${escapeHtml(slide.title || '')}</h3>`;
-        const descHtml = `<p>${escapeHtml(slide.desc || '')}</p>`;
+        const hasVisualRight = Boolean(actionHtml);
+        const noActionClass = (hasVisualRight || heroBgHtml) ? '' : 'banner-no-action';
+        const titleHtml = (slide.title || '').trim() ? `<h3>${escapeHtml(slide.title)}</h3>` : '';
+        const descHtml = (slide.desc || '').trim() ? `<p>${escapeHtml(slide.desc)}</p>` : '';
 
+        if (lay === 'hero_bg') {
+            const heroClick = (!isPreview && (slide.promo_code || '').trim()) ? `style="cursor:pointer;" onclick="copyBannerPromoCode(${idx}, null)"` : '';
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}" ${heroClick}>
+                    ${heroBgHtml}
+                    <div class="promo-banner-text">
+                        ${badgeHtml}
+                        ${titleHtml}
+                        ${descHtml}
+                    </div>
+                    ${actionHtml}
+                </div>
+            `;
+        }
+        if (lay === 'editorial') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
+                    <div class="promo-banner-editorial-top">
+                        ${badgeHtml}
+                        ${titleHtml}
+                    </div>
+                    <div class="promo-banner-editorial-divider"></div>
+                    <div class="promo-banner-editorial-bottom">
+                        <div class="promo-banner-text">${descHtml}</div>
+                        ${actionHtml}
+                    </div>
+                </div>
+            `;
+        }
+        if (lay === 'spotlight') {
+            return `
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
+                    <div class="promo-banner-text">
+                        ${badgeHtml}
+                        ${titleHtml}
+                    </div>
+                    ${actionHtml}
+                    ${descHtml ? `<div class="promo-banner-spotlight-footer"><div class="promo-banner-text">${descHtml}</div></div>` : ''}
+                </div>
+            `;
+        }
         if (lay === 'split') {
             return `
-                <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
                     <div class="promo-banner-split-left">
                         ${badgeHtml}
                         ${titleHtml}
@@ -4560,7 +4836,7 @@
         }
         if (lay === 'centered') {
             return `
-                <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
                     ${badgeHtml}
                     <div class="promo-banner-text">
                         ${titleHtml}
@@ -4572,7 +4848,7 @@
         }
         if (lay === 'badge_top') {
             return `
-                <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
                     <div class="promo-banner-top-row">
                         ${badgeHtml || '<span></span>'}
                         ${actionHtml}
@@ -4586,7 +4862,7 @@
         }
         if (lay === 'vertical') {
             return `
-                <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
+                <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
                     ${badgeHtml}
                     <div class="promo-banner-text">
                         ${titleHtml}
@@ -4597,7 +4873,7 @@
             `;
         }
         return `
-            <div class="promo-banner ${stClass} ${layClass} ${noActionClass}">
+            <div class="promo-banner ${stClass} ${layClass} ${imgSzClass} ${noActionClass}">
                 <div class="promo-banner-text">
                     ${badgeHtml}
                     ${titleHtml}
@@ -4928,6 +5204,20 @@
                             <div style="display:flex; gap:6px;">
                                 <button type="button" class="img-upload-btn" style="margin-bottom:0; padding:8px 10px; font-size:11.5px; flex:1;" onclick="document.getElementById('admin-banner-file-${idx}').click()">📷 Загрузить рекламную картинку</button>
                                 ${slide.image_url ? `<button type="button" class="toggle-pill off" style="padding:7px 10px;" onclick="updateBannerSlideField(${idx}, 'image_url', '', true)">✕</button>` : ''}
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:5px;">
+                                <span style="font-size:11px; color:var(--text-secondary); white-space:nowrap;">📐 Размер:</span>
+                                <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:4px; flex:1;">
+                                    ${[
+                                        { id: 'sm', label: 'S' },
+                                        { id: 'md', label: 'M' },
+                                        { id: 'lg', label: 'L' },
+                                        { id: 'xl', label: 'XL' }
+                                    ].map(sz => {
+                                        const isSzAct = (slide.image_size || 'lg') === sz.id;
+                                        return `<button type="button" class="toggle-pill ${isSzAct ? 'on' : ''}" style="${!isSzAct ? 'background:var(--bg-color); color:var(--text-secondary); border:1px solid var(--border-color);' : ''} font-size:11px; padding:5px 4px;" onclick="updateBannerSlideField(${idx}, 'image_size', '${sz.id}', true)">${sz.label}</button>`;
+                                    }).join('')}
+                                </div>
                             </div>
                             <input type="text" class="promo-input admin-banner-field" style="text-transform:none; font-size:11.5px;" placeholder="Или ссылка на картинку (необязательно)" value="${escapeHtml(slide.image_url || '')}" oninput="updateBannerSlideField(${idx}, 'image_url', this.value)">
                             <input type="text" class="promo-input admin-banner-field" style="font-size:11.5px;" placeholder="Промокод при нажатии на картинку (необязательно)" value="${escapeHtml(slide.promo_code || '')}" oninput="updateBannerSlideField(${idx}, 'promo_code', this.value)">
@@ -5735,6 +6025,146 @@
                 seasonAnimId = requestAnimationFrame(drawBokeh);
             }
             drawBokeh();
+            return;
+        }
+
+        if (currentSeasonEffect === 'storm_rain' || currentSeasonEffect === 'thunder') {
+            const withRain = currentSeasonEffect === 'storm_rain';
+            const rainDrops = withRain ? Array.from({ length: 42 }, () => ({
+                x: Math.random() * (canvas.width + 60),
+                y: Math.random() * canvas.height,
+                len: 12 + Math.random() * 11,
+                speedY: 5.2 + Math.random() * 2.8,
+                speedX: -1.45 - Math.random() * 0.65,
+                alpha: 0.24 + Math.random() * 0.22
+            })) : [];
+
+            let activeBolts = [];
+            let screenFlashAlpha = 0;
+            let nextStrikeTimer = 35 + Math.floor(Math.random() * 55);
+
+            function buildJaggedBolt(x1, y1, x2, y2, displace, depth = 0) {
+                const segs = [];
+                function subdivide(ax, ay, bx, by, disp) {
+                    if (disp < 5) {
+                        segs.push({ x1: ax, y1: ay, x2: bx, y2: by });
+                        return;
+                    }
+                    const mx = (ax + bx) * 0.5 + (Math.random() - 0.5) * disp;
+                    const my = (ay + by) * 0.5 + (Math.random() - 0.5) * disp * 0.45;
+                    subdivide(ax, ay, mx, my, disp * 0.52);
+                    subdivide(mx, my, bx, by, disp * 0.52);
+                }
+                subdivide(x1, y1, x2, y2, displace);
+                if (depth < 2) {
+                    const branchCount = depth === 0 ? (1 + Math.floor(Math.random() * 2)) : 1;
+                    for (let b = 0; b < branchCount; b++) {
+                        const pick = segs[Math.floor(segs.length * (0.2 + Math.random() * 0.55))];
+                        if (pick) {
+                            const bLenY = (y2 - pick.y1) * (0.35 + Math.random() * 0.35);
+                            const bEndX = pick.x1 + (Math.random() - 0.5) * 130;
+                            const bEndY = pick.y1 + Math.max(45, bLenY);
+                            segs.push(...buildJaggedBolt(pick.x1, pick.y1, bEndX, bEndY, displace * 0.48, depth + 1).map(s => ({ ...s, isBranch: true })));
+                        }
+                    }
+                }
+                return segs;
+            }
+
+            function triggerLightningStrike() {
+                const startX = canvas.width * (0.14 + Math.random() * 0.72);
+                const endX = startX + (Math.random() - 0.5) * 140;
+                const endY = canvas.height * (0.48 + Math.random() * 0.38);
+                const segments = buildJaggedBolt(startX, -8, endX, endY, 68, 0);
+                activeBolts.push({
+                    segments,
+                    life: 1.0,
+                    decay: 0.042 + Math.random() * 0.018,
+                    flickerPhase: Math.random() * Math.PI * 2
+                });
+                screenFlashAlpha = 0.24 + Math.random() * 0.14;
+            }
+
+            function drawStormFrame() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (screenFlashAlpha > 0.005) {
+                    ctx.save();
+                    const flashGrad = ctx.createRadialGradient(canvas.width * 0.5, canvas.height * 0.18, 10, canvas.width * 0.5, canvas.height * 0.45, canvas.height * 0.85);
+                    flashGrad.addColorStop(0, `rgba(205, 235, 255, ${screenFlashAlpha})`);
+                    flashGrad.addColorStop(1, `rgba(120, 175, 255, ${screenFlashAlpha * 0.25})`);
+                    ctx.fillStyle = flashGrad;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.restore();
+                    screenFlashAlpha *= 0.84;
+                }
+
+                if (withRain) {
+                    ctx.save();
+                    ctx.lineCap = 'round';
+                    const flashBoost = screenFlashAlpha > 0.03 ? 0.28 : 0;
+                    rainDrops.forEach(d => {
+                        d.x += d.speedX;
+                        d.y += d.speedY;
+                        if (d.y > canvas.height + 16) {
+                            d.y = -14;
+                            d.x = Math.random() * (canvas.width + 60);
+                        }
+                        if (d.x < -20) d.x = canvas.width + 20;
+                        ctx.strokeStyle = `rgba(165, 218, 255, ${Math.min(0.85, d.alpha + flashBoost)})`;
+                        ctx.lineWidth = 1.25;
+                        ctx.beginPath();
+                        ctx.moveTo(d.x, d.y);
+                        ctx.lineTo(d.x + d.speedX * 2.3, d.y + d.len);
+                        ctx.stroke();
+                    });
+                    ctx.restore();
+                }
+
+                nextStrikeTimer -= 1;
+                if (nextStrikeTimer <= 0) {
+                    triggerLightningStrike();
+                    if (Math.random() < 0.38) {
+                        setTimeout(() => {
+                            if (currentSeasonEffect === 'storm_rain' || currentSeasonEffect === 'thunder') {
+                                triggerLightningStrike();
+                            }
+                        }, 110 + Math.floor(Math.random() * 90));
+                    }
+                    nextStrikeTimer = 115 + Math.floor(Math.random() * 145);
+                }
+
+                activeBolts = activeBolts.filter(b => b.life > 0.02);
+                activeBolts.forEach(bolt => {
+                    bolt.life -= bolt.decay;
+                    const pulse = bolt.life > 0.55 ? (0.65 + 0.35 * Math.sin(bolt.life * 38 + bolt.flickerPhase)) : bolt.life;
+                    ctx.save();
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    bolt.segments.forEach(seg => {
+                        ctx.strokeStyle = `rgba(125, 211, 252, ${Math.max(0, pulse * (seg.isBranch ? 0.42 : 0.72))})`;
+                        ctx.lineWidth = seg.isBranch ? 2.4 : 4.6;
+                        ctx.shadowColor = '#38bdf8';
+                        ctx.shadowBlur = seg.isBranch ? 10 : 22;
+                        ctx.beginPath();
+                        ctx.moveTo(seg.x1, seg.y1);
+                        ctx.lineTo(seg.x2, seg.y2);
+                        ctx.stroke();
+
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0, pulse * (seg.isBranch ? 0.65 : 0.96))})`;
+                        ctx.lineWidth = seg.isBranch ? 0.9 : 1.9;
+                        ctx.shadowBlur = 0;
+                        ctx.beginPath();
+                        ctx.moveTo(seg.x1, seg.y1);
+                        ctx.lineTo(seg.x2, seg.y2);
+                        ctx.stroke();
+                    });
+                    ctx.restore();
+                });
+
+                seasonAnimId = requestAnimationFrame(drawStormFrame);
+            }
+            drawStormFrame();
             return;
         }
 
@@ -9091,7 +9521,7 @@
     }
     function renderAdminAppearance() {
         applyAgeModalAppearance();
-        ['none', 'winter', 'autumn', 'spring', 'summer', 'rain', 'garland', 'fireworks', 'aurora', 'bokeh'].forEach(s => {
+        ['none', 'winter', 'autumn', 'spring', 'summer', 'rain', 'storm_rain', 'thunder', 'garland', 'fireworks', 'aurora', 'bokeh'].forEach(s => {
             const btn = document.getElementById(`season-btn-${s}`);
             if (btn) {
                 btn.className = `toggle-pill ${currentSeasonEffect === s ? 'on' : ''}`;
