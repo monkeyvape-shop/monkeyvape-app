@@ -775,6 +775,7 @@ async def init_db():
             ("top_notice_interval", "4"), ("top_notice_slides", json.dumps(DEFAULT_TOP_NOTICE_SLIDES, ensure_ascii=False)),
             ("banner_interval", "5"), ("saved_ui_themes", "[]"),
             ("age_check_enabled", "1"), ("age_min_years", "18"), ("age_modal_bg", "#131b14"), ("age_modal_opacity", "95"),
+            ("welcome_overlay_enabled", "1"), ("welcome_overlay_text", "Вас приветствует Monkey Shop"), ("welcome_overlay_bg", "#0b0f0c"), ("welcome_overlay_opacity", "40"),
             ("smart_bar_enabled", "1"), ("smart_bar_target", "0"), ("smart_bar_reward", "Бесплатная доставка"),
             ("donate_config", json.dumps({
                 "enabled": True,
@@ -1154,6 +1155,13 @@ class AdminAgeSettingsSchema(BaseModel):
     bg_color: str = "#131b14"
     opacity: int = 95
 
+class AdminWelcomeOverlaySchema(BaseModel):
+    user_id: int
+    enabled: bool = True
+    text: str = "Вас приветствует Monkey Shop"
+    bg_color: str = "#0b0f0c"
+    opacity: int = 40
+
 class AdminChannelsSchema(BaseModel):
     user_id: int
     news_channel_url: str = ""
@@ -1397,6 +1405,14 @@ async def get_shop_config():
         except Exception:
             age_modal_opacity = 95
 
+        welcome_ov_enabled = (await get_setting_raw(db, "welcome_overlay_enabled", "1")) == "1"
+        welcome_ov_text = (await get_setting_raw(db, "welcome_overlay_text", "Вас приветствует Monkey Shop")).strip() or "Вас приветствует Monkey Shop"
+        welcome_ov_bg = (await get_setting_raw(db, "welcome_overlay_bg", "#0b0f0c")).strip() or "#0b0f0c"
+        try:
+            welcome_ov_opacity = max(0, min(100, int(await get_setting_raw(db, "welcome_overlay_opacity", "40") or 40)))
+        except Exception:
+            welcome_ov_opacity = 40
+
         smart_bar_enabled = (await get_setting_raw(db, "smart_bar_enabled", "1")) == "1"
         smart_bar_target = float(await get_setting_raw(db, "smart_bar_target", "0") or 0)
         smart_bar_reward = (await get_setting_raw(db, "smart_bar_reward", "Бесплатная доставка")).strip() or "Бесплатная доставка"
@@ -1430,6 +1446,7 @@ async def get_shop_config():
             "season_effect": season_effect, "hit_color": hit_color,
             "ui_theme": ui_theme, "saved_ui_themes": saved_ui_themes,
             "age_settings": {"enabled": age_check_enabled, "min_years": age_min_years, "bg_color": age_modal_bg, "opacity": age_modal_opacity},
+            "welcome_overlay": {"enabled": welcome_ov_enabled, "text": welcome_ov_text, "bg_color": welcome_ov_bg, "opacity": welcome_ov_opacity},
             "smart_bar": {"enabled": smart_bar_enabled, "target": smart_bar_target, "reward": smart_bar_reward},
             "logo_part1": logo_part1, "logo_part2": logo_part2, "logo_image": logo_image, "splash_style": splash_style,
             "music_enabled": music_enabled, "music_paused": music_paused,
@@ -1574,6 +1591,20 @@ async def update_admin_age_settings(data: AdminAgeSettingsSchema, request: Reque
         await set_setting_raw(db, "age_modal_opacity", str(op_pct))
         await db.commit()
     return {"success": True, "age_settings": {"enabled": bool(data.enabled), "min_years": min_y, "bg_color": bg_c, "opacity": op_pct}}
+
+@app.post("/api/admin/welcome_overlay")
+async def update_admin_welcome_overlay(data: AdminWelcomeOverlaySchema, request: Request):
+    async with aiosqlite.connect(DB_FILE) as db:
+        await require_verified_owner(db, request, data.user_id)
+        w_text = (data.text or "").strip() or "Вас приветствует Monkey Shop"
+        bg_c = (data.bg_color or "").strip() or "#0b0f0c"
+        op_pct = max(0, min(100, int(data.opacity if data.opacity is not None else 40)))
+        await set_setting_raw(db, "welcome_overlay_enabled", "1" if data.enabled else "0")
+        await set_setting_raw(db, "welcome_overlay_text", w_text)
+        await set_setting_raw(db, "welcome_overlay_bg", bg_c)
+        await set_setting_raw(db, "welcome_overlay_opacity", str(op_pct))
+        await db.commit()
+    return {"success": True, "welcome_overlay": {"enabled": bool(data.enabled), "text": w_text, "bg_color": bg_c, "opacity": op_pct}}
 
 @app.post("/api/admin/branding")
 async def update_admin_branding(data: AdminBrandingSchema, request: Request):
