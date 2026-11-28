@@ -365,12 +365,14 @@ async def get_audio_library_state(db) -> dict:
     }
 
 def normalize_banner_item(raw_item: dict, idx: int = 0) -> dict:
-    valid_layouts = ("classic", "split", "centered", "badge_top", "vertical", "reverse")
+    valid_layouts = ("classic", "media_left", "hero_bg", "editorial", "split", "centered", "badge_top", "vertical", "reverse", "spotlight")
     lay = str(raw_item.get("layout") or "classic").strip()
     if lay not in valid_layouts:
         lay = "classic"
     raw_action_mode = str(raw_item.get("action_mode") or "button").strip()
     action_mode = raw_action_mode if raw_action_mode in ("button", "image", "none") else "button"
+    raw_img_size = str(raw_item.get("image_size") or "lg").strip()
+    img_size = raw_img_size if raw_img_size in ("sm", "md", "lg", "xl") else "lg"
     raw_img = normalize_public_asset_url(str(raw_item.get("image_url") or "").strip())
     return {
         "id": str(raw_item.get("id") or f"banner_{int(time.time() * 1000)}_{idx}").strip(),
@@ -380,6 +382,7 @@ def normalize_banner_item(raw_item: dict, idx: int = 0) -> dict:
         "layout": lay,
         "badge_text": str(raw_item.get("badge_text") or "АКЦИЯ").strip(),
         "action_mode": action_mode,
+        "image_size": img_size,
         "image_url": raw_img,
         "btn_text": str(raw_item.get("btn_text") or "").strip() or "Скопировать",
         "promo_code": str(raw_item.get("promo_code") or "").strip()
@@ -764,7 +767,7 @@ async def init_db():
             ("splash_emoji", "🐵"), ("splash_image", ""), ("welcome_text", DEFAULT_WELCOME_TEXT),
             ("min_order_amount", "0"), ("delivery_fee", "0"), ("free_delivery_threshold", "0"),
             ("auto_schedule_enabled", "0"), ("open_time", "10:00"), ("close_time", "22:00"),
-            ("logo_image", ""), ("splash_style", "neon"),
+            ("logo_image", ""), ("splash_style", "energy"),
             ("music_enabled", "0"), ("music_paused", "0"), ("music_url", ""), ("music_title", "Фоновый трек"),
             ("music_volume", "0.35"), ("audio_tracks", "[]"), ("audio_loop_mode", "sequence"),
             ("audio_active_track_id", ""), ("audio_default_volume", "35"),
@@ -1346,7 +1349,7 @@ async def get_shop_config():
         logo_part1 = await get_setting_raw(db, "logo_part1", "MONKEY")
         logo_part2 = await get_setting_raw(db, "logo_part2", "VAPE")
         logo_image = normalize_public_asset_url((await get_setting_raw(db, "logo_image", "")).strip())
-        splash_style = (await get_setting_raw(db, "splash_style", "neon")).strip() or "neon"
+        splash_style = (await get_setting_raw(db, "splash_style", "energy")).strip() or "energy"
         music_enabled = (await get_setting_raw(db, "music_enabled", "0")) == "1"
         music_paused = (await get_setting_raw(db, "music_paused", "0")) == "1"
 
@@ -1589,7 +1592,7 @@ async def update_admin_branding(data: AdminBrandingSchema, request: Request):
             await set_setting_raw(db, "splash_emoji", data.splash_emoji.strip())
         if data.splash_image is not None:
             await set_setting_raw(db, "splash_image", normalize_public_asset_url(data.splash_image.strip()))
-        if data.splash_style is not None and data.splash_style.strip() in ("neon", "minimal", "orbit", "pulse", "glass"):
+        if data.splash_style is not None and data.splash_style.strip() in ("energy", "neon", "minimal", "orbit", "pulse", "glass"):
             await set_setting_raw(db, "splash_style", data.splash_style.strip())
         if data.welcome_text is not None:
             w_clean = data.welcome_text.strip()
@@ -2064,7 +2067,7 @@ async def admin_shop_status(data: AdminShopStatusSchema, request: Request):
 async def admin_appearance(data: AdminAppearanceSchema, request: Request):
     async with aiosqlite.connect(DB_FILE) as db:
         await require_verified_owner(db, request, data.user_id)
-        season = data.season_effect if data.season_effect in ("none", "winter", "autumn", "spring", "summer", "rain", "garland", "fireworks", "aurora", "bokeh") else "none"
+        season = data.season_effect if data.season_effect in ("none", "winter", "autumn", "spring", "summer", "rain", "storm_rain", "thunder", "garland", "fireworks", "aurora", "bokeh") else "none"
         await set_setting_raw(db, "season_effect", season)
         await set_setting_raw(db, "hit_color", data.hit_color.strip() or "#ffcc00")
         await db.commit()
