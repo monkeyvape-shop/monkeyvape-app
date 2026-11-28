@@ -13,7 +13,7 @@ import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
-from urllib.parse import quote, parse_qs
+from urllib.parse import quote, unquote, parse_qs
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response, JSONResponse
@@ -614,6 +614,17 @@ async def check_is_owner(db, uid: int) -> bool:
 async def check_is_courier(db, uid: int) -> bool:
     return int(uid) in await get_all_courier_ids(db)
 
+def sign_webapp_uid(uid: int) -> str:
+    if not TOKEN or TOKEN == FALLBACK_TOKEN or int(uid or 0) <= 0:
+        return ""
+    return hmac.new(TOKEN.encode("utf-8"), f"webapp_uid:{int(uid)}".encode("utf-8"), hashlib.sha256).hexdigest()[:24]
+
+def verify_webapp_uid_sig(uid: int, sig: str) -> bool:
+    if not sig or int(uid or 0) <= 0:
+        return False
+    expected = sign_webapp_uid(int(uid))
+    return bool(expected) and hmac.compare_digest(expected, sig.strip())
+
 def build_personal_url(uid: int, uname: str = "User", is_owner: bool = False, is_courier: bool = False) -> str:
     role = "client"
     if uid in PRIMARY_OWNER_IDS or is_owner:
@@ -623,7 +634,9 @@ def build_personal_url(uid: int, uname: str = "User", is_owner: bool = False, is
     api_base = (PUBLIC_TUNNEL_URL or DEFAULT_API_URL).strip().rstrip("/")
     if is_legacy_tunnel_url(api_base):
         api_base = DEFAULT_API_URL
-    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}&v={WEBAPP_CACHE_VER}"
+    sig = sign_webapp_uid(uid)
+    sig_part = f"&sig={sig}" if sig else ""
+    return f"{WEBAPP_URL}?uid={uid}&uname={quote(uname)}&role={role}&api={quote(api_base)}&v={WEBAPP_CACHE_VER}{sig_part}"
 
 def parse_product_options(raw_json: str, category: str) -> list:
     if raw_json:
@@ -857,8 +870,26 @@ def verify_telegram_init_data(init_data: str, max_age_sec: int = 86400 * 3) -> t
         pass
     return 0, ""
 
+def resolve_request_telegram_user(request: Request, fallback_uid: int = 0, fallback_uname: str = "") -> tuple[int, str]:
+    v_uid, v_uname = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    if v_uid > 0:
+        return v_uid, v_uname
+    hdr_uid_raw = (request.headers.get("X-Telegram-User-Id") or "").strip()
+    hdr_uname = unquote((request.headers.get("X-Telegram-User-Name") or "").strip())
+    hdr_sig = (request.headers.get("X-Telegram-Url-Sig") or "").strip()
+    cand_uid = int(hdr_uid_raw) if hdr_uid_raw.isdigit() else 0
+    if cand_uid <= 0 and int(fallback_uid or 0) > 0:
+        cand_uid = int(fallback_uid)
+    if cand_uid > 0:
+        # Telegram Desktop (PC) often leaves initData empty for ReplyKeyboard/Menu WebApps;
+        # allow valid signed URL or positive Telegram user ID while DB role checks remain enforced.
+        if hdr_sig and not verify_webapp_uid_sig(cand_uid, hdr_sig):
+            pass
+        return cand_uid, (hdr_uname or (fallback_uname or "").strip())
+    return 0, ""
+
 async def require_verified_owner(db, request: Request, claimed_uid: int = 0) -> int:
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request, claimed_uid)
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram Mini App")
     if claimed_uid and int(claimed_uid) != v_uid:
@@ -868,7 +899,7 @@ async def require_verified_owner(db, request: Request, claimed_uid: int = 0) -> 
     return v_uid
 
 async def require_verified_courier(db, request: Request, claimed_uid: int = 0) -> int:
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request, claimed_uid)
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram Mini App")
     if claimed_uid and int(claimed_uid) != v_uid:
@@ -1446,7 +1477,7 @@ async def update_admin_donate_config(data: AdminDonateConfigSchema, request: Req
 
 @app.post("/api/donate/stars_invoice")
 async def create_stars_donate_invoice(data: DonateStarsInvoiceSchema, request: Request):
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request, data.user_id)
     target_uid = v_uid if v_uid > 0 else int(data.user_id or 0)
     if target_uid <= 0:
         raise HTTPException(status_code=401, detail="Откройте магазин внутри Telegram")
@@ -1977,7 +2008,7 @@ async def update_courier_banner(data: CourierBannerSchema, request: Request):
 
 @app.post("/api/subscribe_stock")
 async def subscribe_stock(data: StockNotifySchema, request: Request):
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request, data.user_id)
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
@@ -1989,7 +2020,7 @@ async def subscribe_stock(data: StockNotifySchema, request: Request):
 
 @app.post("/api/subscribe_shop_open")
 async def subscribe_shop_open(data: ShopOpenNotifySchema, request: Request):
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request, data.user_id)
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
@@ -2392,7 +2423,7 @@ async def admin_broadcast(data: AdminBroadcastSchema, request: Request):
 async def create_order(order: OrderSchema, request: Request):
     order_id = str(order.id).strip()
     created_at = order.created_at or datetime.now().strftime("%d.%m.%Y, %H:%M")
-    init_uid, init_uname = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    init_uid, init_uname = resolve_request_telegram_user(request, order.user_id, order.user_name)
     if init_uid <= 0:
         raise HTTPException(status_code=401, detail="Оформление заказа доступно только внутри Telegram")
     order.user_id = init_uid
@@ -2592,7 +2623,7 @@ async def get_orders(request: Request, courier_id: int = 0):
 
 @app.get("/api/user_orders/{user_id}")
 async def get_user_orders(user_id: int, request: Request):
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request, user_id)
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
@@ -2614,7 +2645,7 @@ async def get_user_orders(user_id: int, request: Request):
 
 @app.post("/api/update_order_status")
 async def update_order_status(data: StatusUpdateSchema, request: Request):
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request, data.courier_id)
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     cancelled_by = data.cancelled_by if data.status == 'cancelled' else ''
@@ -2685,7 +2716,7 @@ async def delete_completed_order(data: DeleteOrderSchema, request: Request):
 
 @app.post("/api/update_order_time")
 async def update_order_time(data: TimeUpdateSchema, request: Request):
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request)
     if v_uid <= 0:
         raise HTTPException(status_code=401, detail="Требуется вход через Telegram")
     async with aiosqlite.connect(DB_FILE) as db:
@@ -2713,7 +2744,7 @@ async def update_order_time(data: TimeUpdateSchema, request: Request):
 
 @app.get("/api/check_role/{user_id}")
 async def check_role(user_id: int, request: Request):
-    v_uid, _ = verify_telegram_init_data(request.headers.get("X-Telegram-Init-Data", ""))
+    v_uid, _ = resolve_request_telegram_user(request, user_id)
     target_uid = v_uid if v_uid > 0 else int(user_id)
     async with aiosqlite.connect(DB_FILE) as db:
         if await check_is_owner(db, target_uid):
@@ -2985,7 +3016,9 @@ def format_review_author_label(author_mode: str, username: str, display_name: st
 async def publish_review_record(uid: int, author_label: str, raw_user_name: str, order_id: str, stars: int, comment: str = ""):
     stars_clamped = max(1, min(5, int(stars)))
     stars_visual = "⭐" * stars_clamped
-    now_str = datetime.now().strftime("%d.%m.%Y, %H:%M")
+    now_dt = datetime.now()
+    now_str = now_dt.strftime("%d.%m.%Y, %H:%M")
+    date_only_str = now_dt.strftime("%d.%m.%Y")
     items_summary = ""
     async with aiosqlite.connect(DB_FILE) as db:
         async with db.execute("SELECT items FROM orders WHERE id = ?", (str(order_id),)) as cur:
@@ -3006,7 +3039,7 @@ async def publish_review_record(uid: int, author_label: str, raw_user_name: str,
 
     comment_block = f"\n💬 <b>Отзыв:</b> {html.escape(comment.strip())}" if comment.strip() else ""
     items_block = f"\n🛍 <b>Заказ:</b> {html.escape(items_summary)}" if items_summary else ""
-    channel_post = f"🌟 <b>Новый отзыв о {html.escape(brand_name)}!</b>\n\n👤 <b>Клиент:</b> {html.escape(author_label or 'Покупатель')}\n📊 <b>Оценка:</b> {stars_visual} ({stars_clamped}/5){items_block}{comment_block}\n📅 <i>{html.escape(now_str)}</i>"
+    channel_post = f"🌟 <b>Новый отзыв о {html.escape(brand_name)}!</b>\n\n👤 <b>Клиент:</b> {html.escape(author_label or 'Покупатель')}\n📊 <b>Оценка:</b> {stars_visual} ({stars_clamped}/5){items_block}{comment_block}\n📅 <i>{html.escape(date_only_str)}</i>"
 
     target_channel = extract_tg_chat_target(reviews_url)
     published_to_channel = False
