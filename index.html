@@ -2594,6 +2594,62 @@
         <div class="welcome-mist-text" id="welcome-mist-text">Вас приветствует Monkey Shop</div>
     </div>
     <div id="splash-screen" class="splash-style-energy">
+    <script>
+        (function() {
+            function forceSplashProgressFallback() {
+                var pf = document.getElementById('progress-fill');
+                var pctEl = document.getElementById('splash-percent');
+                var subEl = document.getElementById('splash-sub');
+                var splash = document.getElementById('splash-screen');
+                if (!splash) return;
+                var curPct = parseInt((pctEl && pctEl.textContent) || '0', 10) || 0;
+                if (curPct === 0) {
+                    var p = 18;
+                    if (pf) pf.style.width = p + '%';
+                    if (pctEl) pctEl.textContent = p + '%';
+                    var iv = setInterval(function() {
+                        var sp = document.getElementById('splash-screen');
+                        if (!sp) { clearInterval(iv); return; }
+                        p = Math.min(100, p + 22);
+                        var f = document.getElementById('progress-fill');
+                        var t = document.getElementById('splash-percent');
+                        var s = document.getElementById('splash-sub');
+                        if (f) f.style.width = p + '%';
+                        if (t) t.textContent = p + '%';
+                        if (s && p >= 60) s.textContent = 'Почти готово...';
+                        if (p >= 100) {
+                            clearInterval(iv);
+                            setTimeout(function() {
+                                var el = document.getElementById('splash-screen');
+                                if (el) {
+                                    el.style.opacity = '0';
+                                    setTimeout(function() {
+                                        if (el && el.parentNode) el.parentNode.removeChild(el);
+                                        if (typeof window.checkAndShowAgeConsentModal === 'function') {
+                                            window.checkAndShowAgeConsentModal();
+                                        }
+                                    }, 350);
+                                }
+                            }, 200);
+                        }
+                    }, 180);
+                }
+            }
+            setTimeout(forceSplashProgressFallback, 900);
+            setTimeout(function() {
+                var sp = document.getElementById('splash-screen');
+                if (sp && sp.parentNode) {
+                    sp.style.opacity = '0';
+                    setTimeout(function() {
+                        if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
+                        if (typeof window.checkAndShowAgeConsentModal === 'function') {
+                            window.checkAndShowAgeConsentModal();
+                        }
+                    }, 300);
+                }
+            }, 3600);
+        })();
+    </script>
         <div class="splash-energy-beams"></div>
         <div class="splash-orb orb-1"></div>
         <div class="splash-orb orb-2"></div>
@@ -5280,7 +5336,7 @@
     function adminAddBannerSlide() {
         isBannerDirty = true;
         const nextStyle = BANNER_STYLE_OPTIONS[bannerSlides.length % BANNER_STYLE_OPTIONS.length].id;
-        const nextLayout = BANNER_LAYOUT_OPTIONS[bannerSlides.length % BANNER_LAYOUT_OPTIONS.length].id;
+        const nextLayout = ALL_BANNER_LAYOUT_ITEMS[bannerSlides.length % ALL_BANNER_LAYOUT_ITEMS.length].id;
         bannerSlides.push(normalizeClientBannerSlide({
             id: `banner_${Date.now()}_${bannerSlides.length}`,
             title: 'НОВАЯ АКЦИЯ',
