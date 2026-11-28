@@ -4957,6 +4957,26 @@
             </div>
         `;
     }
+    let bannerSlides = (() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('monkey_banners_list') || 'null');
+            if (Array.isArray(saved) && saved.length > 0) {
+                return saved.map((item, i) => normalizeClientBannerSlide(item, i));
+            }
+        } catch (_) {}
+        const legacy = JSON.parse(localStorage.getItem('monkey_promo_banner') || 'null');
+        return [
+            normalizeClientBannerSlide({
+                id: 'banner_default_1',
+                title: legacy?.title || 'СКИДКА НЕДЕЛИ -20%',
+                desc: legacy?.desc || 'Популярные товары и новинки уже в каталоге',
+                style: 'emerald',
+                layout: 'noimg_btn',
+                btn_text: 'Скопировать',
+                promo_code: (legacy?.badge && !String(legacy.badge).startsWith('-')) ? legacy.badge : 'MONKEY3'
+            }, 0)
+        ];
+    })();
     let currentBannerSlideIdx = 0;
     let bannerAutoSlideTimer = null;
     let isBannerDirty = false;
