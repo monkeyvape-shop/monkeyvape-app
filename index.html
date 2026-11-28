@@ -136,23 +136,7 @@
             50% { transform: translate(-50%, -50%) rotate(180deg) scale(1.08); }
             to { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
         }
-        .splash-shockwave {
-            position: absolute;
-            width: 224px;
-            height: 224px;
-            border-radius: 50%;
-            border: 2px solid color-mix(in srgb, var(--accent-green) 65%, transparent);
-            box-shadow: 0 0 24px var(--accent-green-glow);
-            pointer-events: none;
-            animation: splashShockwaveBurst 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-        }
-        .splash-shockwave.wave-2 {
-            animation-delay: 1.1s;
-        }
-        @keyframes splashShockwaveBurst {
-            0% { transform: scale(0.88); opacity: 0.85; }
-            100% { transform: scale(2.05); opacity: 0; }
-        }
+
         /* Варианты экрана загрузки мини-приложения */
         #splash-screen.splash-style-energy {
             background:
@@ -186,7 +170,6 @@
         }
         #splash-screen.splash-style-minimal .splash-orb,
         #splash-screen.splash-style-minimal .splash-energy-beams,
-        #splash-screen.splash-style-minimal .splash-shockwave,
         #splash-screen.splash-style-minimal .splash-badge-wrap::before,
         #splash-screen.splash-style-minimal .splash-badge-wrap::after,
         #splash-screen.splash-style-minimal .progress-fill::after {
@@ -233,17 +216,7 @@
         #splash-screen.splash-style-pulse .splash-badge-wrap::before {
             display: none;
         }
-        #splash-screen.splash-style-pulse .splash-badge-wrap::after {
-            inset: -8px;
-            border-radius: 50%;
-            border: 2.5px solid var(--accent-green);
-            opacity: 0.9;
-            animation: splashPulseExpand 1.05s ease-out infinite;
-        }
-        @keyframes splashPulseExpand {
-            0% { transform: scale(0.96); opacity: 0.95; }
-            100% { transform: scale(1.45); opacity: 0; }
-        }
+
         #splash-screen.splash-style-glass {
             background:
                 radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent-green) 24%, transparent) 0%, transparent 55%),
@@ -383,22 +356,8 @@
             animation: splashHaloSpin 1.7s linear infinite;
             pointer-events: none;
         }
-        .splash-badge-wrap::after {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 50%;
-            border: 2px solid var(--accent-green);
-            opacity: 0;
-            animation: splashPulseRing 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-            pointer-events: none;
-        }
         @keyframes splashHaloSpin {
             to { transform: rotate(360deg); }
-        }
-        @keyframes splashPulseRing {
-            0% { transform: scale(0.95); opacity: 0.78; }
-            100% { transform: scale(1.32); opacity: 0; }
         }
         .splash-emblem {
             font-size: 80px;
@@ -2708,8 +2667,6 @@
         <div class="splash-energy-beams"></div>
         <div class="splash-orb orb-1"></div>
         <div class="splash-orb orb-2"></div>
-        <div class="splash-shockwave"></div>
-        <div class="splash-shockwave wave-2"></div>
         <div class="splash-badge-wrap">
             <div class="splash-emblem" id="splash-emblem">🐵</div>
         </div>
@@ -3946,8 +3903,6 @@
             <div class="splash-energy-beams"></div>
             <div class="splash-orb orb-1"></div>
             <div class="splash-orb orb-2"></div>
-            <div class="splash-shockwave"></div>
-            <div class="splash-shockwave wave-2"></div>
             <div class="splash-badge-wrap">
                 <div class="splash-emblem">${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="Splash">` : escapeHtml(em)}</div>
             </div>
@@ -4670,6 +4625,58 @@
         return adminSaveAudioSettings(silent);
     }
     applyMusicPlayerUI();
+    const protectedBlobCache = {};
+    function normalizeBackendImageUrl(rawUrl) {
+        const clean = (rawUrl || '').trim();
+        if (!clean) return '';
+        if (clean.startsWith('data:') || clean.startsWith('blob:')) return clean;
+        const apiMatch = clean.match(/(\/api\/(?:tg_photo|product_image)\/[^?#\s]+)/);
+        if (apiMatch) {
+            const activeBase = getRuntimeBackendBaseUrl();
+            return activeBase ? `${activeBase}${apiMatch[1]}` : apiMatch[1];
+        }
+        return clean;
+    }
+    async function hydrateProtectedImages() {
+        const imgs = document.querySelectorAll('img[data-protected-src]');
+        for (const img of imgs) {
+            const rawAttr = img.getAttribute('data-protected-src');
+            const rawUrl = normalizeBackendImageUrl(rawAttr);
+            if (!rawUrl || img.dataset.hydrated === '1') continue;
+            img.dataset.hydrated = '1';
+            if (protectedBlobCache[rawUrl]) {
+                img.src = protectedBlobCache[rawUrl];
+                continue;
+            }
+            try {
+                const res = await fetch(rawUrl, {
+                    headers: { 'ngrok-skip-browser-warning': 'true', 'Bypass-Tunnel-Reminder': 'true' }
+                });
+                if (res.ok && (res.headers.get('content-type') || '').startsWith('image/')) {
+                    const blobUrl = URL.createObjectURL(await res.blob());
+                    protectedBlobCache[rawUrl] = blobUrl;
+                    img.src = blobUrl;
+                    continue;
+                }
+            } catch (e) {}
+            const fallback = img.getAttribute('data-fallback-html');
+            if (fallback) img.outerHTML = fallback;
+        }
+    }
+    function buildProductImgTag(url, altText, fallbackHtml) {
+        const cleanUrl = (url || '').trim();
+        if (!cleanUrl) return fallbackHtml;
+        if (cleanUrl.startsWith('data:image/')) {
+            return `<img src="${cleanUrl}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${escapeHtml(fallbackHtml)}'">`;
+        }
+        if (cleanUrl.includes('ngrok') || cleanUrl.includes('/api/tg_photo/') || cleanUrl.includes('/api/product_image/')) {
+            const normUrl = normalizeBackendImageUrl(cleanUrl);
+            const cached = protectedBlobCache[normUrl];
+            const initialSrc = cached || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            return `<img data-protected-src="${escapeHtml(normUrl)}" data-fallback-html="${escapeHtml(fallbackHtml)}" src="${initialSrc}" alt="${escapeHtml(altText)}">`;
+        }
+        return `<img src="${escapeHtml(cleanUrl)}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${escapeHtml(fallbackHtml)}'">`;
+    }
     const BANNER_STYLE_OPTIONS = [
         { id: 'emerald', label: '🌿 Изумруд' },
         { id: 'cyber', label: '💠 Кибер-синий' },
@@ -6264,58 +6271,6 @@
         updateServerStatusBadge(false);
         throw new Error("Server unreachable");
     }
-    const protectedBlobCache = {};
-    function normalizeBackendImageUrl(rawUrl) {
-        const clean = (rawUrl || '').trim();
-        if (!clean) return '';
-        if (clean.startsWith('data:') || clean.startsWith('blob:')) return clean;
-        const apiMatch = clean.match(/(\/api\/(?:tg_photo|product_image)\/[^?#\s]+)/);
-        if (apiMatch) {
-            const activeBase = getRuntimeBackendBaseUrl();
-            return activeBase ? `${activeBase}${apiMatch[1]}` : apiMatch[1];
-        }
-        return clean;
-    }
-    async function hydrateProtectedImages() {
-        const imgs = document.querySelectorAll('img[data-protected-src]');
-        for (const img of imgs) {
-            const rawAttr = img.getAttribute('data-protected-src');
-            const rawUrl = normalizeBackendImageUrl(rawAttr);
-            if (!rawUrl || img.dataset.hydrated === '1') continue;
-            img.dataset.hydrated = '1';
-            if (protectedBlobCache[rawUrl]) {
-                img.src = protectedBlobCache[rawUrl];
-                continue;
-            }
-            try {
-                const res = await fetch(rawUrl, {
-                    headers: { 'ngrok-skip-browser-warning': 'true', 'Bypass-Tunnel-Reminder': 'true' }
-                });
-                if (res.ok && (res.headers.get('content-type') || '').startsWith('image/')) {
-                    const blobUrl = URL.createObjectURL(await res.blob());
-                    protectedBlobCache[rawUrl] = blobUrl;
-                    img.src = blobUrl;
-                    continue;
-                }
-            } catch (e) {}
-            const fallback = img.getAttribute('data-fallback-html');
-            if (fallback) img.outerHTML = fallback;
-        }
-    }
-    function buildProductImgTag(url, altText, fallbackHtml) {
-        const cleanUrl = (url || '').trim();
-        if (!cleanUrl) return fallbackHtml;
-        if (cleanUrl.startsWith('data:image/')) {
-            return `<img src="${cleanUrl}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${escapeHtml(fallbackHtml)}'">`;
-        }
-        if (cleanUrl.includes('ngrok') || cleanUrl.includes('/api/tg_photo/') || cleanUrl.includes('/api/product_image/')) {
-            const normUrl = normalizeBackendImageUrl(cleanUrl);
-            const cached = protectedBlobCache[normUrl];
-            const initialSrc = cached || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-            return `<img data-protected-src="${escapeHtml(normUrl)}" data-fallback-html="${escapeHtml(fallbackHtml)}" src="${initialSrc}" alt="${escapeHtml(altText)}">`;
-        }
-        return `<img src="${escapeHtml(cleanUrl)}" alt="${escapeHtml(altText)}" onerror="this.outerHTML='${escapeHtml(fallbackHtml)}'">`;
-    }
     const PRIMARY_OWNER_IDS = [7280921605];
     let DYNAMIC_OWNER_IDS = [7280921605];
     let DYNAMIC_COURIER_IDS = (() => {
@@ -7016,15 +6971,34 @@
         }
         if (currentSeasonEffect !== 'none') startSeasonCanvas(currentSeasonEffect);
     });
-    window.addEventListener('load', () => {
-        initTelegramUser();
-        setTimeout(initTelegramUser, 500);
+    let splashBootStarted = false;
+    function dismissSplashScreenSmoothly() {
+        const splash = document.getElementById('splash-screen');
+        if (!splash) {
+            checkAndShowAgeConsentModal();
+            return;
+        }
+        if (splash.dataset.dismissing === '1') return;
+        splash.dataset.dismissing = '1';
+        splash.style.opacity = '0';
+        splash.style.transform = 'scale(1.05)';
+        splash.style.filter = 'blur(8px)';
+        setTimeout(() => {
+            splash.remove();
+            checkAndShowAgeConsentModal();
+        }, 520);
+    }
+    function startAppSplashBoot() {
+        if (splashBootStarted) return;
+        splashBootStarted = true;
+        try { initTelegramUser(); } catch (_) {}
+        setTimeout(() => { try { initTelegramUser(); } catch (_) {} }, 450);
         const pf = document.getElementById('progress-fill');
         const pctEl = document.getElementById('splash-percent');
         const subEl = document.getElementById('splash-sub');
         let pct = 0;
         const stepTimer = setInterval(() => {
-            pct = Math.min(100, pct + Math.floor(14 + Math.random() * 18));
+            pct = Math.min(100, pct + Math.floor(16 + Math.random() * 18));
             if (pf) pf.style.width = pct + '%';
             if (pctEl) pctEl.textContent = pct + '%';
             if (subEl) {
@@ -7033,23 +7007,22 @@
             }
             if (pct >= 100) {
                 clearInterval(stepTimer);
-                setTimeout(() => {
-                    const splash = document.getElementById('splash-screen');
-                    if (splash) {
-                        splash.style.opacity = '0';
-                        splash.style.transform = 'scale(1.05)';
-                        splash.style.filter = 'blur(8px)';
-                        setTimeout(() => {
-                            splash.remove();
-                            checkAndShowAgeConsentModal();
-                        }, 550);
-                    } else {
-                        checkAndShowAgeConsentModal();
-                    }
-                }, 260);
+                setTimeout(dismissSplashScreenSmoothly, 220);
             }
-        }, 145);
-    });
+        }, 130);
+        setTimeout(() => {
+            clearInterval(stepTimer);
+            if (pf) pf.style.width = '100%';
+            if (pctEl) pctEl.textContent = '100%';
+            dismissSplashScreenSmoothly();
+        }, 3200);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startAppSplashBoot);
+    } else {
+        startAppSplashBoot();
+    }
+    window.addEventListener('load', startAppSplashBoot);
     let cart = JSON.parse(localStorage.getItem('monkey_cart')) || {};
     let activeCategory = 'all', currentLine = 'green', modalCurrentLine = 'green';
     let selectedStation = localStorage.getItem('monkey_selected_station') || 'Партизанская';
