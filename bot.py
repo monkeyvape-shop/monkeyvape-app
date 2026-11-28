@@ -369,6 +369,9 @@ def normalize_banner_item(raw_item: dict, idx: int = 0) -> dict:
     lay = str(raw_item.get("layout") or "classic").strip()
     if lay not in valid_layouts:
         lay = "classic"
+    raw_action_mode = str(raw_item.get("action_mode") or "button").strip()
+    action_mode = raw_action_mode if raw_action_mode in ("button", "image", "none") else "button"
+    raw_img = normalize_public_asset_url(str(raw_item.get("image_url") or "").strip())
     return {
         "id": str(raw_item.get("id") or f"banner_{int(time.time() * 1000)}_{idx}").strip(),
         "title": str(raw_item.get("title") or "").strip(),
@@ -376,6 +379,8 @@ def normalize_banner_item(raw_item: dict, idx: int = 0) -> dict:
         "style": str(raw_item.get("style") or "emerald").strip() or "emerald",
         "layout": lay,
         "badge_text": str(raw_item.get("badge_text") or "АКЦИЯ").strip(),
+        "action_mode": action_mode,
+        "image_url": raw_img,
         "btn_text": str(raw_item.get("btn_text") or "").strip() or "Скопировать",
         "promo_code": str(raw_item.get("promo_code") or "").strip()
     }
@@ -2590,7 +2595,9 @@ async def courier_arrived(data: CourierArrivedSchema, request: Request):
         raise HTTPException(status_code=404, detail="Заказ не найден")
     buyer_id, station, claimed_id = row[0], row[1], int(row[2] or 0)
     delivery_mode = (row[3] or "").strip() or default_dmode
-    if claimed_id != 0 and claimed_id != v_uid:
+    if claimed_id == 0:
+        raise HTTPException(status_code=400, detail="Сначала возьмите заказ в работу")
+    if claimed_id != v_uid:
         raise HTTPException(status_code=403, detail="Этот заказ ведёт другой курьер")
     if buyer_id:
         await send_tg_dm(int(buyer_id), f"📍 <b>Курьер на месте ({html.escape(format_location_value(station, delivery_mode))})!</b>\nЗаказ #{html.escape(oid)} ожидает вас на месте встречи.")
@@ -2664,7 +2671,9 @@ async def update_order_status(data: StatusUpdateSchema, request: Request):
         else:
             if not is_cour:
                 raise HTTPException(status_code=403, detail="Нет прав курьера")
-            if existing_claimed_id != 0 and existing_claimed_id != v_uid and not await check_is_owner(db, v_uid):
+            if existing_claimed_id == 0:
+                raise HTTPException(status_code=400, detail="Сначала возьмите заказ в работу")
+            if existing_claimed_id != v_uid and not await check_is_owner(db, v_uid):
                 raise HTTPException(status_code=403, detail="Этот заказ закреплён за другим курьером")
         if is_cour and cancelled_by != 'client':
             await db.execute(
